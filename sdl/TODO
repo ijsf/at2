@@ -1,0 +1,30 @@
+* Implement sdl_SysWM* structures (in a 'portable' fashion)
+    I should make a different structure for each platform and choose with
+    {$ifdef}s... It's done that way in <SDL/sdl_syswm.h>. Now they're empty
+    structures, regardless of the platform.
+
+* Get a better name for sdl__rwops
+    The reason for the double underscore is that there is a structure there
+    called SDL_rwops, and I can't repeat that identifier in the unit name
+    (and don't want to change the name of the record). If you find a better idea 
+    for a name of this unit, tell me.
+    
+* Find a better solution for the stdio.pp issue
+    Read the source. This unit is a hack.
+    
+* Test it!!!!
+    I've just barely tested some part of it. There's almost no code, just 
+    external definitions, so it won't be very bad, but you never know...
+    At least it compiles :-)
+    
+* Packages (source&binary RPM/DEBs)
+    instead of this ugly tarball...
+
+* Remaining SDL modules 
+    active, byteorder, endian, error, main, mutex, quit, thread,
+    version are not implemented yet. I'll do this soon (I may decide
+    not to implement some of them)...
+
+* Make a real build/install/clean script
+    The current one only builds, and compiles some units twice (Ok, I know,
+    I should write a Makefile)

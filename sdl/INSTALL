@@ -1,0 +1,12 @@
+Installation notes
+
+To compile the library:
+
+$ tar xzf SDL4Freepascal-1.2.0.0.tar.gz
+$ cd SDL4Freepascal-1.2.0.0
+$ ./build.sh
+
+and to install it (as root):
+
+# mkdir /usr/lib/fpc/yourversion/units/linux/SDL4Freepascal-1.2.0.0
+# mv *.o *.ppu /usr/lib/fpc/yourversion/units/linux/SDL4Freepascal-1.2.0.0

@@ -1,0 +1,24 @@
+SDL4Freepascal-1.2.0.0
+
+These are Freepascal units for using the SDL (Simple Directmedia Layer) 
+library. They were made with H2PAS from the SDL-1.0.0 headers and adapted a
+little, then upgraded by hand to SDL 1.2.
+
+The version number is a.b.c.d where a.b.c is the version of the SDL headers,
+and d is a release number for this library.
+
+I haven't almost tested them, please, if (when) you find any bugs, email me to
+dmoisset@grulic.org.ar
+
+If you write some simple demos (in Pascal) that would be useful as examples,
+please, send them so I can include them in the package. Everything I will
+put here must be GPL or LGPL. There are some simple demos here, that are
+useful as a "mini-tutorial" too.
+
+This should(could) compile with Delphi, or other Pascal compilers similar to
+FreePascal, or by FreePascal in other platforms. If you make it work in
+another compiler/platform, please tell me; portability would be a nice thing
+to this lib. I've compiled and run it and the demos on FreePascal for 
+windows, but haven't done more testing than that.
+
+Daniel F Moisset - dmoisset@grulic.org.ar
