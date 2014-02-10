@@ -1060,7 +1060,7 @@ end;
 function valid_drive(drive_str: String; var info: String): Boolean;
 begin
   valid_drive := FALSE;
-  info := '???';
+  info := '';
 //  Case GetDriveType(Addr(drive_str[1])) of
 //    DRIVE_REMOVABLE: info := 'FLOPPY';
 //    DRIVE_FIXED:     info := 'HARDDiSK';
@@ -1107,11 +1107,12 @@ begin
 end;
 
 begin { make_stream }
+  WriteLn('make_stream: path=',path);
   If (stream.drive_count = 0) then
     begin
       count1 := 0;
       For drive := 'A' to 'Z' do
-        If valid_drive(drive + ':\',stream.stuff[SUCC(count1)].info) then // check all drives A-Z
+        If valid_drive(drive + ':/',stream.stuff[SUCC(count1)].info) then // check all drives A-Z
           begin
             Inc(count1);
             stream.stuff[count1].name := drive;
@@ -1132,7 +1133,7 @@ begin { make_stream }
     end;
 
   count2 := 0;
-  FindFirst(path+'*.*',anyfile-volumeid,search);
+  FindFirst(path+'*',anyfile-volumeid,search);
   While (DOSerror = 0) and (count1 < MAX_FILES) do
     begin
       If (search.attr AND directory <> 0) and (search.name = '.') then
@@ -1159,7 +1160,7 @@ begin { make_stream }
        stream.stuff[count1].attr := search.attr;
     end;
 
-  FindFirst(path+'*.*',anyfile-volumeid-directory,search);
+  FindFirst(path+'*',anyfile-volumeid-directory,search);
   While (DOSerror = 0) and (count1+count2 < MAX_FILES) do
     begin
       If LookUpMask(search.name) then
@@ -1195,7 +1196,7 @@ var
 
 function path_filter(path: String): String;
 begin
-  If (Length(path) > 3) and (path[Length(path)] = '\') then
+  If (Length(path) > 3) and (path[Length(path)] = '/') then
     Delete(path,Length(path),1);
   path_filter := Upper(path);
 end;
@@ -1245,7 +1246,7 @@ begin { Fselect }
   GetDir(0,temp3);
   {$i+}
   If (IOresult <> 0) then temp3 := temp6;
-  If (temp3[Length(temp3)] <> '\') then temp3 := temp3+'\';
+  If (temp3[Length(temp3)] <> '/') then temp3 := temp3+'/';
   mn_setting.cycle_moves  := FALSE;
   temp4 := '';
 
@@ -1340,13 +1341,13 @@ begin { Fselect }
           begin
             Delete(temp3,Length(temp3),1);
             temp4 := NameOnly(temp3);
-            While (temp3[Length(temp3)] <> '\') do
+            While (temp3[Length(temp3)] <> '/') do
               Delete(temp3,Length(temp3),1);
             fs_environment.last_file := Lower(temp4);
           end
         else
           begin
-            temp3 := temp3+fstream.stuff[temp2].name+'\';
+            temp3 := temp3+fstream.stuff[temp2].name+'/';
             temp4 := '';
             fs_environment.last_file := temp4;
           end;
@@ -1370,16 +1371,16 @@ begin { Fselect }
                     {$i+}
                     If (IOresult <> 0) then temp3 := temp6;
                   end;
-             If (temp3[Length(temp3)] <> '\') then temp3 := temp3+'\';
+             If (temp3[Length(temp3)] <> '/') then temp3 := temp3+'/';
              temp4 := '';
              fs_environment.last_file := temp4;
            end
          else If (mn_environment.keystroke = $0e08) and
-                 (SYSTEM.Pos('\',Copy(temp3,3,Length(temp3)-3)) <> 0) then
+                 (SYSTEM.Pos('/',Copy(temp3,3,Length(temp3)-3)) <> 0) then
                 begin
                   Delete(temp3,Length(temp3),1);
                   temp4 := NameOnly(temp3);
-                  While (temp3[Length(temp3)] <> '\') do
+                  While (temp3[Length(temp3)] <> '/') do
                     Delete(temp3,Length(temp3),1);
                   fs_environment.last_file := Lower(temp4);
                   {$i-}
@@ -1545,7 +1546,7 @@ begin
     mn_environment.desc_pos    := 0;
     
     For index := 1 to 26 do
-        path[index] := CHR(ORD('a')+PRED(index))+':\';
+        path[index] := CHR(ORD('a')+PRED(index))+':/';
 end;
 
 end.
