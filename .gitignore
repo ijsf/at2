@@ -2,3 +2,4 @@ bin/*
 *.o
 *.ppu
 *.res
+adtrack2
