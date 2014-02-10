@@ -3,7 +3,7 @@ unit DialogIO;
 interface
 
 uses
-  DOS,Windows,
+  DOS,
   Adt2vscr,AdT2unit,AdT2keyb,AdT2ext2,
   StringIO,ParserIO,TxtScrIO;
 
@@ -1060,14 +1060,14 @@ end;
 function valid_drive(drive_str: String; var info: String): Boolean;
 begin
   valid_drive := FALSE;
-  info := '';
-  Case GetDriveType(Addr(drive_str[1])) of
-    DRIVE_REMOVABLE: info := 'FLOPPY';
-    DRIVE_FIXED:     info := 'HARDDiSK';
-    DRIVE_REMOTE:    info := 'NETWORK';
-    DRIVE_CDROM:     info := 'CD/DVD';
-    DRIVE_RAMDISK:   info := 'RAM';
-  end;
+  info := '???';
+//  Case GetDriveType(Addr(drive_str[1])) of
+//    DRIVE_REMOVABLE: info := 'FLOPPY';
+//    DRIVE_FIXED:     info := 'HARDDiSK';
+//    DRIVE_REMOTE:    info := 'NETWORK';
+//    DRIVE_CDROM:     info := 'CD/DVD';
+//    DRIVE_RAMDISK:   info := 'RAM';
+//  end;
   If (info <> '') then valid_drive := TRUE;
 end;
 

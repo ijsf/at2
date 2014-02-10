@@ -2,7 +2,7 @@ program AdTrack2;
 
 {$APPTYPE GUI}
 {$PACKRECORDS 1}
-{$R adtrack2.res}
+// {$R adtrack2.res}
 
 uses
   SDL_Timer,
