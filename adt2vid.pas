@@ -68,7 +68,7 @@ begin
       If (next_game_tick = 17) then Inc(next_game_tick,frame_end);
       sleep_time := next_game_tick-frame_end;
       If (sleep_time > 0) then SDL_Delay(sleep_time)
-      else SDL_Delay(2);
+      else SDL_Delay(10);
       If (frames = 0) then frame_start := next_game_tick;
     end
   else
