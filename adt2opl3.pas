@@ -118,7 +118,7 @@ begin
     IRQ_freq_val := IRQ_freq
   else IRQ_freq_val := IRQ_freq * 20;
        
-  For counter := 0 to (sdl_sample_buffer-1) do
+  For counter := 0 to ((len div 4)-1) do
     begin
       Inc(counter_idx);
       If (counter_idx >= sample_frame_size) then
@@ -184,9 +184,13 @@ begin
       0: WriteLn('OPL3 emulation core: MAME');
       1: WriteLn('OPL3 emulation core: DOSBox');
     end;
-    
-  WriteLn('  Sample buffer size: ',sdl_sample_buffer,' bytes');
-  WriteLn('  Sampling rate: ',sdl_sample_rate,' Hz');
+  
+  WriteLn('  Sample buffer size: ',sdl_audio_spec.samples,' samples (requested ',sdl_sample_buffer,')');
+  WriteLn('  Sampling rate: ',sdl_audio_spec.freq,' Hz (requested ',sdl_sample_rate,')');
+
+  sdl_sample_rate := sdl_audio_spec.freq;
+  sdl_sample_buffer := sdl_audio_spec.samples;
+
   SDL_PauseAudio(0);
 end;
 
