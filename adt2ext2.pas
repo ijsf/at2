@@ -240,19 +240,27 @@ var
   data: String;
   temp: Byte;
 
-function check_number(str: String; base: Byte; limit1,limit2: Word; default: Word): Word;
+function check_number(str: String; base: Byte; limit1,limit2: Longint; default: Longint): Longint;
 
 var
   temp: Byte;
-  result: Word;
+  i: Byte;
+  temp2: Longint;
+  result: Longint;
 
 begin
   result := default;
-  If (limit2 >= 10000) then temp := 5
-  else If (limit2 >= 1000) then temp := 4
-       else If (limit2 >= 100) then temp := 3
-            else If (limit2 >= 10) then temp := 2
-                 else temp := 1;
+  temp2 := 1000000000; // 10**9
+  For i := 10 downto 1 do
+  Begin
+    If (limit2 >= temp2) then
+    Begin
+        temp := i;
+        BREAK;
+    End;
+    
+    temp2 := temp2 div 10;
+  End;
 
   If SameName(str+'='+ExpStrL('',temp,'?'),data) and (Length(data) < Length(str)+temp+2) then
     begin
@@ -995,7 +1003,7 @@ begin { process_config_file }
         check_number('sdl_opl3_emulator',10,0,1,sdl_opl3_emulator);
         
       sdl_sample_rate :=
-        check_number('sdl_sample_rate',10,8000,48000,sdl_sample_rate);
+        check_number('sdl_sample_rate',10,4000,192000,sdl_sample_rate);
 
       sdl_sample_buffer :=
         check_number('sdl_sample_buffer',10,512,32768,sdl_sample_buffer);
