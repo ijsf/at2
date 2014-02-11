@@ -258,6 +258,10 @@ begin { INSTRUMENT_test }
                       key_off(temp3);
                       If alt_pressed then keyoff_loop[temp3] := TRUE;
                     end;
+
+             If valid_key then 
+                while (getkey <> 0) do; // clear the keyboard buffer
+                
            end;
 
          emulate_screen;
