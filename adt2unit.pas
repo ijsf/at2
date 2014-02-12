@@ -3,7 +3,13 @@ unit AdT2unit;
 interface
 
 const
+  MAX_SDL_IRQ_FREQ = 1000;
+
+const
   _force_program_quit: Boolean = FALSE;
+  _name_scrl_shift_ctr: Shortint = 1;
+  _name_scrl_shift: Byte = 0;
+  _name_scrl_pending_frames: Word = 0;
   
 {$i typconst.inc}
 const
@@ -160,7 +166,8 @@ var
   backup: tBACKUP;
 
 var
-  song_timer,timer_temp: Word;
+  unfreeze_pending_frames: Byte;
+  song_timer,timer_temp,timer_determinator,timer_det2: Word;
   song_timer_tenths: Word;
   ticks,tick0,tickD,tickXF: Longint;
   time_playing: Real;
@@ -618,7 +625,7 @@ begin
   If (tempo = 18) and timer_fix then IRQ_freq := TRUNC((tempo+0.2)*20)
   else IRQ_freq := 250;  
   While (IRQ_freq MOD (tempo*_macro_speedup) <> 0) do Inc(IRQ_freq);
-  If (IRQ_freq > 650) then IRQ_freq := 650;
+  If (IRQ_freq > MAX_SDL_IRQ_FREQ) then IRQ_freq := MAX_SDL_IRQ_FREQ;
   TimerSetup(IRQ_freq);
 end;
 
@@ -3753,12 +3760,9 @@ begin
       else set_ins_volume(LO(volume_table[chan]),HI(volume_table[chan]),chan);
 end;
 
-const
-    fps_ticklooper: longint = 0;
 var
   hw_ticks: Real;
   dummy_ticks: Longint;
-
 
 procedure synchronize_screen;
 begin
@@ -3792,12 +3796,7 @@ asm
 end;
 
 procedure newint08;
-
-const
-    timer_det2: longint = 1;
-    timer_determinator: longint = 1;
-
-begin
+begin 
   If (timer_determinator < IRQ_freq) then Inc(timer_determinator)
   else begin
          timer_determinator := 1;
@@ -3868,7 +3867,6 @@ begin
   else If debugging and NOT space_pressed then
          If NOT pattern_delay then synchronize_song_timer;
 
-
   If (song_timer > 3600-1) then
     begin
       song_timer := 0;
@@ -3876,17 +3874,30 @@ begin
       song_timer_tenths := 0;
     end;
 
-  If (fps_ticklooper = 0) then
-    begin         
-      decay_bars_refresh;
-      If do_synchronize then synchronize_screen;
-      status_refresh;
-    end;
+  // emergency reset of keyboard buffer
+  If ctrl_pressed and shift_pressed and keydown[SC_F10] then
+    begin
+      keyboard_reset_buffer;
+      vid_TriggerEmergencyPalette(TRUE);
+      unfreeze_pending_frames := 5;
+    end
+  else If (unfreeze_pending_frames > 0) then
+         begin
+           Dec(unfreeze_pending_frames);
+           If (unfreeze_pending_frames = 0) then
+             vid_TriggerEmergencyPalette(FALSE);
+         end;
 
-  Inc(fps_ticklooper);
-  If (fps_ticklooper >= IRQ_freq DIV IRQ_freq) then
-    fps_ticklooper := 0;
+  decay_bars_refresh;       
+  If do_synchronize then
+    begin
+      synchronize_screen;
+      If (unfreeze_pending_frames = 0) then
+        vid_TriggerEmergencyPalette(FALSE);
+    end;  
 
+  If (_name_scrl_pending_frames > 0) then Dec(_name_scrl_pending_frames);
+  status_refresh;
 end;
 
 procedure init_timer_proc;
@@ -4043,7 +4054,19 @@ begin { calibrate_player }
         previous_order := current_order;
         previous_line := current_line;
         fast_forward := TRUE;
+
         poll_proc;
+        If (macro_ticklooper = 0) then
+          macro_poll_proc;
+
+        Inc(ticklooper);
+        If (ticklooper >= IRQ_freq DIV tempo) then
+	      ticklooper := 0;
+
+        Inc(macro_ticklooper);
+        If (macro_ticklooper >= IRQ_freq DIV (tempo*macro_speedup)) then
+	      macro_ticklooper := 0;
+            
         If (previous_order <> current_order) then
           begin
             update_status;
@@ -4174,7 +4197,7 @@ procedure init_player;
 var
   temp: Byte;
 
-begin
+begin 
   opl3_init;
   FillData(ai_table,SizeOf(ai_table),0);
 
@@ -4742,13 +4765,13 @@ var
   result: Word;
 
 begin
-  result := 650 DIV tempo;
+  result := MAX_SDL_IRQ_FREQ DIV tempo;
   Repeat
     If (tempo = 18) and timer_fix then temp := TRUNC((tempo+0.2)*20)
     else temp := 250;
     While (temp MOD (tempo*result) <> 0) do Inc(temp);
-    If (temp <= 650) then Inc(result);
-  until NOT (temp <= 650);
+    If (temp <= MAX_SDL_IRQ_FREQ) then Inc(result);
+  until NOT (temp <= MAX_SDL_IRQ_FREQ);
   calc_max_speedup := PRED(result);
 end;
 
@@ -5015,4 +5038,8 @@ begin
         end;
 end;
 
+begin
+  timer_determinator := 1;
+  timer_det2 := 1;
+  unfreeze_pending_frames := 0;
 end.

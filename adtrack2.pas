@@ -33,6 +33,9 @@ begin { MAIN }
   If __debug__ then WriteLn('--- initializing player routine');
     init_player;
 
+  { txtscrio init }
+  TxtScrIO_Init;
+  
   { dialogio init }
   DialogIO_Init;
 
@@ -108,7 +111,8 @@ begin { MAIN }
   ThinCursor;
   
   sdl_screen_mode := 0;
-  vid_SetVideoMode(FALSE);
+  TxtScrIO_Init;
+  vid_SetVideoMode(FALSE);  
   CleanScreen(v_ofs^);
   emulate_screen; 
   vid_SetRGBPalette(Addr(vga_rgb_color)^);

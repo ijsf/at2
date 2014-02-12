@@ -353,12 +353,11 @@ var
   xstart: Byte;
 
 begin
-  show_str(30+((MAX_COLUMNS-25) DIV 2),02,byte2hex(pattord_vpos+4*(pattord_hpos+pattord_page-1)-1),
+  show_str(25+6+PATTORD_xshift+(MAX_ORDER_COLS*7-1) DIV 2+(MAX_ORDER_COLS*7-1) MOD 2,02,
+           byte2hex(pattord_vpos+4*(pattord_hpos+pattord_page-1)-1),
            order_background+order_border);
 
-  If (sdl_screen_mode = 0) then xstart := 20
-  else xstart := 21;
-  
+  xstart := 20+PATTORD_xshift;  
   For temp1 := 1 to MAX_ORDER_COLS do
     For temp2 := 03 to 06 do
       begin
@@ -415,15 +414,16 @@ begin
   If tracing then count_order(temp1);
   If scroll_bars then
     begin
-      If (temp1 <> 0) then
-        scroll_pos0 := vscroll_bar(MAX_COLUMNS-2,02,6,temp1,
-                          (page+pattord_hpos-1)*4+pattord_vpos,scroll_pos0,
-                           scrollbar_bckg+scrollbar_text,
-                           scrollbar_bckg+scrollbar_mark)
-      else
-        scroll_pos0 := vscroll_bar(MAX_COLUMNS-2,02,6,1,1,$0ff,
-                                   scrollbar_bckg+scrollbar_text,
-                                   scrollbar_bckg+scrollbar_mark);
+      If (sdl_screen_mode <> 2) then
+        If (temp1 <> 0) then
+          scroll_pos0 := vscroll_bar(MAX_COLUMNS-2,02,6,temp1,
+                            (page+pattord_hpos-1)*4+pattord_vpos,scroll_pos0,
+                             scrollbar_bckg+scrollbar_text,
+                             scrollbar_bckg+scrollbar_mark)
+        else
+          scroll_pos0 := vscroll_bar(MAX_COLUMNS-2,02,6,1,1,$0ff,
+                                     scrollbar_bckg+scrollbar_text,
+                                     scrollbar_bckg+scrollbar_mark);
 
       scroll_pos1 := vscroll_bar(MAX_COLUMNS-1,02,6,$7f,
                         (page+pattord_hpos-1)*4+pattord_vpos,scroll_pos1,
@@ -432,9 +432,10 @@ begin
     end
   else
     begin
-      scroll_pos0 := vscroll_bar(MAX_COLUMNS-2,02,6,1,1,$0ff,
-                                 scrollbar_bckg+scrollbar_text,
-                                 scrollbar_bckg+scrollbar_mark);
+      If (sdl_screen_mode <> 2) then
+        scroll_pos0 := vscroll_bar(MAX_COLUMNS-2,02,6,1,1,$0ff,
+                                   scrollbar_bckg+scrollbar_text,
+                                   scrollbar_bckg+scrollbar_mark);
       scroll_pos1 := vscroll_bar(MAX_COLUMNS-1,02,6,1,1,$0ff,
                                  scrollbar_bckg+scrollbar_text,
                                  scrollbar_bckg+scrollbar_mark);
@@ -491,9 +492,7 @@ begin { PATTERN_ORDER_edit }
     PATTERN_ORDER_page_refresh(page);
     PATTERN_page_refresh(pattern_page);
     
-    If (sdl_screen_mode = 0) then xstart := 23
-    else xstart := 24;
-    
+    xstart := 23+PATTORD_xshift;   
     GotoXY(xstart+pos1[hpos]-1,03+vpos-1);
     ThinCursor;
 
@@ -1038,7 +1037,7 @@ begin { PATTERN_ORDER_edit }
         tstr := CHAR(LO(fkey));
 
         Repeat
-          tstr := ExpStrL(InputStr(tstr,24+pos1[hpos]-1,03+vpos-1,
+          tstr := ExpStrL(InputStr(tstr,xstart+pos1[hpos]-1,03+vpos-1,
                           2,2,order_input_bckg+order_input,
                               order_input_warn+order_input),2,'0');
           is_setting.append_enabled := TRUE;

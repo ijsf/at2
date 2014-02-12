@@ -7,21 +7,12 @@ unit AdT2vscr;
 {$PACKRECORDS 1}
 interface
 
-const                          { sdl_screen_mode = 0/1}
-  MAX_COLUMNS: Byte = 90;      { 90 / 120 }
-  MAX_ROWS: Byte = 40;         { 40 / 50  }
-  MAX_TRACKS: Byte = 5;        { 5 / 7    }
-  MAX_ORDER_COLS: Byte = 9;    { 9 / 13   }
-  MAX_PATTERN_ROWS: Byte = 18; { 18 / 26  }
-  INS_CTRL_xshift: Byte = 0;   { 0 / 10   }
-  INS_CTRL_yshift: Byte = 0;   { 0 / 8    }  
-
 var
   PATEDIT_lastpos: Byte;   
   
 {$i font8x16.inc}
 var
-  vscreen: array[0..PRED(120*50*2)] of Byte;
+  vscreen: array[0..PRED(180*60*2)] of Byte;
   FB_xres,FB_yres,FB_rows: Longint; { framebuffer dimensions + rows to render }
 
 const
@@ -172,7 +163,7 @@ begin
 end;
 
 const
-  SCREEN_SIZE = 120*50*SizeOf(WORD);
+  SCREEN_SIZE = 180*60*SizeOf(WORD);
 
 type
 //  pSCREEN = ^tSCREEN;
@@ -1167,15 +1158,15 @@ end;
 procedure CleanScreen(var dest);
 
 type
-  tVIRTUAL_SCREEN = array[0..PRED(120)*PRED(50)] of Word;
+  tVIRTUAL_SCREEN = array[0..PRED(180)*PRED(60)] of Word;
 
 var
   idx1,idx2: Byte;
 
 begin
-  For idx2 := 0 to PRED(120) do
-    For idx1 := 0 to PRED(50) do
-      tVIRTUAL_SCREEN(dest)[idx2*MaxLn+idx1] := $0007;
+  For idx2 := 0 to PRED(180) do
+      For idx1 := 0 to PRED(60) do
+        tVIRTUAL_SCREEN(dest)[idx2*MaxLn+idx1] := $0007;
 end;
 
 procedure Frame(var dest; x1,y1,x2,y2,atr1: Byte;
@@ -1351,11 +1342,11 @@ asm
         inc     edi
         mov     al,07
         stosb
-        cmp     MaxLn,120
+        cmp     MaxLn,80
         jae     @@9
         inc     edi
         stosb
-        cmp     MaxCol,132
+        cmp     MaxCol,180
         jna     @@9
         inc     edi
         stosb
@@ -1378,7 +1369,7 @@ asm
         mov     cl,x2
         sub     cl,x1
         add     cl,xexp3
-        cmp     MaxLn,45
+        cmp     MaxLn,55
         jb      @@10
         dec     cl
 @@10:   stosb

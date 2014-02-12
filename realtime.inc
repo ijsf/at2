@@ -130,7 +130,7 @@ end;
 procedure status_refresh;
 
 var
-  temps: String[15];
+  temps: String;
   temp,chan: Byte;
 
 begin
@@ -218,11 +218,33 @@ begin
     show_str(12,01,ExpStrR('',14,'Ä'),
          main_background+main_border);
 
-  show_str(03,06,'['+ExpStrR(iCASE(Copy(songdata_title,1,PRED(temp))),8,' ')+']',
+  temps := BaseNameOnly(songdata_title);
+      
+  While (8+_name_scrl_shift > Length(temps)) and (_name_scrl_shift > 0) do
+    Dec(_name_scrl_shift);
+  
+  show_str(03,06,'['+ExpStrR(iCASE(Copy(temps,1+_name_scrl_shift,8)),8,' ')+']',
        status_background+status_dynamic_txt);
-  show_str(03,07,'['+ExpStrR(iCASE(Copy(songdata_title,SUCC(temp),3)),3,' ')+']',
+  show_str(03,07,'['+ExpStrR(iCASE(Copy(ExtOnly(songdata_title),1,3)),3,' ')+']',
        status_background+status_border);
 
+  If (_name_scrl_pending_frames <> 0) then Dec(_name_scrl_pending_frames)
+  else
+    begin
+      _name_scrl_pending_frames := 20;
+      If (_name_scrl_shift_ctr > 0) then
+        If (8+_name_scrl_shift < Length(temps)) then Inc(_name_scrl_shift,_name_scrl_shift_ctr)
+        else begin
+               _name_scrl_shift_ctr := -1;
+               _name_scrl_pending_frames := _name_scrl_pending_frames*10;
+             end  
+      else If (_name_scrl_shift > 0) then Inc(_name_scrl_shift,_name_scrl_shift_ctr)
+           else begin
+                  _name_scrl_shift_ctr := 1;
+                  _name_scrl_pending_frames := _name_scrl_pending_frames*50;
+                end;        
+    end;
+  
   If NOT module_archived then
     show_str(09,07,#29,
          status_background+status_dynamic_txt)

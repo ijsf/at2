@@ -2,10 +2,10 @@ unit AdT2text;
 interface
 
 const
-{__AT2REV__}at2rev  = '048';
-{__AT2VER__}at2ver  = '2.4.08';
-{__AT2DAT__}at2date = '02-06-2014';
-{__AT2LNK__}at2link = '2:33pm';
+{__AT2REV__}at2rev  = '049';
+{__AT2VER__}at2ver  = '2.4.09';
+{__AT2DAT__}at2date = '02-12-2014';
+{__AT2LNK__}at2link = '8:31am';
 
 const
   ascii_line_01 = 'Ú-ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ--ùú               úù-¿';
@@ -44,7 +44,7 @@ uses
     StringIO,DialogIO,TxtScrIO;
 
 const
-  LINES = 887;
+  LINES = 890;
   help_data: array[1..LINES] of String[128] = (
     '@topic:general',
     'ÍËÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍ',
@@ -152,7 +152,7 @@ const
     '~Space~                    Advance to next row',
     '~[Alt] F2~                 Save current pattern to file',
     '~^F2~                      Save module in tiny format',
-    '~[Shift] F3~               Quick load recent pattern data from file',
+    '~[Shift] F3~               Quick load recent pattern data',
     '~Enter~                    Toggle Pattern Order and Pattern Editor',
     '',
     'NOTE SYSTEM: C,C#,D,D#,E,F,F#,G,G#,A,A#,B(H)',
@@ -202,7 +202,7 @@ const
     '~[Shift] Insert~           Insert new pattern',
     '~[Shift] Delete~           Delete pattern',
     '~Enter~                    Rename pattern / Multiple paste',
-    '~[Shift] F3~               Quick load recent pattern data from file',
+    '~[Shift] F3~               Quick load recent pattern data',
     '~Esc~                      Return to Pattern Editor or Pattern Order',
     '',
     '@topic:instrument_control',
@@ -228,8 +228,8 @@ const
     '~[Shift] M,B,S,T,C,H~      Toggle ~m~elodic and percussion (~B~D,~S~D,~T~T,T~C~,~H~H)',
     '~[Shift] F2~               Save instrument w/ fm-register macro to file',
     '~[Alt] F2~                 Save instrument bank to file',
-    '~^F2~                      Save instrument bank w/ macros to file',
-    '~[Shift] F3~               Quick load recent instrument data from file',
+    '~^F2~                      Save instrument bank w/ all macros to file',
+    '~[Shift] F3~               Quick load recent instrument data',
     '~Esc~                      Return to Pattern Editor or Pattern Order',
     '',
     '@topic:instrument_editor',
@@ -242,10 +242,12 @@ const
     '~[Shift] Tab~              Jump to previous setting',
     '~PgUp,PgDn (+,-)~          Adjust value',
     '~Space~                    Select item',
+    '~[Ctrl] "[","]"~           Change current instrument',
     '~MBoard keys <hold down>~  Preview instrument',
     '~Enter~                    Toggle carrier and modulator slot settings',
     '~[Ctrl] LShift/RShift~     Toggle ADSR preview OFF/ON',
-    '~[Shift] F3~               Quick load recent instrument data from file',
+    '~[Shift] M,B,S,T,C,H~      Toggle ~m~elodic and percussion (~B~D,~S~D,~T~T,T~C~,~H~H)',
+    '~[Shift] F2~               Save instrument w/ fm-register macro to file',
     '~Esc~                      Return to Instrument Control panel',
     '',
     '@topic:macro_editor',
@@ -285,7 +287,8 @@ const
     '~\~                        Toggle current item (switch types only)',
     '~Space~                    Toggle macro-preview mode',
     '~^Space~                   Toggle Key-Off loop within macro-preview mode',
-    '~[Shift] F3~               Quick load recent instrument data from file',
+    '~^F2~                      Save instrument bank w/ all macros to file',
+    '~^F3~                      Load arpeggio/vibrato macro table data from file',
     '~Esc~                      Return to Instrument Control panel',
     '',
     '@topic:macro_editor_(av)',

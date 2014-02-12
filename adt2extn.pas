@@ -4383,14 +4383,14 @@ const
   {_keyoff_loop: Boolean = FALSE;}
 
 const
-  new_keys: array[1..27] of Word = (kF1,kESC,kENTER,kSPACE,kTAB,kShTAB,kUP,kDOWN,
-                                    kCtrlO,kF2,kF3,kCtrlL,kCtrlS,
+  new_keys: array[1..29] of Word = (kF1,kESC,kENTER,kSPACE,kTAB,kShTAB,kUP,kDOWN,
+                                    kCtrlO,kF2,kCtrlF2,kF3,kCtrlF3,kCtrlL,kCtrlS,
                                     kCtENTR,kAltC,kAltP,kCtrlC,kCtrlV,
                                     kCtPgUP,kCtPgDN,kSPACE,kNPplus,kNPmins,
                                     kCtLbr,kCtRbr,
                                     kCtHOME,kCtEND);
 var
-  old_keys: array[1..27] of Word;
+  old_keys: array[1..29] of Word;
   temps,tstr: String;
   xstart,ystart,temp,temp1: Byte;
   fmreg_cursor_pos,
@@ -4555,7 +4555,12 @@ begin
     33: If songdata.dis_fmreg_col[instr][27] then
           result := TRUE;
   end;
-  _dis_fmreg_col := result;
+
+  If (fmreg_col in [14..28]) and
+     (songdata.instr_data[current_inst].perc_voice in [2..5]) then
+    result := TRUE;
+
+    _dis_fmreg_col := result;
 end;
 
 function _str1(def_chr: Char): String;
@@ -5016,6 +5021,7 @@ procedure refresh;
 var
   temp,max_value: Integer;
   d_factor: Real;
+  temp_str: String;
 
 begin
   For temp := 1 to 20 do
@@ -5460,6 +5466,60 @@ begin
         end;
   end;
 
+  Case songdata.instr_data[current_inst].perc_voice of
+    0: ShowCStr(vscreen,
+                xstart+01,ystart+24,
+                ' [MELODiC] ',
+                macro_background+macro_border,
+                macro_background+macro_hi_text);
+    1: ShowCStr(vscreen,
+                xstart+01,ystart+24,
+                ' [PERC:BD] ',
+                macro_background+macro_border,
+                macro_background+macro_hi_text);
+    2: ShowCStr(vscreen,
+                xstart+01,ystart+24,
+                ' [PERC:SD] ',
+                macro_background+macro_border,
+                macro_background+macro_hi_text);
+    3: ShowCStr(vscreen,
+                 xstart+01,ystart+24,
+                ' [PERC:TT] ',
+                macro_background+macro_border,
+                macro_background+macro_hi_text);
+    4: ShowCStr(vscreen,
+                xstart+01,ystart+24,
+                ' [PERC:TC] ',
+                macro_background+macro_border,
+                macro_background+macro_hi_text);
+    5: ShowCStr(vscreen,
+                xstart+01,ystart+24,
+                ' [PERC:HH] ',
+                macro_background+macro_border,
+                macro_background+macro_hi_text);
+  end;
+
+  If (songdata.instr_macros[current_inst].length <> 0) then temp_str := ' [~MACRO:FM'
+  else temp_str := ' ';
+
+  With songdata.macro_table[ptr_arpeggio_table^].arpeggio do
+    If (length <> 0) then // and (speed <> 0) then
+      If (temp_str <> ' ') then temp_str := temp_str+'+ARP'
+      else temp_str := temp_str+'[~MACRO:ARP';
+
+  With songdata.macro_table[ptr_vibrato_table^].vibrato do
+    If (length <> 0) then // and (speed <> 0) then
+      If (temp_str <> ' ') then temp_str := temp_str+'+ViB'
+      else temp_str := temp_str+'[~MACRO:ViB';
+
+  If (temp_str <> ' ') then temp_str := temp_str+'~] ';
+  
+  ShowCStr(vscreen,
+           xstart+11,ystart+24,
+           ExpStrR(temp_str,21+2,'Í'),
+           macro_background+macro_border,
+           macro_background+macro_hi_text);
+           
   _preview_indic_proc(0);
   move2screen_alt;
 end;
@@ -5794,10 +5854,10 @@ _jmp1:
   move_to_screen_area[4] := ystart+24+1;
   refresh;
 
-  move_to_screen_area[1] := xstart+2;
+  move_to_screen_area[1] := xstart+1;
   move_to_screen_area[2] := ystart+1;
   move_to_screen_area[3] := xstart+80;
-  move_to_screen_area[4] := ystart+23;
+  move_to_screen_area[4] := ystart+24;
 
   If (pos = 1) then GotoXY(xstart+17,ystart+4);
   ThinCursor;
@@ -6642,7 +6702,7 @@ _jmp2:
 
                    If nope then
                      If (fmreg_page < 255) then Inc(fmreg_page)
-                     else fmreg_page := 1;
+                     else If cycle_pattern then fmreg_page := 1;
                  end;
 
              Case is_environment.keystroke of
@@ -6740,18 +6800,18 @@ _jmp2:
                         else If (ptr_vibrato_table^ <> 0) then pos := 20;
 
                kUP: If (fmreg_page > 1) then Dec(fmreg_page)
-                    else fmreg_page := 255;
+                    else If cycle_pattern then fmreg_page := 255;
 
                kDOWN: If (fmreg_page < 255) then Inc(fmreg_page)
-                      else fmreg_page := 1;
+                      else If cycle_pattern then fmreg_page := 1;
 
                kShUP: If shift_pressed then
                         If (fmreg_page > 1) then Dec(fmreg_page)
-                        else fmreg_page := 255;
+                        else If cycle_pattern then fmreg_page := 255;
 
                kShDOWN: If shift_pressed then
                           If (fmreg_page < 255) then Inc(fmreg_page)
-                          else fmreg_page := 1;
+                          else If cycle_pattern then fmreg_page := 1;
 
                kPgUP: If (fmreg_page > 16) then Dec(fmreg_page,16)
                       else fmreg_page := 1;
@@ -6792,22 +6852,24 @@ _jmp2:
                           Dec(fmreg_hpos);
                           _scroll_cur_left;
                         end
-                      else begin
-                             fmreg_hpos := 35;
-                             fmreg_cursor_pos := 31;
-                             fmreg_left_margin := pos5[fmreg_hpos]-31+1;
-                           end;
+                      else If cycle_pattern then
+                             begin
+                               fmreg_hpos := 35;
+                               fmreg_cursor_pos := 31;
+                               fmreg_left_margin := pos5[fmreg_hpos]-31+1;
+                             end;
 
                kRIGHT: If (fmreg_hpos < 35) then
                          begin
                            Inc(fmreg_hpos);
                            _scroll_cur_right;
                          end
-                       else begin
-                              fmreg_hpos := 1;
-                              fmreg_cursor_pos := 1;
-                              fmreg_left_margin := 1;
-                            end;
+                       else If cycle_pattern then 
+                              begin
+                                fmreg_hpos := 1;
+                                fmreg_cursor_pos := 1;
+                                fmreg_left_margin := 1;
+                              end;
 
                kTAB: If (ptr_arpeggio_table^ <> 0) then pos := 8
                      else If (ptr_vibrato_table^ <> 0) then pos := 14
@@ -6835,7 +6897,7 @@ _jmp2:
                         If (clipboard.object_type = objMacroTableLine) and
                            (clipboard.mcrtab_type = mttFM_reg_table) then
                           If (fmreg_page < 255) then Inc(fmreg_page)
-                          else fmreg_page := 1;
+                          else If cycle_pattern then fmreg_page := 1;
                       end;
 
                kCtrlN: begin
@@ -6844,7 +6906,7 @@ _jmp2:
                          songdata.instr_macros[instr].data[fmreg_page].fm_data.
                            FEEDBACK_FM XOR $80;
                          If (fmreg_page < 255) then Inc(fmreg_page)
-                         else fmreg_page := 1;
+                         else If cycle_pattern then fmreg_page := 1;
                        end;
 
                kAltN:  If ctrl_pressed then
@@ -6878,7 +6940,7 @@ _jmp2:
                               end;
 
                             If (fmreg_page < 255) then Inc(fmreg_page)
-                            else fmreg_page := 1;
+                            else If cycle_pattern then fmreg_page := 1;
                           end
                         else call_pickup_proc := TRUE;
 
@@ -7158,7 +7220,7 @@ _jmp2:
                              end;
 
                              If (fmreg_page < 255) then Inc(fmreg_page)
-                             else fmreg_page := 1;
+                             else If cycle_pattern then fmreg_page := 1;
                            end
                        else begin
                               FillChar(songdata.instr_macros[instr].data[fmreg_page].fm_data,
@@ -7167,7 +7229,7 @@ _jmp2:
                               songdata.instr_macros[instr].data[fmreg_page].panning := 0;
                               songdata.instr_macros[instr].data[fmreg_page].duration := 0;
                               If (fmreg_page < 255) then Inc(fmreg_page)
-                              else fmreg_page := 1;
+                              else If cycle_pattern then fmreg_page := 1;
                             end;
 
                kCtBkSp: Case fmreg_hpos of
@@ -7380,8 +7442,31 @@ _jmp2:
                    end;
 
                    If nope then
-                     If (fmreg_page < 255) then Inc(fmreg_page)
-                     else fmreg_page := 1;
+                     Case fmreg_hpos of
+                       6,19,30,31,
+                       34:    If NOT (command_typing = 2) then
+                                begin
+                                  If (fmreg_page < 255) then Inc(fmreg_page)
+                                  else If cycle_pattern then fmreg_page := 1;
+                                end
+                              else begin
+                                     Inc(fmreg_hpos);
+                                     _scroll_cur_right;
+                                   end;  
+                       7,20,32,
+                       35:    begin
+                                If (command_typing = 2) then
+                                  begin
+                                    If (fmreg_hpos <> 32) then Dec(fmreg_hpos)
+                                    else Dec(fmreg_hpos,2);
+                                    _scroll_cur_left;
+                                  end;  
+                                If (fmreg_page < 255) then Inc(fmreg_page)
+                                else If cycle_pattern then fmreg_page := 1;
+                              end;
+                       else If (fmreg_page < 255) then Inc(fmreg_page)
+                            else If cycle_pattern then fmreg_page := 1;
+                     end;
                  end;
 
              If (UpCase(CHAR(LO(is_environment.keystroke))) in ['L','C','R']) and
@@ -7401,7 +7486,7 @@ _jmp2:
 
                    If nope then
                      If (fmreg_page < 255) then Inc(fmreg_page)
-                     else fmreg_page := 1;
+                     else If cycle_pattern then fmreg_page := 1;
                  end;
 
              If (UpCase(CHAR(LO(is_environment.keystroke))) in ['+','-']) and
@@ -7414,7 +7499,7 @@ _jmp2:
                    end;
 
                    If (fmreg_page < 255) then Inc(fmreg_page)
-                   else fmreg_page := 1;
+                   else If cycle_pattern then fmreg_page := 1;
                   end;
 
              If shift_pressed and ((is_environment.keystroke = kUP) or (is_environment.keystroke = kDOWN) or
@@ -8497,10 +8582,10 @@ _jmp2:
                         else pos := 20;
 
                kUP,kShUP: If (arpeggio_page > 1) then Dec(arpeggio_page)
-                          else arpeggio_page := 255;
+                          else If cycle_pattern then arpeggio_page := 255;
 
                kDOWN,kShDOWN: If (arpeggio_page < 255) then Inc(arpeggio_page)
-                              else arpeggio_page := 1;
+                              else If cycle_pattern then arpeggio_page := 1;
 
                kPgUP: If (arpeggio_page > 16) then Dec(arpeggio_page,16)
                       else arpeggio_page := 1;
@@ -8531,7 +8616,7 @@ _jmp2:
                         If (clipboard.object_type = objMacroTableLine) and
                            (clipboard.mcrtab_type = mttArpeggio_table) then
                           If (arpeggio_page < 255) then Inc(arpeggio_page)
-                          else arpeggio_page := 1;
+                          else If cycle_pattern then arpeggio_page := 1;
                       end;
 
                kNPplus: If shift_pressed then
@@ -8563,7 +8648,7 @@ _jmp2:
                          songdata.macro_table[ptr_arpeggio_table^].
                          arpeggio.data[arpeggio_page] := 0;
                          If (arpeggio_page < 255) then Inc(arpeggio_page)
-                         else arpeggio_page := 1;
+                         else If cycle_pattern then arpeggio_page := 1;
                        end;
 
                kINSERT: begin
@@ -8658,12 +8743,12 @@ _jmp2:
                          Case is_environment.keystroke of
                            kUP:
                              If (arpeggio_page > 1) then Dec(arpeggio_page)
-                             else arpeggio_page := 255;
+                             else If cycle_pattern then arpeggio_page := 255;
 
                            kDOWN,
                            kENTER:
                              If (arpeggio_page < 255) then Inc(arpeggio_page)
-                             else arpeggio_page := 1;
+                             else If cycle_pattern then arpeggio_page := 1;
                          end;
 
                        If NOT nope then
@@ -8736,12 +8821,12 @@ _jmp2:
                          Case is_environment.keystroke of
                            kUP:
                              If (arpeggio_page > 1) then Dec(arpeggio_page)
-                             else arpeggio_page := 255;
+                             else If cycle_pattern then arpeggio_page := 255;
 
                            kDOWN,
                            kENTER:
                              If (arpeggio_page < 255) then Inc(arpeggio_page)
-                             else arpeggio_page := 1;
+                             else If cycle_pattern then arpeggio_page := 1;
                          end;
 
                        If NOT nope then
@@ -10017,10 +10102,10 @@ _jmp2:
                         else pos := 13;
 
                kUP,kShUP: If (vibrato_page > 1) then Dec(vibrato_page)
-                          else vibrato_page := 255;
+                          else If cycle_pattern then vibrato_page := 255;
 
                kDOWN,kShDOWN: If (vibrato_page < 255) then Inc(vibrato_page)
-                              else vibrato_page := 1;
+                              else If cycle_pattern then vibrato_page := 1;
 
                kPgUP: If (vibrato_page > 16) then Dec(vibrato_page,16)
                       else vibrato_page := 1;
@@ -10055,7 +10140,7 @@ _jmp2:
                         If (clipboard.object_type = objMacroTableLine) and
                            (clipboard.mcrtab_type = mttVibrato_table) then
                           If (vibrato_page < 255) then Inc(vibrato_page)
-                          else vibrato_page := 1;
+                          else If cycle_pattern then vibrato_page := 1;
                       end;
 
                kNPplus: If shift_pressed then
@@ -10073,7 +10158,7 @@ _jmp2:
                          songdata.macro_table[ptr_vibrato_table^].
                          vibrato.data[vibrato_page] := 0;
                          If (vibrato_page < 255) then Inc(vibrato_page)
-                         else vibrato_page := 1;
+                         else If cycle_pattern then vibrato_page := 1;
                        end;
 
                kINSERT: begin
@@ -10165,8 +10250,22 @@ _jmp2:
                    end;
 
                    If nope then
-                     If (vibrato_page < 255) then Inc(vibrato_page)
-                     else vibrato_page := 1;
+                     Case vibrato_hpos of
+                       1,3: begin
+                              If (command_typing = 2) and
+                                 NOT (UpCase(CHAR(LO(is_environment.keystroke))) in ['-','+']) and
+                                 (vibrato_hpos = 3) then Dec(vibrato_hpos);
+                              If (vibrato_page < 255) then Inc(vibrato_page)
+                              else If cycle_pattern then vibrato_page := 1;
+                            end;
+                       2:   If NOT (command_typing = 2) or
+                               (UpCase(CHAR(LO(is_environment.keystroke))) in ['-','+']) then
+                              begin
+                                If (vibrato_page < 255) then Inc(vibrato_page)
+                                else If cycle_pattern then vibrato_page := 1;
+                              end
+                            else Inc(vibrato_hpos);  
+                     end;
                  end;
            end;
       end;
@@ -10253,14 +10352,16 @@ _jmp2:
           ThinCursor;
         end;
       emulate_screen;
-    until (is_environment.keystroke = kESC)   or
-          (is_environment.keystroke = kAltC)  or
-          (is_environment.keystroke = kCtrlO) or
-          (is_environment.keystroke = kF1)    or
-          (is_environment.keystroke = kF2)    or
-          (is_environment.keystroke = kF3)    or
-          (is_environment.keystroke = kCtrlL) or
-          (is_environment.keystroke = kCtrlS) or
+    until (is_environment.keystroke = kESC)    or
+          (is_environment.keystroke = kAltC)   or
+          (is_environment.keystroke = kCtrlO)  or
+          (is_environment.keystroke = kF1)     or
+          (is_environment.keystroke = kF2)     or
+          (is_environment.keystroke = kCtrlF2) or
+          (is_environment.keystroke = kF3)     or
+          (is_environment.keystroke = kCtrlF3) or
+          (is_environment.keystroke = kCtrlL)  or
+          (is_environment.keystroke = kCtrlS)  or
           call_pickup_proc or
           call_pickup_proc2;
 
@@ -10385,7 +10486,7 @@ _jmp2:
                        end;
 
                      If (fmreg_page < 255) then Inc(fmreg_page)
-                     else fmreg_page := 1;
+                     else If cycle_pattern then fmreg_page := 1;
                    end;
                  GOTO _jmp1;
                end;
@@ -10396,14 +10497,24 @@ _jmp2:
                else FILE_save('a2w');
                GOTO _jmp1;
              end;
+
+    kCtrlF2: begin
+               quick_cmd := FALSE;
+               If NOT arp_vib_mode then FILE_save('a2w');
+               GOTO _jmp1;
+             end;             
     kF3,
     kCtrlL:  begin
-               If NOT arp_vib_mode then temps := '*.a2f$'
+               If NOT arp_vib_mode and 
+                 ((is_environment.keystroke = kF3) or
+                  (is_environment.keystroke = kCtrlL)) then temps := '*.a2f$'
                else temps := '*.a2w$';
                quick_cmd := FALSE;
                If arp_vib_mode then _arp_vib_loader := TRUE;
                If (FILE_open(temps) <> NULL) then
-                 If NOT arp_vib_mode then
+                 If NOT arp_vib_mode and
+                    ((is_environment.keystroke = kF3) or
+                     (is_environment.keystroke = kCtrlL)) then
                    begin
                      pos := 1;
                      fmreg_hpos := 1;
@@ -10418,6 +10529,27 @@ _jmp2:
                update_instr_data(instrum_page);
                GOTO _jmp1;
              end;
+
+    kCtrlF3: If NOT arp_vib_mode then
+               begin
+                 temps := '*.a2w$';
+                 quick_cmd := FALSE;
+                 _arp_vib_loader := TRUE;
+                 If (FILE_open(temps) <> NULL) then
+                   begin
+                     pos := 1;
+                     fmreg_hpos := 1;
+                     fmreg_page := 1;
+                     fmreg_left_margin := 1;
+                     fmreg_cursor_pos := 1;
+                     arpeggio_page := 1;
+                     vibrato_hpos := 1;
+                     vibrato_page := 1;
+                   end;
+
+                 update_instr_data(instrum_page);
+                 GOTO _jmp1;
+               end;
 
     kCtrlO:  begin OCTAVE_CONTROL; GOTO _jmp1; end;
 
@@ -10624,10 +10756,20 @@ _jmp1:
   If (ExtOnly(temp) = 'a2w') then
     If _arp_vib_loader then
       begin
-        a2w_file_loader(TRUE);
+        index := Dialog('ALL UNSAVED ARPEGGiO/ViBRATO MACRO DATA WiLL BE LOST$'+
+                        'DO YOU WiSH TO CONTiNUE?$',
+                        '~Y~UP$~N~OPE$',' A2W LOADER ',1);
+        If (dl_environment.keystroke <> kESC) and (index = 1) then    
+          a2w_file_loader(TRUE);
         _arp_vib_loader := FALSE;
       end  
-    else  a2w_file_loader(FALSE);
+    else begin
+           index := Dialog('ALL UNSAVED iNSTRUMENT AND MACRO DATA WiLL BE LOST$'+
+                           'DO YOU WiSH TO CONTiNUE?$',
+                           '~Y~UP$~N~OPE$',' A2W LOADER ',1);
+           If (dl_environment.keystroke <> kESC) and (index = 1) then    
+             a2w_file_loader(FALSE);
+         end;  
 
   If (ExtOnly(temp) = 'bnk') then bnk_file_loader;
   If (ExtOnly(temp) = 'cif') then cif_file_loader;

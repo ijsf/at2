@@ -2293,7 +2293,8 @@ begin
                  get_chunk(pattern,pattern_page,count_channel(hpos),chunk);
                  chunk.note := NULL;
                  put_chunk(pattern,pattern_page,count_channel(hpos),chunk);
-                 If page < PRED(songdata.patt_len) then Inc(page) else page := 0;
+                 If page < PRED(songdata.patt_len) then Inc(page)
+                 else If cycle_pattern then page := 0;                 
                end;
 
       kBkSPC:  begin
@@ -2644,11 +2645,10 @@ begin
                    no_status_refresh := FALSE;
                  end;
 
-      kF1:
-              If NOT (command_typing <> 0) and (count_pos(hpos) in [2,3]) then HELP('effects')
-                else If (command_typing <> 0) and (count_pos(hpos) in [4..9]) then HELP('effects')
-                  else If debugging and (play_status = isStopped) then HELP('midiboard')
-                    else HELP('pattern_editor');
+      kF1:     If NOT (command_typing <> 0) and (count_pos(hpos) in [2,3]) then HELP('effects')
+               else If (command_typing <> 0) and (count_pos(hpos) in [4..9]) then HELP('effects')
+                    else If debugging and (play_status = isStopped) then HELP('midiboard')
+                         else HELP('pattern_editor');
       kF2,
       kShF2,
       kCtrlS:  begin
@@ -3182,7 +3182,7 @@ begin
                 end;
 
         fkey_X := fkey;
-        If NOT both_shifts_pressed and (
+        If {NOT both_shifts_pressed and} (
            (fkey = kSPACE) or (((fkey = kWeird) or (flag AND (count_pos(hpos) = 0))) and
                                NOT ((fkey = kWeird) and (count_pos(hpos) >= 2)) and
                                NOT (is_4op_chan(count_channel(hpos)) and
