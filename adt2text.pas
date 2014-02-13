@@ -5,7 +5,7 @@ const
 {__AT2REV__}at2rev  = '050';
 {__AT2VER__}at2ver  = '2.4.10';
 {__AT2DAT__}at2date = '02-13-2014';
-{__AT2LNK__}at2link = '2:33pm';
+{__AT2LNK__}at2link = '7:54pm';
 
 const
   ascii_line_01 = 'Ú-ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ--ùú               úù-¿';
@@ -99,7 +99,7 @@ const
     '~[Shift] F11~              Toggle default (AdT2) behavior mode (optional)',
     '~F11~                      Toggle FastTracker behavior mode (optional)',
     '~F12~                      Toggle Scream Tracker behavior mode (optional)',
-    '~[Alt] F11/F12~            Toggle recording to WAV file (on/off)',
+    '~[Alt] F11/F12~            Toggle recording to WAV file ON/OFF',
     '',
     '~[Ctrl][Tab] Arrows~       Scroll screen contents',
     '',

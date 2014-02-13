@@ -4369,6 +4369,7 @@ var
   temp: Byte;
 
 begin
+  flush_WAV_data;
   replay_forbidden := TRUE;
   play_status := isStopped;
   fade_out_volume := 63;
@@ -4788,6 +4789,7 @@ begin
     end
   else init_buffers;
 
+  wav_buffer_len := 0;
   FillData(songdata,SizeOf(songdata),0);
   FillData(songdata.pattern_order,SizeOf(songdata.pattern_order),$080);
   FillData(pattdata^,PATTERN_SIZE*max_patterns,0);
