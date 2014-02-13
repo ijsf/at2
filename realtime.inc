@@ -219,10 +219,10 @@ begin
          main_background+main_border);
 
   temps := BaseNameOnly(songdata_title);
-      
+
   While (8+_name_scrl_shift > Length(temps)) and (_name_scrl_shift > 0) do
     Dec(_name_scrl_shift);
-  
+
   show_str(03,06,'['+ExpStrR(iCASE(Copy(temps,1+_name_scrl_shift,8)),8,' ')+']',
        status_background+status_dynamic_txt);
   show_str(03,07,'['+ExpStrR(iCASE(Copy(ExtOnly(songdata_title),1,3)),3,' ')+']',
@@ -237,27 +237,28 @@ begin
         else begin
                _name_scrl_shift_ctr := -1;
                _name_scrl_pending_frames := _name_scrl_pending_frames*10;
-             end  
+             end
       else If (_name_scrl_shift > 0) then Inc(_name_scrl_shift,_name_scrl_shift_ctr)
            else begin
                   _name_scrl_shift_ctr := 1;
                   _name_scrl_pending_frames := _name_scrl_pending_frames*50;
-                end;        
+                end;
     end;
-  
+
   If NOT module_archived then
     show_str(09,07,#29,
          status_background+status_dynamic_txt)
   else show_str(09,07,'อ',
             status_background+status_border);
 
-  If (sdl_opl3_emulator = 0) then temps := 'MME'
-  else temps := 'DBE';
-
   If NOT (sdl_screen_mode <> 0) and (@mn_environment.ext_proc_rt <> NIL) then
-    show_str(13,01,temps,main_background+main_behavior)
-  else show_str(08,07,'['+temps+']',main_background+main_behavior);
-  
+    If (sdl_opl3_emulator <> 0) then
+	  show_str(13,01,'WAV',main_background+main_behavior)
+    else show_str(13,01,'ฤฤฤ',main_background+main_border)
+  else If (sdl_opl3_emulator = 1) then
+         show_str(08,07,'[WAV]',main_background+main_behavior)
+       else show_str(08,07,'อออออ',status_background+status_border);
+
   If (command_typing = 1) then
     If NOT cycle_pattern then
       show_str(MAX_COLUMNS-20,MAX_PATTERN_ROWS+12,'AT',main_background+main_behavior)

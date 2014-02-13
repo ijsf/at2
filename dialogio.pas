@@ -1327,11 +1327,11 @@ begin { Fselect }
     If (sdl_screen_mode = 0) then
       temp2 := Menu(menudat,01,01,lastp,
                     1+23+1,work_MaxLn-5,fstream.count,' '+
-                    DietStr(path_filter(temp3),40)+' ')
+                    iCASE(DietStr(path_filter(temp3),40))+' ')
     else                    
       temp2 := Menu(menudat,01,01,lastp,
                     1+23+1,work_MaxLn-15,fstream.count,' '+
-                    DietStr(path_filter(temp3),40)+' ');
+                    iCASE(DietStr(path_filter(temp3),40))+' ');
  
     mn_setting.reverse_use := FALSE;
     mn_environment.context := '';

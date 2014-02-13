@@ -146,6 +146,7 @@ begin { MAIN }
   emulate_screen;
   SDL_Delay(5000);
   sys_deinit;
+  snd_Deinit;
 
   { terminating program (phase:4) }
   HALT(0); { the last opportunity to properly exit?! :) }

@@ -1,9 +1,9 @@
 MIME-Version: 1.0
-Content-Type: multipart/related; boundary="----=_NextPart_01CF27CB.A9169EB0"
+Content-Type: multipart/related; boundary="----=_NextPart_01CF28C8.642154F0"
 
 This document is a Single File Web Page, also known as a Web Archive file.  If you are seeing this message, your browser or editor doesn't support Web Archive files.  Please download a browser that supports Web Archive, such as Windows® Internet Explorer®.
 
-------=_NextPart_01CF27CB.A9169EB0
+------=_NextPart_01CF28C8.642154F0
 Content-Location: file:///C:/EF521992/adtrack2.htm
 Content-Transfer-Encoding: quoted-printable
 Content-Type: text/html; charset="us-ascii"
@@ -33,15 +33,15 @@ w\:* {behavior:url(#default#VML);}
   <o:Author>Stanislav Baranec</o:Author>
   <o:LastAuthor>Stanislav Baranec</o:LastAuthor>
   <o:Revision>2</o:Revision>
-  <o:Created>2014-02-12T07:23:00Z</o:Created>
-  <o:LastSaved>2014-02-12T07:23:00Z</o:LastSaved>
+  <o:Created>2014-02-13T13:32:00Z</o:Created>
+  <o:LastSaved>2014-02-13T13:32:00Z</o:LastSaved>
   <o:Pages>27</o:Pages>
-  <o:Words>12376</o:Words>
-  <o:Characters>70549</o:Characters>
+  <o:Words>12362</o:Words>
+  <o:Characters>70466</o:Characters>
   <o:Company>Siemens AG</o:Company>
   <o:Lines>587</o:Lines>
   <o:Paragraphs>165</o:Paragraphs>
-  <o:CharactersWithSpaces>82760</o:CharactersWithSpaces>
+  <o:CharactersWithSpaces>82663</o:CharactersWithSpaces>
   <o:Version>12.00</o:Version>
  </o:DocumentProperties>
 </xml><![endif]-->
@@ -434,7 +434,7 @@ n"/>
 @font-face
 	{font-family:SimSun;
 	panose-1:2 1 6 0 3 1 1 1 1 1;
-	mso-font-alt:???|||?||????????|????\02C7\00A7?????\02C7\00A6;
+	mso-font-alt:???|||?||????????|?????|?\00A1\00A7????;
 	mso-font-charset:134;
 	mso-generic-font-family:auto;
 	mso-font-pitch:variable;
@@ -458,8 +458,8 @@ n"/>
 @font-face
 	{font-family:Dotum;
 	panose-1:2 11 6 0 0 1 1 1 1 1;
-	mso-font-alt:??\02D8\00A8\02D8\00E7E\02D8\00A7EcE\02D8\00A7E\02D8\00A8cEcE=
-\02D8\00A8\02D8\00E7E\02D8\00A7EcE;
+	mso-font-alt:??\00A2\00AEE\00A2\00AE\00A1\00D7\00A1\00CB\00A2\00E7\00A2\00=
+AE\00A1\00BF\00A2\00AEE\00A2\00AE\00A1\00D7cE\00A2\00AEE\00A2\00AE;
 	mso-font-charset:129;
 	mso-generic-font-family:swiss;
 	mso-font-pitch:variable;
@@ -467,7 +467,7 @@ n"/>
 @font-face
 	{font-family:SimHei;
 	panose-1:2 1 6 9 6 1 1 1 1 1;
-	mso-font-alt:??|||?||????????|????\02C7\00A7?????\02C7\00A6\02C7;
+	mso-font-alt:??|||?||????????|?????|?\00A1\00A7?????;
 	mso-font-charset:134;
 	mso-generic-font-family:modern;
 	mso-font-pitch:fixed;
@@ -492,8 +492,8 @@ n"/>
 @font-face
 	{font-family:Gulim;
 	panose-1:2 11 6 0 0 1 1 1 1 1;
-	mso-font-alt:\02D8\00A8\02D8\00E7E\02D8\00A7EcE\02D8\00A7E\02D8\00A8cEcE\0=
-2D8\00A8\02D8\00E7E\02D8\00A7EcE\02D8\00A7;
+	mso-font-alt:\00A2\00AEE\00A2\00AE\00A1\00D7\00A1\00CB\00A2\00E7\00A2\00AE=
+\00A1\00BF\00A2\00AEE\00A2\00AE\00A1\00D7cE\00A2\00AEE\00A2\00AE\00A1\00D7;
 	mso-font-charset:129;
 	mso-generic-font-family:swiss;
 	mso-font-pitch:variable;
@@ -3252,6 +3252,17 @@ span.PlainTextChar
 	mso-ascii-font-family:Consolas;
 	mso-hansi-font-family:Consolas;
 	mso-bidi-font-family:Consolas;}
+span.BalloonTextChar
+	{mso-style-name:"Balloon Text Char";
+	mso-style-noshow:yes;
+	mso-style-priority:99;
+	mso-style-unhide:no;
+	mso-style-locked:yes;
+	mso-style-link:"Balloon Text";
+	font-family:"Tahoma","sans-serif";
+	mso-ascii-font-family:Tahoma;
+	mso-hansi-font-family:Tahoma;
+	mso-bidi-font-family:Tahoma;}
 p.msochpdefault, li.msochpdefault, div.msochpdefault
 	{mso-style-name:msochpdefault;
 	mso-style-unhide:no;
@@ -3264,17 +3275,6 @@ p.msochpdefault, li.msochpdefault, div.msochpdefault
 	font-family:"Arial","sans-serif";
 	mso-fareast-font-family:"Times New Roman";
 	mso-fareast-theme-font:minor-fareast;}
-span.BalloonTextChar
-	{mso-style-name:"Balloon Text Char";
-	mso-style-noshow:yes;
-	mso-style-priority:99;
-	mso-style-unhide:no;
-	mso-style-locked:yes;
-	mso-style-link:"Balloon Text";
-	font-family:"Tahoma","sans-serif";
-	mso-ascii-font-family:Tahoma;
-	mso-hansi-font-family:Tahoma;
-	mso-bidi-font-family:Tahoma;}
 p.msopapdefault, li.msopapdefault, div.msopapdefault
 	{mso-style-name:msopapdefault;
 	mso-style-unhide:no;
@@ -3513,7 +3513,7 @@ sp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 sp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nb=
 sp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;2.4.09&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nb=
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;2.4.10&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nb=
 sp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 &nbsp;&#9474;</span></p>
@@ -3547,10 +3547,10 @@ sp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#9474;</span></p>
 
 <p class=3DMsoPlainText><span style=3D'font-family:"Courier New"'>&nbsp;&nb=
 sp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-<i style=3D'mso-bidi-font-style:normal'>the author take no responsibility f=
-or the
-quality</i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbs=
-p;&nbsp;
+<i style=3D'mso-bidi-font-style:normal'>the author takes no responsibility =
+for
+the quality</i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=
+&nbsp;
 &#9474;</span></p>
 
 <p class=3DMsoPlainText><span style=3D'font-family:"Courier New"'>&nbsp;&nb=
@@ -4455,8 +4455,9 @@ p;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Play current pattern or order only</span></p>
 
 <p class=3DMsoPlainText><span style=3D'font-family:"Courier New"'>&nbsp;[Ct=
-rl] F8&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nb=
-sp;&nbsp;&nbsp;&nbsp;
+rl]
+F8&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&=
+nbsp;&nbsp;&nbsp;
 @F8 from current line &#9488;</span></p>
 
 <p class=3DMsoPlainText><span style=3D'font-family:"Courier New"'>&nbsp;[Ct=
@@ -4599,8 +4600,7 @@ ft&nbsp;
 Rewind current pattern (with Trace)</span></p>
 
 <p class=3DMsoPlainText><span style=3D'font-family:"Courier New"'>&nbsp;^Ri=
-ght
-(Down)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+ght (Down)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Fast-Forward (with Trace)</span></p>
 
 <p class=3DMsoPlainText><span style=3D'font-family:"Courier New"'>&nbsp;^E&=
@@ -4734,20 +4734,13 @@ Toggle FastTracker behavior mode (optional)</span></p>
 sp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Toggle Scream Tracker behavior mode (optional)</span></p>
 
-<p class=3DMsoPlainText><span style=3D'font-family:"Courier New"'>&nbsp;[Al=
-t]
-F11&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=
+<p class=3DMsoPlainText><span style=3D'font-family:"Courier New"'><span
+style=3D'mso-spacerun:yes'>&nbsp;</span>[Alt] F11/F12<span
+style=3D'mso-spacerun:yes'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=
 &nbsp;&nbsp;&nbsp;
-Toggle MAME OPL3 emulation core</span></p>
+</span>Toggle recording to WAV file (on/off)<o:p></o:p></span></p>
 
-<p class=3DMsoPlainText><span style=3D'font-family:"Courier New"'>&nbsp;[Al=
-t]
-F12&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=
-&nbsp;&nbsp;&nbsp;
-Toggle DOSBox OPL3 emulation core</span></p>
-
-<p class=3DMsoPlainText><span style=3D'font-family:"Courier New"'>&nbsp;</s=
-pan></p>
+<p class=3DMsoPlainText><o:p>&nbsp;</o:p></p>
 
 <p class=3DMsoPlainText><span style=3D'font-family:"Courier New"'>&nbsp;[Ct=
 rl][Tab]
@@ -5411,9 +5404,10 @@ instrument bank w/ all macros to file</span></p>
 
 <p class=3DMsoPlainText><span style=3D'font-family:"Courier New"'><span
 style=3D'mso-spacerun:yes'>&nbsp;</span>[Shift] F3<span
+style=3D'mso-spacerun:yes'>&nbsp; </span><span
 style=3D'mso-spacerun:yes'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-</span>Quick load recent instrument data<o:p></o:p></span></p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>Quick
+load recent instrument data<o:p></o:p></span></p>
 
 <p class=3DMsoPlainText><span style=3D'font-family:"Courier New"'>&nbsp;Esc=
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nb=
@@ -5498,9 +5492,10 @@ and percussion (BD,SD,TT,TC,HH)<o:p></o:p></span></p>
 
 <p class=3DMsoPlainText><span style=3D'font-family:"Courier New"'><span
 style=3D'mso-spacerun:yes'>&nbsp;</span>[Shift] F2<span
+style=3D'mso-spacerun:yes'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span><span
 style=3D'mso-spacerun:yes'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-</span>Save instrument w/ fm-register macro to file<o:p></o:p></span></p>
+&nbsp;</span>Save
+instrument w/ fm-register macro to file<o:p></o:p></span></p>
 
 <p class=3DMsoPlainText><span style=3D'font-family:"Courier New"'>&nbsp;Esc=
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nb=
@@ -5557,8 +5552,10 @@ Up,Down&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Synchronous
 navigation within tables</span></p>
 
 <p class=3DMsoPlainText><span style=3D'font-family:"Courier New"'>&nbsp;[Sh=
-ift] Home,End&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Move to the start/end of current line in table</span></p>
+ift]
+Home,End&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Move to the start/=
+end
+of current line in table</span></p>
 
 <p class=3DMsoPlainText><span style=3D'font-family:"Courier New"'>&nbsp;^Le=
 ft,^Right&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=
@@ -6005,9 +6002,9 @@ pan></p>
 Down,Left,Right
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Cursor navigation</span></p>
 
-<p class=3DMsoPlainText><span style=3D'font-family:"Courier New"'>&nbsp;Tab=
- (Enter)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&=
-nbsp;&nbsp;
+<p class=3DMsoPlainText><span style=3D'font-family:"Courier New"'>&nbsp;Tab
+(Enter)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&n=
+bsp;&nbsp;
 Jump to next variable field</span></p>
 
 <p class=3DMsoPlainText><span style=3D'font-family:"Courier New"'>&nbsp;[Sh=
@@ -8111,8 +8108,9 @@ nt-family:
 <p class=3DMsoPlainText><span style=3D'font-family:"Courier New"'>&nbsp;</s=
 pan></p>
 
-<p class=3DMsoPlainText><span style=3D'font-family:"Courier New"'>&nbsp;This
-command executes both Vibrato and Volume slide.</span></p>
+<p class=3DMsoPlainText><span style=3D'font-family:"Courier New"'>&nbsp;Thi=
+s command
+executes both Vibrato and Volume slide.</span></p>
 
 <p class=3DMsoPlainText><span style=3D'font-family:"Courier New"'>&nbsp;Par=
 ameter
@@ -8780,8 +8778,9 @@ nt-family:
 <p class=3DMsoPlainText><span style=3D'font-family:"Courier New"'>&nbsp;</s=
 pan></p>
 
-<p class=3DMsoPlainText><span style=3D'font-family:"Courier New"'>&nbsp;This
-command executes both Arpeggio and Fine volume slide.</span></p>
+<p class=3DMsoPlainText><span style=3D'font-family:"Courier New"'>&nbsp;Thi=
+s command
+executes both Arpeggio and Fine volume slide.</span></p>
 
 <p class=3DMsoPlainText><span style=3D'font-family:"Courier New"'>&nbsp;Par=
 ameter
@@ -9396,9 +9395,8 @@ nt-family:
 <p class=3DMsoPlainText><span style=3D'font-family:"Courier New"'>&nbsp;</s=
 pan></p>
 
-<p class=3DMsoPlainText><span style=3D'font-family:"Courier New"'>&nbsp;ADS=
-R command.
-Parameter 'x' gives the value.</span></p>
+<p class=3DMsoPlainText><span style=3D'font-family:"Courier New"'>&nbsp;ADSR
+command. Parameter 'x' gives the value.</span></p>
 
 <p class=3DMsoPlainText><span style=3D'font-family:"Courier New"'>&nbsp;For=
  more
@@ -10550,9 +10548,9 @@ nt-family:
 <p class=3DMsoPlainText><span style=3D'font-family:"Courier New"'>&nbsp;</s=
 pan></p>
 
-<p class=3DMsoPlainText><span style=3D'font-family:"Courier New"'>&nbsp;This
-command sets the modulator's tremolo on-or-off for current instrument.</spa=
-n></p>
+<p class=3DMsoPlainText><span style=3D'font-family:"Courier New"'>&nbsp;Thi=
+s command
+sets the modulator's tremolo on-or-off for current instrument.</span></p>
 
 <p class=3DMsoPlainText><span style=3D'font-family:"Courier New"'>&nbsp;Par=
 ameter
@@ -11108,8 +11106,9 @@ style=3D'font-family:"Courier New"'> FiNE-TUNE DOWN</span></p>
 <p class=3DMsoPlainText><span style=3D'font-family:"Courier New"'>&nbsp;</s=
 pan></p>
 
-<p class=3DMsoPlainText><span style=3D'font-family:"Courier New"'>&nbsp;This
-command fine-tunes frequency down as stated above.</span></p>
+<p class=3DMsoPlainText><span style=3D'font-family:"Courier New"'>&nbsp;Thi=
+s command
+fine-tunes frequency down as stated above.</span></p>
 
 <p class=3DMsoPlainText><span style=3D'font-family:"Courier New"'>&nbsp;</s=
 pan></p>
@@ -11722,8 +11721,8 @@ ilable
 tracks in the Initial Lock Settings.</span></p>
 
 <p class=3DMsoPlainText><span style=3D'font-family:"Courier New"'>&nbsp;For=
- more
-information see chapter V, part &quot;Lock track volume&quot;.</span></p>
+ more information
+see chapter V, part &quot;Lock track volume&quot;.</span></p>
 
 <p class=3DMsoPlainText><span style=3D'font-family:"Courier New"'>&nbsp;</s=
 pan></p>
@@ -11923,8 +11922,8 @@ h range
 1-20, you can specify what will be the number of tracks here.</span></p>
 
 <p class=3DMsoPlainText><span style=3D'font-family:"Courier New"'>&nbsp;Not=
-e that
-value above 18 automatically toggles percussion mode ON.</span></p>
+e that value
+above 18 automatically toggles percussion mode ON.</span></p>
 
 <p class=3DMsoPlainText><span style=3D'font-family:"Courier New"'>&nbsp;</s=
 pan></p>
@@ -12094,8 +12093,8 @@ shorten
 the overall pattern length in song variables,</span></p>
 
 <p class=3DMsoPlainText><span style=3D'font-family:"Courier New"'>&nbsp;use=
- the Pattern
-Break effect command (Bxx).</span></p>
+ the
+Pattern Break effect command (Bxx).</span></p>
 
 <p class=3DMsoPlainText><span style=3D'font-family:"Courier New"'>&nbsp;A t=
 rack is
@@ -13513,12 +13512,6 @@ ek
 Burczynski and MAME Development Team </span><span style=3D'font-size:10.0pt;
 font-family:"Courier New"'>[ymf262.c version 0.2]</span></p>
 
-<p class=3DMsoPlainText><span style=3D'font-family:"Courier New"'>&nbsp;The=
- DOSBox
-Team </span><span style=3D'font-size:10.0pt;font-family:"Courier New"'>[dbo=
-pl.cpp
-version 1.10]</span></p>
-
 <p class=3DMsoPlainText><span style=3D'font-family:"Courier New"'>&nbsp;Sim=
 ple
 DirectMedia Layer [SDL 1.2]</span></p>
@@ -13745,7 +13738,7 @@ document was last updated on February 12, 2014.</span></p>
 
 </html>
 
-------=_NextPart_01CF27CB.A9169EB0
+------=_NextPart_01CF28C8.642154F0
 Content-Location: file:///C:/EF521992/adtrack2_files/themedata.thmx
 Content-Transfer-Encoding: base64
 Content-Type: application/vnd.ms-officetheme
@@ -13806,7 +13799,7 @@ dGhlbWUxLnhtbFBLAQItABQABgAIAAAAIQAN0ZCftgAAABsBAAAnAAAAAAAAAAAAAAAAAJsJAAB0
 aGVtZS90aGVtZS9fcmVscy90aGVtZU1hbmFnZXIueG1sLnJlbHNQSwUGAAAAAAUABQBdAQAAlgoA
 AAAA
 
-------=_NextPart_01CF27CB.A9169EB0
+------=_NextPart_01CF28C8.642154F0
 Content-Location: file:///C:/EF521992/adtrack2_files/colorschememapping.xml
 Content-Transfer-Encoding: quoted-printable
 Content-Type: text/xml
@@ -13816,7 +13809,7 @@ Content-Type: text/xml
  bg1=3D"lt1" tx1=3D"dk1" bg2=3D"lt2" tx2=3D"dk2" accent1=3D"accent1" accent=
 2=3D"accent2" accent3=3D"accent3" accent4=3D"accent4" accent5=3D"accent5" a=
 ccent6=3D"accent6" hlink=3D"hlink" folHlink=3D"folHlink"/>
-------=_NextPart_01CF27CB.A9169EB0
+------=_NextPart_01CF28C8.642154F0
 Content-Location: file:///C:/EF521992/adtrack2_files/image001.png
 Content-Transfer-Encoding: base64
 Content-Type: image/png
@@ -13937,7 +13930,7 @@ afPz5Fsi6Rfc6zTbT3dnAaoY4dOv7YROjiF9kezgRpT2XanyVpc2co62Z6QDKgJniRdjER3kgL92
 QH6OAAIIIJAJ0FGYCggggAACGgE6isaRKAgggAACdBTmAAIIIICARoCOonEkCgIIIIAAHYU5gAAC
 CCCgEaCjaByJggACCCBAR2EOIIAAAghoBOgoGkeiIIAAAgj8H7It1eH0PZqoAAAAAElFTkSuQmCC
 
-------=_NextPart_01CF27CB.A9169EB0
+------=_NextPart_01CF28C8.642154F0
 Content-Location: file:///C:/EF521992/adtrack2_files/image002.jpg
 Content-Transfer-Encoding: base64
 Content-Type: image/jpeg
@@ -14378,7 +14371,7 @@ X/Qy6v8A+B0v/wAVRRQAf8Jn4q/6GXV//A6X/wCKo/4TPxV/0Mur/wDgdL/8VRRQAf8ACZ+Kv+hl
 1f8A8Dpf/iqP+Ez8Vf8AQy6v/wCB0v8A8VRRQAf8Jn4q/wChl1f/AMDpf/iqP+Ez8Vf9DLq//gdL
 /wDFUUUAH/CZ+Kv+hl1f/wADpf8A4qqWo6zqur+X/aep3l95WfL+0ztJszjONxOM4H5CiigD/9k=
 
-------=_NextPart_01CF27CB.A9169EB0
+------=_NextPart_01CF28C8.642154F0
 Content-Location: file:///C:/EF521992/adtrack2_files/image003.png
 Content-Transfer-Encoding: base64
 Content-Type: image/png
@@ -14441,7 +14434,7 @@ BR5s8v/3t1iH2j7vdeACwFBf699Wn3trblav+xkXh8gnKWDQabdvI3D67ft7iNYhLzgInzdZ3zx4
 Fxe0zYvCcH25QIFYi42YC45b61AvaAkfqdGYCzYTYi6UFkQDKbn+i8ZiLpSTY8yFmAsxF6o5LK4X
 3KIpzgtxXqjmBcsXbgX19v7tTv4t//Mv3o2XQkmKFxIAAAAASUVORK5CYIJ=
 
-------=_NextPart_01CF27CB.A9169EB0
+------=_NextPart_01CF28C8.642154F0
 Content-Location: file:///C:/EF521992/adtrack2_files/image004.gif
 Content-Transfer-Encoding: base64
 Content-Type: image/gif
@@ -14506,7 +14499,7 @@ l4AM2BQL2IAQqIAPGIEQeIAUSH9pd4Ea6IBWt4EeWBUd+IEbaIEi2HAZWIIjaBV7gRkrB4IGiBJO
 soKGIYMWJxLsx4I22IKZMYM1yIMrqIM5CIR+5xI02II/aINHKIQ8CIRlsYRIGIRF+IQzeDMBcyJR
 SINYKIVamIVcuIVe2IVg+IViGIZkOIZmWIZoeIZqmIZsOIYBAQA7
 
-------=_NextPart_01CF27CB.A9169EB0
+------=_NextPart_01CF28C8.642154F0
 Content-Location: file:///C:/EF521992/adtrack2_files/image005.png
 Content-Transfer-Encoding: base64
 Content-Type: image/png
@@ -14563,7 +14556,7 @@ okQfdfw3VfXZUxAc+JwGPI6PlztKgsHglkwq8iPnvxyxf3HXe+83OPbF0OttCxYsKPkXp+50Nhj5
 L1fAF3fpfbGDzuPV4OBgGN3M0AI9/2U3+BuuKIVNyw2e/rTQU8APnv4pEDidEFz94df/6NR4anlx
 9Xf1T60WyTkat/9HHf9zFogxnKu/qz/jJpbK7t3n/zyQ1n/+Aw2uDXSh7EigAAAAAElFTkSuQmCC
 
-------=_NextPart_01CF27CB.A9169EB0
+------=_NextPart_01CF28C8.642154F0
 Content-Location: file:///C:/EF521992/adtrack2_files/image006.gif
 Content-Transfer-Encoding: base64
 Content-Type: image/gif
@@ -14630,7 +14623,7 @@ OApucAEDQAAIkARbd4AIKGo/sABFIHZXqBGisAdV0AYpGBbURxOGUHhneBc6OIflFYZ2aCB1mIcT
 w4d+yBF7+IdQgoeCiC+FKIhveIgtEoiKGB+EO9iILpSIkGg8k3iGjFiJQoMTmtgSnLiJntiJoPiJ
 ohiKpDiKpliKqHiKqpiKrLiKrtiKsPiKshiLqRgQADs=
 
-------=_NextPart_01CF27CB.A9169EB0
+------=_NextPart_01CF28C8.642154F0
 Content-Location: file:///C:/EF521992/adtrack2_files/image007.png
 Content-Transfer-Encoding: base64
 Content-Type: image/png
@@ -14690,7 +14683,7 @@ zNzhoQZo/40se6PUirn/i1rqRyQAfv/jI3IgOlOjnv+iUx97boG/+P+fsc/CmFkg1r+x//5R4C/w
 j1nxiQfFYv8X+3885GGMbBD1X9T/GKVefKgV9V/U//jIxJhYIeq/qP8xSbx4USrqv6j/8ZKLMbBD
 1H9R/2OQdvGjUtR/Uf/jJxs/uCWi/ov6/8GTLp4UyvAb+ud/tNZ76pFjFfEAAAAASUVORK5CYIJ=
 
-------=_NextPart_01CF27CB.A9169EB0
+------=_NextPart_01CF28C8.642154F0
 Content-Location: file:///C:/EF521992/adtrack2_files/image008.gif
 Content-Transfer-Encoding: base64
 Content-Type: image/gif
@@ -14759,7 +14752,7 @@ oDgYmTiKgGGK1CGKqAgYnLiKoaiKrqgXrRiLhlGKtCgXsHiLcWGLutgWs9iLj5iLwEgYvziMdsGL
 xmgWxZiMuCiMzDgWzviMXoGM0sgY1fiKy3iNaBGN2ngV1NiNVpGN4CgW3ziOUsGN5ogZ4piOXIGO
 7CiG6/iO3qhmOFGP9HiP9piP+LiP+tiP/PiP/hiQADmQAlmQBHmQBpmQCLmQCpmQAQEAOw==
 
-------=_NextPart_01CF27CB.A9169EB0
+------=_NextPart_01CF28C8.642154F0
 Content-Location: file:///C:/EF521992/adtrack2_files/image009.png
 Content-Transfer-Encoding: base64
 Content-Type: image/png
@@ -14813,7 +14806,7 @@ F/ofJanKx0yh/0L/+WRWVKAK/Rf6HxWJystIof9C/3nlVhTgCv0X+h8FacrPRKH/Qv/5ZVfEIwv9
 F/of8UnK00Ch/0L/eeZXhGML/Rf6H+Epytc8of9W138pxsp//gcD7ZDvb5nKFAAAAABJRU5ErkJg
 gk==
 
-------=_NextPart_01CF27CB.A9169EB0
+------=_NextPart_01CF28C8.642154F0
 Content-Location: file:///C:/EF521992/adtrack2_files/image010.gif
 Content-Transfer-Encoding: base64
 Content-Type: image/gif
@@ -14879,7 +14872,7 @@ KBkBuID6d4AOWB0NGIG4AYEU+BgTeIESmIEayIAc2IGLoYAg+BcfOIKHIYImuBcWmIKAsYIsyBcl
 WIUhg4UnaIRaaCVS2IVA9IVg6E44UYYtcYZmmIZouIZq2IZs+IZuGIdwOIdyWId0eId2mId4uId6
 2Id8SIcBAQA7
 
-------=_NextPart_01CF27CB.A9169EB0
+------=_NextPart_01CF28C8.642154F0
 Content-Location: file:///C:/EF521992/adtrack2_files/image011.png
 Content-Transfer-Encoding: base64
 Content-Type: image/png
@@ -14930,7 +14923,7 @@ U+AyCMdUpT+c+X/i4ST9JaYU9cd//ylRNs5xwfWP//+Xc6oZnAn2f+z/4KJxkgP2f+z/TqpnYC7Y
 /4WLxYmG2P+x/zuxrgVzwv6P/V+wVJxphv0f+78zK1soK+z/GZqr//wLgrrLGEKBp58AAAAASUVO
 RK5CYIJ=
 
-------=_NextPart_01CF27CB.A9169EB0
+------=_NextPart_01CF28C8.642154F0
 Content-Location: file:///C:/EF521992/adtrack2_files/image012.gif
 Content-Transfer-Encoding: base64
 Content-Type: image/gif
@@ -14988,7 +14981,7 @@ J3PudWNH3e7uNrnjPW56r6bd9k4UvPM9nHnzmy/7/jdg/C1wCQW84AY/OMJftPBlE7zhcHk4xJGl
 8InXyeLsljjGObdxx+C744oDubwrLnKxaLzkijI7OcpRuPJ+k7zlIceJzEE985rT/OY2zznOd67z
 nvP85z4POtCHLvSiE/3oRk860okeEAA7
 
-------=_NextPart_01CF27CB.A9169EB0
+------=_NextPart_01CF28C8.642154F0
 Content-Location: file:///C:/EF521992/adtrack2_files/image013.png
 Content-Transfer-Encoding: base64
 Content-Type: image/png
@@ -15038,7 +15031,7 @@ ru4BTf6NL3ZKUnce+ksJCdHBBIDEyRcR6LG2Mz5hI4aXble2QZV/I4NuZa6hw8NCIciteGVvTa04
 3jQemjC1Ei+iyr9pVEsXmg8+Hz7/+w9L2bC3cc6/t+uf88/5t/cOZbF3Hr/+8f6vMzz97z+d40U6
 d9njPwAAAABJRU5ErkJggk==
 
-------=_NextPart_01CF27CB.A9169EB0
+------=_NextPart_01CF28C8.642154F0
 Content-Location: file:///C:/EF521992/adtrack2_files/image014.gif
 Content-Transfer-Encoding: base64
 Content-Type: image/gif
@@ -15093,7 +15086,7 @@ hxSLQEQg/MAEJzDBARgYwyQYgQhCnKJvXx6KJ1ARCl6YwhJwCcQf9ps7XfxgCpnABHJ9EmhtduQU
 M+xJai3tsEpzWpI4/rQHRZ1FT5Pag6Y+tTtDrWpKp7rVmmY1rH/Yklrj5Na2zjWud63rXvP6174O
 NrCHLexiE/vYxk42spet7GYz+9gBAQA7
 
-------=_NextPart_01CF27CB.A9169EB0
+------=_NextPart_01CF28C8.642154F0
 Content-Location: file:///C:/EF521992/adtrack2_files/image015.png
 Content-Transfer-Encoding: base64
 Content-Type: image/png
@@ -15110,7 +15103,7 @@ GRhXxX15MBy4XxgG8ZDnLU/6TYs2dx2oKkNMZB+SjQw2nwj77pe2fYiuyiyzwlRrUWLaKN0ZrpCQ
 FB2jOG6ku4tJK8Os1fdmVZyXyJg1wdgwTsYkxWlO/ek+8u7GUIbsgzH9pvtgvjbEd7m3/5+lDMqg
 DMqgDMqgDMqgDMqgDOcxfH4fjF/uRX0OYFcM4QAAAABJRU5ErkJggk==
 
-------=_NextPart_01CF27CB.A9169EB0
+------=_NextPart_01CF28C8.642154F0
 Content-Location: file:///C:/EF521992/adtrack2_files/image016.gif
 Content-Transfer-Encoding: base64
 Content-Type: image/gif
@@ -15160,7 +15153,7 @@ CUnxjV5pI7O9+pVdfv1rXwOr18ESVjeAPexuEqvY2zC2sbYxLGRf89jJUtaymMVIZTN7GslydjSb
 S3GTqxfkMhcvy30uXaIrXbhQt7puuS52IePc7Wa3u97lbng7O17Qgre8ZTkvesGi3fWexb2pVS98
 MTNf1sq3vlhRin5Zsd/+8ve//g0wgAcs4AIT+MAGTjCCF6zgBjP4wQ6OMIQnLOEKEzggADs=
 
-------=_NextPart_01CF27CB.A9169EB0
+------=_NextPart_01CF28C8.642154F0
 Content-Location: file:///C:/EF521992/adtrack2_files/image017.png
 Content-Transfer-Encoding: base64
 Content-Type: image/png
@@ -15204,7 +15197,7 @@ GeQgzFA/KJw3mNt/XkB7xdnHf0njSv7Dfv8nyQZlsOQ/+a9s8qknpv4P/P2zestQFZD/5D/qhLIb
 GO3/tP/bbc4i6qX+T/0fcTrZD4r6P/V/+81aNMXU/6n/o00mOwJR/6f+b8d5i6SZ+j/1f6SpZE8Y
 6v/U/+05c1FUU/9PY47++w1+zF6eEmSNjgAAAABJRU5ErkJggk==
 
-------=_NextPart_01CF27CB.A9169EB0
+------=_NextPart_01CF28C8.642154F0
 Content-Location: file:///C:/EF521992/adtrack2_files/image018.gif
 Content-Transfer-Encoding: base64
 Content-Type: image/gif
@@ -15253,7 +15246,7 @@ Lm69a0Pzqtd28rWvx/wrYOkz2NPYtbAWRexoDqvYSDV2q3F97DEl69XIUhZAl9UMYzN7L8Fy1iub
 /ay6RCuZ0JKWLJ49rbosq1qxsLa1jHktbO/Vktom4uS2ts0tbner297y9re+DS5whyvc4hL3uMZN
 LnKXq9zmMve4AQEAOw==
 
-------=_NextPart_01CF27CB.A9169EB0
+------=_NextPart_01CF28C8.642154F0
 Content-Location: file:///C:/EF521992/adtrack2_files/image019.jpg
 Content-Transfer-Encoding: base64
 Content-Type: image/jpeg
@@ -15389,7 +15382,7 @@ NJVR5r/+zATHKI12XWeenDja/qOYv9o1U1HTfFuoXWnaPeLc3mll4HurkrGiyAys7hl6/KFRQPck
 16ZRRRRRRRRRRRRRRRRRRRRRRRTJIYpShkjRyjbl3KDtPqPQ0+iiiiiiiiiiiiiiiiiiiiiiiiii
 iiiiiiiiiiiiiiv/2S==
 
-------=_NextPart_01CF27CB.A9169EB0
+------=_NextPart_01CF28C8.642154F0
 Content-Location: file:///C:/EF521992/adtrack2_files/image020.jpg
 Content-Transfer-Encoding: base64
 Content-Type: image/jpeg
@@ -15520,7 +15513,7 @@ hxisOfwHBLNqzrcbft7LsPl58hAFBRRnG0hT2z8xqtfeAZ5YLprXUES7nu/PM0qE/uicmI8/d4Xj
 p8oqNPh9dx6MLOHVfIn/ALPFm00aH5znO/BOVPzOOD0b2prfDmUarp0sN7FHp1mYmFqyFjuVmd8M
 T/ExBP0r0Ciiiiiiiiiiiiv/2S==
 
-------=_NextPart_01CF27CB.A9169EB0
+------=_NextPart_01CF28C8.642154F0
 Content-Location: file:///C:/EF521992/adtrack2_files/image021.png
 Content-Transfer-Encoding: base64
 Content-Type: image/png
@@ -15765,7 +15758,7 @@ KM3KOlXCEZsGEhH9EGmbAyoFLulH6eajoDC8BZbcUB5UBR5JjA05VSrcZQWhPafcS4FZa2ipinK5
 xm2njqY6rfDV5l3z995clZm8T12yvzKy/2Yl+32LmWc+wc3TyhmZuXRzPWK6m6nHmf1LPJGxj7kG
 Nw3+97//B/9qrJQ5EIe7AAAAAElFTkSuQmCC
 
-------=_NextPart_01CF27CB.A9169EB0
+------=_NextPart_01CF28C8.642154F0
 Content-Location: file:///C:/EF521992/adtrack2_files/image022.jpg
 Content-Transfer-Encoding: base64
 Content-Type: image/jpeg
@@ -15920,7 +15913,7 @@ UoJbrTbm3gl8qSWJkWQjIUkYzXKW3gRLS9sJILgC3tbMRpFg/wCvH/Lc88k+9V4/ANwIGiOp5kSy
 WC2ddw8iX5t0gGep3E/jU+n+Cp7No5Gvo/MjvGud0aHG0qE2EEkEYA565Gaoy/Du9k0e3s01VfOA
 lNxNIjMZ3ZSqyHngrluOmTXeWNulpYwW0e0JDGsa49AAKsUUUUUUUUUUUV//2V==
 
-------=_NextPart_01CF27CB.A9169EB0
+------=_NextPart_01CF28C8.642154F0
 Content-Location: file:///C:/EF521992/adtrack2_files/filelist.xml
 Content-Transfer-Encoding: quoted-printable
 Content-Type: text/xml; charset="utf-8"
@@ -15953,4 +15946,4 @@ Content-Type: text/xml; charset="utf-8"
  <o:File HRef=3D"image022.jpg"/>
  <o:File HRef=3D"filelist.xml"/>
 </xml>
-------=_NextPart_01CF27CB.A9169EB0--
+------=_NextPart_01CF28C8.642154F0--

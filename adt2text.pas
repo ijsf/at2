@@ -2,10 +2,10 @@ unit AdT2text;
 interface
 
 const
-{__AT2REV__}at2rev  = '049';
-{__AT2VER__}at2ver  = '2.4.09';
-{__AT2DAT__}at2date = '02-12-2014';
-{__AT2LNK__}at2link = '8:31am';
+{__AT2REV__}at2rev  = '050';
+{__AT2VER__}at2ver  = '2.4.10';
+{__AT2DAT__}at2date = '02-13-2014';
+{__AT2LNK__}at2link = '2:33pm';
 
 const
   ascii_line_01 = 'Ú-ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ--ùú               úù-¿';
@@ -44,7 +44,7 @@ uses
     StringIO,DialogIO,TxtScrIO;
 
 const
-  LINES = 890;
+  LINES = 888;
   help_data: array[1..LINES] of String[128] = (
     '@topic:general',
     'ÍËÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍ',
@@ -99,8 +99,7 @@ const
     '~[Shift] F11~              Toggle default (AdT2) behavior mode (optional)',
     '~F11~                      Toggle FastTracker behavior mode (optional)',
     '~F12~                      Toggle Scream Tracker behavior mode (optional)',
-    '~[Alt] F11~                Toggle MAME OPL3 emulation core',
-    '~[Alt] F12~                Toggle DOSBox OPL3 emulation core',
+    '~[Alt] F11/F12~            Toggle recording to WAV file (on/off)',
     '',
     '~[Ctrl][Tab] Arrows~       Scroll screen contents',
     '',
@@ -924,7 +923,6 @@ const
     'Florian Klaempfl and others [Free Pascal Compiler 2.6.2]',
     'Japheth [JWasm v2.11]',
     'Jarek Burczynski and MAME Development Team [ymf262.c version 0.2]',
-    'The DOSBox Team [dbopl.cpp version 1.10]',
     'Simple DirectMedia Layer [SDL 1.2]',
     'Daniel F. Moisset [SDL4Freepascal-1.2.0.0]',
     '',

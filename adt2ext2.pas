@@ -61,8 +61,8 @@ uses
 procedure process_global_keys;
 	
 var
-  bak_cur_order,bak_cur_line: Byte;
-  temp,old_octave: Byte;
+  temp,
+  old_octave: Byte;
   
 begin
   If (scankey(SC_LCTRL) or scankey(SC_RCTRL)) and scankey(SC_TAB) then
@@ -143,40 +143,12 @@ begin
   
   If scankey(SC_F11) and alt_pressed and
      NOT ctrl_pressed and NOT shift_pressed then
-    begin
-	  If (play_status <> isStopped) and
-         (sdl_opl3_emulator <> 0) then
-	    begin
-          fade_out_playback(FALSE);
-          bak_cur_order := current_order;
-	      bak_cur_line := current_line;
-          stop_playing;
-          sdl_opl3_emulator := 0;
-          really_no_status_refresh := TRUE;
-	      calibrate_player(bak_cur_order,bak_cur_line,FALSE,FALSE);
-          really_no_status_refresh := FALSE;
-		end
-      else sdl_opl3_emulator := 0;
-    end;
+    sdl_opl3_emulator := 1;
 
   If scankey(SC_F12) and alt_pressed and
      NOT ctrl_pressed and NOT shift_pressed then
-    begin
-	  If (play_status <> isStopped) and
-         (sdl_opl3_emulator <> 1) then
-	    begin
-          fade_out_playback(FALSE);        
-          bak_cur_order := current_order;
-	      bak_cur_line := current_line;
-	      stop_playing;
-          sdl_opl3_emulator := 1;
-          really_no_status_refresh := TRUE;
-	      calibrate_player(bak_cur_order,bak_cur_line,FALSE,FALSE);
-          really_no_status_refresh := FALSE;
-		end
-      else sdl_opl3_emulator := 1;
-	end;
-    
+    sdl_opl3_emulator := 0;
+	
    If _check_ADSR_preview_flag then
      If ctrl_pressed and left_shift_pressed and not right_shift_pressed then
        _ADSR_preview_flag := FALSE
@@ -250,6 +222,7 @@ var
   txtf: Text;
   data: String;
   temp: Byte;
+  temp_str: String;
 
 function check_number(str: String; base: Byte; limit1,limit2: Word; default: Word): Word;
 
@@ -1001,10 +974,7 @@ begin { process_config_file }
 
       sdl_screen_mode :=
         check_number('sdl_screen_mode',10,0,2,sdl_screen_mode);
-
-      sdl_opl3_emulator :=
-        check_number('sdl_opl3_emulator',10,0,1,sdl_opl3_emulator);
-        
+       
       sdl_sample_rate :=
         check_number('sdl_sample_rate',10,8000,48000,sdl_sample_rate);
 
@@ -1019,6 +989,25 @@ begin { process_config_file }
 
       sdl_typematic_delay :=
         check_number('sdl_typematic_delay',10,0,2000,sdl_typematic_delay);
+		
+	  If (Copy(data,1,18) = 'sdl_wav_directory=') and
+         (Length(data) > 18) then
+        begin          
+		  temp_str := Copy(data,19,Length(data)-18);
+		  If (temp_str[1] = '\') then Delete(temp_str,1,1);
+          If (temp_str <> '') then
+		    begin
+              If (Length(temp_str) > 4) then
+			    If NOT (Lower(Copy(temp_str,Length(temp_str)-3,4)) = '.wav') then
+				  temp_str := temp_str+'\'
+				else opl3_flushmode := TRUE
+			  else If (temp_str[Length(temp_str)] <> '\') then
+                     temp_str := temp_str+'\';
+			end;		 
+	      sdl_wav_directory := temp_str;
+	      If NOT (Pos(':',sdl_wav_directory) <> 0) then
+            sdl_wav_directory := PathOnly(ParamStr(0))+'\'+sdl_wav_directory;		      
+        end;
 
       If (Copy(data,1,17) = 'a2m_default_path=') and
          (Length(data) > 17) then

@@ -15,12 +15,13 @@ type
 
 const
   opl3out: tOPL3OUT_proc = opl3out_proc;
+  opl3_flushmode: Boolean = FALSE;
 
 implementation
 
 uses
-  MATH,
-  AdT2unit,TxtScrIO,
+  MATH,SysUtils,
+  AdT2unit,AdT2sys,TxtScrIO,StringIO,
   SDL_Types,SDL_Audio;
 
 {$L ymf262.o}
@@ -70,19 +71,22 @@ end;
 const
   OPL3_SAMPLE_BITS = 16;
   OPL3_INTERNAL_FREQ = 14400000;
+  WAV_BUFFER_SIZE = 256*1024;
 
 type
   pINT16  = ^Smallint;
 
 const
-  DBOBPL_BUFFER_SIZE = 4096;
   YMF262_sample_buffer_ptr: Pointer = NIL;
 
 var
   ymf262: Longint;
-  DBOPL_sample_buffer: array[0..DBOBPL_BUFFER_SIZE*2] of Longint;
   sample_frame_size: Longint;  
   sdl_audio_spec: SDL_AudioSpec;
+  
+var
+  wav_buffer_len: Longint;  
+  wav_buffer: array[0..PRED(WAV_BUFFER_SIZE)] of Byte;
   
 function YMF262Init(num: Longint; clock: Longint; rate: Longint): Longint; cdecl; external;
 procedure YMF262Shutdown; cdecl; external;
@@ -90,47 +94,31 @@ procedure YMF262ResetChip(which: Longint); cdecl; external;
 function YMF262Write(which: Longint; addr: Longint; value: Longint): Longint; cdecl ;external;
 procedure YMF262UpdateOne(which: Longint; buffer: pINT16; length: Longint); cdecl; external;
 
-{$link dbopl.o}
-procedure DBOPL_Init(rate: Longint); cdecl; external;
-procedure DBOPL_WriteReg(addr: Longint; value: Byte); cdecl; external;
-procedure DBOPL_Generate(length: Longint; buffer: Pointer); cdecl; external;
-
 procedure opl3out_proc(reg, data: Word);
 
 var
   op: Longint;
 
 begin
-  Case sdl_opl3_emulator of
-    0: begin
-         op := 0;
-         If (reg > $0ff) then
-           begin
-             op := 2;
-             reg := reg AND $0ff;
-           end;  
-         YMF262Write(ymf262,op,reg);
-         YMF262Write(ymf262,op+1,data);
-       end;
-    1: DBOPL_WriteReg(reg,data);
-  end;  
+  op := 0;
+  If (reg > $0ff) then
+    begin
+      op := 2;
+      reg := reg AND $0ff;
+    end;  
+  YMF262Write(ymf262,op,reg);
+  YMF262Write(ymf262,op+1,data);
 end;
 
 procedure opl3exp(data: Word);
 begin
-  Case sdl_opl3_emulator of
-    0: begin
-         YMF262Write(ymf262,2,data AND $0ff);
-         YMF262Write(ymf262,3,data SHR 8);
-       end;
-    1: DBOPL_WriteReg((data AND $0ff) OR $100,data SHR 8);
-  end;
+  YMF262Write(ymf262,2,data AND $0ff);
+  YMF262Write(ymf262,3,data SHR 8);
 end;
 
 procedure opl3_init;
 begin
   YMF262ResetChip(ymf262);
-  DBOPL_Init(sdl_sample_rate);
 end;
 
 procedure opl3_deinit;
@@ -144,17 +132,49 @@ begin
   If (value < 18) then value := 18;
   sample_frame_size := sdl_sample_rate DIV value;
 end;
-
+ 
 procedure playcallback(var userdata; stream: pByte; len: Longint); cdecl;
 
 const
   counter_idx: Longint = 0;
 
 var 
-  counter: Longint;
-  mix_buf_ptr: array[0..1] of Longint;
+  counter,temp: Longint;
   IRQ_freq_val: Longint;
-	
+  wav_file: File;
+
+type
+  tWAV_HEADER = Record
+     file_desc: array[0..3] of Char;    // =="RIFF"
+     file_size: Dword;                  // ==filesize-8
+     wav_desc: array[0..3] of Char;     // =="WAVE"
+     format_desc: array[0..3] of Char;  // =="fmt "
+     wav_size: Dword;                   // ==16
+     wav_type: Word;                    // ==1 (PCM)
+     num_channels: Word;                // ==2 (Stereo)
+     samples_sec: Dword;                // sampling frequency
+     bytes_sec: Dword;                  // ==num_channels*samples_sec*bits_sample/8
+     block_align: Word;                 // ==num_channels*bits_sample/8
+     bits_sample: Word;                 // ==16
+     data_desc: array[0..3] of Char;    // "data"
+     data_size: Dword;                  // size of data
+   end;  
+
+const
+  wav_header: tWAV_HEADER = (file_desc:    'RIFF';
+                             file_size:    SizeOf(tWAV_HEADER)-8;
+                             wav_desc:     'WAVE';
+                             format_desc:  'fmt ';
+                             wav_size:     16;
+                             wav_type:     1;
+                             num_channels: 2;
+                             samples_sec:  44100;
+                             bytes_sec:    2*44100*16 DIV 8;
+                             block_align:  2*16 DIV 8;
+                             bits_sample:  16;
+                             data_desc:    'data';
+                             data_size:    0);
+   
 begin
   If NOT rewind then
     IRQ_freq_val := IRQ_freq
@@ -185,26 +205,141 @@ begin
 	        macro_ticklooper := 0;
         end;
         
-        Case sdl_opl3_emulator of
-          0: ymf262updateone(ymf262,YMF262_sample_buffer_ptr+counter*4,1);
-          1: begin
-               DBOPL_Generate(1,@mix_buf_ptr);
-               DBOPL_sample_buffer[counter] := WORD(mix_buf_ptr[0]) OR WORD(mix_buf_ptr[1]) SHL 16;
-             end;   
-        end;
+      ymf262updateone(ymf262,YMF262_sample_buffer_ptr+counter*4,1);
     end;
 
   // update SDL Audio sample buffer
-  Case sdl_opl3_emulator of  
-    0: Move(YMF262_sample_buffer_ptr^,stream^,len);
-    1: Move(DBOPL_sample_buffer[0],stream^,len);
-  end;  
+  Move(YMF262_sample_buffer_ptr^,stream^,len);
+  
+  // WAV dumper
+  If (play_status = isPlaying) and (sdl_opl3_emulator <> 0) then
+    If (wav_buffer_len+len <= WAV_BUFFER_SIZE) then
+      begin
+	    Move(stream^,wav_buffer[wav_buffer_len],len);
+	    Inc(wav_buffer_len,len);
+      end		
+    else
+      begin
+	    If NOT DirectoryExists(Copy(sdl_wav_directory,1,Length(sdl_wav_directory)-Length(NameOnly(sdl_wav_directory)))) then
+          If NOT CreateDir(Copy(sdl_wav_directory,1,Length(sdl_wav_directory)-Length(NameOnly(sdl_wav_directory)))) then
+		    EXIT;
+	    If opl3_flushmode then Assign(wav_file,sdl_wav_directory)
+	    else Assign(wav_file,sdl_wav_directory+BaseNameOnly(songdata_title)+'.wav');
+	    {$i-}
+        ResetF(wav_file);
+	    {$i+}
+        If (IOresult <> 0) then
+          begin
+	        {$i-}
+            RewriteF(wav_file);
+		    {$i+}
+		    If (IOresult <> 0) then
+		      begin
+			    Close(wav_file);
+			    {$i-}
+			    EraseF(wav_file);
+			    {$i+}
+			    If (IOresult <> 0) then ;
+			    EXIT;
+			  end;  
+            wav_header.samples_sec := sdl_sample_rate;
+            wav_header.bytes_sec := 2*sdl_sample_rate*16 DIV 8;
+            wav_header.file_size := wav_header.file_size+wav_buffer_len;
+            wav_header.data_size := wav_header.data_size+wav_buffer_len;
+	        {$i-}
+            BlockWriteF(wav_file,wav_header,SizeOf(wav_header),temp);
+		    {$i+}
+		    If (IOresult <> 0) or
+               (temp <> SizeOf(wav_header)) then
+		      begin
+			    CloseF(wav_file);
+			    {$i-}
+			    EraseF(wav_file);
+			    {$i+}
+			    If (IOresult <> 0) then ;
+			    EXIT;
+			  end;  
+          end  
+        else begin
+	           {$i-}
+               BlockReadF(wav_file,wav_header,SizeOf(wav_header),temp);
+			   {$i+}
+		       If (IOresult <> 0) or
+			      (temp <> SizeOf(wav_header)) then
+		         begin
+			       CloseF(wav_file);
+			       {$i-}
+			       EraseF(wav_file);
+			       {$i+}
+			       If (IOresult <> 0) then ;
+			       EXIT;
+			     end;
+			   wav_header.file_size := wav_header.file_size+wav_buffer_len;
+               wav_header.data_size := wav_header.data_size+wav_buffer_len;
+			   {$i-}
+			   ResetF_RW(wav_file);
+			   {$i+}
+		       If (IOresult <> 0) then
+		         begin
+			       CloseF(wav_file);
+			       {$i-}
+			       EraseF(wav_file);
+			       {$i+}
+			       If (IOresult <> 0) then ;
+			       EXIT;
+			     end;
+			   {$i-}
+               BlockWriteF(wav_file,wav_header,SizeOf(wav_header),temp);
+			   {$i+}
+		       If (IOresult <> 0) or
+                  (temp <> SizeOf(wav_header)) then
+		         begin
+			       CloseF(wav_file);
+			       {$i-}
+			       EraseF(wav_file);
+			       {$i+}
+			       If (IOresult <> 0) then ;
+			       EXIT;
+			     end;
+			   {$i-}
+               SeekF(wav_file,FileSize(wav_file));
+			   {$i+}
+		       If (IOresult <> 0) then
+		         begin
+			       CloseF(wav_file);
+			       {$i-}
+			       EraseF(wav_file);
+			       {$i+}
+			       If (IOresult <> 0) then ;
+			       EXIT;
+			     end;
+             end;  
+        {$i-}
+        BlockWriteF(wav_file,wav_buffer,wav_buffer_len,temp);
+	    {$i+}
+        If (IOresult <> 0) or (temp <> wav_buffer_len) then
+	      begin
+	        CloseF(wav_file);
+	        {$i-}
+		    EraseF(wav_file);
+		    {$i+}
+		    If (IOresult <> 0) then ;
+		  end
+	    else
+          begin
+	        CloseF(wav_file);
+            wav_buffer_len := 0;
+	        Move(stream^,wav_buffer[wav_buffer_len],len);
+	        Inc(wav_buffer_len,len);
+          end;  
+      end;
 end;
 
 procedure snd_Init;
 begin
   GetMem(YMF262_sample_buffer_ptr,sdl_sample_buffer*4);
   sample_frame_size := sdl_sample_rate DIV 50;
+  wav_buffer_len := 0;
   
   ymf262 := YMF262Init(1,OPL3_INTERNAL_FREQ,sdl_sample_rate);
   opl3_init;
@@ -220,11 +355,6 @@ begin
     begin
       WriteLn('SDL: Audio initialization error');
       HALT(1);
-    end
-  else
-    Case sdl_opl3_emulator of
-      0: WriteLn('OPL3 emulation core: MAME');
-      1: WriteLn('OPL3 emulation core: DOSBox');
     end;
     
   WriteLn('  Sample buffer size: ',sdl_sample_buffer,' bytes');
