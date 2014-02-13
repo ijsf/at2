@@ -25,6 +25,51 @@ uses
 
 {$L ymf262.o}
 
+{$IFNDEF LINUX}
+{ ymf262.c needs some functions from msvcrt.dll which we need to emulate }
+{_CRTIMP double __cdecl pow (double, double);}
+function my_pow(a,b: Double): Double; cdecl; alias: '_pow';
+begin
+  my_pow := POWER(a,b);
+end;
+
+{_CRTIMP double __cdecl floor (double);}
+function my_floor(a: Double): Double; cdecl; alias: '_floor';
+begin
+  my_floor := FLOOR(a);
+end;
+
+{_CRTIMP double __cdecl sin (double);}
+function my_sin(a: Double): Double; cdecl; alias: '_sin';
+begin
+  my_sin := SIN(a);
+end;
+
+{_CRTIMP double __cdecl log (double);}
+function my_log(a: Double): Double; cdecl; alias: '_log';
+begin
+  my_log := LN(a);
+end;
+
+{_CRTIMP void* __cdecl __MINGW_NOTHROW malloc (size_t) __MINGW_ATTRIB_MALLOC;}
+function my_malloc(size: Longint): Pointer; cdecl; alias: '_malloc';
+begin
+  my_malloc := GetMem(size);
+end;
+
+{_CRTIMP void __cdecl __MINGW_NOTHROW free (void*);}
+procedure my_free(p: Pointer); cdecl; alias: '_free';
+begin
+  FreeMem(p);
+end;
+
+{_CRTIMP void __cdecl __MINGW_NOTHROW free (void*);}
+procedure my_memset(var s; c: Char; len: Longint); cdecl; alias: '_memset';
+begin
+  FillChar(s,len,c);
+end;
+{$ENDIF}
+
 const
   OPL3_SAMPLE_BITS = 16;
   OPL3_INTERNAL_FREQ = 14400000;

@@ -4,11 +4,21 @@ interface
 
 uses
   DOS,
+  {$IFDEF WINDOWS}
+  Windows,
+  {$ENDIF}
   Adt2vscr,AdT2unit,AdT2keyb,AdT2ext2,
   StringIO,ParserIO,TxtScrIO;
 
 const
   smooth_appear: Boolean = TRUE;
+  {$IFDEF WINDOWS}
+  PATHSEP: Char = '\';
+  WILDCARD_ASTERISK: String = '*.*';
+  {$ELSE}
+  PATHSEP: Char = '/';
+  WILDCARD_ASTERISK: String = '*';
+  {$ENDIF}
 
 type
   tDIALOG_SETTING = Record
@@ -1061,13 +1071,15 @@ function valid_drive(drive_str: String; var info: String): Boolean;
 begin
   valid_drive := FALSE;
   info := '';
-//  Case GetDriveType(Addr(drive_str[1])) of
-//    DRIVE_REMOVABLE: info := 'FLOPPY';
-//    DRIVE_FIXED:     info := 'HARDDiSK';
-//    DRIVE_REMOTE:    info := 'NETWORK';
-//    DRIVE_CDROM:     info := 'CD/DVD';
-//    DRIVE_RAMDISK:   info := 'RAM';
-//  end;
+  {$IFDEF WINDOWS}
+  Case GetDriveType(Addr(drive_str[1])) of
+    DRIVE_REMOVABLE: info := 'FLOPPY';
+    DRIVE_FIXED:     info := 'HARDDiSK';
+    DRIVE_REMOTE:    info := 'NETWORK';
+    DRIVE_CDROM:     info := 'CD/DVD';
+    DRIVE_RAMDISK:   info := 'RAM';
+  end;
+  {$ENDIF}
   If (info <> '') then valid_drive := TRUE;
 end;
 
@@ -1112,7 +1124,7 @@ begin { make_stream }
     begin
       count1 := 0;
       For drive := 'A' to 'Z' do
-        If valid_drive(drive + ':/',stream.stuff[SUCC(count1)].info) then // check all drives A-Z
+        If valid_drive(drive + ':' + PATHSEP, stream.stuff[SUCC(count1)].info) then // check all drives A-Z
           begin
             Inc(count1);
             stream.stuff[count1].name := drive;
@@ -1133,7 +1145,7 @@ begin { make_stream }
     end;
 
   count2 := 0;
-  FindFirst(path+'*',anyfile-volumeid,search);
+  FindFirst(path+WILDCARD_ASTERISK,anyfile-volumeid,search);
   While (DOSerror = 0) and (count1 < MAX_FILES) do
     begin
       If (search.attr AND directory <> 0) and (search.name = '.') then
@@ -1160,7 +1172,7 @@ begin { make_stream }
        stream.stuff[count1].attr := search.attr;
     end;
 
-  FindFirst(path+'*',anyfile-volumeid-directory,search);
+  FindFirst(path+WILDCARD_ASTERISK,anyfile-volumeid-directory,search);
   While (DOSerror = 0) and (count1+count2 < MAX_FILES) do
     begin
       If LookUpMask(search.name) then
@@ -1196,7 +1208,7 @@ var
 
 function path_filter(path: String): String;
 begin
-  If (Length(path) > 3) and (path[Length(path)] = '/') then
+  If (Length(path) > 3) and (path[Length(path)] = PATHSEP) then
     Delete(path,Length(path),1);
   path_filter := Upper(path);
 end;
@@ -1246,7 +1258,7 @@ begin { Fselect }
   GetDir(0,temp3);
   {$i+}
   If (IOresult <> 0) then temp3 := temp6;
-  If (temp3[Length(temp3)] <> '/') then temp3 := temp3+'/';
+  If (temp3[Length(temp3)] <> PATHSEP) then temp3 := temp3+PATHSEP;
   mn_setting.cycle_moves  := FALSE;
   temp4 := '';
 
@@ -1304,7 +1316,7 @@ begin { Fselect }
       If (SYSTEM.Pos('~',fstream.stuff[temp2].name) <> 0) and
          (fstream.stuff[temp2].name <> '~'+#$ff+'~') then
         While (SYSTEM.Pos('~',menudat[temp2]) <> 0) do
-          menudat[temp2][SYSTEM.Pos('~',menudat[temp2])] := '/';
+          menudat[temp2][SYSTEM.Pos('~',menudat[temp2])] := PATHSEP;
 
     temp5 := fstream.drive_count+1;
     While (temp5 <= fstream.count) and (temp4 <> '') and
@@ -1348,13 +1360,13 @@ begin { Fselect }
           begin
             Delete(temp3,Length(temp3),1);
             temp4 := NameOnly(temp3);
-            While (temp3[Length(temp3)] <> '/') do
+            While (temp3[Length(temp3)] <> PATHSEP) do
               Delete(temp3,Length(temp3),1);
             fs_environment.last_file := Lower(temp4);
           end
         else
           begin
-            temp3 := temp3+fstream.stuff[temp2].name+'/';
+            temp3 := temp3+fstream.stuff[temp2].name+PATHSEP;
             temp4 := '';
             fs_environment.last_file := temp4;
           end;
@@ -1378,16 +1390,16 @@ begin { Fselect }
                     {$i+}
                     If (IOresult <> 0) then temp3 := temp6;
                   end;
-             If (temp3[Length(temp3)] <> '/') then temp3 := temp3+'/';
+             If (temp3[Length(temp3)] <> PATHSEP) then temp3 := temp3+PATHSEP;
              temp4 := '';
              fs_environment.last_file := temp4;
            end
          else If (mn_environment.keystroke = $0e08) and
-                 (SYSTEM.Pos('/',Copy(temp3,3,Length(temp3)-3)) <> 0) then
+                 (SYSTEM.Pos(PATHSEP,Copy(temp3,3,Length(temp3)-3)) <> 0) then
                 begin
                   Delete(temp3,Length(temp3),1);
                   temp4 := NameOnly(temp3);
-                  While (temp3[Length(temp3)] <> '/') do
+                  While (temp3[Length(temp3)] <> PATHSEP) do
                     Delete(temp3,Length(temp3),1);
                   fs_environment.last_file := Lower(temp4);
                   {$i-}
@@ -1553,7 +1565,7 @@ begin
     mn_environment.desc_pos    := 0;
     
     For index := 1 to 26 do
-        path[index] := CHR(ORD('a')+PRED(index))+':/';
+        path[index] := CHR(ORD('a')+PRED(index))+':'+PATHSEP;
 end;
 
 end.
