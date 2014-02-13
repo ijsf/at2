@@ -142,8 +142,10 @@ begin { MAIN }
   C3WriteLn(02+(MAX_COLUMNS-57) DIV 2,temp+19,ascii_line_20,$08,$09,$01);
   C3WriteLn(02+(MAX_COLUMNS-57) DIV 2,temp+20,ascii_line_21,$08,$09,$01);
   C3WriteLn(02+(MAX_COLUMNS-57) DIV 2,temp+21,ascii_line_22,$08,$09,$01);
-  C3WriteLn(02+(MAX_COLUMNS-57) DIV 2,temp+23,ascii_line_24,$08,$09,$01);
   C3WriteLn(02+(MAX_COLUMNS-57) DIV 2,temp+22,ascii_line_23,$08,$09,$01);
+  C3WriteLn(02+(MAX_COLUMNS-57) DIV 2,temp+23,ascii_line_24,$08,$09,$01);
+  C3WriteLn(02+(MAX_COLUMNS-57) DIV 2,temp+24,ascii_line_25,$08,$09,$01);
+  C3WriteLn(02+(MAX_COLUMNS-57) DIV 2,temp+25,ascii_line_26,$08,$09,$01);
   virtual_screen_font := Addr(vga_font8x16);
   emulate_screen;
   SDL_Delay(5000);

@@ -26,12 +26,14 @@ const
   ascii_line_16 = '³ ~subz3ro/Altair~                 ~/´DLiB³R/´CK3R ³³ SDL~ ú';
   ascii_line_17 = '³ `SDL portation support:`          ~³       ³     ÄÄ~      ';
   ascii_line_18 = '³ ~Dmitry Smagin~                             ~'+at2ver+'~      ';
-  ascii_line_19 = '³ `additional ideas:`                                    ú';
-  ascii_line_20 = '³ ~Malfunction/Altair~                                   ù';
-  ascii_line_21 = '³ `special thanks:`                                      ³';
-  ascii_line_22 = '³ ~encore~                HOMEPAGE  www.adlibtracker.net ³';
-  ascii_line_23 = '³ ~insane/Altair~         EMAiL     subz3ro@hotmail.com  ³';
-  ascii_line_24 = 'À-ÄÄÄÄÄÄÄÄÄÄ--ùú    úù-ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ-Ù';
+  ascii_line_19 = '³ `Linux portation and fixes:`';  
+  ascii_line_20 = '³ ~Florian Jung (Windfisch)~';
+  ascii_line_21 = '³ `additional ideas:`                                    ú';
+  ascii_line_22 = '³ ~Malfunction/Altair~                                   ù';
+  ascii_line_23 = '³ `special thanks:`                                      ³';
+  ascii_line_24 = '³ ~encore~                HOMEPAGE  www.adlibtracker.net ³';
+  ascii_line_25 = '³ ~insane/Altair~         EMAiL     subz3ro@hotmail.com  ³';
+  ascii_line_26 = 'À-ÄÄÄÄÄÄÄÄÄÄ--ùú    úù-ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ-Ù';
 
 procedure HELP(topic: String);
 procedure C3WriteLn(posX,PosY: Byte; str: String; atr1,atr2,atr3: Byte);
@@ -44,7 +46,7 @@ uses
     StringIO,DialogIO,TxtScrIO;
 
 const
-  LINES = 888;
+  LINES = 889;
   help_data: array[1..LINES] of String[128] = (
     '@topic:general',
     'ÍËÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍ',
@@ -925,6 +927,7 @@ const
     'Jarek Burczynski and MAME Development Team [ymf262.c version 0.2]',
     'Simple DirectMedia Layer [SDL 1.2]',
     'Daniel F. Moisset [SDL4Freepascal-1.2.0.0]',
+    'Florian Jung (Windfisch) [Linux port]',
     '',
     '`subz3ro thanks to:`',
     'Slawomir Bubel (Malfunction/Altair), Daniel Illgen (insane/Altair),',
@@ -1185,7 +1188,7 @@ begin
 
     WriteLn;
     WriteLn('/´DLiB TR/´CK3R ][ SDL (win32)');
-    WriteLn('coded by subz3ro/Altair, SDL portation support by Dmitry Smagin');
+    WriteLn('coded by subz3ro/Altair, SDL portation support by Dmitry Smagin, Linux port by Florian Jung');
     WriteLn('version ',at2ver,' built on ',at2date,' ',at2link);
     WriteLn;
 end;
