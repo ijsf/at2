@@ -990,7 +990,7 @@ begin
     load_instrument(temp_instrument,_perc_sim_chan[chan]);
 
   freq := nFreq(note-1)+$2000+
-          SHORTINT(tDUMMY_BUFF(addr(temp_instrument)^)[12]);
+          SHORTINT(tDUMMY_BUFF(Addr(temp_instrument)^)[12]);
 
   event_table[chan].note := note;
   opl3out($0b0+_chan_n[chan],0);
@@ -1187,13 +1187,13 @@ begin { test_instrument_alt }
          keyboard_poll_input;
          emulate_screen;
        until NOT valid_key;
-
+       
   While ctrl_pressed do
     begin
       keyboard_poll_input;
       emulate_screen;
     end;
-
+    
   If (ExtOnly(temps) = 'a2f') then
     begin
       Move(ins__fmreg_table_backup,
@@ -1261,7 +1261,7 @@ begin
     load_instrument(temp_instrument,_perc_sim_chan[chan]);
 
   freq := nFreq(note-1)+$2000+
-          SHORTINT(tDUMMY_BUFF(addr(temp_instrument)^)[12]);
+          SHORTINT(tDUMMY_BUFF(Addr(temp_instrument)^)[12]);
 
   event_table[chan].note := note;
   opl3out($0b0+_chan_n[chan],0);

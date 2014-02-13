@@ -1140,8 +1140,8 @@ begin
   temp := calc_max_speedup(songdata.tempo);
   If (songdata.macro_speedup > temp) then
      begin
-       Dialog('DUE TO SDL LiMiTATiONS, MACRO SPEEDUP HAD TO BE CHANGED$'+
-              'SLOWDOWN: '+Num2str(songdata.macro_speedup,10)+'X -> '+Num2str(temp,10)+'X$',
+       Dialog('DUE TO SDL LiMiTATiONS, ~MACRO SPEEDUP~ VALUE IS ~CHANGED~$'+
+              'SLOWDOWN: ~'+Num2str(songdata.macro_speedup,10)+'X -> '+Num2str(temp,10)+'X~$',
               '~O~KAY$',' A2M LOADER ',1);
        songdata.macro_speedup := temp;
      end;
@@ -2281,8 +2281,8 @@ begin
   temp := calc_max_speedup(songdata.tempo);
   If (songdata.macro_speedup > temp) then
      begin
-       Dialog('DUE TO SDL LiMiTATiONS, MACRO SPEEDUP HAD TO BE CHANGED$'+
-              'SLOWDOWN: '+Num2str(songdata.macro_speedup,10)+'X -> '+Num2str(temp,10)+'X$',
+       Dialog('DUE TO SDL LiMiTATiONS, ~MACRO SPEEDUP~ VALUE IS ~CHANGED~$'+
+              'SLOWDOWN: ~'+Num2str(songdata.macro_speedup,10)+'X -> '+Num2str(temp,10)+'X~$',
               '~O~KAY$',' A2T LOADER ',1);
        songdata.macro_speedup := temp;
      end;
@@ -4119,18 +4119,18 @@ begin
   temp3 := 0;
   While (temp3 < temp-SizeOf(hscbuf.instr)-SizeOf(hscbuf.order)) do
     begin
-      If NOT (tDUMMY_BUFF(addr(hscbuf.patts)^)[temp3+1] in
+      If NOT (tDUMMY_BUFF(Addr(hscbuf.patts)^)[temp3+1] in
              [1..12*8+1,$00,$7f,$80]) or
-         NOT (tDUMMY_BUFF(addr(hscbuf.patts)^)[temp3] AND $0f0 in
+         NOT (tDUMMY_BUFF(Addr(hscbuf.patts)^)[temp3] AND $0f0 in
              [$00,$10,$20,$a0,$b0,$c0,$f0]) then
         begin
-          If NOT (tDUMMY_BUFF(addr(hscbuf.patts)^)[temp3+1] in
+          If NOT (tDUMMY_BUFF(Addr(hscbuf.patts)^)[temp3+1] in
                  [1..12*8+1,$00,$7f,$80]) then
-            tDUMMY_BUFF(addr(hscbuf.patts)^)[temp3+1] := $00;
+            tDUMMY_BUFF(Addr(hscbuf.patts)^)[temp3+1] := $00;
 
-          If NOT (tDUMMY_BUFF(addr(hscbuf.patts)^)[temp3] AND $0f0 in
+          If NOT (tDUMMY_BUFF(Addr(hscbuf.patts)^)[temp3] AND $0f0 in
                  [$00,$10,$20,$a0,$b0,$c0,$f0]) then
-            tDUMMY_BUFF(addr(hscbuf.patts)^)[temp3] := 0;
+            tDUMMY_BUFF(Addr(hscbuf.patts)^)[temp3] := 0;
         end;
       Inc(temp3,2);
     end;

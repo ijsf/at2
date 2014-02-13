@@ -131,8 +131,8 @@ begin
           else If NOT replay_forbidden then
 	             poll_proc;
 
-          If macro_ticklooper = 0 then
-	      macro_poll_proc;
+          If (macro_ticklooper = 0) then
+	        macro_poll_proc;
 
           Inc(ticklooper);
           If (ticklooper >= IRQ_freq_val DIV tempo) then
@@ -140,7 +140,7 @@ begin
 
           Inc(macro_ticklooper);
           If (macro_ticklooper >= IRQ_freq_val DIV (tempo*macro_speedup)) then
-	      macro_ticklooper := 0;
+	        macro_ticklooper := 0;
         end;
         
         Case sdl_opl3_emulator of

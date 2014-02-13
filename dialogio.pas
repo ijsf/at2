@@ -208,7 +208,7 @@ type
               cursor: Longint;
               oldx,
               oldy:   Byte;
-              screen: array[1..120*50*SizeOf(WORD)] of Byte;
+              screen: array[1..180*60*SizeOf(WORD)] of Byte;
             end;
 var
   i,k,l,m,{p1,p2,}pos,max,mx2,num,nm2,xstart,ystart,count,
@@ -1025,7 +1025,7 @@ type
             end;
 type
 //  pMNUDAT = ^tMNUDAT;
-  tMNUDAT = array[1..MAX_FILES] of String[1+12+1];
+  tMNUDAT = array[1..MAX_FILES] of String[1+23+1];
 
 type
 //  pDSCDAT = ^tDSCDAT;
@@ -1260,16 +1260,18 @@ begin { Fselect }
     For temp2 := 1 to fstream.count do
       If (fstream.stuff[temp2].name <> 'updir') then
         begin
-          menudat[temp2] := ' '+ExpStrR(BaseNameOnly(
-                                   fstream.stuff[temp2].name),8,' ')+' '+
-                                 ExpStrR(ExtOnly(
-                                   fstream.stuff[temp2].name),3,' ')+' ';
           If (fstream.stuff[temp2].attr AND directory <> 0) then
-            menudat[temp2] := iCASE(menudat[temp2]);
+            menudat[temp2] := ' '+iCASE(ExpStrR(Copy(fstream.stuff[temp2].name,1,23),23,' '))+' '
+          else                        
+            menudat[temp2] := ' '+ExpStrR(Copy(BaseNameOnly(
+                                    fstream.stuff[temp2].name),1,20),20,' ')+' '+
+                                  ExpStrR(Copy(ExtOnly(
+                                    fstream.stuff[temp2].name),1,3),3,' ')+' ';
         end
       else
         begin
-          menudat[temp2] := ExpStrR(' ..',mn_environment.descr_len,' ');
+          menudat[temp2] := ' '+ExpStrR('..',20,' ')+' '+
+                                ExpStrR(ExtOnly(fstream.stuff[temp2].name),3,' ')+' ';
           fstream.stuff[temp2].name := '..';
         end;
 
@@ -1323,10 +1325,15 @@ begin { Fselect }
     mn_setting.terminate_keys[3] := $0e08;
     mn_setting.terminate_keys[4] := $2b5c;
 
-    temp2 := Menu(menudat,01,01,lastp,
-                  1+12+1,20,fstream.count,' '+
-                  DietStr(path_filter(temp3),28)+' ');
-
+    If (sdl_screen_mode = 0) then
+      temp2 := Menu(menudat,01,01,lastp,
+                    1+23+1,work_MaxLn-5,fstream.count,' '+
+                    DietStr(path_filter(temp3),40)+' ')
+    else                    
+      temp2 := Menu(menudat,01,01,lastp,
+                    1+23+1,work_MaxLn-15,fstream.count,' '+
+                    DietStr(path_filter(temp3),40)+' ');
+ 
     mn_setting.reverse_use := FALSE;
     mn_environment.context := '';
     mn_setting.terminate_keys[3] := 0;

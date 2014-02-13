@@ -10,6 +10,7 @@ procedure vid_Deinit;
 procedure vid_SetVideoMode(do_delay: Boolean);
 procedure vid_SetRGBPalette(var palette);
 procedure vid_FadeOut;
+procedure vid_TriggerEmergencyPalette(emergency: Boolean);
 
 implementation
 
@@ -36,7 +37,7 @@ end;
 var
   rgb_color_alt: array[0..15] of tRGB;
 
-procedure vid_SetRGBPalette;
+procedure vid_SetRGBPalette(var palette);
 begin
   SDL_SetPalette(screen,SDL_PHYSPAL,SDL_ColorArray(palette),0,16);
 end;
@@ -77,18 +78,9 @@ var
   rwop: pSDL_RWops;
 
 begin
-  Case sdl_screen_mode of
-    0: begin
-         FB_xres := 720;
-         FB_yres := 480;
-         FB_rows := 30;
-       end;
-    1: begin
-         FB_xres := 960;
-         FB_yres := 800;
-         FB_rows := 50;
-       end;
-  end;
+  FB_xres := SCREEN_RES_x;
+  FB_yres := SCREEN_RES_y;
+  FB_rows := hard_MaxLn;
 
   If do_delay then SDL_Delay(1000);
   screen := SDL_SetVideoMode(FB_xres,FB_yres,8,SDL_SWSURFACE);
@@ -102,7 +94,6 @@ begin
   Move(rgb_color,rgb_color_alt,SizeOf(rgb_color));
   emulate_screen := vid_EmulateScreen;
   _FrameBuffer := screen^.pixels;
-  TxtScrIO.Init;
   rwop := SDL_RWFromMem(adt2_icon_bitmap,SizeOf(adt2_icon_bitmap));
   icon := SDL_LoadBMP_RW(rwop,TRUE);
   SDL_WM_SetIcon(icon,NIL);
@@ -127,6 +118,21 @@ begin
       rgb_color_alt[idx].g := min0(rgb_color_alt[idx].g-1);
       rgb_color_alt[idx].b := min0(rgb_color_alt[idx].b-1);
     end;
+  SDL_SetPalette(screen,SDL_PHYSPAL,SDL_ColorArray(Addr(rgb_color_alt)^),0,16);
+end;
+
+procedure vid_TriggerEmergencyPalette(emergency: Boolean);
+
+var
+  idx: Byte;
+  
+begin
+  If emergency then
+    begin        
+      For idx := 0 to 15 do
+        rgb_color_alt[idx].r := $0ff-rgb_color[idx].r;
+    end
+  else Move(rgb_color,rgb_color_alt,SizeOf(rgb_color));
   SDL_SetPalette(screen,SDL_PHYSPAL,SDL_ColorArray(Addr(rgb_color_alt)^),0,16);
 end;
 

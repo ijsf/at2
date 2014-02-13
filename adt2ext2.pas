@@ -26,7 +26,7 @@ procedure INSTRUMENT_test(instr,instr2,chan: Byte; fkey: Word;
                           process_macros: Boolean);
 
 procedure INSTRUMENT_CONTROL_page_refresh(page: Byte);
-procedure INSTRUMENT_CONTROL_edit(var page: Byte; var inst);
+procedure INSTRUMENT_CONTROL_edit;
 
 procedure update_without_trace;
 procedure PATTERN_ORDER_page_refresh(page: Byte);
@@ -82,8 +82,6 @@ begin
       If scankey(SC_RIGHT) then
         If (mouse_x < 9*MaxCol-9*hard_maxcol) then
           Inc(mouse_x, 2);
-
-      keyboard_reset_buffer;
     end;
 
   old_octave := current_octave;
@@ -96,29 +94,34 @@ begin
                         else If scankey(SC_6) then current_octave := 6
                              else If scankey(SC_7) then current_octave := 7
                                   else If scankey(SC_8) then current_octave := 8;
- 
+                               
   If (current_octave <> old_octave) then
-    For temp := 1 to 8 do
-      If (temp <> current_octave) then
-        show_str(30+temp,MAX_PATTERN_ROWS+12,CHR(48+temp),
-             main_background+main_stat_line)
-      else show_str(30+temp,MAX_PATTERN_ROWS+12,CHR(48+temp),
-                main_background+main_hi_stat_line);
+    begin
+      For temp := 1 to 8 do
+        If (temp <> current_octave) then
+          show_str(30+temp,MAX_PATTERN_ROWS+12,CHR(48+temp),
+               main_background+main_stat_line)
+        else show_str(30+temp,MAX_PATTERN_ROWS+12,CHR(48+temp),
+                  main_background+main_hi_stat_line);
+    end;  
  
   If scankey(SC_LALT) or scankey(SC_RALT) then
-    begin
-      If scankey(SC_PLUS) then
-            If (overall_volume < 63) then begin
-                Inc(overall_volume);
-                set_global_volume;
-            end
-            else
-        else If scankey(SC_MINUS2) then
-            If (overall_volume > 0) then begin
-                Dec(overall_volume);
-                set_global_volume;
-            end;
-    end;
+    If scankey(SC_PLUS) then
+      begin
+        If (overall_volume < 63) then
+          begin
+            Inc(overall_volume);
+            set_global_volume;
+          end;
+      end        
+    else If scankey(SC_MINUS2) then
+           begin
+             If (overall_volume > 0) then
+               begin
+                 Dec(overall_volume);
+                 set_global_volume;
+               end;
+           end;  
     
     If (command_typing <> 0) then
       begin
@@ -141,27 +144,35 @@ begin
   If scankey(SC_F11) and alt_pressed and
      NOT ctrl_pressed and NOT shift_pressed then
     begin
-	  If (play_status <> isStopped) then
+	  If (play_status <> isStopped) and
+         (sdl_opl3_emulator <> 0) then
 	    begin
+          fade_out_playback(FALSE);
           bak_cur_order := current_order;
 	      bak_cur_line := current_line;
-	      stop_playing;
+          stop_playing;
           sdl_opl3_emulator := 0;
+          really_no_status_refresh := TRUE;
 	      calibrate_player(bak_cur_order,bak_cur_line,FALSE,FALSE);
+          really_no_status_refresh := FALSE;
 		end
       else sdl_opl3_emulator := 0;
-	end;
+    end;
 
   If scankey(SC_F12) and alt_pressed and
      NOT ctrl_pressed and NOT shift_pressed then
     begin
-	  If (play_status <> isStopped) then
+	  If (play_status <> isStopped) and
+         (sdl_opl3_emulator <> 1) then
 	    begin
+          fade_out_playback(FALSE);        
           bak_cur_order := current_order;
 	      bak_cur_line := current_line;
 	      stop_playing;
           sdl_opl3_emulator := 1;
+          really_no_status_refresh := TRUE;
 	      calibrate_player(bak_cur_order,bak_cur_line,FALSE,FALSE);
+          really_no_status_refresh := FALSE;
 		end
       else sdl_opl3_emulator := 1;
 	end;
@@ -170,7 +181,7 @@ begin
      If ctrl_pressed and left_shift_pressed and not right_shift_pressed then
        _ADSR_preview_flag := FALSE
      else If ctrl_pressed and right_shift_pressed and not left_shift_pressed then
-            _ADSR_preview_flag := TRUE;     
+            _ADSR_preview_flag := TRUE;
 end;
 
 procedure PROGRAM_SCREEN_init;
@@ -186,7 +197,7 @@ begin
                                                      main_background+main_border,single);
   Frame(v_ofs^,02,02,24,07,status_background+status_border,' STATUS ',
                                       status_background+status_border,double);
-  Frame(v_ofs^,25,02,MAX_COLUMNS-3,07,order_background+order_border,' PATTERN ORDER (  ) ',
+  Frame(v_ofs^,25,02,25+MAX_ORDER_COLS*7-1+PATTORD_xshift*2,07,order_background+order_border,' PATTERN ORDER (  ) ',
                                       order_background+order_border,double);
   fr_setting.shadow_enabled := TRUE;
   reset_critical_area;
@@ -997,7 +1008,7 @@ begin { process_config_file }
         check_number('instrument_ai_trig',10,0,15,instrument_ai_trig);
 
       sdl_screen_mode :=
-        check_number('sdl_screen_mode',10,0,1,sdl_screen_mode);
+        check_number('sdl_screen_mode',10,0,2,sdl_screen_mode);
 
       sdl_opl3_emulator :=
         check_number('sdl_opl3_emulator',10,0,1,sdl_opl3_emulator);
@@ -1089,7 +1100,6 @@ begin { process_config_file }
   {$i+}
   If (IOresult <> 0) then ;
   WriteLn('ok');
-  TxtScrIO.init;
 end;
 
 end.

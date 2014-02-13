@@ -264,7 +264,7 @@ static const int slot_array[32]=
         -1,-1,-1,-1,-1,-1,-1,-1
 };
 
-//Shift strength for the ksl value determined by ksl strength
+// shift table for KSL
 static const UINT8 KslShiftTable[4] = {
 	31,1,2,0
 };
@@ -715,7 +715,7 @@ INLINE void advance(OPL3 *chip)
                         case EG_SUS:    /* sustain phase */
 
                                 /* this is important behaviour:
-                                one can change percusive/non-percussive modes on the fly and
+                                one can change percussive/non-percussive modes on the fly and
                                 the chip will remain in sustain phase - verified on real YM3812 */
 
                                 if(op->eg_type)         /* non-percussive mode */
@@ -1133,7 +1133,7 @@ static int init_tables(void)
                         n = (n>>1)+1;
                 else
                         n = n>>1;
-                                                /* 11 bits here (rounded) */
+                                        /* 11 bits here (rounded) */
                 n <<= 1;                /* 12 bits here (as in real chip) */
                 tl_tab[ x*2 + 0 ] = n;
                 tl_tab[ x*2 + 1 ] = ~tl_tab[ x*2 + 0 ]; /* this *is* different from OPL2 (verified on real YMF262) */
@@ -1450,8 +1450,8 @@ INLINE void set_ksl_tl(OPL3 *chip,int slot,int v)
                                 /*** treat volume attenuation for 4op channels ***/
                                 /*************************************************/
                                 if (conn != 0)
-                                    // AM-FM, FM-AM, AM-AM down by 50%
-                                    SLOT->TLL = SLOT->TL + (CH->ksl_base>>SLOT->ksl)*0.5;
+                                    // AM-FM, FM-AM, AM-AM
+                                    SLOT->TLL = SLOT->TL + (CH->ksl_base>>SLOT->ksl)*0.5;  // down by 50%
                                 else
                                     // FM-FM
                                     SLOT->TLL = SLOT->TL + (CH->ksl_base>>SLOT->ksl);
@@ -1466,10 +1466,15 @@ INLINE void set_ksl_tl(OPL3 *chip,int slot,int v)
                 case 12: case 13: case 14:
                         if ((CH-3)->extended)
                         {                                                
+                                /*************************************************/
+                                /*** treat volume attenuation for 4op channels ***/
+                                /*************************************************/
                                 if (conn != 0)
+                                    // AM-FM, FM-AM, AM-AM down by 50%
                                     SLOT->TLL = SLOT->TL + ((CH-3)->ksl_base>>SLOT->ksl)*0.5;
                                 else    
-                                    SLOT->TLL = SLOT->TL + ((CH-3)->ksl_base>>SLOT->ksl)*1.5;
+                                    // FM-FM
+                                    SLOT->TLL = SLOT->TL + ((CH-3)->ksl_base>>SLOT->ksl);
                         }
                         else
                         {
@@ -1480,7 +1485,10 @@ INLINE void set_ksl_tl(OPL3 *chip,int slot,int v)
                 case 7: case 8:
                         if(chip->rhythm&0x20)
                         {
-                                // lower volume for all percussion channels except Bass Drum
+                                /**************************************************/
+                                /*** treat total volume for percussion channels ***/
+                                /**************************************************/
+                                // BD, TT, TC, HH up by 50%
                                 SLOT->TLL = ((SLOT->TL) + (CH->ksl_base>>SLOT->ksl))*1.5;
                         }
                         else
@@ -1936,8 +1944,8 @@ static void OPL3WriteReg(OPL3 *chip, int r, int v)
                                                     // FM-FM
                                                     CH->SLOT[SLOT1].TLL = CH->SLOT[SLOT1].TL + (CH->ksl_base>>CH->SLOT[SLOT1].ksl);
                                                     CH->SLOT[SLOT2].TLL = CH->SLOT[SLOT2].TL + (CH->ksl_base>>CH->SLOT[SLOT2].ksl);
-                                                    (CH+3)->SLOT[SLOT1].TLL = (CH+3)->SLOT[SLOT1].TL + ((CH->ksl_base>>(CH+3)->SLOT[SLOT1].ksl));
-                                                    (CH+3)->SLOT[SLOT2].TLL = (CH+3)->SLOT[SLOT2].TL + ((CH->ksl_base>>(CH+3)->SLOT[SLOT2].ksl));
+                                                    (CH+3)->SLOT[SLOT1].TLL = (CH+3)->SLOT[SLOT1].TL + (CH->ksl_base>>(CH+3)->SLOT[SLOT1].ksl);
+                                                    (CH+3)->SLOT[SLOT2].TLL = (CH+3)->SLOT[SLOT2].TL + (CH->ksl_base>>(CH+3)->SLOT[SLOT2].ksl);
                                                 }    
 
                                                 /* refresh frequency counter in FOUR SLOTs of this channel and channel+3 using data from THIS channel */
@@ -1981,7 +1989,10 @@ static void OPL3WriteReg(OPL3 *chip, int r, int v)
                                 case 7: case 8:
                                         if(chip->rhythm&0x20)
                                         {
-                                                // lower volume for all percussion channels except Bass Drum
+                                                /**************************************************/
+                                                /*** treat total volume for percussion channels ***/
+                                                /**************************************************/
+                                                // BD, TT, TC, HH up by 50%
                                                 CH->SLOT[SLOT1].TLL = ((CH->SLOT[SLOT1].TL) + (CH->ksl_base>>CH->SLOT[SLOT1].ksl))*1.5;
                                                 CH->SLOT[SLOT2].TLL = ((CH->SLOT[SLOT2].TL) + (CH->ksl_base>>CH->SLOT[SLOT2].ksl))*1.5;
 
