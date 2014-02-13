@@ -12,13 +12,6 @@ uses
 
 const
   smooth_appear: Boolean = TRUE;
-  {$IFDEF WINDOWS}
-  PATHSEP: Char = '\';
-  WILDCARD_ASTERISK: String = '*.*';
-  {$ELSE}
-  PATHSEP: Char = '/';
-  WILDCARD_ASTERISK: String = '*';
-  {$ENDIF}
 
 type
   tDIALOG_SETTING = Record
