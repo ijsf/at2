@@ -723,6 +723,7 @@ const
   a2w_default_path:    String  = '';
   sdl_screen_mode:     Byte = 0;
   sdl_opl3_emulator:   Byte = 0;
+  sdl_wav_directory:   String  = 'wav_files\';
   sdl_sample_rate:     Longint = 44100;
   sdl_sample_buffer:   Longint = 2048;
   sdl_delay_ms:        Longint = 0;

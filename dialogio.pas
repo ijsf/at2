@@ -1067,18 +1067,25 @@ begin
     LookUpMask := okay;
 end;
 
-function valid_drive(drive_str: String; var info: String): Boolean;
+var
+  vDrives: array[0..128] of Char;
+
+function valid_drive(drive: Char; var info: String): Boolean;
+
+var
+  idx: Byte;
+
 begin
   valid_drive := FALSE;
   info := '';
   {$IFDEF WINDOWS}
-  Case GetDriveType(Addr(drive_str[1])) of
-    DRIVE_REMOVABLE: info := 'FLOPPY';
-    DRIVE_FIXED:     info := 'HARDDiSK';
-    DRIVE_REMOTE:    info := 'NETWORK';
-    DRIVE_CDROM:     info := 'CD/DVD';
-    DRIVE_RAMDISK:   info := 'RAM';
-  end;
+  idx := 0;
+  For idx := 0 to 128 do
+    If (vDrives[idx] = drive) then
+      begin
+        info := 'DRiVE';
+        BREAK;
+      end;    
   {$ENDIF}
   If (info <> '') then valid_drive := TRUE;
 end;
@@ -1117,14 +1124,17 @@ begin
   If l < j then QuickSort(l,j);
   If i < r then QuickSort(i,r);
 end;
-
+ 
 begin { make_stream }
   WriteLn('make_stream: path=',path);
+  {$IFDEF WINDOWS}
+  GetLogicalDriveStrings(SizeOf(vDrives),vDrives);
+  {$ENDIF}
   If (stream.drive_count = 0) then
     begin
       count1 := 0;
       For drive := 'A' to 'Z' do
-        If valid_drive(drive + ':' + PATHSEP, stream.stuff[SUCC(count1)].info) then // check all drives A-Z
+        If valid_drive(drive,stream.stuff[SUCC(count1)].info) then // check all drives A-Z
           begin
             Inc(count1);
             stream.stuff[count1].name := drive;
@@ -1340,11 +1350,11 @@ begin { Fselect }
     If (sdl_screen_mode = 0) then
       temp2 := Menu(menudat,01,01,lastp,
                     1+23+1,work_MaxLn-5,fstream.count,' '+
-                    DietStr(path_filter(temp3),40)+' ')
+                    iCASE(DietStr(path_filter(temp3),40))+' ')
     else                    
       temp2 := Menu(menudat,01,01,lastp,
                     1+23+1,work_MaxLn-15,fstream.count,' '+
-                    DietStr(path_filter(temp3),40)+' ');
+                    iCASE(DietStr(path_filter(temp3),40))+' ');
  
     mn_setting.reverse_use := FALSE;
     mn_environment.context := '';

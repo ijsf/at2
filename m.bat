@@ -1,49 +1,49 @@
 @echo off
 set homedir=%~d1\AT2_Compilation_Environment
-set path=%homedir%\utils\fpc\bin\i386-win32;%homedir%\utils\mingw\bin;%homedir%\utils\jwasm
 cd %homedir%\at2-SDL
+set VERSION=2.4.10 050
 echo.
 echo ************************************
 echo **                                **
-echo **  Deleting old files            **
+echo **  Validating                    **
 echo **                                **
 echo ************************************
 echo.
-del *.cfg
-del *.sym
-del *.fpd
-del *.exe
-del *.map
+copy utils\validate.exe ..\at2-SDL >nul
+validate.exe %VERSION%
+del validate.exe
+echo.
+echo ************************************
+echo **                                **
+echo **  Compilation in progress       **
+echo **                                **
+echo ************************************
+echo.
+@call make.bat >!log
+if not exist adtrack2.exe goto :compile_error
 del *.ppu
 del *.o
 del *.s
 del *.res
 del *.or
-if exist adtrack2.res goto :res_ok
-windres -i adtrack2.rc -o adtrack2.res
-:res_ok
+del !log
 echo.
 echo ************************************
 echo **                                **
-echo **  Compiling MAME OPL3EMU        **
+echo **  UPXW: Compressing executable  **
 echo **                                **
 echo ************************************
 echo.
-%homedir%\utils\minigw\bin\gcc -c ymf262.c -o ymf262.o -shared -Wall -O1 -std=c99 -fms-extensions -DINLINE="static"
+@..\utils\upx adtrack2.exe
 echo.
 echo ************************************
 echo **                                **
-echo **  Compiling APLIB               **
+echo **  Executing program             **
 echo **                                **
 echo ************************************
 echo.
-jwasm.exe -coff -Foaplib.o aplib.asm
-:aplib_ok
-echo.
-echo ************************************
-echo **                                **
-echo **  Compiling ADTRACK2            **
-echo **                                **
-echo ************************************
-echo.
-fpc.exe -O1 -OpPENTIUM2 -Ccpascal -Mtp -Rintel -Twin32 -WC -Fusdl adtrack2.pas -oadtrack2.exe
+start adtrack2
+goto :ok
+:compile_error
+..\utils\notepad++\notepad++ !log.
+:ok

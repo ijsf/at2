@@ -3894,7 +3894,7 @@ begin
       synchronize_screen;
       If (unfreeze_pending_frames = 0) then
         vid_TriggerEmergencyPalette(FALSE);
-    end;  
+    end;
 
   If (_name_scrl_pending_frames > 0) then Dec(_name_scrl_pending_frames);
   status_refresh;
@@ -4026,8 +4026,8 @@ begin { calibrate_player }
   If NOT no_sync_playing then
     begin
       show_str(13,07,' --:--.- ',status_background+status_border);
-          emulate_screen;
-        end;
+      emulate_screen;
+    end;
 
   previous_order := current_order;
   previous_line := current_line;
@@ -4369,6 +4369,7 @@ var
   temp: Byte;
 
 begin
+  flush_WAV_data;
   replay_forbidden := TRUE;
   play_status := isStopped;
   fade_out_volume := 63;
@@ -4788,6 +4789,7 @@ begin
     end
   else init_buffers;
 
+  wav_buffer_len := 0;
   FillData(songdata,SizeOf(songdata),0);
   FillData(songdata.pattern_order,SizeOf(songdata.pattern_order),$080);
   FillData(pattdata^,PATTERN_SIZE*max_patterns,0);
