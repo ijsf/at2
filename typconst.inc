@@ -859,6 +859,8 @@ const
   dialog_input:        Byte    = $00;
   dialog_def_bckg:     Byte    = $0c0;
   dialog_def:          Byte    = $00;
+  dialog_prog_bar1:    Byte    = $09;
+  dialog_prog_bar2:    Byte    = $0b;
   macro_background:    Byte    = $040;
   macro_title:         Byte    = $0b;
   macro_border:        Byte    = $0f;
@@ -980,3 +982,11 @@ const
     (r: $0ff; g: $055; b: $0ff; a: 00),
     (r: $0ff; g: $0ff; b: $055; a: 00),
     (r: $0ff; g: $0ff; b: $0ff; a: 00));
+
+const
+  fade_delay_tab: array[0..63] of Byte = (
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,
+    3,3,3,3,3,3,3,3,3,3,3,
+    4,4,4,4,4,4,4,
+    5,5,5,5);

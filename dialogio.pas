@@ -266,8 +266,7 @@ asm
 @@2:    xor     eax,eax
         jecxz   @@3
         mov     al,1
-@@3:
-        pop     esi
+@@3:    pop     esi
         pop     ecx
 end;
 

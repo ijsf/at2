@@ -24,7 +24,7 @@ var
 function aP_pack(var input, output; size: Longint; workmem: tWORKMEM_TYPE; status: Pointer): Longint; stdcall; external name '_aP_pack';
 function aP_depack(var input, output): Longint; stdcall; external name '_aP_depack';
 
-function callback(param1, param2: longint): Longint; cdecl;
+function callback(param1,param2: Longint): Longint; cdecl;
 begin
 	asm pushad end;
 	show_progress(param1);

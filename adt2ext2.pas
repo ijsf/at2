@@ -50,7 +50,8 @@ function _4op_to_test: Word;
 
 implementation
 
-uses  
+uses
+  CRT,
   AdT2vid,AdT2vscr,AdT2keyb,AdT2opl3,AdT2unit,AdT2extn,AdT2text,AdT2apak,
   StringIO,DialogIO,ParserIO,TxtScrIO;
 
@@ -58,32 +59,300 @@ uses
 {$i ipattord.inc}
 {$i ipattern.inc}
 
+procedure FADE_OUT_RECORDING;
+
+var
+  xstart,ystart: Byte;
+  temp,temp2: Byte;
+
+procedure show_progress(value: Longint);
+begin
+  progress_new_value := Round(progress_step*value);
+  If (progress_new_value <> progress_old_value) then
+    begin
+      progress_old_value := progress_new_value;
+      ShowCStr(v_ofs^,
+               progress_xstart,progress_ystart,
+               '~'+ExpStrL('',progress_new_value,'Û')+'~'+
+               ExpStrL('',40-progress_new_value,'Û'),
+               dialog_background+dialog_prog_bar1,
+               dialog_background+dialog_prog_bar2);
+
+      If tracing then trace_update_proc
+      else If (play_status = isPlaying) then
+             begin
+               PATTERN_ORDER_page_refresh(pattord_page);
+               PATTERN_page_refresh(pattern_page);
+             end;
+      _emulate_screen_without_delay := TRUE;
+      emulate_screen;
+    end;
+end;
+
+label _jmp1,_end;
+
+begin
+  If (play_status = isStopped) or (sdl_opl3_emulator = 0) then
+    begin
+      sdl_opl3_emulator := 0;
+      EXIT;
+    end;
+
+  Move(v_ofs^,backup.screen,SizeOf(backup.screen));
+  backup.cursor := GetCursor;
+  backup.oldx   := WhereX;
+  backup.oldy   := WhereY;
+  HideCursor;
+
+  dl_environment.context := ' ESC Ä STOP '; 
+  centered_frame(xstart,ystart,43,3,' WAV RECORDER ',
+                 dialog_background+dialog_border,
+                 dialog_background+dialog_title,double);
+  ShowStr(v_ofs^,xstart+43-Length(dl_environment.context),ystart+3,
+                 dl_environment.context,
+                 dialog_background+dialog_border);
+  dl_environment.context := '';
+
+  show_progress(40); 
+  ShowStr(v_ofs^,xstart+2,ystart+1,
+    'FADiNG OUT WAV RECORDiNG...',
+    dialog_background+dialog_text);
+
+  progress_xstart := xstart+2;
+  progress_ystart := ystart+2;
+  progress_old_value := NULL;
+  progress_step := 40/63;
+
+  For temp := 63 downto 0 do
+    begin
+      If scankey(1) then GOTO _jmp1;
+      fade_out_volume := temp;
+      set_global_volume;
+      ShowStr(v_ofs^,xstart+30,ystart+1,
+        Num2Str(Round(100/63*temp),10)+'%  ',
+        dialog_background+dialog_hi_text);        
+      If (@trace_update_proc <> NIL) then trace_update_proc
+      else If (play_status = isPlaying) then
+             begin
+               PATTERN_ORDER_page_refresh(pattord_page);
+               PATTERN_page_refresh(pattern_page);
+             end;
+      show_progress(temp);
+      For temp2 := 1 to 20 do
+        begin
+          If scankey(1) then GOTO _jmp1;
+          _emulate_screen_without_delay := TRUE;
+          emulate_screen;
+          keyboard_reset_buffer;
+          Delay(fade_delay_tab[temp]);
+        end;
+    end;
+
+ _jmp1:
+
+  show_progress(0);
+  ShowStr(v_ofs^,xstart+2,ystart+1,
+    'FADiNG iN SONG PLAYBACK... ',
+    dialog_background+dialog_text);
+
+  sdl_opl3_emulator := 0;
+  For temp := 0 to 63 do
+    begin
+      If scankey(1) then GOTO _end;
+      fade_out_volume := temp;
+      set_global_volume;
+      ShowStr(v_ofs^,xstart+30,ystart+1,
+        Num2Str(Round(100/63*temp),10)+'%  ',
+        dialog_background+dialog_hi_text);        
+      If (@trace_update_proc <> NIL) then trace_update_proc
+      else If (play_status = isPlaying) then
+             begin
+               PATTERN_ORDER_page_refresh(pattord_page);
+               PATTERN_page_refresh(pattern_page);
+             end;
+      show_progress(temp);
+      If scankey(1) then GOTO _end;
+      _emulate_screen_without_delay := TRUE;
+      emulate_screen;
+      keyboard_reset_buffer;
+      Delay(5);
+    end;
+
+_end:
+
+  fade_out_volume := 63;
+  set_global_volume;
+
+  move_to_screen_data := Addr(backup.screen);
+  move_to_screen_area[1] := xstart;
+  move_to_screen_area[2] := ystart;
+  move_to_screen_area[3] := xstart+43+2+1;
+  move_to_screen_area[4] := ystart+3+1;
+
+  move2screen;
+//  SetCursor(backup.cursor);
+//  GotoXY(backup.oldx,backup.oldy);
+end;
+
+procedure FADE_IN_RECORDING;
+
+var
+  xstart,ystart: Byte;
+  temp,temp2: Byte;
+  smooth_fadeOut: Boolean;
+
+procedure show_progress(value: Longint);
+begin
+  progress_new_value := Round(progress_step*value);
+  If (progress_new_value <> progress_old_value) then
+    begin
+      progress_old_value := progress_new_value;
+      ShowCStr(v_ofs^,
+               progress_xstart,progress_ystart,
+               '~'+ExpStrL('',progress_new_value,'Û')+'~'+
+               ExpStrL('',40-progress_new_value,'Û'),
+               dialog_background+dialog_prog_bar1,
+               dialog_background+dialog_prog_bar2);
+
+      If tracing then trace_update_proc
+      else If (play_status = isPlaying) then
+             begin
+               PATTERN_ORDER_page_refresh(pattord_page);
+               PATTERN_page_refresh(pattern_page);
+             end;
+      _emulate_screen_without_delay := TRUE;
+      emulate_screen;
+    end;
+end;
+
+label _end;
+
+begin
+  If (sdl_opl3_emulator = 1) then EXIT;
+  If (play_status = isStopped) then smooth_fadeOut := FALSE
+  else smooth_fadeOut := TRUE;
+
+  Move(v_ofs^,backup.screen,SizeOf(backup.screen));
+  backup.cursor := GetCursor;
+  backup.oldx   := WhereX;
+  backup.oldy   := WhereY;
+  HideCursor;
+
+  dl_environment.context := ' ESC Ä STOP ';
+  centered_frame(xstart,ystart,43,3,' WAV RECORDER ',
+                 dialog_background+dialog_border,
+                 dialog_background+dialog_title,double);
+  ShowStr(v_ofs^,xstart+43-Length(dl_environment.context),ystart+3,
+                 dl_environment.context,
+                 dialog_background+dialog_border);
+  dl_environment.context := '';
+
+  progress_xstart := xstart+2;
+  progress_ystart := ystart+2;
+  progress_old_value := NULL;
+  progress_step := 40/63;
+
+  If smooth_fadeOut then
+    begin
+      show_progress(40);
+      ShowStr(v_ofs^,xstart+2,ystart+1,
+        'FADiNG OUT SONG PLAYBACK...',
+        dialog_background+dialog_text);   
+      
+      For temp := 63 downto 0 do
+        begin
+          If scankey(1) then GOTO _end;
+          fade_out_volume := temp;
+          set_global_volume;
+          ShowStr(v_ofs^,xstart+30,ystart+1,
+            Num2Str(Round(100/63*temp),10)+'%  ',
+            dialog_background+dialog_hi_text);        
+          If (@trace_update_proc <> NIL) then trace_update_proc
+          else If (play_status = isPlaying) then
+                 begin
+                   PATTERN_ORDER_page_refresh(pattord_page);
+                   PATTERN_page_refresh(pattern_page);
+                 end;
+          show_progress(temp);
+          _emulate_screen_without_delay := TRUE;
+          emulate_screen;
+          keyboard_reset_buffer;
+          Delay(5);
+          If scankey(1) then GOTO _end;
+        end;
+    end;
+
+  show_progress(0); 
+  ShowStr(v_ofs^,xstart+2,ystart+1,
+    'FADiNG iN WAV RECORDiNG... ',
+    dialog_background+dialog_text);   
+    
+  Case play_status of
+    isStopped: begin
+                 If trace_by_default then
+                   begin
+                     tracing := TRUE;
+                     trace_update_proc := update_trace;
+                   end;
+                 start_playing;
+               end;
+    isPaused:  begin
+                 replay_forbidden := FALSE;
+                 play_status := isPlaying;
+               end;
+  end;
+
+  If NOT smooth_fadeOut then fade_out_playback(FALSE);
+  sdl_opl3_emulator := 1;
+
+  For temp := 0 to 63 do
+    begin
+      If scankey(1) then GOTO _end;
+      fade_out_volume := temp;
+      set_global_volume;
+      ShowStr(v_ofs^,xstart+30,ystart+1,
+        Num2Str(Round(100/63*temp),10)+'%  ',
+        dialog_background+dialog_hi_text);        
+      If (@trace_update_proc <> NIL) then trace_update_proc
+      else If (play_status = isPlaying) then
+             begin
+               PATTERN_ORDER_page_refresh(pattord_page);
+               PATTERN_page_refresh(pattern_page);
+             end;
+      show_progress(temp);
+      For temp2 := 1 to 20 do
+        begin
+          If scankey(1) then GOTO _end;
+          _emulate_screen_without_delay := TRUE;
+          emulate_screen;
+          keyboard_reset_buffer;
+          Delay(fade_delay_tab[temp]);
+        end;
+    end;
+
+_end:
+
+  fade_out_volume := 63;
+  set_global_volume;
+  
+  move_to_screen_data := Addr(backup.screen);
+  move_to_screen_area[1] := xstart;
+  move_to_screen_area[2] := ystart;
+  move_to_screen_area[3] := xstart+43+2+1;
+  move_to_screen_area[4] := ystart+3+1;
+
+  move2screen;
+//  SetCursor(backup.cursor);
+//  GotoXY(backup.oldx,backup.oldy);
+end;
+
 procedure process_global_keys;
-	
+
 var
   temp,
   old_octave: Byte;
-  
+
 begin
-  If (scankey(SC_LCTRL) or scankey(SC_RCTRL)) and scankey(SC_TAB) then
-    begin
-      If scankey(SC_UP) then
-        If (mouse_y > 0) then
-          Dec(mouse_y, 2);
-
-      If scankey(SC_DOWN) then
-        If (mouse_y < 16*MaxLn-16*hard_maxln) then
-          Inc(mouse_y, 2);
-
-      If scankey(SC_LEFT) then
-        If (mouse_x > 0) then
-          Dec(mouse_x, 2);
-
-      If scankey(SC_RIGHT) then
-        If (mouse_x < 9*MaxCol-9*hard_maxcol) then
-          Inc(mouse_x, 2);
-    end;
-
   old_octave := current_octave;
   If (scankey(SC_LCTRL) or scankey(SC_RCTRL)) then
     If scankey(SC_1) then current_octave := 1
@@ -94,7 +363,7 @@ begin
                         else If scankey(SC_6) then current_octave := 6
                              else If scankey(SC_7) then current_octave := 7
                                   else If scankey(SC_8) then current_octave := 8;
-                               
+
   If (current_octave <> old_octave) then
     begin
       For temp := 1 to 8 do
@@ -103,8 +372,8 @@ begin
                main_background+main_stat_line)
         else show_str(30+temp,MAX_PATTERN_ROWS+12,CHR(48+temp),
                   main_background+main_hi_stat_line);
-    end;  
- 
+    end;
+
   If scankey(SC_LALT) or scankey(SC_RALT) then
     If scankey(SC_PLUS) then
       begin
@@ -113,7 +382,7 @@ begin
             Inc(overall_volume);
             set_global_volume;
           end;
-      end        
+      end
     else If scankey(SC_MINUS2) then
            begin
              If (overall_volume > 0) then
@@ -121,8 +390,8 @@ begin
                  Dec(overall_volume);
                  set_global_volume;
                end;
-           end;  
-    
+           end;
+
     If (command_typing <> 0) then
       begin
         If scankey(SC_F11) and
@@ -140,15 +409,17 @@ begin
             cycle_pattern := FALSE;
           end;
       end;
-  
+
   If scankey(SC_F11) and alt_pressed and
-     NOT ctrl_pressed and NOT shift_pressed then
-    sdl_opl3_emulator := 1;
+     NOT ctrl_pressed then
+    If NOT shift_pressed then sdl_opl3_emulator := 1
+    else FADE_IN_RECORDING;
 
   If scankey(SC_F12) and alt_pressed and
-     NOT ctrl_pressed and NOT shift_pressed then
-    sdl_opl3_emulator := 0;
-	
+     NOT ctrl_pressed then
+    If NOT shift_pressed then sdl_opl3_emulator := 0
+    else FADE_OUT_RECORDING;
+
    If _check_ADSR_preview_flag then
      If ctrl_pressed and left_shift_pressed and not right_shift_pressed then
        _ADSR_preview_flag := FALSE
@@ -213,7 +484,7 @@ begin
   For temp := 11 to 11+MAX_PATTERN_ROWS-1 do
     ShowStr(v_ofs^,02,temp,patt_win[4],pattern_bckg+pattern_border);
 
-  ShowStr(v_ofs^,02,11+MAX_PATTERN_ROWS,patt_win[5],pattern_bckg+pattern_border);   
+  ShowStr(v_ofs^,02,11+MAX_PATTERN_ROWS,patt_win[5],pattern_bckg+pattern_border);
 end;
 
 procedure process_config_file;
@@ -674,7 +945,7 @@ begin { process_config_file }
 
       dialog_border :=
         check_number('dialog_border',10,0,15,dialog_border);
-
+       
       dialog_text :=
         check_number('dialog_text',10,0,15,dialog_text);
 
@@ -719,6 +990,12 @@ begin { process_config_file }
 
       dialog_def :=
         check_number('dialog_def',10,0,15,dialog_def);
+
+      dialog_prog_bar1 :=
+        check_number('dialog_prog_bar1',10,0,15,dialog_prog_bar1);
+
+      dialog_prog_bar2 :=
+        check_number('dialog_prog_bar2',10,0,15,dialog_prog_bar2);
 
       macro_background :=
         check_number('macro_background',10,0,15,macro_background SHR 4) SHL 4;
@@ -974,7 +1251,7 @@ begin { process_config_file }
 
       sdl_screen_mode :=
         check_number('sdl_screen_mode',10,0,2,sdl_screen_mode);
-       
+
       sdl_sample_rate :=
         check_number('sdl_sample_rate',10,8000,48000,sdl_sample_rate);
 
@@ -989,24 +1266,24 @@ begin { process_config_file }
 
       sdl_typematic_delay :=
         check_number('sdl_typematic_delay',10,0,2000,sdl_typematic_delay);
-		
-	  If (Copy(data,1,18) = 'sdl_wav_directory=') and
+
+          If (Copy(data,1,18) = 'sdl_wav_directory=') and
          (Length(data) > 18) then
-        begin          
-		  temp_str := Copy(data,19,Length(data)-18);
-		  If (temp_str[1] = '\') then Delete(temp_str,1,1);
+        begin
+                  temp_str := Copy(data,19,Length(data)-18);
+                  If (temp_str[1] = '\') then Delete(temp_str,1,1);
           If (temp_str <> '') then
-		    begin
+                    begin
               If (Length(temp_str) > 4) then
-			    If NOT (Lower(Copy(temp_str,Length(temp_str)-3,4)) = '.wav') then
-				  temp_str := temp_str+'\'
-				else opl3_flushmode := TRUE
-			  else If (temp_str[Length(temp_str)] <> '\') then
+                            If NOT (Lower(Copy(temp_str,Length(temp_str)-3,4)) = '.wav') then
+                                  temp_str := temp_str+'\'
+                                else opl3_flushmode := TRUE
+                          else If (temp_str[Length(temp_str)] <> '\') then
                      temp_str := temp_str+'\';
-			end;		 
-	      sdl_wav_directory := temp_str;
-	      If NOT (Pos(':',sdl_wav_directory) <> 0) then
-            sdl_wav_directory := PathOnly(ParamStr(0))+'\'+sdl_wav_directory;		      
+                        end;
+              sdl_wav_directory := temp_str;
+              If NOT (Pos(':',sdl_wav_directory) <> 0) then
+            sdl_wav_directory := PathOnly(ParamStr(0))+'\'+sdl_wav_directory;
         end;
 
       If (Copy(data,1,17) = 'a2m_default_path=') and

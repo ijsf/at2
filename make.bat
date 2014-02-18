@@ -2,23 +2,6 @@
 set homedir=%~d1\AT2_Compilation_Environment
 set path=%homedir%\utils\fpc\bin\i386-win32;%homedir%\utils\mingw\bin;%homedir%\utils\jwasm
 cd %homedir%\at2-SDL
-echo.
-echo ************************************
-echo **                                **
-echo **  Deleting old files            **
-echo **                                **
-echo ************************************
-echo.
-del *.cfg
-del *.sym
-del *.fpd
-del *.exe
-del *.map
-del *.ppu
-del *.o
-del *.s
-del *.res
-del *.or
 if exist adtrack2.res goto :res_ok
 windres -i adtrack2.rc -o adtrack2.res
 :res_ok

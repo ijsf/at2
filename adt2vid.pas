@@ -56,24 +56,25 @@ begin
   If (Addr(mn_environment.ext_proc_rt) <> NIL) then mn_environment.ext_proc_rt
   else update_without_trace;
 
-  // do actual flip
   emulate_screen_all;
-  SDL_Flip(screen);
+  If _update_sdl_screen then
+    SDL_Flip(screen);
 
-  If (sdl_delay_ms = 0) then
-    begin // keep framerate 60 fps
-      Inc(next_game_tick,17);
-      Inc(frames);
-      frame_end := SDL_GetTicks;
-      If (frame_end-frame_start >= 1000) then frames := 0;
-      If (next_game_tick = 17) then Inc(next_game_tick,frame_end);
-      sleep_time := next_game_tick-frame_end;
-      If (sleep_time > 0) then SDL_Delay(sleep_time)
-      else SDL_Delay(2);
-      If (frames = 0) then frame_start := next_game_tick;
-    end
-  else
-    SDL_Delay(sdl_delay_ms); // or do constant delay
+  If _emulate_screen_without_delay then _emulate_screen_without_delay := FALSE
+  else If (sdl_delay_ms = 0) then
+         begin // keep framerate 60 fps
+           Inc(next_game_tick,17);
+           Inc(frames);
+           frame_end := SDL_GetTicks;
+           If (frame_end-frame_start >= 1000) then frames := 0;
+           If (next_game_tick = 17) then Inc(next_game_tick,frame_end);
+           sleep_time := next_game_tick-frame_end;
+           If (sleep_time > 0) then SDL_Delay(sleep_time)
+           else SDL_Delay(2);
+           If (frames = 0) then frame_start := next_game_tick;
+         end
+       else
+         SDL_Delay(sdl_delay_ms); // or do constant delay
 end;
 
 procedure vid_SetVideoMode(do_delay: Boolean);

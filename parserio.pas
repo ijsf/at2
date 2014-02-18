@@ -182,8 +182,7 @@ asm
 @@4:    mov     al,1
         jmp     @@6
 @@5:    xor     al,al
-@@6:
-        pop     edi
+@@6:    pop     edi
         pop     esi
 end;
 
@@ -220,8 +219,7 @@ asm
 @@4:    mov     al,1
         jmp     @@6
 @@5:    xor     al,al
-@@6:
-        pop     edi
+@@6:    pop     edi
         pop     esi
 end;
 

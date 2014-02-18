@@ -1156,6 +1156,7 @@ begin { test_instrument_alt }
       While scankey(board_scancodes[temp2]) do
         begin
           keyboard_poll_input;
+          _emulate_screen_without_delay := TRUE;
           emulate_screen;
         end;
     end
@@ -1185,12 +1186,14 @@ begin { test_instrument_alt }
                     end;
            end;
          keyboard_poll_input;
+          _emulate_screen_without_delay := TRUE;
          emulate_screen;
        until NOT valid_key;
        
   While ctrl_pressed do
     begin
       keyboard_poll_input;
+      _emulate_screen_without_delay := TRUE;
       emulate_screen;
     end;
     
@@ -1402,6 +1405,7 @@ begin { test_instrument_alt2 }
       While scankey(board_scancodes[temp2]) do
         begin
           keyboard_poll_input;
+          _emulate_screen_without_delay := TRUE;
           emulate_screen;
         end;
     end
@@ -1431,12 +1435,14 @@ begin { test_instrument_alt2 }
                     end;
            end;
          keyboard_poll_input;
+          _emulate_screen_without_delay := TRUE;
          emulate_screen;
        until NOT valid_key;
 
   While ctrl_pressed do
     begin
       keyboard_poll_input;
+      _emulate_screen_without_delay := TRUE;
       emulate_screen;
     end;
 

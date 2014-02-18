@@ -222,6 +222,7 @@ begin { INSTRUMENT_test }
       While scankey(board_scancodes[temp2]) do
         begin
           keyboard_poll_input;
+          _emulate_screen_without_delay := TRUE;
           emulate_screen;
         end;
     end
@@ -259,7 +260,7 @@ begin { INSTRUMENT_test }
                       If alt_pressed then keyoff_loop[temp3] := TRUE;
                     end;
            end;
-
+          _emulate_screen_without_delay := TRUE;
          emulate_screen;
          keyboard_reset_buffer;
        until NOT valid_key;
@@ -267,6 +268,7 @@ begin { INSTRUMENT_test }
   While ctrl_pressed do
     begin
       keyboard_poll_input;
+      _emulate_screen_without_delay := TRUE;
       emulate_screen;
     end;
 

@@ -10986,11 +10986,12 @@ begin
       If (progress_new_value <> progress_old_value) then
         begin
           progress_old_value := progress_new_value;
-          ShowStr(v_ofs^,
-                  progress_xstart,progress_ystart,
-                  ExpStrL('',progress_new_value,'²')+
-                  ExpStrL('',40-progress_new_value,'°'),
-                  dialog_background+dialog_text);
+          ShowCStr(v_ofs^,
+                   progress_xstart,progress_ystart,
+                   '~'+ExpStrL('',progress_new_value,'Û')+'~'+
+                   ExpStrL('',40-progress_new_value,'Û'),
+                   dialog_background+dialog_prog_bar1,
+                   dialog_background+dialog_prog_bar2);
 
           If tracing then trace_update_proc
           else If (play_status = isPlaying) then
@@ -10998,15 +10999,15 @@ begin
                    PATTERN_ORDER_page_refresh(pattord_page);
                    PATTERN_page_refresh(pattern_page);
                  end;
-          If progress_new_value in [10,20,30,40] then
+          If (progress_new_value MOD 5 = 0) then
             emulate_screen;
         end;
     end
   else begin
          ShowStr(v_ofs^,
                  progress_xstart,progress_ystart,
-                 ExpStrL('',40,'°'),
-                 dialog_background+dialog_text);
+                 ExpStrL('',40,'Û'),
+                 dialog_background+dialog_prog_bar1);
 
          If tracing then trace_update_proc
          else If (play_status = isPlaying) then

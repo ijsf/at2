@@ -2,10 +2,10 @@ unit AdT2text;
 interface
 
 const
-{__AT2REV__}at2rev  = '050';
-{__AT2VER__}at2ver  = '2.4.10';
-{__AT2DAT__}at2date = '02-13-2014';
-{__AT2LNK__}at2link = '7:54pm';
+{__AT2REV__}at2rev  = '051';
+{__AT2VER__}at2ver  = '2.4.11';
+{__AT2DAT__}at2date = '02-18-2014';
+{__AT2LNK__}at2link = '10:37am';
 
 const
   ascii_line_01 = 'ฺ-ฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ--๙๚               ๚๙-ฟ';
@@ -44,7 +44,7 @@ uses
     StringIO,DialogIO,TxtScrIO;
 
 const
-  LINES = 888;
+  LINES = 891;
   help_data: array[1..LINES] of String[128] = (
     '@topic:general',
     'อหอออออออออออออออออออออออหอ',
@@ -99,9 +99,10 @@ const
     '~[Shift] F11~              Toggle default (AdT2) behavior mode (optional)',
     '~F11~                      Toggle FastTracker behavior mode (optional)',
     '~F12~                      Toggle Scream Tracker behavior mode (optional)',
-    '~[Alt] F11/F12~            Toggle recording to WAV file ON/OFF',
-    '',
-    '~[Ctrl][Tab] Arrows~       Scroll screen contents',
+    '~[Alt]{Shift} F11~         Toggle ON recording to WAV file  ~(*)~',
+    '~[Alt]{Shift} F12~         Toggle OFF recording to WAV file ~(*)~',
+    '~(*)  [Shift]~             Toggle recording to WAV with Fade in / Fade out',
+    '~[Ctrl][Tab] Up/Down~      Scroll Volume Analyzer section (if necessary)',
     '',
     '@topic:pattern_order',
     'อหออออออออออออออออออออออออออออออออออออหอ',
@@ -919,7 +920,7 @@ const
     '',
     '`Credits:`',
     'Joergen Ibsen [aPLib 0.26b]',
-    'Markus F.X.J. Oberhumer, Laszlo Molnar & John Reiser [UPX 3.91w]',
+    'Vitaly Evseenko, MATCODE Software [MPRESS 2.19]',
     'Florian Klaempfl and others [Free Pascal Compiler 2.6.2]',
     'Japheth [JWasm v2.11]',
     'Jarek Burczynski and MAME Development Team [ymf262.c version 0.2]',
@@ -929,11 +930,13 @@ const
     '`subz3ro thanks to:`',
     'Slawomir Bubel (Malfunction/Altair), Daniel Illgen (insane/Altair),',
     'Mikkel Hastrup (encore), Dmitry Smagin, Cecill Etheredge (ijsf),',
-    'and Maan M. Hamze',
+    'Florian Jung (Windfisch), Sven Renner (NeuralNET),',
+    'Tyler Montbriand (Corona688), and Mr. Maan M. Hamze :-)',
     '',
     '`Greetz fly to the following people:`',
     'Dragan Espenschied (drx/Bodenstandig 2000), Carl Peczynski (OxygenStar),',
-    'Hubert Lamontagne (Madbrain), Matej Hudak, and all I forgot :-)');
+    'Hubert Lamontagne (Madbrain), Diode Milliampere, Matej Hudak,',
+    'and all others whom I forgot in this list :-)');
 
 const
   key_comment_B =

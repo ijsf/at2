@@ -46,17 +46,17 @@ begin
     begin
       If (decay_bar[chan].dir1 = 1) then
         decay_bar[chan].lvl1 := decay_bar[chan].lvl1+
-                 decay_bar[chan].dir1*(decay_bar_rise*5/IRQ_freq*100)
+                 decay_bar[chan].dir1*(decay_bar_rise*2.5)
       else
         decay_bar[chan].lvl1 := decay_bar[chan].lvl1+
-                 decay_bar[chan].dir1*(decay_bar_fall*5/IRQ_freq*100);
+                 decay_bar[chan].dir1*(decay_bar_fall*2.5);
 
       If (decay_bar[chan].dir2 = 1) then
         decay_bar[chan].lvl2 := decay_bar[chan].lvl2+
-                 decay_bar[chan].dir2*(decay_bar_rise*5/IRQ_freq*100)
+                 decay_bar[chan].dir2*(decay_bar_rise*2.5)
       else
         decay_bar[chan].lvl2 := decay_bar[chan].lvl2+
-                 decay_bar[chan].dir2*(decay_bar_fall*5/IRQ_freq*100);
+                 decay_bar[chan].dir2*(decay_bar_fall*2.5);
 
       If (decay_bar[chan].lvl1 < 0) then decay_bar[chan].lvl1 := 0;
       If (decay_bar[chan].lvl1 > 63) then decay_bar[chan].lvl1 := 63;
@@ -70,10 +70,10 @@ begin
 
       If (volum_bar[chan].dir = 1) then
         volum_bar[chan].lvl := volum_bar[chan].lvl+
-                 volum_bar[chan].dir*(decay_bar_rise*5/IRQ_freq*100)
+                 volum_bar[chan].dir*(decay_bar_rise*2.5)
       else
         volum_bar[chan].lvl := volum_bar[chan].lvl+
-                 volum_bar[chan].dir*(decay_bar_fall*5/IRQ_freq*100);
+                 volum_bar[chan].dir*(decay_bar_fall*2.5);
 
       If (volum_bar[chan].lvl < 0) then volum_bar[chan].lvl := 0;
       If (volum_bar[chan].lvl > 63) then volum_bar[chan].lvl := 63;
@@ -529,7 +529,7 @@ begin
         end
       else begin
              temp := 0;
-             If NOT ((mouse_y > 10) or (sdl_screen_mode <> 0)) then
+             If NOT ((screen_scroll_offset > 10) or (sdl_screen_mode <> 0)) then
                temp := Round(42/63*volum_bar[chan].lvl);
 
              show_str(08+(chan-PRED(chan_pos)-1)*15,MAX_PATTERN_ROWS+11,

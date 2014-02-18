@@ -1777,9 +1777,10 @@ begin
     If (command_typing <> 0) then GotoXY(08+pos4[hpos],11+PRED(MAX_PATTERN_ROWS DIV 2))
     else GotoXY(08+pos3[hpos],11+PRED(MAX_PATTERN_ROWS DIV 2));
     
-    ThinCursor;
-    nope := FALSE;
+    If tracing then fkey := PATTERN_trace
+	else ThinCursor;
 
+    nope := FALSE;
     If (scankey(SC_LCTRL) or scankey(SC_RCTRL)) { CTRL } and
        (scankey(SC_LALT) or scankey(SC_RALT)) { ALT } then
       begin
