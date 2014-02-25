@@ -1141,7 +1141,6 @@ _jmp1:
 
   If NOT _force_program_quit then
     Repeat
-      keyboard_poll_input;
       If (_remap_pos = 1) then
         begin
           override_frame(v_ofs^,_remap_xstart+2,_remap_ystart+2,
@@ -1585,7 +1584,6 @@ _jmp1:
 
   If NOT _force_program_quit then
     Repeat
-      keyboard_poll_input;
       If (pos in [1..22,27]) then ThinCursor
       else HideCursor;
 
@@ -2260,7 +2258,6 @@ begin { DEBUG_INFO }
 
   _reset_state := FALSE;
   Repeat
-    keyboard_poll_input;
     If space_pressed and (play_status <> isStopped) then
       If NOT _reset_state then
         begin
@@ -3032,7 +3029,6 @@ _jmp1:
 
   If NOT _force_program_quit then
     Repeat
-      keyboard_poll_input;
       If (songdata.nm_tracks < 11) then _left_pos_4op[4] := 80
       else _left_pos_4op[4] := 123;
 
@@ -5872,7 +5868,6 @@ _jmp2:
 
   If NOT _force_program_quit then
     Repeat
-      keyboard_poll_input;
       refresh;
       is_setting.append_enabled := TRUE;
       is_environment.locate_pos := 1;
@@ -10290,7 +10285,6 @@ _jmp2:
 
           If NOT _force_program_quit then
           Repeat
-            keyboard_poll_input;
             If keypressed then
               begin
                 is_environment.keystroke := getkey;
@@ -10663,7 +10657,11 @@ begin
                  '~Q~UiT$~O~OOPS$',
                  ' EZECHiEL 25:17 ',1);
   smooth_appear := TRUE;
-  If (dl_environment.keystroke <> kESC) and (temp = 1) then fkey := kESC
+  If (dl_environment.keystroke <> kESC) and (temp = 1) then
+    begin
+	  fkey := kESC;
+	  _force_program_quit := TRUE;
+	end  
   else fkey := kENTER;
 end;
 

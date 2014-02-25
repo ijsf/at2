@@ -2543,7 +2543,6 @@ _jmp1:
   If _force_program_quit then EXIT;
 
   keyboard_reset_buffer;
-  keyboard_poll_input;
   Move(v_ofs^,backup.screen,SizeOf(backup.screen));
   backup.cursor := GetCursor;
   backup.oldx   := WhereX;

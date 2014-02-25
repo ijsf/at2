@@ -20,7 +20,7 @@ const
 
 const
   WAV_BUFFER_SIZE = 256*1024;
-  
+ 
 var
   wav_buffer_len: Longint;  
   wav_buffer: array[0..PRED(WAV_BUFFER_SIZE)] of Byte;
@@ -308,7 +308,7 @@ begin
     IRQ_freq_val := IRQ_freq
   else IRQ_freq_val := IRQ_freq * 20;
        
-  For counter := 0 to (sdl_sample_buffer-1) do
+  For counter := 0 to PRED(len DIV 4) do
     begin
       Inc(counter_idx);
       If (counter_idx >= sample_frame_size) then

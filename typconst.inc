@@ -726,7 +726,7 @@ const
   sdl_wav_directory:   String  = 'wav_files\';
   sdl_sample_rate:     Longint = 44100;
   sdl_sample_buffer:   Longint = 2048;
-  sdl_delay_ms:        Longint = 0;
+  sdl_frame_rate:      Byte    = 100;
   sdl_typematic_delay: Longint = 250;
   sdl_typematic_rate:  Longint = 30;
   init_tempo:          Byte    = 50;

@@ -842,7 +842,6 @@ begin
   trace_update_proc := update_trace;
 
   Repeat
-    keyboard_poll_input;
     nope := FALSE;
     update_trace;
     If (scankey(SC_LCTRL) or scankey(SC_RCTRL)) { CTRL } and
@@ -1691,7 +1690,6 @@ label _end;
 begin
   fkey_X := WORD(NOT 0);
   Repeat
-    keyboard_poll_input;
     If (page > PRED(songdata.patt_len)) then
       page := PRED(songdata.patt_len);
 

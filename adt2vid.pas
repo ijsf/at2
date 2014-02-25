@@ -45,11 +45,9 @@ end;
 procedure vid_EmulateScreen;
 
 const
-  next_game_tick: Longint = 0;
-  frame_start: Longint = 0;
-  frame_end: Longint = 0;
-  sleep_time: Longint = 0;
-  frames: Longint = 0;
+   frame_start: Longint = 0;
+   frame_end: Longint = 0;
+   actual_frame_end: Longint = 0;
 
 begin
   If (tracing = TRUE) then trace_update_proc;
@@ -61,20 +59,14 @@ begin
     SDL_Flip(screen);
 
   If _emulate_screen_without_delay then _emulate_screen_without_delay := FALSE
-  else If (sdl_delay_ms = 0) then
-         begin // keep framerate 60 fps
-           Inc(next_game_tick,17);
-           Inc(frames);
-           frame_end := SDL_GetTicks;
-           If (frame_end-frame_start >= 1000) then frames := 0;
-           If (next_game_tick = 17) then Inc(next_game_tick,frame_end);
-           sleep_time := next_game_tick-frame_end;
-           If (sleep_time > 0) then SDL_Delay(sleep_time)
-           else SDL_Delay(2);
-           If (frames = 0) then frame_start := next_game_tick;
-         end
-       else
-         SDL_Delay(sdl_delay_ms); // or do constant delay
+  else begin // keep framerate
+         actual_frame_end := SDL_GetTicks;
+         frame_end := frame_start+(1000 DIV sdl_frame_rate);
+         // always sleep at least 2 msec
+         If (actual_frame_end+2 > frame_end) then frame_end := actual_frame_end+2;
+         SDL_Delay(frame_end-actual_frame_end);
+         frame_start := SDL_GetTicks;
+       end;
 end;
 
 procedure vid_SetVideoMode(do_delay: Boolean);

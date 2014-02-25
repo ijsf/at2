@@ -3,14 +3,14 @@
 ** File: ymf262.c - software implementation of YMF262
 **                  FM sound generator type OPL3
 **
-** Copyright Jarek Burczynski, updated by subz3ro/Altair
+** Copyright Jarek Burczynski
 **
 ** Version 0.3
 **
 
 Revision History:
 
-02-18-2014: updated to version 0.3
+02-18-2014: updated to version 0.3 by subz3ro/Altair
 03-03-2003: initial release
  - thanks to Olivier Galibert and Chris Hardy for YMF262 and YAC512 chips
  - thanks to Stiletto for the datasheets
@@ -265,7 +265,6 @@ static const int slot_array[32]=
         -1,-1,-1,-1,-1,-1,-1,-1
 };
 
-
 /* key scale level */
 /* table is 3dB/octave , DV converts this into 6dB/octave */
 /* 0.1875 is bit 0 weight of the envelope counter (volume) expressed in the 'decibel' scale */
@@ -327,7 +326,6 @@ static const UINT32 sl_tab[16]={
 
 #define RATE_STEPS (8)
 static const unsigned char eg_inc[15*RATE_STEPS]={
-
 /*cycle:0 1  2 3  4 5  6 7*/
 
 /* 0 */ 0,1, 0,1, 0,1, 0,1, /* rates 00..12 0 (increment by 0 or 1) */
@@ -583,6 +581,9 @@ static OPL3_SLOT *SLOT7_1,*SLOT7_2,*SLOT8_1,*SLOT8_2;
 #define SLOT8_2 (&chip->P_CH[8].SLOT[SLOT2])
 
 
+
+
+
 INLINE int limit( int val, int max, int min ) {
         if ( val > max )
                 val = max;
@@ -591,7 +592,6 @@ INLINE int limit( int val, int max, int min ) {
 
         return val;
 }
-
 
 
 /* status set and IRQ handling */
@@ -902,6 +902,7 @@ INLINE void chan_calc_ext( OPL3 *chip, OPL3_CH *CH )
         env = volume_calc(SLOT);
         if( env < ENV_QUIET )
         *SLOT->connect += op_calc(SLOT->Cnt, env, chip->phase_modulation, SLOT->wavetable);
+
 }
 
 /*
@@ -1005,7 +1006,6 @@ INLINE void chan_calc_rhythm( OPL3 *chip, OPL3_CH *CH, unsigned int noise )
         env = volume_calc(SLOT7_1);
         if( env < ENV_QUIET )
         {
-
                 /* high hat phase generation:
                         phase = d0 or 234 (based on frequency only)
                         phase = 34 or 2d0 (based on noise)
@@ -1105,6 +1105,7 @@ INLINE void chan_calc_rhythm( OPL3 *chip, OPL3_CH *CH, unsigned int noise )
 
                 chanout[8] += op_calc(phase<<FREQ_SH, env, 0, SLOT8_2->wavetable) * 2;
         }
+
 }
 
 
@@ -1438,11 +1439,9 @@ INLINE void set_ksl_tl(OPL3 *chip,int slot,int v)
         /***                                                  ***/       
         /********************************************************/
         
-        const UINT8 KslSelectionValue[4] = {3,1,2,0};
+        const UINT8 KslSelectionValue[4] = { 31,1,2,0 };
 
-        int ksl = KslSelectionValue[ v >> 6 ]; /* 0 / 1.5 / 3.0 / 6.0 dB/OCT */
-
-        SLOT->ksl = ksl;
+        SLOT->ksl = KslSelectionValue[ v >> 6 ]; /* 0 / 1.5 / 3.0 / 6.0 dB/OCT */
         SLOT->TL  = (v&0x3f)<<(ENV_BITS-1-7); /* 7 bits TL (bit 6 = always 0) */
        
         if (chip->OPL3_mode & 1)
@@ -1950,7 +1949,7 @@ static void OPL3WriteReg(OPL3 *chip, int r, int v)
                                         }
                                         else
                                         {
-                                                // Rhythm channels
+                                                //else normal 2 operator function
                                                 /* refresh Total Level in both SLOTs of this channel */
                                                 CH->SLOT[SLOT1].TLL = CH->SLOT[SLOT1].TL + (CH->ksl_base>>CH->SLOT[SLOT1].ksl);
                                                 CH->SLOT[SLOT2].TLL = CH->SLOT[SLOT2].TL + (CH->ksl_base>>CH->SLOT[SLOT2].ksl);

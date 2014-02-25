@@ -75,6 +75,7 @@ var
 begin
   keypressed := FALSE;
   Repeat
+    keyboard_poll_input;
     If (SDL_PeepEvents(event,1,SDL_PEEKEVENT,SDL_QUITMASK) > 0) then
       begin
         _force_program_quit := TRUE;
@@ -102,7 +103,8 @@ var
 
 begin
   If keypressed then
-    Repeat  
+    Repeat
+      keyboard_poll_input;
       _emulate_screen_without_delay := TRUE;
       emulate_screen;
       If (SDL_PollEvent(@event) <> 0) then

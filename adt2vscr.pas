@@ -172,7 +172,7 @@ asm
 @@8:    mov     al,[ebx+1]
         shr     al,4
         cmp     edi,framebuffer_end
-	ja      @@9
+        ja      @@9
         stosb
 @@9:    dec     loop_idx4
         cmp     loop_idx4,0
@@ -1564,8 +1564,6 @@ asm
         inc     edi
         mov     al,07
         stosb
-        cmp     MaxLn,80
-        jae     @@9
         inc     edi
         stosb
         cmp     MaxCol,180
@@ -1591,7 +1589,7 @@ asm
         mov     cl,x2
         sub     cl,x1
         add     cl,xexp3
-        cmp     MaxLn,55
+        cmp     MaxLn,60
         jb      @@10
         dec     cl
 @@10:   stosb

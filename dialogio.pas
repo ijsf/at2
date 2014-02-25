@@ -512,7 +512,6 @@ begin { Dialog }
       If keys = '$' then EXIT;
 
       Repeat
-        keyboard_poll_input;
         if keypressed then key := getkey else goto _end;
         If LookUpKey(key,dl_setting.terminate_keys,50) then qflg := TRUE;
 
@@ -908,7 +907,6 @@ begin { Menu }
       If Addr(mn_environment.ext_proc) <> NIL then mn_environment.ext_proc;
 
       Repeat
-        keyboard_poll_input;
         mn_environment.keystroke := key;
         if keypressed then key := getkey else begin
           If tracing then trace_update_proc

@@ -13,7 +13,6 @@ const
   _name_scrl_shift: Byte = 0;
   _name_scrl_pending_frames: Longint = 0;
   _cursor_blink_pending_frames: Longint = 0;
-  _unfreeze_pending_frames: Longint = 0;
   
 {$i typconst.inc}
 const
@@ -3852,19 +3851,6 @@ begin
       song_timer_tenths := 0;
     end;
 
-  // emergency reset of keyboard buffer
-  If ctrl_pressed and shift_pressed and keydown[SC_F10] then
-    begin
-      keyboard_reset_buffer;
-      vid_TriggerEmergencyPalette(TRUE);
-      _unfreeze_pending_frames := 5;
-    end
-  else If (_unfreeze_pending_frames > 0) then
-         begin
-           Dec(_unfreeze_pending_frames);
-           If (_unfreeze_pending_frames = 0) then
-             vid_TriggerEmergencyPalette(FALSE);
-         end;
   If (scankey(SC_LCTRL) or scankey(SC_RCTRL)) and scankey(SC_TAB) then
     begin
       If scankey(SC_UP) then
@@ -3877,13 +3863,7 @@ begin
     end;
 
   decay_bars_refresh;       
-  If do_synchronize then
-    begin
-      synchronize_screen;
-      If (_unfreeze_pending_frames = 0) then
-        vid_TriggerEmergencyPalette(FALSE);
-    end;
-
+  If do_synchronize then synchronize_screen;
   If (_name_scrl_pending_frames > 0) then Dec(_name_scrl_pending_frames);
   Inc(_cursor_blink_pending_frames);
   status_refresh;

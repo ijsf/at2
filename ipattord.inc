@@ -488,7 +488,6 @@ begin { PATTERN_ORDER_edit }
   songdata_crc_ord := Update32(songdata.pattern_order,
                                SizeOf(songdata.pattern_order),0);
   Repeat
-    keyboard_poll_input;
     PATTERN_ORDER_page_refresh(page);
     PATTERN_page_refresh(pattern_page);
     

@@ -51,7 +51,7 @@ function _4op_to_test: Word;
 implementation
 
 uses
-  CRT,
+  CRT,SDL_Timer,
   AdT2vid,AdT2vscr,AdT2keyb,AdT2opl3,AdT2unit,AdT2extn,AdT2text,AdT2apak,
   StringIO,DialogIO,ParserIO,TxtScrIO;
 
@@ -60,6 +60,11 @@ uses
 {$i ipattern.inc}
 
 procedure FADE_OUT_RECORDING;
+
+const
+   frame_start: Longint = 0;
+   frame_end: Longint = 0;
+   actual_frame_end: Longint = 0;
 
 var
   xstart,ystart: Byte;
@@ -138,14 +143,23 @@ begin
                PATTERN_page_refresh(pattern_page);
              end;
       show_progress(temp);
-      For temp2 := 1 to 20 do
+      For temp2 := 1 to 10 do
         begin
           If scankey(1) then GOTO _jmp1;
-          _emulate_screen_without_delay := TRUE;
-          emulate_screen;
           keyboard_reset_buffer;
-          Delay(fade_delay_tab[temp]);
+          actual_frame_end := SDL_GetTicks;
+          frame_end := frame_start+fade_delay_tab[temp];
+          If (actual_frame_end+fade_delay_tab[temp] > frame_end) then
+		    begin
+			  frame_end := actual_frame_end;
+              _emulate_screen_without_delay := TRUE;
+              emulate_screen;
+			end;
+          SDL_Delay(frame_end-actual_frame_end);
+          frame_start := SDL_GetTicks;
         end;
+      _emulate_screen_without_delay := TRUE;
+      emulate_screen;
     end;
 
  _jmp1:
@@ -175,11 +189,16 @@ begin
       _emulate_screen_without_delay := TRUE;
       emulate_screen;
       keyboard_reset_buffer;
-      Delay(5);
+      actual_frame_end := SDL_GetTicks;
+      frame_end := frame_start+5;
+      If (actual_frame_end > frame_end) then frame_end := actual_frame_end;
+      SDL_Delay(frame_end-actual_frame_end);
+      frame_start := SDL_GetTicks;
     end;
 
 _end:
 
+  sdl_opl3_emulator := 0;
   fade_out_volume := 63;
   set_global_volume;
 
@@ -195,6 +214,11 @@ _end:
 end;
 
 procedure FADE_IN_RECORDING;
+
+const
+   frame_start: Longint = 0;
+   frame_end: Longint = 0;
+   actual_frame_end: Longint = 0;
 
 var
   xstart,ystart: Byte;
@@ -277,7 +301,11 @@ begin
           _emulate_screen_without_delay := TRUE;
           emulate_screen;
           keyboard_reset_buffer;
-          Delay(5);
+          actual_frame_end := SDL_GetTicks;
+          frame_end := frame_start+5;
+          If (actual_frame_end > frame_end) then frame_end := actual_frame_end;
+          SDL_Delay(frame_end-actual_frame_end);
+          frame_start := SDL_GetTicks;
           If scankey(1) then GOTO _end;
         end;
     end;
@@ -320,18 +348,28 @@ begin
                PATTERN_page_refresh(pattern_page);
              end;
       show_progress(temp);
-      For temp2 := 1 to 20 do
+      For temp2 := 1 to 10 do
         begin
           If scankey(1) then GOTO _end;
-          _emulate_screen_without_delay := TRUE;
-          emulate_screen;
           keyboard_reset_buffer;
-          Delay(fade_delay_tab[temp]);
+          actual_frame_end := SDL_GetTicks;
+          frame_end := frame_start+fade_delay_tab[temp];
+          If (actual_frame_end+fade_delay_tab[temp] > frame_end) then
+		    begin
+			  frame_end := actual_frame_end;
+              _emulate_screen_without_delay := TRUE;
+              emulate_screen;
+			end;
+          SDL_Delay(frame_end-actual_frame_end);
+          frame_start := SDL_GetTicks;
         end;
+      _emulate_screen_without_delay := TRUE;
+      emulate_screen;
     end;
 
 _end:
-
+  
+  sdl_opl3_emulator := 1;
   fade_out_volume := 63;
   set_global_volume;
   
@@ -495,19 +533,26 @@ var
   temp: Byte;
   temp_str: String;
 
-function check_number(str: String; base: Byte; limit1,limit2: Word; default: Word): Word;
+function check_number(str: String; base: Byte; limit1,limit2: Longint; default: Longint): Longint;
 
 var
-  temp: Byte;
-  result: Word;
+  idx,temp: Byte;
+  temp2: Longint;
+  result: Longint;
 
 begin
   result := default;
-  If (limit2 >= 10000) then temp := 5
-  else If (limit2 >= 1000) then temp := 4
-       else If (limit2 >= 100) then temp := 3
-            else If (limit2 >= 10) then temp := 2
-                 else temp := 1;
+
+  temp2 := 1000000000; // 10**9
+  For idx := 10 downto 1 do
+    begin
+      If (limit2 >= temp2) then
+        begin
+          temp := idx;
+          BREAK;
+        end;    
+      temp2 := temp2 DIV 10;
+    end;
 
   If SameName(str+'='+ExpStrL('',temp,'?'),data) and (Length(data) < Length(str)+temp+2) then
     begin
@@ -1258,8 +1303,8 @@ begin { process_config_file }
       sdl_sample_buffer :=
         check_number('sdl_sample_buffer',10,512,32768,sdl_sample_buffer);
 
-      sdl_delay_ms :=
-        check_number('sdl_delay_ms',10,10,120,sdl_delay_ms);
+      sdl_frame_rate :=
+        check_number('sdl_frame_rate',10,15,200,sdl_frame_rate);
 
       sdl_typematic_rate :=
         check_number('sdl_typematic_rate',10,1,100,sdl_typematic_rate);

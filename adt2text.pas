@@ -4,8 +4,8 @@ interface
 const
 {__AT2REV__}at2rev  = '051';
 {__AT2VER__}at2ver  = '2.4.11';
-{__AT2DAT__}at2date = '02-18-2014';
-{__AT2LNK__}at2link = '10:37am';
+{__AT2DAT__}at2date = '02-21-2014';
+{__AT2LNK__}at2link = '9:21pm';
 
 const
   ascii_line_01 = 'Ú-ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ--ùú               úù-¿';
@@ -1004,9 +1004,8 @@ begin
   If page > LINES-(MAX_PATTERN_ROWS+6) then page := LINES-24;
 
   Repeat
-    keyboard_poll_input;
-    If page > 1  then temps := '' else temps := '-';
-    If page < LINES-(MAX_PATTERN_ROWS+6) then temps := temps+'' else temps := temps+'-';
+    If (page > 1) then temps := '' else temps := '-';
+    If (page < LINES-(MAX_PATTERN_ROWS+6)) then temps := temps+'' else temps := temps+'-';
     ShowCStr(v_ofs^,xstart+1+74-Length(temps),ystart+MAX_PATTERN_ROWS+8,
                                '[~'+temps+'~]',
                                help_background+help_border,
