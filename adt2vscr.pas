@@ -26,7 +26,7 @@ const
   hard_maxln:  Byte = 0;
 
 const
-  _FrameBuffer: pointer = NIL; { CHANGE TO SDL_SURFACE LATER }
+  _FrameBuffer: Pointer = NIL; { CHANGE TO SDL_SURFACE LATER }
 
 const
   Black   = $00;  DGray    = $08;
@@ -90,76 +90,295 @@ const
 implementation
 uses
   AdT2unit,
-  DialogIO,TxtScrIO;
+  DialogIO,TxtScrIO,ParserIO;
 
-procedure emulate_screen_all;
-
-type
-  pBYTE = ^BYTE;
-
+procedure emulate_screen_720x480; assembler;
+ 
 var
-  pD: pBYTE;
-  pS: Pointer;
-  mask: Byte;
-  buffer_end: Longint;
+   bit_pos,bit_mask: Byte;
+   pos_x,pos_y: Byte;
+   skip: Dword;
+   framebuffer_end: Dword;
+   loop_idx1,loop_idx2,loop_idx3,
+   loop_idx4: Dword;
 
-const
-  bit_pos: Byte = 0;
-  bit_mask: Byte = 0;
-  skip: Dword = 0;
-  pos_x: Byte = 0;
-  pos_y: Byte = 0;
-  hundereds_counter: Longint = 0;
+asm
+        push    ebx
+        push    ecx
+        push    edx
+        push    esi
+        push    edi
+        cmp     _cursor_blink_pending_frames,13
+        jnae    @@1
+        mov     _cursor_blink_pending_frames,0
+        xor     byte ptr [cursor_sync],1
+@@1:    lea     esi,[font8x16]
+        mov     edi,dword ptr [_FrameBuffer]
+        mov     framebuffer_end,edi
+        add     framebuffer_end,720*480
+        mov     ebx,dword ptr [virtual_screen]
+        mov     eax,virtual_screen__first_row
+        mov     skip,eax
+        mov     loop_idx1,40
+        mov     pos_y,1
+@@2:    mov     bit_pos,0
+        mov     loop_idx2,16
+@@3:    mov     loop_idx3,90
+        mov     pos_x,1
+@@4:    movzx   eax,byte ptr [ebx]
+        mov     edx,16
+        mul     edx
+        movzx   edx,bit_pos
+        add     eax,edx
+        mov     dl,[esi+eax]
+        mov     bit_mask,dl
+        mov     loop_idx4,8        
+@@5:    mov     edx,1
+        mov     ecx,loop_idx4
+        shl     dx,cl
+        shr     dx,1
+        cmp     skip,0
+        jz      @@6
+        dec     skip
+        jmp     @@9
+@@6:    cmp     cursor_sync,1
+        jnz     @@7
+        movzx   eax,byte ptr [pos_x]
+        cmp     al,byte ptr [virtual_cur_pos]
+        jnz     @@7
+        mov     ax,word ptr [virtual_cur_shape]
+        cmp     bit_pos,ah
+        jb      @@7
+        cmp     bit_pos,al
+        ja      @@7
+        movzx   eax,pos_y
+        cmp     al,byte ptr [virtual_cur_pos+1]
+        jnz     @@7
+        mov     al,[ebx+1]
+        and     al,01111b
+        cmp     edi,framebuffer_end
+        ja      @@9
+        stosb
+        jmp     @@9
+@@7:    movzx   eax,bit_mask
+        test    dl,al
+        jz      @@8
+        mov     al,[ebx+1]
+        and     al,01111b
+        cmp     edi,framebuffer_end
+        ja      @@9
+        stosb
+        jmp     @@9
+@@8:    mov     al,[ebx+1]
+        shr     al,4
+        cmp     edi,framebuffer_end
+        ja      @@9
+        stosb
+@@9:    dec     loop_idx4
+        cmp     loop_idx4,0
+        ja      @@5
+        add     ebx,2
+        inc     pos_x
+        dec     loop_idx3
+        cmp     loop_idx3,0
+        ja      @@4
+        sub     ebx,90*2
+        inc     bit_pos
+        dec     loop_idx2
+        cmp     loop_idx2,0
+        ja      @@3
+        inc     pos_y
+        add     ebx,90*2
+        dec     loop_idx1
+        cmp     loop_idx1,0
+        ja      @@2
+        pop     edi
+        pop     esi
+        pop     edx
+        pop     ecx
+        pop     ebx        
+end;
 
-begin
-  // blink cursor
-  Inc(hundereds_counter);
-  If (hundereds_counter > 12) then
-    begin
-      hundereds_counter := 0;
-      cursor_sync := boolean(ord(cursor_sync) XOR 1);
-    end;
+procedure emulate_screen_960x800; assembler;
+ 
+var
+   bit_pos,bit_mask: Byte;
+   pos_x,pos_y: Byte;
+   loop_idx1,loop_idx2,loop_idx3,
+   loop_idx4: Dword;
 
-  pD := _FrameBuffer + (FB_xres-MAX_COLUMNS*8) DIV 2 + (FB_yres-FB_rows*16) DIV 2 * FB_xres;
-  buffer_end := FB_xres * FB_yres - (FB_xres-MAX_COLUMNS*8) DIV 2 - (FB_yres-FB_rows*16) DIV 2 * FB_xres;
-  pS := virtual_screen;
-  skip := virtual_screen__first_row; // always mouse_y*800, even if 1024*768
-  For pos_y := 1 to MAX_ROWS do
-    begin
-      For bit_pos := 0 to 15 do
-        begin
-          // uncomment to render 8x16 font as 8x12; this allows to fit 90*40 rows into 720x480 window
-          // If (bit_pos = 1) or (bit_pos = 5) or (bit_pos = 9) or (bit_pos = 13) then Inc(bit_pos);
-          If (pD-_FrameBuffer >= buffer_end) then EXIT;
-          If (skip = 0) then
-            begin
-              For pos_x := 1 to MAX_COLUMNS do
-                begin
-                  bit_mask := pBYTE(virtual_screen_font + pBYTE(pS)^ * 16 + bit_pos)^;
-                  mask := $80;
-                  While (mask > 0) do
-                    begin
-                      If (cursor_sync = TRUE) and
-                         (pos_x = LO(virtual_cur_pos)) and
-                         (pos_y = HI(virtual_cur_pos)) and
-                         (bit_pos >= hi(virtual_cur_shape)) and
-                         (bit_pos <= lo(virtual_cur_shape)) then
-                        pD^ := pbyte(pS+1)^ AND $0f
-                      else If (bit_mask AND mask <> 0) then pD^ := pBYTE(pS+1)^ AND $0f
-                           else pD^ := pBYTE(pS+1)^ SHR 4;
-                      Inc(pD);
-                      mask := mask SHR 1;
-                    end;
-                    Inc(pS,2);
-                end;
-                Dec(pS,MAX_COLUMNS*2);
-                Inc(pD,FB_xres-MAX_COLUMNS*8);
-            end
-          else
-            Dec(skip,800);
-        end;
-        Inc(pS,MAX_COLUMNS*2);
-    end;
+asm
+        push    ebx
+        push    ecx
+        push    edx
+        push    esi
+        push    edi
+        cmp     _cursor_blink_pending_frames,13
+        jnae    @@1
+        mov     _cursor_blink_pending_frames,0
+        xor     byte ptr [cursor_sync],1
+@@1:    lea     esi,[font8x16]
+        mov     edi,dword ptr [_FrameBuffer]
+        mov     ebx,dword ptr [virtual_screen]
+        mov     loop_idx1,50
+        mov     pos_y,1
+@@2:    mov     bit_pos,0
+        mov     loop_idx2,16
+@@3:    mov     loop_idx3,120
+        mov     pos_x,1
+@@4:    movzx   eax,byte ptr [ebx]
+        mov     edx,16
+        mul     edx
+        movzx   edx,bit_pos
+        add     eax,edx
+        mov     dl,[esi+eax]
+        mov     bit_mask,dl
+        mov     loop_idx4,8        
+@@5:    mov     edx,1
+        mov     ecx,loop_idx4
+        shl     dx,cl
+        shr     dx,1
+@@6:    cmp     cursor_sync,1
+        jnz     @@7
+        movzx   eax,byte ptr [pos_x]
+        cmp     al,byte ptr [virtual_cur_pos]
+        jnz     @@7
+        mov     ax,word ptr [virtual_cur_shape]
+        cmp     bit_pos,ah
+        jb      @@7
+        cmp     bit_pos,al
+        ja      @@7
+        movzx   eax,pos_y
+        cmp     al,byte ptr [virtual_cur_pos+1]
+        jnz     @@7
+        mov     al,[ebx+1]
+        and     al,01111b
+        stosb
+        jmp     @@9
+@@7:    movzx   eax,bit_mask
+        test    dl,al
+        jz      @@8
+        mov     al,[ebx+1]
+        and     al,01111b
+        stosb
+        jmp     @@9
+@@8:    mov     al,[ebx+1]
+        shr     al,4
+        stosb
+@@9:    dec     loop_idx4
+        cmp     loop_idx4,0
+        ja      @@5
+        add     ebx,2
+        inc     pos_x
+        dec     loop_idx3
+        cmp     loop_idx3,0
+        ja      @@4
+        sub     ebx,120*2
+        inc     bit_pos
+        dec     loop_idx2
+        cmp     loop_idx2,0
+        ja      @@3
+        inc     pos_y
+        add     ebx,120*2
+        dec     loop_idx1
+        cmp     loop_idx1,0
+        ja      @@2
+        pop     edi
+        pop     esi
+        pop     edx
+        pop     ecx
+        pop     ebx        
+end;
+
+procedure emulate_screen_1440x960; assembler;
+ 
+var
+   bit_pos,bit_mask: Byte;
+   pos_x,pos_y: Byte;
+   loop_idx1,loop_idx2,loop_idx3,
+   loop_idx4: Dword;
+
+asm
+        push    ebx
+        push    ecx
+        push    edx
+        push    esi
+        push    edi
+        cmp     _cursor_blink_pending_frames,13
+        jnae    @@1
+        mov     _cursor_blink_pending_frames,0
+        xor     byte ptr [cursor_sync],1
+@@1:    lea     esi,[font8x16]
+        mov     edi,dword ptr [_FrameBuffer]
+        mov     ebx,dword ptr [virtual_screen]
+        mov     loop_idx1,60
+        mov     pos_y,1
+@@2:    mov     bit_pos,0
+        mov     loop_idx2,16
+@@3:    mov     loop_idx3,180
+        mov     pos_x,1
+@@4:    movzx   eax,byte ptr [ebx]
+        mov     edx,16
+        mul     edx
+        movzx   edx,bit_pos
+        add     eax,edx
+        mov     dl,[esi+eax]
+        mov     bit_mask,dl
+        mov     loop_idx4,8        
+@@5:    mov     edx,1
+        mov     ecx,loop_idx4
+        shl     dx,cl
+        shr     dx,1
+@@6:    cmp     cursor_sync,1
+        jnz     @@7
+        movzx   eax,byte ptr [pos_x]
+        cmp     al,byte ptr [virtual_cur_pos]
+        jnz     @@7
+        mov     ax,word ptr [virtual_cur_shape]
+        cmp     bit_pos,ah
+        jb      @@7
+        cmp     bit_pos,al
+        ja      @@7
+        movzx   eax,pos_y
+        cmp     al,byte ptr [virtual_cur_pos+1]
+        jnz     @@7
+        mov     al,[ebx+1]
+        and     al,01111b
+        stosb
+        jmp     @@9
+@@7:    movzx   eax,bit_mask
+        test    dl,al
+        jz      @@8
+        mov     al,[ebx+1]
+        and     al,01111b
+        stosb
+        jmp     @@9
+@@8:    mov     al,[ebx+1]
+        shr     al,4
+        stosb
+@@9:    dec     loop_idx4
+        cmp     loop_idx4,0
+        ja      @@5
+        add     ebx,2
+        inc     pos_x
+        dec     loop_idx3
+        cmp     loop_idx3,0
+        ja      @@4
+        sub     ebx,180*2
+        inc     bit_pos
+        dec     loop_idx2
+        cmp     loop_idx2,0
+        ja      @@3
+        inc     pos_y
+        add     ebx,180*2
+        dec     loop_idx1
+        cmp     loop_idx1,0
+        ja      @@2
+        pop     edi
+        pop     esi
+        pop     edx
+        pop     ecx
+        pop     ebx        
 end;
 
 const
@@ -170,8 +389,22 @@ type
   tSCREEN = array[0..PRED(SCREEN_SIZE)] of Byte;
 
 var
+  screen_mirror: tSCREEN;
   temp_screen: tSCREEN;
   area_x1,area_y1,area_x2,area_y2: Byte;
+
+procedure emulate_screen_all;
+begin
+  _update_sdl_screen := FALSE;
+  If Compare(screen_mirror,virtual_screen,MAX_COLUMNS*MAX_ROWS*2) then EXIT
+  else Move(virtual_screen,screen_mirror,MAX_COLUMNS*MAX_ROWS*2);
+  _update_sdl_screen := TRUE;
+  Case sdl_screen_mode of
+    0: emulate_screen_720x480;
+    1: emulate_screen_960x800;
+    2: emulate_screen_1440x960;
+  end;
+end;
 
 procedure move2screen_alt; assembler;
 asm
@@ -308,8 +541,7 @@ asm
 @@6:    inc     index
         cmp     index,cl
         jbe     @@1
-@@7:
-        pop     edi
+@@7:    pop     edi
         pop     esi
         pop     edx
         pop     ecx
@@ -448,8 +680,7 @@ asm
 @@6:    inc     index
         cmp     index,cl
         jbe     @@1
-@@7:
-        pop     edi
+@@7:    pop     edi
         pop     esi
         pop     edx
         pop     ecx
@@ -544,8 +775,7 @@ asm
 @@6:    inc     index
         cmp     index,cl
         jbe     @@1
-@@7:
-        pop     edi
+@@7:    pop     edi
         pop     esi
         pop     edx
         pop     ecx
@@ -684,8 +914,7 @@ asm
 @@6:    inc     index
         cmp     index,cl
         jbe     @@1
-@@7:
-        pop     edi
+@@7:    pop     edi
         pop     esi
         pop     edx
         pop     ecx
@@ -741,8 +970,7 @@ asm
 @@1:    lodsb
         stosw
         loop    @@1
-@@2:
-        pop     edi
+@@2:    pop     edi
         pop     esi
         pop     edx
         pop     ecx
@@ -819,8 +1047,7 @@ asm
         jmp     @@3
 @@2:    xchg    ah,bh
         loop    @@1
-@@3:
-        pop     edi
+@@3:    pop     edi
         pop     esi
         pop     edx
         pop     ecx
@@ -859,8 +1086,7 @@ asm
         jmp     @@3
 @@2:    xchg    ah,bh
         loop    @@1
-@@3:
-        pop     edi
+@@3:    pop     edi
         pop     esi
         pop     edx
         pop     ecx
@@ -907,8 +1133,7 @@ asm
         jmp     @@3
 @@2:    xchg    ah,bh
         loop    @@1
-@@3:
-        pop     edi
+@@3:    pop     edi
         pop     esi
         pop     edx
         pop     ecx
@@ -955,8 +1180,7 @@ asm
         jmp     @@3
 @@2:    xchg    ah,bh
         loop    @@1
-@@3:
-        pop     edi
+@@3:    pop     edi
         pop     esi
         pop     edx
         pop     ecx
@@ -1001,8 +1225,7 @@ asm
         jmp     @@4
 @@3:    xchg    ah,bh
         loop    @@1
-@@4:
-        pop     edi
+@@4:    pop     edi
         pop     esi
         pop     edx
         pop     ecx
@@ -1055,8 +1278,7 @@ asm
         jmp     @@4
 @@3:    xchg    ah,bh
         loop    @@1
-@@4:
-        pop     edi
+@@4:    pop     edi
         pop     esi
         pop     edx
         pop     ecx
@@ -1342,8 +1564,6 @@ asm
         inc     edi
         mov     al,07
         stosb
-        cmp     MaxLn,80
-        jae     @@9
         inc     edi
         stosb
         cmp     MaxCol,180
@@ -1369,14 +1589,13 @@ asm
         mov     cl,x2
         sub     cl,x1
         add     cl,xexp3
-        cmp     MaxLn,55
+        cmp     MaxLn,60
         jb      @@10
         dec     cl
 @@10:   stosb
         inc     edi
         loop    @@10
-@@11:
-        pop     edi
+@@11:   pop     edi
         pop     esi
         pop     edx
         pop     ecx

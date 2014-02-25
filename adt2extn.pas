@@ -1146,7 +1146,6 @@ _jmp1:
 
   If NOT _force_program_quit then
     Repeat
-      keyboard_poll_input;
       If (_remap_pos = 1) then
         begin
           override_frame(v_ofs^,_remap_xstart+2,_remap_ystart+2,
@@ -1590,7 +1589,6 @@ _jmp1:
 
   If NOT _force_program_quit then
     Repeat
-      keyboard_poll_input;
       If (pos in [1..22,27]) then ThinCursor
       else HideCursor;
 
@@ -2265,7 +2263,6 @@ begin { DEBUG_INFO }
 
   _reset_state := FALSE;
   Repeat
-    keyboard_poll_input;
     If space_pressed and (play_status <> isStopped) then
       If NOT _reset_state then
         begin
@@ -3037,7 +3034,6 @@ _jmp1:
 
   If NOT _force_program_quit then
     Repeat
-      keyboard_poll_input;
       If (songdata.nm_tracks < 11) then _left_pos_4op[4] := 80
       else _left_pos_4op[4] := 123;
 
@@ -5877,7 +5873,6 @@ _jmp2:
 
   If NOT _force_program_quit then
     Repeat
-      keyboard_poll_input;
       refresh;
       is_setting.append_enabled := TRUE;
       is_environment.locate_pos := 1;
@@ -10295,7 +10290,6 @@ _jmp2:
 
           If NOT _force_program_quit then
           Repeat
-            keyboard_poll_input;
             If keypressed then
               begin
                 is_environment.keystroke := getkey;
@@ -10668,7 +10662,11 @@ begin
                  '~Q~UiT$~O~OOPS$',
                  ' EZECHiEL 25:17 ',1);
   smooth_appear := TRUE;
-  If (dl_environment.keystroke <> kESC) and (temp = 1) then fkey := kESC
+  If (dl_environment.keystroke <> kESC) and (temp = 1) then
+    begin
+	  fkey := kESC;
+	  _force_program_quit := TRUE;
+	end  
   else fkey := kENTER;
 end;
 
@@ -10991,11 +10989,12 @@ begin
       If (progress_new_value <> progress_old_value) then
         begin
           progress_old_value := progress_new_value;
-          ShowStr(v_ofs^,
-                  progress_xstart,progress_ystart,
-                  ExpStrL('',progress_new_value,'²')+
-                  ExpStrL('',40-progress_new_value,'°'),
-                  dialog_background+dialog_text);
+          ShowCStr(v_ofs^,
+                   progress_xstart,progress_ystart,
+                   '~'+ExpStrL('',progress_new_value,'Û')+'~'+
+                   ExpStrL('',40-progress_new_value,'Û'),
+                   dialog_background+dialog_prog_bar1,
+                   dialog_background+dialog_prog_bar2);
 
           If tracing then trace_update_proc
           else If (play_status = isPlaying) then
@@ -11003,15 +11002,15 @@ begin
                    PATTERN_ORDER_page_refresh(pattord_page);
                    PATTERN_page_refresh(pattern_page);
                  end;
-          If progress_new_value in [10,20,30,40] then
+          If (progress_new_value MOD 5 = 0) then
             emulate_screen;
         end;
     end
   else begin
          ShowStr(v_ofs^,
                  progress_xstart,progress_ystart,
-                 ExpStrL('',40,'°'),
-                 dialog_background+dialog_text);
+                 ExpStrL('',40,'Û'),
+                 dialog_background+dialog_prog_bar1);
 
          If tracing then trace_update_proc
          else If (play_status = isPlaying) then

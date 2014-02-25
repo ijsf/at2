@@ -75,6 +75,7 @@ var
 begin
   keypressed := FALSE;
   Repeat
+    keyboard_poll_input;
     If (SDL_PeepEvents(event,1,SDL_PEEKEVENT,SDL_QUITMASK) > 0) then
       begin
         _force_program_quit := TRUE;
@@ -101,79 +102,82 @@ var
   i,j: Integer;
 
 begin
- Repeat  
-    emulate_screen;
-    If (SDL_PollEvent(@event) <> 0) then
-      begin
-        If (event.eventtype = SDL_EVENTQUIT) or _force_program_quit then
-          begin
-            _force_program_quit := TRUE;
-            getkey := kESC;
-            EXIT;
-          end;  
-        // skip all other event except key presses
-        If (event.eventtype <> SDL_KEYDOWN) then CONTINUE
-        else
-          begin
-            // skip all modifier keys
-            If (event.key.keysym.sym >= SDLK_NUMLOCK) then CONTINUE;
-            // roll thru symtab, form correct getkey value
-            For j := 0 to PRED(SYMTABSIZE) do
-              begin
-                If (event.key.keysym.sym = symtab[j*10+9]) then
-                  begin // first check with modifier keys, order: ALT, CTRL, SHIFT (as DOS does)
-                    { ALT }
-                    If (keydown[SC_LALT] = TRUE) or (keydown[SC_RALT] = TRUE) then
-                      begin
-                        // impossible combination
-                        If (symtab[j*10+4] = $0ffff) then CONTINUE;
-                        If (symtab[j*10+4] > $0ff) then
-                          begin
-                            getkey := symtab[j*10+4];
-                            EXIT;
-                          end;
-                        getkey := (symtab[j*10] SHL 8) OR symtab[j*10+4];
-                        EXIT;
-                      end;
-                    { CTRL }
-                    If (keydown[SC_LCTRL] = TRUE) or (keydown[SC_RCTRL] = TRUE) then
-                      begin
-                        // impossible combination
-                        If (symtab[j*10+3] = $0ffff) then CONTINUE;
-                        If (symtab[j*10+3] > $0ff) then
-                          begin
-                            getkey := symtab[j*10+3];
-                            EXIT;
-                          end;
-                        getkey := (symtab[j*10] SHL 8) OR symtab[j*10+3];
-                        EXIT;
-                      end;
-                    { SHIFT }
-                    If (keydown[SC_LSHIFT] = TRUE) or (keydown[SC_RSHIFT] = TRUE) then
-                      begin
-                        i := 2; // SHIFT
-                        If (_capslock = TRUE) then i := 7 // caps lock
-                        else If (_numlock = TRUE) then i := 8; // num lock
-                        // impossible combination
-                        If (symtab[j*10+i] = $0ffff) then CONTINUE;
-                        If (symtab[j*10+i] > $0ff) then getkey := symtab[j*10+i]
-                        else getkey := (symtab[j*10] SHL 8) OR symtab[j*10+i];
-                        EXIT;
-                      end;
-                    { normal ASCII }
-                    i := 1;
-                    If (_capslock = TRUE) then i := 6 // caps lock
-                    else If (_numlock = TRUE) then i := 5; // num lock
-                    // impossible combination
-                    If (symtab[j*10+i] = $0ffff) then CONTINUE;
-                    If (symtab[j*10+i] > $0ff) then getkey := symtab[j*10+i]
-                    else getkey := (symtab[j*10] SHL 8) OR symtab[j*10+i]; // (scancode << 8) + ASCII
-                    EXIT;
-                  end;
-              end;
-          end;
-      end;
-  until FALSE;    
+  If keypressed then
+    Repeat
+      keyboard_poll_input;
+      _emulate_screen_without_delay := TRUE;
+      emulate_screen;
+      If (SDL_PollEvent(@event) <> 0) then
+        begin
+          If (event.eventtype = SDL_EVENTQUIT) or _force_program_quit then
+            begin
+              _force_program_quit := TRUE;
+              getkey := kESC;
+              EXIT;
+            end;  
+          // skip all other event except key presses
+          If (event.eventtype <> SDL_KEYDOWN) then CONTINUE
+          else
+            begin
+              // skip all modifier keys
+              If (event.key.keysym.sym >= SDLK_NUMLOCK) then CONTINUE;
+              // roll thru symtab, form correct getkey value
+              For j := 0 to PRED(SYMTABSIZE) do
+                begin
+                  If (event.key.keysym.sym = symtab[j*10+9]) then
+                    begin // first check with modifier keys, order: ALT, CTRL, SHIFT (as DOS does)
+                      { ALT }
+                      If (keydown[SC_LALT] = TRUE) or (keydown[SC_RALT] = TRUE) then
+                        begin
+                          // impossible combination
+                          If (symtab[j*10+4] = $0ffff) then CONTINUE;
+                          If (symtab[j*10+4] > $0ff) then
+                            begin
+                              getkey := symtab[j*10+4];
+                              EXIT;
+                            end;
+                          getkey := (symtab[j*10] SHL 8) OR symtab[j*10+4];
+                          EXIT;
+                        end;
+                      { CTRL }
+                      If (keydown[SC_LCTRL] = TRUE) or (keydown[SC_RCTRL] = TRUE) then
+                        begin
+                          // impossible combination
+                          If (symtab[j*10+3] = $0ffff) then CONTINUE;
+                          If (symtab[j*10+3] > $0ff) then
+                            begin
+                              getkey := symtab[j*10+3];
+                              EXIT;
+                            end;
+                          getkey := (symtab[j*10] SHL 8) OR symtab[j*10+3];
+                          EXIT;
+                        end;
+                      { SHIFT }
+                      If (keydown[SC_LSHIFT] = TRUE) or (keydown[SC_RSHIFT] = TRUE) then
+                        begin
+                          i := 2; // SHIFT
+                          If (_capslock = TRUE) then i := 7 // caps lock
+                          else If (_numlock = TRUE) then i := 8; // num lock
+                          // impossible combination
+                          If (symtab[j*10+i] = $0ffff) then CONTINUE;
+                          If (symtab[j*10+i] > $0ff) then getkey := symtab[j*10+i]
+                          else getkey := (symtab[j*10] SHL 8) OR symtab[j*10+i];
+                          EXIT;
+                        end;
+                      { normal ASCII }
+                      i := 1;
+                      If (_capslock = TRUE) then i := 6 // caps lock
+                      else If (_numlock = TRUE) then i := 5; // num lock
+                      // impossible combination
+                      If (symtab[j*10+i] = $0ffff) then CONTINUE;
+                      If (symtab[j*10+i] > $0ff) then getkey := symtab[j*10+i]
+                      else getkey := (symtab[j*10] SHL 8) OR symtab[j*10+i]; // (scancode << 8) + ASCII
+                      EXIT;
+                    end;
+                end;
+            end;
+        end;
+    until FALSE;    
 end;
 
 procedure keyboard_wait_until_key_released;

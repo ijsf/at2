@@ -7,9 +7,12 @@ const
 
 const
   _force_program_quit: Boolean = FALSE;
+  _emulate_screen_without_delay: Boolean = FALSE;
+  _update_sdl_screen: Boolean = FALSE;
   _name_scrl_shift_ctr: Shortint = 1;
   _name_scrl_shift: Byte = 0;
-  _name_scrl_pending_frames: Word = 0;
+  _name_scrl_pending_frames: Longint = 0;
+  _cursor_blink_pending_frames: Longint = 0;
   
 {$i typconst.inc}
 const
@@ -166,17 +169,13 @@ var
   backup: tBACKUP;
 
 var
-  unfreeze_pending_frames: Byte;
-  song_timer,timer_temp,timer_determinator,timer_det2: Word;
+  song_timer,timer_temp: Word;
   song_timer_tenths: Word;
   ticks,tick0,tickD,tickXF: Longint;
   time_playing: Real;
 
 const
-  mouse_x:     Word = 0;
-  old_mouse_x: Word = 0;
-  mouse_y:     Word = 0;
-  old_mouse_y: Word = 0;
+  screen_scroll_offset: Word = 0;
 
 var
   common_flag_backup: Byte;
@@ -3767,20 +3766,10 @@ var
 procedure synchronize_screen;
 begin
   If (sdl_screen_mode <> 0) then EXIT;
-  If (mouse_x <> old_mouse_x) or (mouse_y <> old_mouse_y) then
-    begin
-      old_mouse_x := mouse_x;
-      old_mouse_y := mouse_y;
-
-      If (mouse_x > 9*MaxCol-9*hard_maxcol) then
-          mouse_x := 9*MaxCol-9*hard_maxcol;
-
-      If (mouse_y > 16*MaxLn-16*hard_maxln) then
-          mouse_y := 16*MaxLn-16*hard_maxln;
-
-      If (sdl_screen_mode = 0) then
-        virtual_screen__first_row := mouse_y*800
-    end;
+  If (screen_scroll_offset > 16*MaxLn-16*hard_maxln) then
+    screen_scroll_offset := 16*MaxLn-16*hard_maxln;
+  If (sdl_screen_mode = 0) then
+    virtual_screen__first_row := screen_scroll_offset*FB_xres
 end;
 
 const
@@ -3797,18 +3786,6 @@ end;
 
 procedure newint08;
 begin 
-  If (timer_determinator < IRQ_freq) then Inc(timer_determinator)
-  else begin
-         timer_determinator := 1;
-         Inc(seconds_counter);
-       end;
-
-  If (timer_det2 < IRQ_freq DIV 100) then Inc(timer_det2)
-  else begin
-         timer_det2 := 1;
-         Inc(hundereds_counter);
-       end;
-
   If (current_order = 0) and (current_line = 0) and
      (tick0 = ticks) then
     begin
@@ -3874,29 +3851,21 @@ begin
       song_timer_tenths := 0;
     end;
 
-  // emergency reset of keyboard buffer
-  If ctrl_pressed and shift_pressed and keydown[SC_F10] then
+  If (scankey(SC_LCTRL) or scankey(SC_RCTRL)) and scankey(SC_TAB) then
     begin
+      If scankey(SC_UP) then
+        If (screen_scroll_offset > 0) then
+          Dec(screen_scroll_offset,2);
+      If scankey(SC_DOWN) then
+        If (screen_scroll_offset < 16*MaxLn-16*hard_maxln) then
+          Inc(screen_scroll_offset,2);
       keyboard_reset_buffer;
-      vid_TriggerEmergencyPalette(TRUE);
-      unfreeze_pending_frames := 5;
-    end
-  else If (unfreeze_pending_frames > 0) then
-         begin
-           Dec(unfreeze_pending_frames);
-           If (unfreeze_pending_frames = 0) then
-             vid_TriggerEmergencyPalette(FALSE);
-         end;
-
-  decay_bars_refresh;       
-  If do_synchronize then
-    begin
-      synchronize_screen;
-      If (unfreeze_pending_frames = 0) then
-        vid_TriggerEmergencyPalette(FALSE);
     end;
 
+  decay_bars_refresh;       
+  If do_synchronize then synchronize_screen;
   If (_name_scrl_pending_frames > 0) then Dec(_name_scrl_pending_frames);
+  Inc(_cursor_blink_pending_frames);
   status_refresh;
 end;
 
@@ -5021,6 +4990,7 @@ begin
                          PATTERN_ORDER_page_refresh(pattord_page);
                          PATTERN_page_refresh(pattern_page);
                        end;
+                _emulate_screen_without_delay := TRUE;
                 emulate_screen;
                 keyboard_reset_buffer;
               end;
@@ -5040,8 +5010,4 @@ begin
         end;
 end;
 
-begin
-  timer_determinator := 1;
-  timer_det2 := 1;
-  unfreeze_pending_frames := 0;
 end.

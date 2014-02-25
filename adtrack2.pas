@@ -114,11 +114,10 @@ begin { MAIN }
   
   sdl_screen_mode := 0;
   TxtScrIO_Init;
-  vid_SetVideoMode(FALSE);  
+  vid_SetVideoMode(FALSE);
   CleanScreen(v_ofs^);
-  emulate_screen; 
   vid_SetRGBPalette(Addr(vga_rgb_color)^);
-  temp := mouse_y DIV 16 + 3;
+  temp := screen_scroll_offset DIV 16 + 3;
 
   C3WriteLn(02+(MAX_COLUMNS-57) DIV 2,temp+00,ascii_line_01,$08,$09,$01);
   C3WriteLn(02+(MAX_COLUMNS-57) DIV 2,temp+01,ascii_line_02,$08,$09,$01);
@@ -155,3 +154,4 @@ begin { MAIN }
   { terminating program (phase:4) }
   HALT(0); { the last opportunity to properly exit?! :) }
 end.
+

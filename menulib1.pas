@@ -427,8 +427,7 @@ begin { MenuLib1_Menu }
     end
   else
     Repeat
-      keyboard_poll_input;
-      if keypressed then key := getkey else begin
+      If keypressed then key := getkey else begin
         If tracing then trace_update_proc
             else If (play_status = isPlaying) then
                    begin

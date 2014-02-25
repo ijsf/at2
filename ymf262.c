@@ -5,11 +5,12 @@
 **
 ** Copyright Jarek Burczynski
 **
-** Version 0.2
+** Version 0.3
 **
 
 Revision History:
 
+02-18-2014: updated to version 0.3 by subz3ro/Altair
 03-03-2003: initial release
  - thanks to Olivier Galibert and Chris Hardy for YMF262 and YAC512 chips
  - thanks to Stiletto for the datasheets
@@ -30,7 +31,7 @@ Revision History:
    12. 24 Pin SOP Package (YMF262-M), 48 Pin SQFP Package (YMF262-S).
 
 
-differences between OPL2 and OPL3 not documented in Yamaha dataasheets:
+differences between OPL2 and OPL3 not documented in Yamaha datasheets:
 - sinus table is a little different: the negative part is off by one...
 
 - in order to enable selection of four different waveforms on OPL2
@@ -264,11 +265,6 @@ static const int slot_array[32]=
         -1,-1,-1,-1,-1,-1,-1,-1
 };
 
-// shift table for KSL
-static const UINT8 KslShiftTable[4] = {
-	31,1,2,0
-};
-
 /* key scale level */
 /* table is 3dB/octave , DV converts this into 6dB/octave */
 /* 0.1875 is bit 0 weight of the envelope counter (volume) expressed in the 'decibel' scale */
@@ -330,7 +326,6 @@ static const UINT32 sl_tab[16]={
 
 #define RATE_STEPS (8)
 static const unsigned char eg_inc[15*RATE_STEPS]={
-
 /*cycle:0 1  2 3  4 5  6 7*/
 
 /* 0 */ 0,1, 0,1, 0,1, 0,1, /* rates 00..12 0 (increment by 0 or 1) */
@@ -586,6 +581,9 @@ static OPL3_SLOT *SLOT7_1,*SLOT7_2,*SLOT8_1,*SLOT8_2;
 #define SLOT8_2 (&chip->P_CH[8].SLOT[SLOT2])
 
 
+
+
+
 INLINE int limit( int val, int max, int min ) {
         if ( val > max )
                 val = max;
@@ -594,7 +592,6 @@ INLINE int limit( int val, int max, int min ) {
 
         return val;
 }
-
 
 
 /* status set and IRQ handling */
@@ -905,6 +902,7 @@ INLINE void chan_calc_ext( OPL3 *chip, OPL3_CH *CH )
         env = volume_calc(SLOT);
         if( env < ENV_QUIET )
         *SLOT->connect += op_calc(SLOT->Cnt, env, chip->phase_modulation, SLOT->wavetable);
+
 }
 
 /*
@@ -1008,7 +1006,6 @@ INLINE void chan_calc_rhythm( OPL3 *chip, OPL3_CH *CH, unsigned int noise )
         env = volume_calc(SLOT7_1);
         if( env < ENV_QUIET )
         {
-
                 /* high hat phase generation:
                         phase = d0 or 234 (based on frequency only)
                         phase = 34 or 2d0 (based on noise)
@@ -1108,6 +1105,7 @@ INLINE void chan_calc_rhythm( OPL3 *chip, OPL3_CH *CH, unsigned int noise )
 
                 chanout[8] += op_calc(phase<<FREQ_SH, env, 0, SLOT8_2->wavetable) * 2;
         }
+
 }
 
 
@@ -1421,75 +1419,49 @@ INLINE void set_ksl_tl(OPL3 *chip,int slot,int v)
 {
         OPL3_CH   *CH   = &chip->P_CH[slot/2];
         OPL3_SLOT *SLOT = &CH->SLOT[slot&1];
+       
+        /*** UPDATE IN VERSION 0.3 ******************************/
+        /***                                                  ***/
+        /*** Treat volume attenuation according KSL selection ***/
+        /*** ================================================ ***/
+        /***                                                  ***/
+        /*** Following table shows KSL selection as defined   ***/
+        /*** by Yamaha YMF262 datasheet                       ***/
+        /***                                                  ***/
+        /***   +-----+-------------+                          ***/
+		/***   | KSL | Attenuation |                          ***/
+		/***   +-----+-------------+                          ***/
+		/***   |  0  | none        |                          ***/
+		/***   |  2  | 1.5 dB/oct  |                          ***/
+		/***   |  1  | 3.0 dB/oct  |                          ***/
+		/***   |  3  | 6.0 dB/oct  |                          ***/
+		/***   +-----+-------------+                          ***/
+        /***                                                  ***/       
+        /********************************************************/
+        
+        const UINT8 KslSelectionValue[4] = { 31,1,2,0 };
 
-        int ksl = KslShiftTable[ v >> 6 ]; /* 0 / 1.5 / 3.0 / 6.0 dB/OCT */
-
-        SLOT->ksl = ksl;
+        SLOT->ksl = KslSelectionValue[ v >> 6 ]; /* 0 / 1.5 / 3.0 / 6.0 dB/OCT */
         SLOT->TL  = (v&0x3f)<<(ENV_BITS-1-7); /* 7 bits TL (bit 6 = always 0) */
        
         if (chip->OPL3_mode & 1)
         {
-                int chan_no = slot/2;
-                UINT8 conn = (CH->SLOT[SLOT1].CON<<1) | ((CH+3)->SLOT[SLOT1].CON<<0);
                 /* in OPL3 mode */
-                //DO THIS:
-                //if this is one of the slots of 1st channel forming up a 4-op channel
-                //do normal operation
-                //else normal 2 operator function
-                //OR THIS:
-                //if this is one of the slots of 2nd channel forming up a 4-op channel
-                //update it using channel data of 1st channel of a pair
-                //else normal 2 operator function
+                int chan_no = slot/2;              
                 switch(chan_no)
                 {
-                case 0: case 1: case 2:
-                case 9: case 10: case 11:
-                        if (CH->extended)
-                        {
-                                /*************************************************/
-                                /*** treat volume attenuation for 4op channels ***/
-                                /*************************************************/
-                                if (conn != 0)
-                                    // AM-FM, FM-AM, AM-AM
-                                    SLOT->TLL = SLOT->TL + (CH->ksl_base>>SLOT->ksl)*0.5;  // down by 50%
-                                else
-                                    // FM-FM
-                                    SLOT->TLL = SLOT->TL + (CH->ksl_base>>SLOT->ksl);
-                        }
-                        else
-                        {
-                                /* normal */
-                                SLOT->TLL = SLOT->TL + (CH->ksl_base>>SLOT->ksl);
-                        }
-                break;
-                case 3: case 4: case 5:
-                case 12: case 13: case 14:
-                        if ((CH-3)->extended)
-                        {                                                
-                                /*************************************************/
-                                /*** treat volume attenuation for 4op channels ***/
-                                /*************************************************/
-                                if (conn != 0)
-                                    // AM-FM, FM-AM, AM-AM down by 50%
-                                    SLOT->TLL = SLOT->TL + ((CH-3)->ksl_base>>SLOT->ksl)*0.5;
-                                else    
-                                    // FM-FM
-                                    SLOT->TLL = SLOT->TL + ((CH-3)->ksl_base>>SLOT->ksl);
-                        }
-                        else
-                        {
-                                /* normal */
-                                SLOT->TLL = SLOT->TL + (CH->ksl_base>>SLOT->ksl);
-                        }
-                break;
+                /*** UPDATE IN VERSION 0.3 ******************************/
+                /***                                                  ***/
+                /*** EXPERIMENTAL!!!                                  ***/
+                /*** Treat total output level for 2op rhythm channels ***/
+                /*** SD, TT, TC, HH -> approx. 50% down               ***/
+                /***                                                  ***/
+                /********************************************************/
                 case 7: case 8:
                         if(chip->rhythm&0x20)
                         {
-                                /**************************************************/
-                                /*** treat total volume for percussion channels ***/
-                                /**************************************************/
-                                // BD, TT, TC, HH up by 50%
-                                SLOT->TLL = ((SLOT->TL) + (CH->ksl_base>>SLOT->ksl))*1.5;
+                                // total output level down by 50%
+                                SLOT->TLL = (SLOT->TL + (CH->ksl_base>>SLOT->ksl))*1.5;
                         }
                         else
                         {
@@ -1585,7 +1557,7 @@ static void OPL3WriteReg(OPL3 *chip, int r, int v)
                         {
                                 UINT8 prev;
 
-                                CH = &chip->P_CH[0];    /* channel 0 */
+                                CH = &chip->P_CH[0];                    /* channel 0 */
                                 prev = CH->extended;
                                 CH->extended = (v>>0) & 1;
                                 if(prev != CH->extended)
@@ -1602,7 +1574,7 @@ static void OPL3WriteReg(OPL3 *chip, int r, int v)
                                         update_channels(chip, CH);
 
 
-                                CH = &chip->P_CH[9];    /* channel 9 */
+                                CH = &chip->P_CH[9];                    /* channel 9 */
                                 prev = CH->extended;
                                 CH->extended = (v>>3) & 1;
                                 if(prev != CH->extended)
@@ -1923,30 +1895,51 @@ static void OPL3WriteReg(OPL3 *chip, int r, int v)
                                 case 9: case 10: case 11:
                                         if (CH->extended)
                                         {
-                                                UINT8 conn = (CH->SLOT[SLOT1].CON<<1) | ((CH+3)->SLOT[SLOT1].CON<<0);
-                                                //if this is 1st channel forming up a 4-op channel
-                                                //ALSO update slots of 2nd channel forming up 4-op channel
-                                                /* refresh Total Level in FOUR SLOTs of this channel and channel+3 using data from THIS channel */
-
-                                                /*************************************************/
-                                                /*** treat volume attenuation for 4op channels ***/
-                                                /*************************************************/
-                                                if (conn != 0)
-                                                {
-                                                    // AM-FM, FM-AM, AM-AM down by 50%
-                                                    CH->SLOT[SLOT1].TLL = CH->SLOT[SLOT1].TL + (CH->ksl_base>>CH->SLOT[SLOT1].ksl)*0.5;
-                                                    CH->SLOT[SLOT2].TLL = CH->SLOT[SLOT2].TL + (CH->ksl_base>>CH->SLOT[SLOT2].ksl)*0.5;                                                                                               
-                                                    (CH+3)->SLOT[SLOT1].TLL = (CH+3)->SLOT[SLOT1].TL + (CH->ksl_base>>(CH+3)->SLOT[SLOT1].ksl)*0.5;
-                                                    (CH+3)->SLOT[SLOT2].TLL = (CH+3)->SLOT[SLOT2].TL + (CH->ksl_base>>(CH+3)->SLOT[SLOT2].ksl)*0.5;
-                                                }
-                                                else
+                                                /*** UPDATE IN VERSION 0.3 ******************************/
+                                                /***                                                  ***/
+                                                /*** Treat total output level for 4op channels        ***/
+                                                /*** ================================================ ***/
+                                                /*** Following table shows which operators' output    ***/
+                                                /*** levels should be updated when changing           ***/
+                                                /*** 4op channel output level (as derived from        ***/
+                                                /*** Yamaha YMF262 datasheet)                         ***/
+                                                /***                                                  ***/
+                                                /***   +-------+-------------+-------------+          ***/
+                                                /***   |       | 4op chan #2 | 4op chan #1 |          ***/
+                                                /***   |       +------+------+------+------+          ***/
+                                                /***   | Mode  | Op 1 | Op 2 | Op 1 | Op 2 |          ***/
+                                                /***   +-------+------+------+------+------+          ***/
+                                                /***   | FM-FM |  x   |      |      |  x   |          ***/
+                                                /***   | AM-FM |  x   |      |      |  x   |          ***/
+                                                /***   | FM-AM |      |  x   |      |  x   |          ***/
+                                                /***   | AM-AM |  x   |      |  x   |  x   |          ***/
+                                                /***   +-------+------+------+------+------+          ***/
+                                                /***                                                  ***/
+                                                /********************************************************/
+                                                switch((CH->SLOT[SLOT1].CON<<1) | ((CH+3)->SLOT[SLOT1].CON<<0))
                                                 {
                                                     // FM-FM
-                                                    CH->SLOT[SLOT1].TLL = CH->SLOT[SLOT1].TL + (CH->ksl_base>>CH->SLOT[SLOT1].ksl);
-                                                    CH->SLOT[SLOT2].TLL = CH->SLOT[SLOT2].TL + (CH->ksl_base>>CH->SLOT[SLOT2].ksl);
-                                                    (CH+3)->SLOT[SLOT1].TLL = (CH+3)->SLOT[SLOT1].TL + (CH->ksl_base>>(CH+3)->SLOT[SLOT1].ksl);
-                                                    (CH+3)->SLOT[SLOT2].TLL = (CH+3)->SLOT[SLOT2].TL + (CH->ksl_base>>(CH+3)->SLOT[SLOT2].ksl);
-                                                }    
+                                                    case 0:
+                                                        CH->SLOT[SLOT2].TLL = CH->SLOT[SLOT2].TL + (CH->ksl_base>>CH->SLOT[SLOT2].ksl);
+                                                        (CH+3)->SLOT[SLOT1].TLL = (CH+3)->SLOT[SLOT1].TL + (CH->ksl_base>>(CH+3)->SLOT[SLOT1].ksl);
+                                                    break;
+                                                    // AM-FM
+                                                    case 1:
+                                                        CH->SLOT[SLOT2].TLL = CH->SLOT[SLOT2].TL + (CH->ksl_base>>CH->SLOT[SLOT2].ksl);
+                                                        (CH+3)->SLOT[SLOT1].TLL = (CH+3)->SLOT[SLOT1].TL + (CH->ksl_base>>(CH+3)->SLOT[SLOT1].ksl);
+                                                    break;
+                                                    // FM-AM
+                                                    case 2:
+                                                        CH->SLOT[SLOT2].TLL = CH->SLOT[SLOT2].TL + (CH->ksl_base>>CH->SLOT[SLOT2].ksl);
+                                                        (CH+3)->SLOT[SLOT2].TLL = (CH+3)->SLOT[SLOT2].TL + (CH->ksl_base>>(CH+3)->SLOT[SLOT2].ksl);
+                                                    break;
+                                                    // AM-AM
+                                                    case 3:
+                                                        CH->SLOT[SLOT1].TLL = CH->SLOT[SLOT1].TL + (CH->ksl_base>>CH->SLOT[SLOT1].ksl);
+                                                        CH->SLOT[SLOT2].TLL = CH->SLOT[SLOT2].TL + (CH->ksl_base>>CH->SLOT[SLOT2].ksl);
+                                                        (CH+3)->SLOT[SLOT1].TLL = (CH+3)->SLOT[SLOT1].TL + (CH->ksl_base>>(CH+3)->SLOT[SLOT1].ksl);
+                                                    break;
+                                                }
 
                                                 /* refresh frequency counter in FOUR SLOTs of this channel and channel+3 using data from THIS channel */
                                                 CALC_FCSLOT(CH,&CH->SLOT[SLOT1]);
@@ -1956,7 +1949,7 @@ static void OPL3WriteReg(OPL3 *chip, int r, int v)
                                         }
                                         else
                                         {
-                                                // Rhythm channels
+                                                //else normal 2 operator function
                                                 /* refresh Total Level in both SLOTs of this channel */
                                                 CH->SLOT[SLOT1].TLL = CH->SLOT[SLOT1].TL + (CH->ksl_base>>CH->SLOT[SLOT1].ksl);
                                                 CH->SLOT[SLOT2].TLL = CH->SLOT[SLOT2].TL + (CH->ksl_base>>CH->SLOT[SLOT2].ksl);
@@ -1986,15 +1979,19 @@ static void OPL3WriteReg(OPL3 *chip, int r, int v)
                                         }
                                 break;
                                 
+                                /*** UPDATE IN VERSION 0.3 ******************************/
+                                /***                                                  ***/
+                                /*** EXPERIMENTAL!!!                                  ***/
+                                /*** Treat total output level for 2op rhythm channels ***/
+                                /*** SD, TT, TC, HH -> 50% down                       ***/
+                                /***                                                  ***/
+                                /********************************************************/
                                 case 7: case 8:
                                         if(chip->rhythm&0x20)
                                         {
-                                                /**************************************************/
-                                                /*** treat total volume for percussion channels ***/
-                                                /**************************************************/
-                                                // BD, TT, TC, HH up by 50%
-                                                CH->SLOT[SLOT1].TLL = ((CH->SLOT[SLOT1].TL) + (CH->ksl_base>>CH->SLOT[SLOT1].ksl))*1.5;
-                                                CH->SLOT[SLOT2].TLL = ((CH->SLOT[SLOT2].TL) + (CH->ksl_base>>CH->SLOT[SLOT2].ksl))*1.5;
+                                                // volume down by 50%
+                                                CH->SLOT[SLOT1].TLL = (CH->SLOT[SLOT1].TL + (CH->ksl_base>>CH->SLOT[SLOT1].ksl))*1.5;
+                                                CH->SLOT[SLOT2].TLL = (CH->SLOT[SLOT2].TL + (CH->ksl_base>>CH->SLOT[SLOT2].ksl))*1.5;
 
                                                 /* refresh frequency counter in both SLOTs of this channel */
                                                 CALC_FCSLOT(CH,&CH->SLOT[SLOT1]);

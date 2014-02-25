@@ -70,12 +70,12 @@ end;
 
 procedure ThinCursor;
 begin
-  SetCursorShape($0b0c);
+  SetCursorShape($0d0e);
 end;
 
 procedure WideCursor;
 begin
-  SetCursorShape($010c);
+  SetCursorShape($010e);
 end;
 
 procedure HideCursor;

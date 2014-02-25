@@ -488,13 +488,14 @@ begin { PATTERN_ORDER_edit }
   songdata_crc_ord := Update32(songdata.pattern_order,
                                SizeOf(songdata.pattern_order),0);
   Repeat
-    keyboard_poll_input;
     PATTERN_ORDER_page_refresh(page);
     PATTERN_page_refresh(pattern_page);
     
     xstart := 23+PATTORD_xshift;   
     GotoXY(xstart+pos1[hpos]-1,03+vpos-1);
-    ThinCursor;
+
+    If tracing then fkey := PATTERN_trace
+	else ThinCursor;
 
     If (scankey(SC_LCTRL) or scankey(SC_RCTRL)) { CTRL } and
        (scankey(SC_LALT) or scankey(SC_RALT)) { ALT } then
@@ -851,6 +852,7 @@ begin { PATTERN_ORDER_edit }
                    stop_playing;
                    FillData(ai_table,SizeOf(ai_table),0);
                  end;
+
       kF8,
       kAltF8,
       kShF8:   If play_single_patt and (play_status = isPaused) then

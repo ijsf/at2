@@ -8503,7 +8503,7 @@ begin { bnk_file_loader }
                  dialog_background+dialog_title,double);
   ShowStr(v_ofs^,xstart+43-Length(dl_environment.context),ystart+3,
                  dl_environment.context,
-                 dialog_background+dialog_context_dis);
+                 dialog_background+dialog_border);
   dl_environment.context := '';
 
   bnk_queue[1] := ' iNSTRUMENT                                  MELODiC/                   ';
@@ -8765,7 +8765,7 @@ begin { fib_file_loader }
                  dialog_background+dialog_title,double);
   ShowStr(v_ofs^,xstart+43-Length(dl_environment.context),ystart+3,
                  dl_environment.context,
-                 dialog_background+dialog_context_dis);
+                 dialog_background+dialog_border);
   dl_environment.context := '';
 
   bnk_queue[1] := ' DOS       iNSTRUMENT                                                   ';
@@ -9011,7 +9011,7 @@ begin { ibk_file_loader }
                  dialog_background+dialog_title,double);
   ShowStr(v_ofs^,xstart+43-Length(dl_environment.context),ystart+3,
                  dl_environment.context,
-                 dialog_background+dialog_context_dis);
+                 dialog_background+dialog_border);
   dl_environment.context := '';
 
   ibk_queue[1] := ' iNSTRUMENT                                 ';

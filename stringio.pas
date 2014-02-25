@@ -558,7 +558,6 @@ begin { InputStr }
   for1st := TRUE;
 
   Repeat
-    keyboard_poll_input;
     s2 := s1;
     If (xloc = 1) then s1 := Copy(s,cloc,ln1)
     else s1 := Copy(s,cloc-xloc+1,ln1);

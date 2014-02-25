@@ -842,7 +842,6 @@ begin
   trace_update_proc := update_trace;
 
   Repeat
-    keyboard_poll_input;
     nope := FALSE;
     update_trace;
     If (scankey(SC_LCTRL) or scankey(SC_RCTRL)) { CTRL } and
@@ -1691,7 +1690,6 @@ label _end;
 begin
   fkey_X := WORD(NOT 0);
   Repeat
-    keyboard_poll_input;
     If (page > PRED(songdata.patt_len)) then
       page := PRED(songdata.patt_len);
 
@@ -1777,9 +1775,10 @@ begin
     If (command_typing <> 0) then GotoXY(08+pos4[hpos],11+PRED(MAX_PATTERN_ROWS DIV 2))
     else GotoXY(08+pos3[hpos],11+PRED(MAX_PATTERN_ROWS DIV 2));
     
-    ThinCursor;
-    nope := FALSE;
+    If tracing then fkey := PATTERN_trace
+	else ThinCursor;
 
+    nope := FALSE;
     If (scankey(SC_LCTRL) or scankey(SC_RCTRL)) { CTRL } and
        (scankey(SC_LALT) or scankey(SC_RALT)) { ALT } then
       begin

@@ -34,7 +34,7 @@ end;
 procedure decay_bars_refresh;
 
 var
-  chan: Byte;
+  chan,temp: Byte;
 
 begin
   show_bar(1,overall_volume,05,1,2,
@@ -42,21 +42,22 @@ begin
   show_bar(1,global_volume,MAX_COLUMNS-7,1,2,
            analyzer_volumelvl+analyzer_volumelvl SHL 4);
 
-  For chan := chan_pos to chan_pos+MAX_TRACKS-1 do
+  chan := chan_pos;
+  For temp := 1 to MAX_TRACKS do
     begin
       If (decay_bar[chan].dir1 = 1) then
         decay_bar[chan].lvl1 := decay_bar[chan].lvl1+
-                 decay_bar[chan].dir1*(decay_bar_rise*5/IRQ_freq*100)
+                 decay_bar[chan].dir1*(decay_bar_rise*2.5)
       else
         decay_bar[chan].lvl1 := decay_bar[chan].lvl1+
-                 decay_bar[chan].dir1*(decay_bar_fall*5/IRQ_freq*100);
+                 decay_bar[chan].dir1*(decay_bar_fall*2.5);
 
       If (decay_bar[chan].dir2 = 1) then
         decay_bar[chan].lvl2 := decay_bar[chan].lvl2+
-                 decay_bar[chan].dir2*(decay_bar_rise*5/IRQ_freq*100)
+                 decay_bar[chan].dir2*(decay_bar_rise*2.5)
       else
         decay_bar[chan].lvl2 := decay_bar[chan].lvl2+
-                 decay_bar[chan].dir2*(decay_bar_fall*5/IRQ_freq*100);
+                 decay_bar[chan].dir2*(decay_bar_fall*2.5);
 
       If (decay_bar[chan].lvl1 < 0) then decay_bar[chan].lvl1 := 0;
       If (decay_bar[chan].lvl1 > 63) then decay_bar[chan].lvl1 := 63;
@@ -70,10 +71,10 @@ begin
 
       If (volum_bar[chan].dir = 1) then
         volum_bar[chan].lvl := volum_bar[chan].lvl+
-                 volum_bar[chan].dir*(decay_bar_rise*5/IRQ_freq*100)
+                 volum_bar[chan].dir*(decay_bar_rise*2.5)
       else
         volum_bar[chan].lvl := volum_bar[chan].lvl+
-                 volum_bar[chan].dir*(decay_bar_fall*5/IRQ_freq*100);
+                 volum_bar[chan].dir*(decay_bar_fall*2.5);
 
       If (volum_bar[chan].lvl < 0) then volum_bar[chan].lvl := 0;
       If (volum_bar[chan].lvl > 63) then volum_bar[chan].lvl := 63;
@@ -90,21 +91,22 @@ begin
 
       If (ins_parameter(voice_table[chan],10) AND 1 = 1) or
          (percussion_mode and (chan in [17..20])) then
-        show_bar(chan-PRED(chan_pos),Round(decay_bar[chan].lvl2),08,1,6,
+        show_bar(temp,Round(decay_bar[chan].lvl2),08,1,6,
                  analyzer+analyzer_modulator SHL 4)
       else
-        show_bar(chan-PRED(chan_pos),
+        show_bar(temp,
                  63-(scale_volume(63-Round(decay_bar[chan].lvl2),
                                   63-Round(decay_bar[chan].lvl1))),
                  08,1,6,
                  analyzer+analyzer_modulator SHL 4);
 
       If NOT (percussion_mode and (chan in [17..20])) then
-        show_bar(chan-PRED(chan_pos),Round(decay_bar[chan].lvl1),08,8,14,
+        show_bar(temp,Round(decay_bar[chan].lvl1),08,8,14,
                  analyzer+analyzer_carrier SHL 4)
       else
-        show_bar(chan-PRED(chan_pos),0,08,8,14,
+        show_bar(temp,0,08,8,14,
                  analyzer+analyzer_carrier SHL 4);
+      Inc(chan);
     end;
 end;
 
@@ -131,7 +133,7 @@ procedure status_refresh;
 
 var
   temps: String;
-  temp,chan: Byte;
+  temp,temp2,chan: Byte;
 
 begin
   If really_no_status_refresh then EXIT;
@@ -140,11 +142,15 @@ begin
 
   If no_status_refresh then
     begin
-      For chan := chan_pos to chan_pos+MAX_TRACKS-1 do
-        If channel_flag[chan] then
-          show_str(08+(chan-PRED(chan_pos)-1)*15,MAX_PATTERN_ROWS+11,
-               ExpStrR('',14,'Í'),
-               pattern_bckg+pattern_border);
+      chan := chan_pos;
+      For temp2 := 1 to MAX_TRACKS do
+        begin
+          If channel_flag[chan] then
+            show_str(08+(temp2-1)*15,MAX_PATTERN_ROWS+11,
+                 ExpStrR('',14,'Í'),
+                 pattern_bckg+pattern_border);
+          Inc(chan);
+        end;  
       EXIT;
     end;
 
@@ -273,8 +279,9 @@ begin
            main_background+main_stat_line)
     else show_str(30+temp,MAX_PATTERN_ROWS+12,CHR(48+temp),
               main_background+main_hi_stat_line);
-
-  For chan := chan_pos to max(chan_pos+MAX_TRACKS-1,songdata.nm_tracks) do
+ 
+  chan := chan_pos;
+  For temp2 := 1 to max(MAX_TRACKS,songdata.nm_tracks) do
     begin
       If NOT pan_lock[chan] or
          ((play_status = isStopped) and NOT debugging) then
@@ -355,187 +362,188 @@ begin
 
           If panlock and (play_status = isStopped) and NOT debugging then
             Case songdata.lock_flags[chan] AND 3 of
-              0: show_str(12+(chan-PRED(chan_pos)-1)*15,09,' ',temp);
-              1: show_str(12+(chan-PRED(chan_pos)-1)*15,09,'  ',temp);
-              2: show_str(12+(chan-PRED(chan_pos)-1)*15,09,'  ',temp);
+              0: show_str(12+(temp2-1)*15,09,' ',temp);
+              1: show_str(12+(temp2-1)*15,09,'  ',temp);
+              2: show_str(12+(temp2-1)*15,09,'  ',temp);
             end
           else
             Case panning_table[chan] of
-              0: show_str(12+(chan-PRED(chan_pos)-1)*15,09,' ',temp);
-              1: show_str(12+(chan-PRED(chan_pos)-1)*15,09,'  ',temp);
-              2: show_str(12+(chan-PRED(chan_pos)-1)*15,09,'  ',temp);
+              0: show_str(12+(temp2-1)*15,09,' ',temp);
+              1: show_str(12+(temp2-1)*15,09,'  ',temp);
+              2: show_str(12+(temp2-1)*15,09,'  ',temp);
             end;
 
           If NOT (chan in [16..20]) then
-            show_cstr(12+(chan-PRED(chan_pos)-1)*15+3,09,ExpStrR(temps,7,' '),
+            show_cstr(12+(temp2-1)*15+3,09,ExpStrR(temps,7,' '),
                   pattern_bckg+pattern_lock_indic,
                   pattern_bckg+pattern_4op_indic)
-          else show_cstr(12+(chan-PRED(chan_pos)-1)*15+3,09,ExpStrR(temps,7,' '),
+          else show_cstr(12+(temp2-1)*15+3,09,ExpStrR(temps,7,' '),
                      pattern_bckg+pattern_lock_indic,
                      pattern_bckg+pattern_perc_indic);
         end
       else If NOT percussion_mode and (chan in [16..20]) then
-             show_str(12+(chan-PRED(chan_pos)-1)*15,09,'úú '+ExpStrL('',7,' '),
+             show_str(12+(temp2-1)*15,09,'úú '+ExpStrL('',7,' '),
                   pattern_bckg+pattern_pan_indic)
            else Case chan of
                   1,
                   2:  If (songdata.flag_4op OR 1 = songdata.flag_4op) then
-                        show_cstr(12+(chan-PRED(chan_pos)-1)*15,09,'úú ~'+ExpStrR('®¯',7,' ')+'~',
+                        show_cstr(12+(temp2-1)*15,09,'úú ~'+ExpStrR('®¯',7,' ')+'~',
                               pattern_bckg+pattern_pan_indic,
                               pattern_bckg+pattern_4op_indic)
-                      else show_cstr(12+(chan-PRED(chan_pos)-1)*15,09,'úú ~'+ExpStrR('',7,' ')+'~',
+                      else show_cstr(12+(temp2-1)*15,09,'úú ~'+ExpStrR('',7,' ')+'~',
                                  pattern_bckg+pattern_pan_indic,
                                  pattern_bckg+pattern_4op_indic);
                   3,
                   4:  If (songdata.flag_4op OR 2 = songdata.flag_4op) then
-                        show_cstr(12+(chan-PRED(chan_pos)-1)*15,09,'úú ~'+ExpStrR('®¯',7,' ')+'~',
+                        show_cstr(12+(temp2-1)*15,09,'úú ~'+ExpStrR('®¯',7,' ')+'~',
                               pattern_bckg+pattern_pan_indic,
                               pattern_bckg+pattern_4op_indic)
-                      else show_cstr(12+(chan-PRED(chan_pos)-1)*15,09,'úú ~'+ExpStrR('',7,' ')+'~',
+                      else show_cstr(12+(temp2-1)*15,09,'úú ~'+ExpStrR('',7,' ')+'~',
                                  pattern_bckg+pattern_pan_indic,
                                  pattern_bckg+pattern_4op_indic);
                   5,
                   6:  If (songdata.flag_4op OR 4 = songdata.flag_4op) then
-                        show_cstr(12+(chan-PRED(chan_pos)-1)*15,09,'úú ~'+ExpStrR('®¯',7,' ')+'~',
+                        show_cstr(12+(temp2-1)*15,09,'úú ~'+ExpStrR('®¯',7,' ')+'~',
                               pattern_bckg+pattern_pan_indic,
                               pattern_bckg+pattern_4op_indic)
-                      else show_cstr(12+(chan-PRED(chan_pos)-1)*15,09,'úú ~'+ExpStrR('',7,' ')+'~',
+                      else show_cstr(12+(temp2-1)*15,09,'úú ~'+ExpStrR('',7,' ')+'~',
                                  pattern_bckg+pattern_pan_indic,
                                  pattern_bckg+pattern_4op_indic);
                   10,
                   11: If (songdata.flag_4op OR 8 = songdata.flag_4op) then
-                        show_cstr(12+(chan-PRED(chan_pos)-1)*15,09,'úú ~'+ExpStrR('®¯',7,' ')+'~',
+                        show_cstr(12+(temp2-1)*15,09,'úú ~'+ExpStrR('®¯',7,' ')+'~',
                               pattern_bckg+pattern_pan_indic,
                               pattern_bckg+pattern_4op_indic)
-                      else show_cstr(12+(chan-PRED(chan_pos)-1)*15,09,'úú ~'+ExpStrR('',7,' ')+'~',
+                      else show_cstr(12+(temp2-1)*15,09,'úú ~'+ExpStrR('',7,' ')+'~',
                                  pattern_bckg+pattern_pan_indic,
                                  pattern_bckg+pattern_4op_indic);
                   12,
                   13: If (songdata.flag_4op OR $10 = songdata.flag_4op) then
-                        show_cstr(12+(chan-PRED(chan_pos)-1)*15,09,'úú ~'+ExpStrR('®¯',7,' ')+'~',
+                        show_cstr(12+(temp2-1)*15,09,'úú ~'+ExpStrR('®¯',7,' ')+'~',
                               pattern_bckg+pattern_pan_indic,
                               pattern_bckg+pattern_4op_indic)
-                      else show_cstr(12+(chan-PRED(chan_pos)-1)*15,09,'úú ~'+ExpStrR('',7,' ')+'~',
+                      else show_cstr(12+(temp2-1)*15,09,'úú ~'+ExpStrR('',7,' ')+'~',
                                  pattern_bckg+pattern_pan_indic,
                                  pattern_bckg+pattern_4op_indic);
                   14,
                   15: If (songdata.flag_4op OR $20 = songdata.flag_4op) then
-                        show_cstr(12+(chan-PRED(chan_pos)-1)*15,09,'úú ~'+ExpStrR('®¯',7,' ')+'~',
+                        show_cstr(12+(temp2-1)*15,09,'úú ~'+ExpStrR('®¯',7,' ')+'~',
                               pattern_bckg+pattern_pan_indic,
                               pattern_bckg+pattern_4op_indic)
-                      else show_cstr(12+(chan-PRED(chan_pos)-1)*15,09,'úú ~'+ExpStrR('',7,' ')+'~',
+                      else show_cstr(12+(temp2-1)*15,09,'úú ~'+ExpStrR('',7,' ')+'~',
                                  pattern_bckg+pattern_pan_indic,
                                  pattern_bckg+pattern_4op_indic);
 
-                  16: show_cstr(12+(chan-PRED(chan_pos)-1)*15,09,'úú ~'+ExpStrR('BD',7,' ')+'~',
+                  16: show_cstr(12+(temp2-1)*15,09,'úú ~'+ExpStrR('BD',7,' ')+'~',
                             pattern_bckg+pattern_pan_indic,
                             pattern_bckg+pattern_perc_indic);
-                  17: show_cstr(12+(chan-PRED(chan_pos)-1)*15,09,'úú ~'+ExpStrR('SD',7,' ')+'~',
+                  17: show_cstr(12+(temp2-1)*15,09,'úú ~'+ExpStrR('SD',7,' ')+'~',
                             pattern_bckg+pattern_pan_indic,
                             pattern_bckg+pattern_perc_indic);
-                  18: show_cstr(12+(chan-PRED(chan_pos)-1)*15,09,'úú ~'+ExpStrR('TT',7,' ')+'~',
+                  18: show_cstr(12+(temp2-1)*15,09,'úú ~'+ExpStrR('TT',7,' ')+'~',
                             pattern_bckg+pattern_pan_indic,
                             pattern_bckg+pattern_perc_indic);
-                  19: show_cstr(12+(chan-PRED(chan_pos)-1)*15,09,'úú ~'+ExpStrR('TC',7,' ')+'~',
+                  19: show_cstr(12+(temp2-1)*15,09,'úú ~'+ExpStrR('TC',7,' ')+'~',
                             pattern_bckg+pattern_pan_indic,
                             pattern_bckg+pattern_perc_indic);
-                  20: show_cstr(12+(chan-PRED(chan_pos)-1)*15,09,'úú ~'+ExpStrR('HH',7,' ')+'~',
+                  20: show_cstr(12+(temp2-1)*15,09,'úú ~'+ExpStrR('HH',7,' ')+'~',
                             pattern_bckg+pattern_pan_indic,
                             pattern_bckg+pattern_perc_indic);
-                  else show_str(12+(chan-PRED(chan_pos)-1)*15,09,'úú '+ExpStrL('',7,' '),
+                  else show_str(12+(temp2-1)*15,09,'úú '+ExpStrL('',7,' '),
                             pattern_bckg+pattern_pan_indic);
                 end;
 
       If NOT channel_flag[chan] then
         begin
-          show_str(08+(chan-PRED(chan_pos)-1)*15,MAX_PATTERN_ROWS+11,'ÍÍÍ',
+          show_str(08+(temp2-1)*15,MAX_PATTERN_ROWS+11,'ÍÍÍ',
                pattern_bckg+pattern_border);
-          show_str(11+(chan-PRED(chan_pos)-1)*15,MAX_PATTERN_ROWS+11,' () OFF ',
+          show_str(11+(temp2-1)*15,MAX_PATTERN_ROWS+11,' () OFF ',
                pattern_bckg+pattern_chan_indic);
-          show_str(19+(chan-PRED(chan_pos)-1)*15,MAX_PATTERN_ROWS+11,'ÍÍÍ',
+          show_str(19+(temp2-1)*15,MAX_PATTERN_ROWS+11,'ÍÍÍ',
                pattern_bckg+pattern_border);
 
           If NOT percussion_mode and (chan in [16..20]) then
-            show_str(12+(chan-PRED(chan_pos)-1)*15,09,'úú '+ExpStrL('',7,' '),
+            show_str(12+(temp2-1)*15,09,'úú '+ExpStrL('',7,' '),
                  pattern_bckg+pattern_pan_indic)
           else Case chan of
                  1,
                  2:  If (songdata.flag_4op OR 1 = songdata.flag_4op) then
-                       show_cstr(12+(chan-PRED(chan_pos)-1)*15,09,'úú ~'+ExpStrR('®¯',7,' ')+'~',
+                       show_cstr(12+(temp2-1)*15,09,'úú ~'+ExpStrR('®¯',7,' ')+'~',
                              pattern_bckg+pattern_pan_indic,
                              pattern_bckg+pattern_4op_indic)
-                     else show_cstr(12+(chan-PRED(chan_pos)-1)*15,09,'úú ~'+ExpStrR('',7,' ')+'~',
+                     else show_cstr(12+(temp2-1)*15,09,'úú ~'+ExpStrR('',7,' ')+'~',
                                 pattern_bckg+pattern_pan_indic,
                                 pattern_bckg+pattern_4op_indic);
                  3,
                  4:  If (songdata.flag_4op OR 2 = songdata.flag_4op) then
-                       show_cstr(12+(chan-PRED(chan_pos)-1)*15,09,'úú ~'+ExpStrR('®¯',7,' ')+'~',
+                       show_cstr(12+(temp2-1)*15,09,'úú ~'+ExpStrR('®¯',7,' ')+'~',
                              pattern_bckg+pattern_pan_indic,
                              pattern_bckg+pattern_4op_indic)
-                     else show_cstr(12+(chan-PRED(chan_pos)-1)*15,09,'úú ~'+ExpStrR('',7,' ')+'~',
+                     else show_cstr(12+(temp2-1)*15,09,'úú ~'+ExpStrR('',7,' ')+'~',
                                 pattern_bckg+pattern_pan_indic,
                                 pattern_bckg+pattern_4op_indic);
                  5,
                  6:  If (songdata.flag_4op OR 4 = songdata.flag_4op) then
-                       show_cstr(12+(chan-PRED(chan_pos)-1)*15,09,'úú ~'+ExpStrR('®¯',7,' ')+'~',
+                       show_cstr(12+(temp2-1)*15,09,'úú ~'+ExpStrR('®¯',7,' ')+'~',
                              pattern_bckg+pattern_pan_indic,
                              pattern_bckg+pattern_4op_indic)
-                     else show_cstr(12+(chan-PRED(chan_pos)-1)*15,09,'úú ~'+ExpStrR('',7,' ')+'~',
+                     else show_cstr(12+(temp2-1)*15,09,'úú ~'+ExpStrR('',7,' ')+'~',
                                 pattern_bckg+pattern_pan_indic,
                                 pattern_bckg+pattern_4op_indic);
                  10,
                  11: If (songdata.flag_4op OR 8 = songdata.flag_4op) then
-                       show_cstr(12+(chan-PRED(chan_pos)-1)*15,09,'úú ~'+ExpStrR('®¯',7,' ')+'~',
+                       show_cstr(12+(temp2-1)*15,09,'úú ~'+ExpStrR('®¯',7,' ')+'~',
                              pattern_bckg+pattern_pan_indic,
                              pattern_bckg+pattern_4op_indic)
-                     else show_cstr(12+(chan-PRED(chan_pos)-1)*15,09,'úú ~'+ExpStrR('',7,' ')+'~',
+                     else show_cstr(12+(temp2-1)*15,09,'úú ~'+ExpStrR('',7,' ')+'~',
                                 pattern_bckg+pattern_pan_indic,
                                 pattern_bckg+pattern_4op_indic);
                  12,
                  13: If (songdata.flag_4op OR $10 = songdata.flag_4op) then
-                       show_cstr(12+(chan-PRED(chan_pos)-1)*15,09,'úú ~'+ExpStrR('®¯',7,' ')+'~',
+                       show_cstr(12+(temp2-1)*15,09,'úú ~'+ExpStrR('®¯',7,' ')+'~',
                              pattern_bckg+pattern_pan_indic,
                              pattern_bckg+pattern_4op_indic)
-                     else show_cstr(12+(chan-PRED(chan_pos)-1)*15,09,'úú ~'+ExpStrR('',7,' ')+'~',
+                     else show_cstr(12+(temp2-1)*15,09,'úú ~'+ExpStrR('',7,' ')+'~',
                                 pattern_bckg+pattern_pan_indic,
                                 pattern_bckg+pattern_4op_indic);
                  14,
                  15: If (songdata.flag_4op OR $20 = songdata.flag_4op) then
-                       show_cstr(12+(chan-PRED(chan_pos)-1)*15,09,'úú ~'+ExpStrR('®¯',7,' ')+'~',
+                       show_cstr(12+(temp2-1)*15,09,'úú ~'+ExpStrR('®¯',7,' ')+'~',
                              pattern_bckg+pattern_pan_indic,
                              pattern_bckg+pattern_4op_indic)
-                     else show_cstr(12+(chan-PRED(chan_pos)-1)*15,09,'úú ~'+ExpStrR('',7,' ')+'~',
+                     else show_cstr(12+(temp2-1)*15,09,'úú ~'+ExpStrR('',7,' ')+'~',
                                 pattern_bckg+pattern_pan_indic,
                                 pattern_bckg+pattern_4op_indic);
 
-                 16: show_cstr(12+(chan-PRED(chan_pos)-1)*15,09,'úú ~'+ExpStrR('BD',7,' ')+'~',
+                 16: show_cstr(12+(temp2-1)*15,09,'úú ~'+ExpStrR('BD',7,' ')+'~',
                            pattern_bckg+pattern_pan_indic,
                            pattern_bckg+pattern_perc_indic);
-                 17: show_cstr(12+(chan-PRED(chan_pos)-1)*15,09,'úú ~'+ExpStrR('SD',7,' ')+'~',
+                 17: show_cstr(12+(temp2-1)*15,09,'úú ~'+ExpStrR('SD',7,' ')+'~',
                            pattern_bckg+pattern_pan_indic,
                            pattern_bckg+pattern_perc_indic);
-                 18: show_cstr(12+(chan-PRED(chan_pos)-1)*15,09,'úú ~'+ExpStrR('TT',7,' ')+'~',
+                 18: show_cstr(12+(temp2-1)*15,09,'úú ~'+ExpStrR('TT',7,' ')+'~',
                            pattern_bckg+pattern_pan_indic,
                            pattern_bckg+pattern_perc_indic);
-                 19: show_cstr(12+(chan-PRED(chan_pos)-1)*15,09,'úú ~'+ExpStrR('TC',7,' ')+'~',
+                 19: show_cstr(12+(temp2-1)*15,09,'úú ~'+ExpStrR('TC',7,' ')+'~',
                            pattern_bckg+pattern_pan_indic,
                            pattern_bckg+pattern_perc_indic);
-                 20: show_cstr(12+(chan-PRED(chan_pos)-1)*15,09,'úú ~'+ExpStrR('HH',7,' ')+'~',
+                 20: show_cstr(12+(temp2-1)*15,09,'úú ~'+ExpStrR('HH',7,' ')+'~',
                            pattern_bckg+pattern_pan_indic,
                            pattern_bckg+pattern_perc_indic);
-                 else show_str(12+(chan-PRED(chan_pos)-1)*15,09,'úú '+ExpStrL('',7,' '),
+                 else show_str(12+(temp2-1)*15,09,'úú '+ExpStrL('',7,' '),
                            pattern_bckg+pattern_pan_indic);
                end;
         end
       else begin
              temp := 0;
-             If NOT ((mouse_y > 10) or (sdl_screen_mode <> 0)) then
+             If NOT ((screen_scroll_offset > 10) or (sdl_screen_mode <> 0)) then
                temp := Round(42/63*volum_bar[chan].lvl);
 
-             show_str(08+(chan-PRED(chan_pos)-1)*15,MAX_PATTERN_ROWS+11,
+             show_str(08+(temp2-1)*15,MAX_PATTERN_ROWS+11,
                   ExpStrR(_vol_bar_str(temp),14,'Í'),
                   pattern_bckg+pattern_border);
            end;
+      Inc(chan);
     end;
 end;
 
