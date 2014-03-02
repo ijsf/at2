@@ -78,10 +78,6 @@ type
 function _patts_marked: Byte;
 
 
-function Lower_file(s: String) : String;
-function iCASE_file(s: String) : String;
-
-
 procedure nul_volume_bars;
 procedure transpose_custom_area(type1,type2: tTRANSPOSE_TYPE;
                                 patt0,patt1,track0,track1,line0,line1: Byte;
@@ -10729,6 +10725,8 @@ _jmp1:
   load_flag := NULL;
   limit_exceeded := FALSE;
   HideCursor;
+  
+  temp := Lower(temp); { is only used for checking file extension from now on }
 
   If (quick_cmd) and
      NOT ((ExtOnly(temp) = 'a2i') or
@@ -12224,28 +12222,6 @@ begin
 
   CloseF(f);
 end;
-
-function iCASE_file(s: String) : String;
-
-begin
-{$ifdef UNIX}
-  iCASE_file := s;
-{$else}
-  iCASE_file := iCASE(s);
-{$endif}
-end;
-
-
-function Lower_file(s: String) : String;
-
-begin
-{$ifdef UNIX}
-  Lower_file := s;
-{$else}
-  Lower_file := Lower(s);
-{$endif}
-end;
-
 
 procedure FILE_save(ext: String);
 

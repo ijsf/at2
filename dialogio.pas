@@ -189,6 +189,9 @@ function VScrollBar(var dest; x,y: Byte; size: Byte; len1,len2,pos: Word;
                     atr1,atr2: Byte): Word;
 procedure DialogIO_Init;
 
+function Lower_file(s: String) : String;
+function iCASE_file(s: String) : String;
+
 implementation
 
 type
@@ -227,6 +230,28 @@ var
   mbuf:   tMBUFFR;
   contxt: String;
   backup: tBACKUP;
+
+function iCASE_file(s: String) : String;
+
+begin
+{$ifdef UNIX}
+  iCASE_file := s;
+{$else}
+  iCASE_file := iCASE(s);
+{$endif}
+end;
+
+
+function Lower_file(s: String) : String;
+
+begin
+{$ifdef UNIX}
+  Lower_file := s;
+{$else}
+  Lower_file := Lower(s);
+{$endif}
+end;
+
 
 function OutStr(var queue; len: Byte; order: Word): String; assembler;
 asm
@@ -1116,7 +1141,6 @@ begin
 end;
  
 begin { make_stream }
-  WriteLn('make_stream: path=',path);
   {$IFDEF WINDOWS}
   GetLogicalDriveStrings(SizeOf(vDrives),vDrives);
   {$ENDIF}
@@ -1177,7 +1201,7 @@ begin { make_stream }
     begin
       If LookUpMask(search.name) then
         begin
-          search.name := Lower(search.name);
+          search.name := Lower_file(search.name);
           Inc(count2);
           stream.stuff[count1+count2].name := search.name;
           stream.stuff[count1+count2].attr := search.attr;
@@ -1324,9 +1348,9 @@ begin { Fselect }
     If (temp5 > fstream.count) then temp5 := 1;
 
     For temp2 := 1 to fstream.count do
-      If (Lower(fstream.stuff[temp2].name) = fs_environment.last_file) then
+      If (Lower_file(fstream.stuff[temp2].name) = fs_environment.last_file) then
         begin lastp := temp2; BREAK; end;
-    If (Lower(fstream.stuff[temp2].name) <> fs_environment.last_file) then
+    If (Lower_file(fstream.stuff[temp2].name) <> fs_environment.last_file) then
       lastp := 0;
 
     If (lastp = 0) or
@@ -1362,7 +1386,7 @@ begin { Fselect }
             temp4 := NameOnly(temp3);
             While (temp3[Length(temp3)] <> PATHSEP) do
               Delete(temp3,Length(temp3),1);
-            fs_environment.last_file := Lower(temp4);
+            fs_environment.last_file := Lower_file(temp4);
           end
         else
           begin
@@ -1401,7 +1425,7 @@ begin { Fselect }
                   temp4 := NameOnly(temp3);
                   While (temp3[Length(temp3)] <> PATHSEP) do
                     Delete(temp3,Length(temp3),1);
-                  fs_environment.last_file := Lower(temp4);
+                  fs_environment.last_file := Lower_file(temp4);
                   {$i-}
                   ChDir(Copy(temp3,1,Length(temp3)-1));
                   {$i+}
@@ -1417,7 +1441,7 @@ begin { Fselect }
                        {$i+}
                        If (IOresult <> 0) then ;
                      end
-                   else fs_environment.last_file := Lower(fstream.stuff[temp2].name);
+                   else fs_environment.last_file := Lower_file(fstream.stuff[temp2].name);
   until (mn_environment.keystroke = $1c0d) or
         (mn_environment.keystroke = $011b);
 
