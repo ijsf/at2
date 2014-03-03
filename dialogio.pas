@@ -1297,17 +1297,17 @@ begin { Fselect }
       If (fstream.stuff[temp2].name <> 'updir') then
         begin
           If (fstream.stuff[temp2].attr AND directory <> 0) then
-            menudat[temp2] := ' '+iCASE(ExpStrR(Copy(fstream.stuff[temp2].name,1,23),23,' '))+' '
+            menudat[temp2] := ' '+iCASE_file(ExpStrR(Copy(fstream.stuff[temp2].name,1,23),23,' '))+' '
           else                        
             menudat[temp2] := ' '+ExpStrR(Copy(BaseNameOnly(
                                     fstream.stuff[temp2].name),1,20),20,' ')+' '+
-                                  ExpStrR(Copy(ExtOnly(
+                                  ExpStrR(Copy(ExtOnlyNoLower(
                                     fstream.stuff[temp2].name),1,3),3,' ')+' ';
         end
       else
         begin
           menudat[temp2] := ' '+ExpStrR('..',20,' ')+' '+
-                                ExpStrR(ExtOnly(fstream.stuff[temp2].name),3,' ')+' ';
+                                ExpStrR(ExtOnlyNoLower(fstream.stuff[temp2].name),3,' ')+' ';
           fstream.stuff[temp2].name := '..';
         end;
 
