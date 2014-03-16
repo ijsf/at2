@@ -9,6 +9,7 @@ const
   _force_program_quit: Boolean = FALSE;
   _emulate_screen_without_delay: Boolean = FALSE;
   _update_sdl_screen: Boolean = FALSE;
+  _generic_blink_event_flag: Boolean = FALSE;
   _name_scrl_shift_ctr: Shortint = 1;
   _name_scrl_shift: Byte = 0;
   _name_scrl_pending_frames: Longint = 0;
@@ -49,7 +50,7 @@ const
   seconds_counter: Longint = 0;
   hundereds_counter: Longint = 0;
   really_no_status_refresh: Boolean = FALSE;
-
+ 
 const
   keyoff_flag        = $080;
   fixed_note_flag    = $090;
@@ -139,7 +140,7 @@ var
 
 var
   old_songdata: tOLD_FIXED_SONGDATA;
-  songdata: tFIXED_SONGDATA;
+  songdata,temp_songdata: tFIXED_SONGDATA;
   songdata_crc,songdata_crc_ord: Longint;
   temp_instrument: tADTRACK2_INS;
   temp_instrument_macro: tREGISTER_TABLE;
@@ -311,8 +312,7 @@ asm
         mov     al,TRUE
         jmp     @@3
 @@2:    mov     al,FALSE
-@@3:
-        pop     esi
+@@3:    pop     esi
         pop     ecx
 end;
 
@@ -505,8 +505,7 @@ asm
         push    edx
         call    opl3out
         call    opl3out
-@@1:
-        pop     edx
+@@1:    pop     edx
         pop     ebx
 end;
 
@@ -3811,6 +3810,7 @@ begin
       status_layout[isPaused][8] := #8;
       If (@macro_preview_indic_proc <> NIL) then
         macro_preview_indic_proc(1);
+      _generic_blink_event_flag := FALSE;
     end
   else
     begin
@@ -3819,6 +3819,7 @@ begin
       status_layout[isStopped][9] := ' ';
       If (@macro_preview_indic_proc <> NIL) then
         macro_preview_indic_proc(2);
+      _generic_blink_event_flag := TRUE;
     end;
 
   Inc(dummy_ticks);
@@ -3863,6 +3864,7 @@ begin
     end;
 
   decay_bars_refresh;       
+  If opl3_channel_recording_mode then update_recorded_channels;
   If do_synchronize then synchronize_screen;
   If (_name_scrl_pending_frames > 0) then Dec(_name_scrl_pending_frames);
   Inc(_cursor_blink_pending_frames);
@@ -3942,7 +3944,7 @@ begin
 end;
 
 var
-  {_pattern_patt,}_pattern_page,_pattord_page,
+  _pattern_page,_pattord_page,
   _pattord_hpos,_pattord_vpos: Byte;
 
 begin { calibrate_player }
@@ -4081,7 +4083,6 @@ begin { calibrate_player }
   calibrating := FALSE;
   If status_filter then no_status_refresh := FALSE;
 
-  {_pattern_patt := songdata.pattern_order[current_order];}
   _pattern_page := line;
   _pattord_page := 0;
   _pattord_hpos := 1;
@@ -4285,60 +4286,13 @@ begin
   really_no_status_refresh := FALSE; 
 end;
 
-procedure start_playing_alt;
-begin
-  reset_player;
-  If (start_pattern = NULL) then current_order := 0
-  else If (start_order = NULL) then
-         begin
-           If (calc_pattern_pos(start_pattern) <> NULL) then
-             current_order := calc_pattern_pos(start_pattern)
-           else begin
-                  start_pattern := NULL;
-                  current_order := 0;
-                  EXIT;
-                end;
-         end
-       else begin
-              current_order := start_order;
-              current_pattern := start_pattern;
-            end;
-
-  If (songdata.pattern_order[current_order] > $7f) then
-    If (calc_order_jump = -1) then EXIT;
-
-  current_pattern := songdata.pattern_order[current_order];
-  If (start_line = NULL) then current_line := 0
-  else current_line := start_line;
-  pattern_break := FALSE;
-  pattern_delay := FALSE;
-  tickXF := 0;
-  last_order := 0;
-  next_line := 0;
-  song_timer := 0;
-  timer_temp := 0;
-  song_timer_tenths := 0;
-  ticklooper := 0;
-  macro_ticklooper := 0;
-  debugging := FALSE;
-  ticks := 0;
-  tick0 := 0;
-  replay_forbidden := FALSE;
-  play_status := isPlaying;
-  speed := songdata.speed;
-  macro_speedup := songdata.macro_speedup;
-  update_timer(songdata.tempo);
-  no_status_refresh := FALSE;
-  really_no_status_refresh := FALSE;
-end;
-
 procedure stop_playing;
 
 var
   temp: Byte;
 
 begin
-  flush_WAV_data;
+  flush_WAV_data; 
   replay_forbidden := TRUE;
   play_status := isStopped;
   fade_out_volume := 63;
@@ -4377,8 +4331,6 @@ begin
   scroll_pos2 := $0ff;
   scroll_pos3 := $0ff;
   scroll_pos4 := $0ff;
-  //PATTERN_ORDER_page_refresh(pattord_page);
-  //PATTERN_page_refresh(pattern_page);
 end;
 
 procedure synchronize;
@@ -4560,8 +4512,7 @@ asm
         add     esi,ecx
         mov     ecx,CHUNK_SIZE
         rep     movsb
-@@2:
-        pop     edi
+@@2:    pop     edi
         pop     esi
         pop     edx
         pop     ecx
@@ -4612,8 +4563,7 @@ asm
         mov     ecx,CHUNK_SIZE
         rep     movsb
         mov     module_archived,FALSE
-@@2:
-        pop     edi
+@@2:    pop     edi
         pop     esi
         pop     edx
         pop     ecx
@@ -4637,8 +4587,7 @@ asm
         jmp     @@2
 @@1:    add     al,chan_pos
         dec     al
-@@2:
-        pop     ebx
+@@2:    pop     ebx
 end;
 
 function count_pos(hpos: Byte): Byte; assembler;
@@ -4658,8 +4607,7 @@ asm
         jnz     @@1
         dec     bl
         mov     al,bl
-@@1:
-        pop     ebx
+@@1:    pop     ebx
 end;
 
 procedure count_order(var entries: Byte);
@@ -4693,9 +4641,7 @@ end;
 procedure count_patterns(var patterns: Byte);
 
 var
-  temp1{,temp2,temp3}: Byte;
-  {empty_pattern: Boolean;}
-  {chunk: tCHUNK;}
+  temp1: Byte;
 
 begin
   patterns := 0;
@@ -4758,7 +4704,6 @@ begin
     end
   else init_buffers;
 
-  wav_buffer_len := 0;
   FillData(songdata,SizeOf(songdata),0);
   FillData(songdata.pattern_order,SizeOf(songdata.pattern_order),$080);
   FillData(pattdata^,PATTERN_SIZE*max_patterns,0);
@@ -4813,7 +4758,7 @@ end;
 procedure update_instr_data(ins: Byte);
 
 var
-  temp{,freq}: Byte;
+  temp: Byte;
 
 begin
   For temp := 1 to 20 do

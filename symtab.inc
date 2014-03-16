@@ -1,6 +1,6 @@
 const
 	SYMTABSIZE = $65;
-	symtab: array[0..pred(SYMTABSIZE*10)] of word = (
+	symtab: array[0..PRED(SYMTABSIZE*10)] of word = (
 { Key	Scan	ASCII	Shift	Ctrl	Alt		Num		Caps	Sh+Caps	Sh+Num	SDLK_Keycode}
 { Esc }	$01,	$1B,	$1B,	$F000,	$F000,	$1B,	$1B,	$1B,	$1B,	SDLK_ESCAPE,
 { 1! }	$02,	$31,	$21,	$0200,	$7800,	$31,	$31,	$21,	$21,	SDLK_1,
@@ -72,7 +72,7 @@ const
 { num}	$45,	$FFFF,	$FFFF,	$FFFF,	$FFFF,	$FFFF,	$FFFF,	$FFFF,	$FFFF,	SDLK_NUMLOCK,
 {scrl}	$46,	$FFFF,	$FFFF,	$FFFF,	$FFFF,	$FFFF,	$FFFF,	$FFFF,	$FFFF,	SDLK_SCROLLOCK,
 {home}	$47,	$4700,	$4700,	$7700,	$F000,	$4700,	$4700,	$4700,	$4700,	SDLK_HOME,
-{ up }	$48,	$4800,	$4800,	$F000,	$F000,	$4800,	$4800,	$4800,	$4800,	SDLK_UP,
+{ up }	$48,	$0000,	$4800,	$F000,	$F000,	$4800,	$4800,	$4800,	$4800,	SDLK_UP,
 {pgup}	$49,	$4900,	$4900,	$8400,	$F000,	$4900,	$4900,	$4900,	$4900,	SDLK_PAGEUP,
 { np-}	$4A,	$2D,	$2D,	$F000,	$F000,	$2D,	$2D,	$2D,	$2D,	SDLK_KP_MINUS,
 {left}	$4B,	$4B00,	$4B00,	$7300,	$F000,	$4B00,	$4B00,	$4B00,	$4B00,	SDLK_LEFT,
@@ -80,7 +80,7 @@ const
 {right}	$4D,	$4D00,	$4D00,	$7400,	$F000,	$4D00,	$4D00,	$4D00,	$4D00,	SDLK_RIGHT,
 { np+}	$4E,	$2B,	$2B,	$F000,	$F000,	$2B,	$2B,	$2B,	$2B,	SDLK_KP_PLUS,
 {end}	$4F,	$4F00,	$4F00,	$7500,	$F000,	$4F00,	$4F00,	$4F00,	$4F00,	SDLK_END,
-{down}	$50,	$5000,	$5000,	$F000,	$F000,	$5000,	$5000,	$5000,	$5000,	SDLK_DOWN,
+{down}	$50,	$0000,	$5000,	$F000,	$F000,	$5000,	$5000,	$5000,	$5000,	SDLK_DOWN,
 {pgdn}	$51,	$5100,	$5100,	$7600,	$F000,	$5100,	$5100,	$5100,	$5100,	SDLK_PAGEDOWN,
 { ins}	$52,	$5200,	$5200,	$F000,	$F000,	$5200,	$5200,	$5200,	$5200,	SDLK_INSERT,
 { del}	$53,	$5300,	$5300,	$F000,	$F000,	$5300,	$5300,	$5300,	$5300,	SDLK_DELETE,

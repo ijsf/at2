@@ -29,6 +29,7 @@ type
                          insert_mode,
                          replace_enabled,
                          append_enabled:  Boolean;
+						 char_filter,
                          character_set,
                          valid_chars,
                          word_characters: characters;
@@ -44,6 +45,7 @@ const
     (insert_mode:     TRUE;
      replace_enabled: TRUE;
      append_enabled:  TRUE;
+     char_filter:     [#$20..#$ff];
      character_set:   [#$20..#$ff];
      valid_chars:     [#$20..#$ff];
      word_characters: ['A'..'Z','a'..'z','0'..'9','_'];
@@ -119,8 +121,7 @@ asm
 @@3:    mov     [edi],al
         inc     edi
         loop    @@1
-@@4:
-        pop     edi
+@@4:    pop     edi
         pop     esi
         pop     ecx
 end;
@@ -149,8 +150,7 @@ asm
 @@2:    mov     [edi],al
         inc     edi
         loop    @@1
-@@3:
-        pop     edi
+@@3:    pop     edi
         pop     esi
         pop     ecx
 end;
@@ -179,8 +179,7 @@ asm
 @@2:    mov     [edi],al
         inc     edi
         loop    @@1
-@@3:
-        pop     edi
+@@3:    pop     edi
         pop     esi
         pop     ecx
 end;
@@ -220,8 +219,7 @@ asm
 @@4:    mov     [edi],al
         inc     edi
         loop    @@3
-@@5:
-        pop     edi
+@@5:    pop     edi
         pop     esi
         pop     ecx
 end;
@@ -264,8 +262,7 @@ asm
 @@1:    stosb
         mov     cl,al
         rep     movsb
-@@2:
-        pop     edi
+@@2:    pop     edi
         pop     edi
         pop     ecx
 end;
@@ -296,8 +293,7 @@ asm
 @@1:    stosb
         mov     cl,al
         rep     movsb
-@@2:
-        pop     edi
+@@2:    pop     edi
         pop     edi
         pop     ecx
 end;
@@ -346,8 +342,7 @@ asm
         mov     [edi],al
         dec     edi
         loop    @@1
-@@2:
-        pop     edi
+@@2:    pop     edi
         pop     edi
         pop     ecx
 end;
@@ -374,8 +369,7 @@ asm
 @@2:    mov     [edi],al
         inc     edi
         loop    @@1
-@@3:
-        pop     edi
+@@3:    pop     edi
         pop     edi
         pop     ecx
 end;
@@ -444,8 +438,7 @@ asm
 @@3:    mov     edi,@result
         xor     al,al
         stosb
-@@4:
-        pop     edi
+@@4:    pop     edi
         pop     esi
         pop     edx
         pop     ecx
@@ -497,9 +490,8 @@ function InputStr(s: String; x,y,ln,ln1: Byte; atr1,atr2: Byte): String;
 
 var
   appn,for1st,qflg,ins: Boolean;
-  cloc,xloc,xint,{mx,}attr: Byte;
+  cloc,xloc,xint,attr: Byte;
   key: Word;
-  {cur: Longint;}
   s1,s2: String;
 
 function LookupKey(key: Word; var table; size: Byte): Boolean; assembler;
@@ -518,8 +510,7 @@ asm
 @@2:    xor     al,al
         jecxz   @@3
         mov     al,1
-@@3:
-        pop     esi
+@@3:    pop     esi
         pop     ecx
 end;
 
@@ -549,13 +540,12 @@ begin { InputStr }
   appn := NOT is_setting.append_enabled;
 
   Dec(x);
-  {cur := GetCursor;}
   If ins then ThinCursor else WideCursor;
   s1 := s;
   If (BYTE(s1[0]) > ln1) then s1[0] := CHR(ln1);
 
   ShowStr(v_ofs^,xint,y,ExpStrR('',ln1,' '),atr1);
-  ShowStr(v_ofs^,xint,y,s1,atr2);
+  ShowStr(v_ofs^,xint,y,FilterStr2(s1,is_setting.char_filter,'_'),atr2);
   for1st := TRUE;
 
   Repeat
@@ -568,12 +558,12 @@ begin { InputStr }
 
     If appn and for1st then
       begin
-        ShowStr(v_ofs^,xint,y,ExpStrR(s1,ln1,' '),atr1);
+        ShowStr(v_ofs^,xint,y,ExpStrR(FilterStr2(s1,is_setting.char_filter,'_'),ln1,' '),atr1);
         for1st := FALSE;
       end;
 
     If (s2 <> s1) then
-      ShowStr(v_ofs^,xint,y,ExpStrR(s1,ln1,' '),atr1);
+      ShowStr(v_ofs^,xint,y,ExpStrR(FilterStr2(s1,is_setting.char_filter,'_'),ln1,' '),atr1);
 
     If (ln1 < ln) then
       If (cloc-xloc > 0) and (Length(s) > 0) then
@@ -587,12 +577,12 @@ begin { InputStr }
       If (cloc-xloc+ln1 < Length(s)) then
         ShowStr(v_ofs^,xint+ln1-1,y,'',(attr AND $0f0)+$0f)
       else If (cloc-xloc+ln1 = Length(s)) then
-             ShowStr(v_ofs^,xint+ln1-1,y,s[Length(s)],attr)
+             ShowStr(v_ofs^,xint+ln1-1,y,FilterStr2(s[Length(s)],is_setting.char_filter,'_'),attr)
            else
              ShowStr(v_ofs^,xint+ln1-1,y,' ',atr1);
 
     GotoXY(x+xloc,y);
-    if keypressed then key := getkey else goto _end;
+    if keypressed then key := getkey else GOTO _end;
     If LookupKey(key,is_setting.terminate_keys,50) then qflg := TRUE;
 
     If NOT qflg then
@@ -744,8 +734,10 @@ _end:
 end;
 
 function SameName(str1,str2: String): Boolean; assembler;
+
 const
   LastW: Word = 0;
+
 asm
         push    ebx
         push    ecx
@@ -868,8 +860,7 @@ asm
         dec     esi
         jmp     @@1
 @@15:   mov     al,0
-@@16:
-        pop     edi
+@@16:   pop     edi
         pop     esi
         pop     edx
         pop     ecx
@@ -912,9 +903,11 @@ begin
 end;
 
 function byte2hex(value: Byte): String; assembler;
+
 const
-    data: array[0..15] of char = '0123456789ABCDEF';
-asm
+  data: array[0..15] of char = '0123456789ABCDEF';
+
+  asm
         push    ecx
         push    esi
         push    edi
@@ -937,8 +930,10 @@ asm
 end;
 
 function byte2dec(value: Byte): String; assembler;
+
 const
-    data: array[0..9] of char = '0123456789';
+  data: array[0..9] of char = '0123456789';
+
 asm
         push    ebx
         push    ecx
@@ -982,5 +977,6 @@ end;
 
 begin
   is_environment.locate_pos := 1;
-  is_setting.valid_chars   := _valid_characters;
+  is_setting.char_filter := _valid_characters;
+  is_setting.valid_chars := _valid_characters;
 end.

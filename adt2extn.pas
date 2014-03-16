@@ -8,6 +8,15 @@ const
   _pip_dest: Pointer = NIL;
   _pip_loop: Boolean = FALSE;
   _arp_vib_loader: Boolean = FALSE;
+  _arp_vib_mode: Boolean = FALSE;
+  _macro_editor__pos: array[Boolean] of Byte = (1,8);
+  _macro_editor__fmreg_hpos: array[Boolean] of Byte = (1,1);
+  _macro_editor__fmreg_page: array[Boolean] of Byte = (1,1);
+  _macro_editor__fmreg_left_margin: array[Boolean] of Byte = (1,1);
+  _macro_editor__fmreg_cursor_pos: array[Boolean] of Byte = (1,1);
+  _macro_editor__arpeggio_page: array[Boolean] of Byte = (1,1);
+  _macro_editor__vibrato_hpos: array[Boolean] of Byte = (1,1);
+  _macro_editor__vibrato_page: array[Boolean] of Byte = (1,1);
 
 const
   remap_mtype:       Byte = 1;
@@ -91,8 +100,9 @@ procedure LINE_MARKING_SETUP;
 procedure OCTAVE_CONTROL;
 procedure SONG_VARIABLES;
 procedure MACRO_EDITOR(instr: Byte; arp_vib_mode: Boolean);
+procedure MACRO_BROWSER(instrBrowser: Boolean; updateCurInstr: Boolean);
 procedure FILE_save(ext: String);
-function  FILE_open(masks: String): Byte;
+function  FILE_open(masks: String; loadBankPossible: Boolean): Byte;
 procedure NUKE;
 procedure QUIT_request;
 procedure show_progress(value: Longint);
@@ -739,7 +749,7 @@ procedure TRANSPOSE;
 
 var
   patt0,patt1,track0,track1,line0,line1: Byte;
-  {temp,}patterns: Byte;
+  patterns: Byte;
 
 const
   factor: array[1..17] of Byte = (1,12,1,12,1,12,1,12,NULL,
@@ -1003,9 +1013,6 @@ begin
   move_to_screen_area[3] := _remap_xstart+71+2;
   move_to_screen_area[4] := _remap_ystart+_remap_inst_page_len+5+1;
   move2screen;
-
-//  SetCursor(backup.cursor);
-//  GotoXY(backup.oldx,backup.oldy);
 end;
 
 procedure override_frame(var dest; x,y: Byte; frame: String; attr: Byte);
@@ -1061,7 +1068,6 @@ begin
 end;
 
 var
-  old_smooth_appear: Boolean;
   temp_instr_names: array[1..255] of String[32];
 
 label _jmp1;
@@ -1071,7 +1077,6 @@ begin { REMAP }
   _remap_pos := 1;
   _remap_inst_page_len := MAX_PATTERN_ROWS;
   qflag := FALSE;
-  old_smooth_appear := smooth_appear;
 
   MenuLib1_mn_setting.menu_attr := dialog_background+dialog_text;
   MenuLib2_mn_setting.menu_attr := dialog_background+dialog_text;
@@ -1097,7 +1102,6 @@ _jmp1:
                  dialog_background+dialog_border,
                  dialog_background+dialog_title,double);
 
-  smooth_appear := FALSE;
   MenuLib1_mn_environment.curr_pos := remap_ins1;
   MenuLib2_mn_environment.curr_pos := remap_ins2;
 
@@ -1266,7 +1270,6 @@ _jmp1:
 
   MenuLib1_mn_environment.ext_proc := NIL;
   MenuLib2_mn_environment.ext_proc := NIL;
-  smooth_appear := old_smooth_appear;
 
   move_to_screen_data := Addr(backup.screen);
   move_to_screen_area[1] := _remap_xstart;
@@ -1338,8 +1341,6 @@ _jmp1:
 
   PATTERN_ORDER_page_refresh(pattord_page);
   PATTERN_page_refresh(pattern_page);
-//  SetCursor(backup.cursor);
-//  GotoXY(backup.oldx,backup.oldy);
 end;
 
 procedure REPLACE;
@@ -1478,9 +1479,6 @@ begin
   move_to_screen_area[3] := xstart+38+2;
   move_to_screen_area[4] := ystart+10+1;
   move2screen;
-
-//  SetCursor(backup.cursor);
-//  GotoXY(backup.oldx,backup.oldy);
 end;
 
 function _find_note(layout: String): Byte;
@@ -1525,7 +1523,6 @@ begin
 end;
 
 var
-  {temp_instr_names: array[1..255] of String[32];}
   _1st_choice,_replace_all,
   _cancel: Boolean;
   chr: Char;
@@ -2029,8 +2026,6 @@ _jmp1:
 
   PATTERN_ORDER_page_refresh(pattord_page);
   PATTERN_page_refresh(pattern_page);
-//  SetCursor(backup.cursor);
-//  GotoXY(backup.oldx,backup.oldy);
 end;
 
 procedure POSITIONS_reset;
@@ -2657,10 +2652,7 @@ begin { DEBUG_INFO }
   move_to_screen_area[2] := ystart;
   move_to_screen_area[3] := xstart+83+2;
   move_to_screen_area[4] := ystart+songdata.nm_tracks+6+1;
-
   move2screen;
-//  SetCursor(backup.cursor);
-//  GotoXY(backup.oldx,backup.oldy);
 end;
 
 procedure LINE_MARKING_SETUP;
@@ -3434,7 +3426,7 @@ _jmp1:
              is_environment.keystroke := getkey;
              Case is_environment.keystroke of
                kUP,kLEFT: If (songdata.nm_tracks < 7) then pos := 17 else pos := 111;
-               {kLEFT,}kShTAB: pos := 17;
+               kShTAB: pos := 17;
                kDOWN,kTAB,kENTER: pos := 7;
                kRIGHT: pos := 78;
                kSPACE: lockvol := NOT lockvol;
@@ -3857,7 +3849,6 @@ _end:
   move_to_screen_area[2] := ystart;
   move_to_screen_area[3] := xstart+79+2;
   move_to_screen_area[4] := ystart+26+1;
-
   move2screen;
 
   If (is_environment.keystroke = kF1) then
@@ -3896,8 +3887,7 @@ asm
 @@1:    lodsb
         stosw
         loop    @@1
-@@2:
-        pop        edi
+@@2:    pop        edi
         pop        esi
         pop        edx
         pop        ecx
@@ -3953,8 +3943,6 @@ var
                     end;
 
 var
-  ptr_arpeggio_table,
-  ptr_vibrato_table: ^Byte;
   _bak_arpeggio_table,
   _bak_vibrato_table: Byte;
   _bak_common_flag: Byte;
@@ -3996,6 +3984,7 @@ begin
          If (play_status <> isStopped) then play_status := isPaused;
          nul_volume_bars;
          really_no_status_refresh := TRUE;
+         reset_player;
 
          FillChar(_m_chan_handle,SizeOf(_m_chan_handle),0);
          Move(channel_flag,_m_channel_flag_backup,SizeOf(_m_channel_flag_backup));
@@ -4033,8 +4022,8 @@ begin
          songdata.instr_macros[current_inst].vibrato_table := ptr_vibrato_table^;
          songdata.common_flag := songdata.common_flag AND NOT $80;
          volume_scaling := FALSE;
-
          reset_player;
+
          Move(fmpar_table,_m_fmpar_table_backup,SizeOf(_m_fmpar_table_backup));
          Move(volume_table,_m_volume_table_backup,SizeOf(_m_volume_table_backup));
          Move(freq_table,_m_freq_table_bak,SizeOf(freq_table));
@@ -4056,51 +4045,6 @@ begin
 end;
 
 procedure _macro_preview_body(instr,instr2,chan: Byte; fkey: Word);
-
-function output_midi(chan,note: Byte): Boolean;
-
-var
-  board_pos: Byte;
-  freq: Word;
-
-begin
-  board_pos := note mod 12;
-  If NOT (note in [0..12*8+1]) then
-    begin
-      output_midi := FALSE;
-      EXIT;
-    end;
-
-  _m_chan_handle[chan] := board_scancodes[board_pos];
-  If is_4op_mode and (instr2 <> NULL) then chan := _m_4op_chan[chan];
-  load_instrument(songdata.instr_data[instr],chan);
-
-  If percussion_mode and
-     (songdata.instr_data[instr].perc_voice in [4,5]) then
-    load_instrument(songdata.instr_data[instr],_m_perc_sim_chan[chan]);
-
-  If is_4op_mode and (instr2 <> NULL) then
-    load_instrument(songdata.instr_data[instr2],PRED(chan));
-
-  freq := nFreq(note-1)+$2000+
-          SHORTINT(tDUMMY_BUFF(Addr(songdata.instr_data[instr])^)[12]);
-
-  event_table[chan].note := note;
-  opl3out($0b0+_chan_n[chan],0);
-  opl3out($0a0+_chan_n[chan],LO(freq));
-  opl3out($0b0+_chan_n[chan],HI(freq));
-
-  freq_table[chan] := freq;
-  freqtable2[chan] := freq;
-  init_macro_table(chan,note,instr,freq);
-
-  If is_4op_mode and (instr2 <> NULL) then
-    begin
-      freq_table[PRED(chan)] := freq;
-      freqtable2[PRED(chan)] := freq;
-      init_macro_table(PRED(chan),note,instr2,freq);
-    end;
-end;
 
 function output_note(chan,board_pos: Byte): Boolean;
 
@@ -4260,11 +4204,12 @@ const
   EMPTY_FIELD = $0ffff;
   COMMON_FLAG = $08000;
 
-{type
-  tSHOW_PROC = procedure(xpos,ypos: Byte; page: Word);}
+var
+  window_area_inc_x: Byte;
+  window_area_inc_y: Byte;
 
-// replacement for indirect call, cause FreePascal looses track of local variables and segfaults
-// when indirectly calling some other nested proc
+// replacement for indirect call, cause FreePascal loses track of local variables and segment faults
+// when indirectly calling some other nested procedure
 procedure fmreg_page_refresh(xpos,ypos: Byte; page: Word); forward;
 procedure arpeggio_page_refresh(xpos,ypos: Byte; page: Word); forward;
 procedure arpeggio_page_refresh_alt(xpos,ypos: Byte; page: Word); forward;
@@ -4282,10 +4227,10 @@ begin
   end;
 end;
 
-procedure show_queue(x,y: Byte; page_len: Byte; page,len: Word; show_proc_index: integer); //show_proc: tSHOW_PROC);
+procedure show_queue(x,y: Byte; page_len: Byte; page,len: Word; show_proc_index: integer);
 
 var
-  temp1,{temp2,}temp3: Byte;
+  temp1,temp3: Byte;
   spos,epos: Byte;
 
 begin
@@ -4377,17 +4322,16 @@ const
 const
   _panning: array[0..2] of Char = 'ñ<>';
   _hex: array[0..15] of Char = '0123456789ABCDEF';
-  {_keyoff_loop: Boolean = FALSE;}
 
 const
-  new_keys: array[1..29] of Word = (kF1,kESC,kENTER,kSPACE,kTAB,kShTAB,kUP,kDOWN,
-                                    kCtrlO,kF2,kCtrlF2,kF3,kCtrlF3,kCtrlL,kCtrlS,
+  new_keys: array[1..31] of Word = (kF1,kESC,kENTER,kSPACE,kTAB,kShTAB,kUP,kDOWN,
+                                    kCtrlO,kF2,kCtrlF2,kF3,kCtrlL,kCtrlS,kCtrlM,
                                     kCtENTR,kAltC,kAltP,kCtrlC,kCtrlV,
                                     kCtPgUP,kCtPgDN,kSPACE,kNPplus,kNPmins,
                                     kCtLbr,kCtRbr,
-                                    kCtHOME,kCtEND);
+                                    kCtHOME,kCtEND,kCtLEFT,kCtRGHT);
 var
-  old_keys: array[1..29] of Word;
+  old_keys: array[1..31] of Word;
   temps,tstr: String;
   xstart,ystart,temp,temp1: Byte;
   fmreg_cursor_pos,
@@ -4658,11 +4602,11 @@ asm
         sub     eax,[str]
         dec     eax
         stosb
-        pop        edi
-        pop        esi
-        pop        edx
-        pop        ecx
-        pop        ebx
+        pop     edi
+        pop     esi
+        pop     edx
+        pop     ecx
+        pop     ebx
 end;
 
 procedure fmreg_page_refresh(xpos,ypos: Byte; page: Word);
@@ -4707,14 +4651,14 @@ begin
         If (page OR COMMON_FLAG <> page) then
           ShowC3Str(vscreen,xpos,ypos,
                     '~'+byte2hex(page)+'~ ³~'+dummy_str+'~ö~'+
-                    _str2(temps,31)+'~',
+                    _str2(temps,31+window_area_inc_x)+'~',
                     macro_background+macro_text,
                     attr,
                     macro_background+macro_text_dis)
         else
           ShowC3Str(vscreen,xpos-1,ypos,
                     ' ~'+byte2hex(page AND NOT COMMON_FLAG)+'~ ³~'+dummy_str+'~ö~'+
-                    _str2(temps,31)+'~ ',
+                    _str2(temps,31+window_area_inc_x)+'~ ',
                     macro_current_bckg+macro_current,
                     attr2,
                     macro_current_bckg+macro_current_dis)
@@ -4727,7 +4671,7 @@ begin
         If (page OR COMMON_FLAG <> page) then
           ShowC3Str(vscreen,xpos,ypos,
                     byte2hex(page)+' ³~'+dummy_str+'~ö~'+
-                    _str2(temps,31)+'~',
+                    _str2(temps,31+window_area_inc_x)+'~',
                     macro_background+macro_text_dis,
                     macro_background+macro_text_dis,
                     macro_background+macro_text_dis)
@@ -4735,7 +4679,7 @@ begin
           ShowC3Str(vscreen,xpos-1,ypos,
                     ' '+
                     byte2hex(page AND NOT COMMON_FLAG)+' ³~'+dummy_str+'~ö~'+
-                    _str2(temps,31)+'~ ',
+                    _str2(temps,31+window_area_inc_x)+'~ ',
                     macro_background+macro_text_dis,
                     macro_background+macro_text_dis,
                     macro_background+macro_text_dis)
@@ -5080,15 +5024,15 @@ begin
        end;
 
   ShowStr(vscreen,xstart+2,ystart+3,
-          ExpStrL('',78,'Í'),
+          ExpStrL('',78+window_area_inc_x,'Í'),
           macro_background+macro_text);
 
   ShowStr(vscreen,xstart+2,ystart+10,
-          ExpStrL('',78,'Í'),
+          ExpStrL('',78+window_area_inc_x,'Í'),
           macro_background+macro_text);
 
-  ShowStr(vscreen,xstart+2,ystart+22,
-          ExpStrL('',78,'Í'),
+  ShowStr(vscreen,xstart+2,ystart+22+window_area_inc_y,
+          ExpStrL('',78+window_area_inc_x,'Í'),
           macro_background+macro_text);
 
   ShowCStr(vscreen,xstart+2,ystart+4,
@@ -5121,75 +5065,75 @@ begin
            byte2hex(ptr_vibrato_table^)+' ~',
            attr[6],attr2[5]);
 
-  ShowStr(vscreen,xstart+47,ystart+2,'ARPEGGiO ('+
+  ShowStr(vscreen,xstart+48+window_area_inc_x,ystart+2,'ARPEGGiO ('+
           byte2hex(ptr_arpeggio_table^)+')',
           attr2[3]);
 
-  ShowCStr(vscreen,xstart+47,ystart+4,
+  ShowCStr(vscreen,xstart+48+window_area_inc_x,ystart+4,
            'LENGTH      ~'+
            byte2hex(songdata.macro_table[ptr_arpeggio_table^].
                    arpeggio.length)+' ~',
            attr[8],attr2[1]);
 
-  ShowCStr(vscreen,xstart+47,ystart+5,
+  ShowCStr(vscreen,xstart+48+window_area_inc_x,ystart+5,
            'SPEED       ~'+
            byte2hex(songdata.macro_table[ptr_arpeggio_table^].
                    arpeggio.speed)+' ~',
            attr[9],attr2[1]);
 
-  ShowCStr(vscreen,xstart+47,ystart+6,
+  ShowCStr(vscreen,xstart+48+window_area_inc_x,ystart+6,
            'LOOP BEGiN  ~'+
            byte2hex(songdata.macro_table[ptr_arpeggio_table^].
                    arpeggio.loop_begin)+' ~',
            attr[10],attr2[1]);
 
-  ShowCStr(vscreen,xstart+47,ystart+7,
+  ShowCStr(vscreen,xstart+48+window_area_inc_x,ystart+7,
            'LOOP LENGTH ~'+
            byte2hex(songdata.macro_table[ptr_arpeggio_table^].
                    arpeggio.loop_length)+' ~',
            attr[11],attr2[1]);
 
-  ShowCStr(vscreen,xstart+47,ystart+8,
+  ShowCStr(vscreen,xstart+48+window_area_inc_x,ystart+8,
            'KEY-OFF     ~'+
            byte2hex(songdata.macro_table[ptr_arpeggio_table^].
                    arpeggio.keyoff_pos)+' ~',
            attr[12],attr2[1]);
 
-  ShowStr(vscreen,xstart+65,ystart+2,'ViBRATO ('+
+  ShowStr(vscreen,xstart+65+window_area_inc_x,ystart+2,'ViBRATO ('+
           byte2hex(ptr_vibrato_table^)+')',
           attr2[4]);
 
-  ShowCStr(vscreen,xstart+65,ystart+4,
+  ShowCStr(vscreen,xstart+65+window_area_inc_x,ystart+4,
            'LENGTH      ~'+
            byte2hex(songdata.macro_table[ptr_vibrato_table^].
                    vibrato.length)+' ~',
            attr[14],attr2[2]);
 
-  ShowCStr(vscreen,xstart+65,ystart+5,
+  ShowCStr(vscreen,xstart+65+window_area_inc_x,ystart+5,
            'SPEED       ~'+
            byte2hex(songdata.macro_table[ptr_vibrato_table^].
                    vibrato.speed)+' ~',
            attr[15],attr2[2]);
 
-  ShowCStr(vscreen,xstart+65,ystart+6,
+  ShowCStr(vscreen,xstart+65+window_area_inc_x,ystart+6,
            'DELAY       ~'+
            byte2hex(songdata.macro_table[ptr_vibrato_table^].
                    vibrato.delay)+' ~',
            attr[16],attr2[2]);
 
-  ShowCStr(vscreen,xstart+65,ystart+7,
+  ShowCStr(vscreen,xstart+65+window_area_inc_x,ystart+7,
            'LOOP BEGiN  ~'+
            byte2hex(songdata.macro_table[ptr_vibrato_table^].
                    vibrato.loop_begin)+' ~',
            attr[17],attr2[2]);
 
-  ShowCStr(vscreen,xstart+65,ystart+8,
+  ShowCStr(vscreen,xstart+65+window_area_inc_x,ystart+8,
            'LOOP LENGTH ~'+
            byte2hex(songdata.macro_table[ptr_vibrato_table^].
                    vibrato.loop_length)+' ~',
            attr[18],attr2[2]);
 
-  ShowCStr(vscreen,xstart+65,ystart+9,
+  ShowCStr(vscreen,xstart+65+window_area_inc_x,ystart+9,
            'KEY-OFF     ~'+
            byte2hex(songdata.macro_table[ptr_vibrato_table^].
                    vibrato.keyoff_pos)+' ~',
@@ -5198,41 +5142,44 @@ begin
   fr_setting.update_area := FALSE;
   fr_setting.shadow_enabled := FALSE;
 
-  Frame(vscreen,xstart+2,ystart+11,xstart+42,ystart+21,
+  Frame(vscreen,xstart+2,ystart+11,
+        xstart+42+window_area_inc_y,ystart+21+window_area_inc_y,
         attr[7],'',
         macro_background+macro_text,frame_type[1]);
 
-  Frame(vscreen,xstart+47,ystart+11,xstart+58,ystart+21,
+  Frame(vscreen,xstart+48+window_area_inc_x,ystart+11,
+        xstart+59+window_area_inc_x,ystart+21+window_area_inc_y,
         attr[13],'',
         macro_background+macro_text,frame_type[2]);
 
-  Frame(vscreen,xstart+65,ystart+11,xstart+76,ystart+21,
+  Frame(vscreen,xstart+65+window_area_inc_x,ystart+11,
+        xstart+76+window_area_inc_x,ystart+21+window_area_inc_y,
         attr[20],'',
         macro_background+macro_text,frame_type[3]);
 
   fr_setting.update_area := TRUE;
   fr_setting.shadow_enabled := TRUE;
 
-  show_queue(xstart+4,ystart+11,9,fmreg_page,255,1); //tSHOW_PROC(@fmreg_page_refresh));
+  show_queue(xstart+4,ystart+11,9+window_area_inc_y,fmreg_page,255,1);
   If NOT arp_vib_mode then
     begin
-      HScrollBar(vscreen,xstart+29,ystart+21,
+      HScrollBar(vscreen,xstart+29+window_area_inc_x,ystart+21+window_area_inc_y,
                  13,35,fmreg_hpos,$0ffff,
                  macro_scrbar_bckg+macro_scrbar_text,
                  macro_scrbar_bckg+macro_scrbar_mark);
-      VScrollBar(vscreen,xstart+43,ystart+12,
-                 9,255,fmreg_page,$0ffff,
+      VScrollBar(vscreen,xstart+43+window_area_inc_x,ystart+12,
+                 9+window_area_inc_y,255,fmreg_page,$0ffff,
                  macro_scrbar_bckg+macro_scrbar_text,
                  macro_scrbar_bckg+macro_scrbar_mark);
     end
   else
     begin
-      HScrollBar(vscreen,xstart+29,ystart+21,
+      HScrollBar(vscreen,xstart+29+window_area_inc_x,ystart+21+window_area_inc_y,
                  13,35,fmreg_hpos,$0ffff,
                  macro_background+macro_text_dis,
                  macro_background+macro_text_dis);
-      VScrollBar(vscreen,xstart+43,ystart+12,
-                 9,255,fmreg_page,$0ffff,
+      VScrollBar(vscreen,xstart+43+window_area_inc_x,ystart+12,
+                 9+window_area_inc_y,255,fmreg_page,$0ffff,
                  macro_background+macro_text_dis,
                  macro_background+macro_text_dis);
     end;
@@ -5248,53 +5195,52 @@ begin
 
   If (ptr_arpeggio_table^ <> 0) then
     begin
-      show_queue(xstart+49,ystart+11,9,arpeggio_page,255, 2); //tSHOW_PROC(@arpeggio_page_refresh));
-      VScrollBar(vscreen,xstart+59,ystart+12,
-                 9,255,arpeggio_page,$0ffff,
+      show_queue(xstart+50+window_area_inc_x,ystart+11,9+window_area_inc_y,arpeggio_page,255,2);
+      VScrollBar(vscreen,xstart+60+window_area_inc_x,ystart+12,
+                 9+window_area_inc_y,255,arpeggio_page,$0ffff,
                  macro_scrbar_bckg+macro_scrbar_text,
                  macro_scrbar_bckg+macro_scrbar_mark)
     end
   else
     begin
-      show_queue(xstart+49,ystart+11,9,1,255,3);//tSHOW_PROC(@arpeggio_page_refresh_alt));
-      VScrollBar(vscreen,xstart+59,ystart+12,
-                 9,255,1,$0ffff,
+      show_queue(xstart+50+window_area_inc_x,ystart+11,9+window_area_inc_y,1,255,3);
+      VScrollBar(vscreen,xstart+60+window_area_inc_x,ystart+12,
+                 9+window_area_inc_y,255,1,$0ffff,
                  macro_background+macro_text_dis,
                  macro_background+macro_text_dis);
     end;
 
   If (ptr_vibrato_table^ <> 0) then
     begin
-      show_queue(xstart+67,ystart+11,9,vibrato_page,255,4);//tSHOW_PROC(@vibrato_page_refresh));
-      VScrollBar(vscreen,xstart+77,ystart+12,
-                 9,255,vibrato_page,$0ffff,
+      show_queue(xstart+67+window_area_inc_x,ystart+11,9+window_area_inc_y,vibrato_page,255,4);
+      VScrollBar(vscreen,xstart+77+window_area_inc_x,ystart+12,
+                 9+window_area_inc_y,255,vibrato_page,$0ffff,
                  macro_scrbar_bckg+macro_scrbar_text,
                  macro_scrbar_bckg+macro_scrbar_mark);
     end
   else
     begin
-      show_queue(xstart+67,ystart+11,9,1,255,5);//tSHOW_PROC(@vibrato_page_refresh_alt));
-      VScrollBar(vscreen,xstart+77,ystart+12,
-                 9,255,1,$0ffff,
+      show_queue(xstart+67+window_area_inc_x,ystart+11,9+window_area_inc_y,1,255,5);
+      VScrollBar(vscreen,xstart+77+window_area_inc_x,ystart+12,
+                 9+window_area_inc_y,255,1,$0ffff,
                  macro_background+macro_text_dis,
                  macro_background+macro_text_dis);
     end;
 
   If (pos <> 7) then
-    ShowStr(vscreen,xstart+2,ystart+23,
+    ShowStr(vscreen,xstart+2,ystart+23+window_area_inc_y,
             ExpStrR(HINT_STR[pos],77,' '),
             macro_background+macro_hint)
-  else ShowStr(vscreen,xstart+2,ystart+23,
+  else ShowStr(vscreen,xstart+2,ystart+23+window_area_inc_y,
                ExpStrR(HINT_STR[20+fmreg_hpos],77,' '),
                macro_background+macro_hint);
 
   Case pos of
     1..7:  begin
-             ShowStr(vscreen,xstart+32,ystart+3,
+             ShowStr(vscreen,xstart+32+(window_area_inc_x DIV 2),ystart+3,
                      'ý',
                      macro_background+macro_text);
-
-             ShowStr(vscreen,xstart+32,ystart+10,
+             ShowStr(vscreen,xstart+32+(window_area_inc_x DIV 2),ystart+10,
                      'ü',
                      macro_background+macro_text);
 
@@ -5303,7 +5249,7 @@ begin
                  ShowVStr(vscreen,xstart+22,ystart+4,
                           '³³³³³ž',
                           macro_background+macro_text);
-                 ShowVStr(vscreen,xstart+42,ystart+4,
+                 ShowVStr(vscreen,xstart+42+window_area_inc_x,ystart+4,
                           '³³³³³ž',
                           macro_background+macro_text);
                end
@@ -5311,12 +5257,12 @@ begin
                     ShowVStr(vscreen,xstart+22,ystart+4,
                              '³³ž³³³',
                              macro_background+macro_text);
-                    ShowVStr(vscreen,xstart+42,ystart+4,
+                    ShowVStr(vscreen,xstart+42+window_area_inc_x,ystart+4,
                              '³³ž³³³',
                              macro_background+macro_text);
                   end;
 
-             For temp := 1 to 19 do
+             For temp := 1 to 19+window_area_inc_x do
                ShowVStr(vscreen,xstart+22+temp,ystart+4,
                         ExpStrL('',6,' '),
                         macro_background+macro_text);
@@ -5327,64 +5273,93 @@ begin
                  max_value := Abs(_fmreg_param(temp,fmreg_hpos));
 
              If NOT (fmreg_hpos in [29..33]) then
+               begin               
+                 ShowStr(vscreen,xstart+42+window_area_inc_x+1,ystart+4,
+                         ExpStrR(ExpStrL(Num2Str(max_value,16),2,'0'),3,' '),
+                         macro_background+macro_topic);
+                 ShowStr(vscreen,xstart+42+window_area_inc_x+1,ystart+5,
+                         '+',
+                         macro_background+macro_topic);
+                 ShowStr(vscreen,xstart+42+window_area_inc_x+1,ystart+8,
+                         ' ',
+                         macro_background+macro_topic);
+                 ShowStr(vscreen,xstart+42+window_area_inc_x+1,ystart+9,
+                         ExpStrR('',3,' '),
+                         macro_background+macro_topic);
+               end
+             else      
+               begin
+                 ShowStr(vscreen,xstart+42+window_area_inc_x+1,ystart+4,
+                         ExpStrR(ExpStrL(Num2Str(max_value,16),2,'0'),3,' '),
+                         macro_background+macro_topic);
+                 ShowStr(vscreen,xstart+42+window_area_inc_x+1,ystart+5,
+                         '+',
+                         macro_background+macro_topic);
+                 ShowStr(vscreen,xstart+42+window_area_inc_x+1,ystart+8,
+                         '-',
+                         macro_background+macro_topic);
+                 ShowStr(vscreen,xstart+42+window_area_inc_x+1,ystart+9,
+                         ExpStrR(ExpStrL(Num2Str(max_value,16),2,'0'),3,' '),
+                         macro_background+macro_topic);
+               end;
+
+             If NOT (fmreg_hpos in [29..33]) then
                d_factor := 90/min(max_value,1)
              else d_factor := 45/min(max_value,1);
 
              If NOT (fmreg_hpos in [29..33]) then
-               For temp := -9 to 9 do
+               For temp := -9-(window_area_inc_x DIV 2) to 9+(window_area_inc_x DIV 2) do
                  If (fmreg_page+temp >= 1) and (fmreg_page+temp <= 255) then
                    If NOT _dis_fmreg_col(fmreg_hpos) then
-                     ShowVStr(vscreen,xstart+32+temp,ystart+4,
+                     ShowVStr(vscreen,xstart+32+temp+(window_area_inc_x DIV 2),ystart+4,
                               ExpStrL(_gfx_bar_str(Round(_fmreg_param(fmreg_page+temp,fmreg_hpos)*d_factor),FALSE),6,' '),
                               LO(fmreg_def_attr(fmreg_page+temp)))
                    else
-                     ShowVStr(vscreen,xstart+32+temp,ystart+4,
+                     ShowVStr(vscreen,xstart+32+temp+(window_area_inc_x DIV 2),ystart+4,
                               ExpStrL(_gfx_bar_str(Round(_fmreg_param(fmreg_page+temp,fmreg_hpos)*d_factor),FALSE),6,' '),
                               macro_background+macro_text_dis)
-                 else ShowVStr(vscreen,xstart+32+temp,ystart+4,
+                 else ShowVStr(vscreen,xstart+32+temp+(window_area_inc_x DIV 2),ystart+4,
                                ExpStrL('',6,' '),
                                macro_background+macro_text)
-             else For temp := -9 to 9 do
+             else For temp := -9-(window_area_inc_x DIV 2) to 9+(window_area_inc_x DIV 2) do
                     If (fmreg_page+temp >= 1) and (fmreg_page+temp <= 255) then
                       If (Round(_fmreg_param(fmreg_page+temp,fmreg_hpos)*d_factor) >= 0) then
                         If NOT _dis_fmreg_col(fmreg_hpos) then
-                          ShowVStr(vscreen,xstart+32+temp,ystart+4,
+                          ShowVStr(vscreen,xstart+32+temp+(window_area_inc_x DIV 2),ystart+4,
                                    ExpStrL(_gfx_bar_str(Round(_fmreg_param(fmreg_page+temp,fmreg_hpos)*d_factor),FALSE),3,' '),
                                    LO(fmreg_def_attr(fmreg_page+temp)))
                         else
-                          ShowVStr(vscreen,xstart+32+temp,ystart+4,
+                          ShowVStr(vscreen,xstart+32+temp+(window_area_inc_x DIV 2),ystart+4,
                                    ExpStrL(_gfx_bar_str(Round(_fmreg_param(fmreg_page+temp,fmreg_hpos)*d_factor),FALSE),3,' '),
                                    macro_background+macro_text_dis)
                       else If NOT _dis_fmreg_col(fmreg_hpos) then
-                             ShowVStr(vscreen,xstart+32+temp,ystart+7,
+                             ShowVStr(vscreen,xstart+32+temp+(window_area_inc_x DIV 2),ystart+7,
                                       ExpStrR(_gfx_bar_str(Round(Abs(_fmreg_param(fmreg_page+temp,fmreg_hpos))*d_factor),TRUE),3,' '),
                                       LO(fmreg_def_attr(fmreg_page+temp)))
                            else
-                             ShowVStr(vscreen,xstart+32+temp,ystart+7,
+                             ShowVStr(vscreen,xstart+32+temp+(window_area_inc_x DIV 2),ystart+7,
                                       ExpStrR(_gfx_bar_str(Round(Abs(_fmreg_param(fmreg_page+temp,fmreg_hpos))*d_factor),TRUE),3,' '),
                                       macro_background+macro_text_dis)
-                    else ShowVStr(vscreen,xstart+32+temp,ystart+4,
+                    else ShowVStr(vscreen,xstart+32+temp+(window_area_inc_x DIV 2),ystart+4,
                                   ExpStrL('',3,' '),
                                   macro_background+macro_text);
         end;
 
     8..13: begin
-             ShowStr(vscreen,xstart+32,ystart+3,
+             ShowStr(vscreen,xstart+32+(window_area_inc_x DIV 2),ystart+3,
                      'ý',
                      macro_background+macro_text);
-
-             ShowStr(vscreen,xstart+32,ystart+10,
+             ShowStr(vscreen,xstart+32+(window_area_inc_x DIV 2),ystart+10,
                      'ü',
                      macro_background+macro_text);
-
              ShowVStr(vscreen,xstart+22,ystart+4,
                       '³³³³³ž',
                       macro_background+macro_text);
-             ShowVStr(vscreen,xstart+42,ystart+4,
+             ShowVStr(vscreen,xstart+42+window_area_inc_x,ystart+4,
                       '³³³³³ž',
                       macro_background+macro_text);
 
-             For temp := 1 to 19 do
+             For temp := 1 to 19+window_area_inc_x do
                ShowVStr(vscreen,xstart+22+temp,ystart+4,
                         ExpStrL('',6,' '),
                         macro_background+macro_text);
@@ -5398,41 +5373,52 @@ begin
                    max_value := Abs(songdata.macro_table[ptr_arpeggio_table^].
                                     arpeggio.data[temp]);
 
+             ShowStr(vscreen,xstart+42+window_area_inc_x+1,ystart+4,
+                     ExpStrR(Num2Str(max_value,10),3,' '),
+                     macro_background+macro_topic);
+             ShowStr(vscreen,xstart+42+window_area_inc_x+1,ystart+5,
+                     '+',
+                     macro_background+macro_topic);
+             ShowStr(vscreen,xstart+42+window_area_inc_x+1,ystart+8,
+                     ' ',
+                     macro_background+macro_topic);
+             ShowStr(vscreen,xstart+42+window_area_inc_x+1,ystart+9,
+                     ExpStrR('',3,' '),
+                     macro_background+macro_topic);
+
              d_factor := 90/min(max_value,1);
-             For temp := -9 to 9 do
+             For temp := -9-(window_area_inc_x DIV 2) to 9+(window_area_inc_x DIV 2) do
                If (arpeggio_page+temp >= 1) and (arpeggio_page+temp <= 255) then
                  If (songdata.macro_table[ptr_arpeggio_table^].
                      arpeggio.data[arpeggio_page+temp] < $80) then
-                   ShowVStr(vscreen,xstart+32+temp,ystart+4,
+                   ShowVStr(vscreen,xstart+32+temp+(window_area_inc_x DIV 2),ystart+4,
                             ExpStrL(_gfx_bar_str(Round(songdata.macro_table[ptr_arpeggio_table^].
                                                        arpeggio.data[arpeggio_page+temp]*d_factor),FALSE),6,' '),
                             LO(arpeggio_def_attr(arpeggio_page+temp)))
-                 else ShowVStr(vscreen,xstart+32+temp,ystart+4,
+                 else ShowVStr(vscreen,xstart+32+temp+(window_area_inc_x DIV 2),ystart+4,
                                ExpStrL(FilterStr(note_layout[songdata.macro_table[ptr_arpeggio_table^].
                                                              arpeggio.data[arpeggio_page+temp]-$80],'-','ñ'),6,' '),
                                LO(arpeggio_def_attr(arpeggio_page+temp)))
-               else ShowVStr(vscreen,xstart+32+temp,ystart+4,
+               else ShowVStr(vscreen,xstart+32+temp+(window_area_inc_x DIV 2),ystart+4,
                              ExpStrL('',6,' '),
                              macro_background+macro_text);
         end;
 
     14..20: begin
-              ShowStr(vscreen,xstart+32,ystart+3,
+              ShowStr(vscreen,xstart+32+(window_area_inc_x DIV 2),ystart+3,
                       'ý',
                       macro_background+macro_text);
-
-              ShowStr(vscreen,xstart+32,ystart+10,
+              ShowStr(vscreen,xstart+32+(window_area_inc_x DIV 2),ystart+10,
                       'ü',
                       macro_background+macro_text);
-
               ShowVStr(vscreen,xstart+22,ystart+4,
                        '³³ž³³³',
                        macro_background+macro_text);
-              ShowVStr(vscreen,xstart+42,ystart+4,
+              ShowVStr(vscreen,xstart+42+window_area_inc_x,ystart+4,
                        '³³ž³³³',
                        macro_background+macro_text);
 
-              For temp := 1 to 19 do
+              For temp := 1 to 19+window_area_inc_x do
                 ShowVStr(vscreen,xstart+22+temp,ystart+4,
                          ExpStrL('',6,' '),
                          macro_background+macro_text);
@@ -5444,20 +5430,33 @@ begin
                   max_value := Abs(songdata.macro_table[ptr_vibrato_table^].
                                    vibrato.data[temp]);
 
+              ShowStr(vscreen,xstart+42+window_area_inc_x+1,ystart+4,
+                      ExpStrR(ExpStrL(Num2Str(max_value,16),2,'0'),3,' '),
+                      macro_background+macro_topic);
+              ShowStr(vscreen,xstart+42+window_area_inc_x+1,ystart+5,
+                      '+',
+                      macro_background+macro_topic);
+              ShowStr(vscreen,xstart+42+window_area_inc_x+1,ystart+8,
+                      '-',
+                      macro_background+macro_topic);
+              ShowStr(vscreen,xstart+42+window_area_inc_x+1,ystart+9,
+                      ExpStrR(ExpStrL(Num2Str(max_value,16),2,'0'),3,' '),
+                      macro_background+macro_topic);
+
               d_factor := 45/min(max_value,1);
-              For temp := -9 to 9 do
+              For temp := -9-(window_area_inc_x DIV 2) to 9+(window_area_inc_x DIV 2) do
                 If (vibrato_page+temp >= 1) and (vibrato_page+temp <= 255) then
                   If (Round(songdata.macro_table[ptr_vibrato_table^].
                             vibrato.data[vibrato_page+temp]*d_factor) >= 0) then
-                    ShowVStr(vscreen,xstart+32+temp,ystart+4,
+                    ShowVStr(vscreen,xstart+32+temp+(window_area_inc_x DIV 2),ystart+4,
                              ExpStrL(_gfx_bar_str(Round(songdata.macro_table[ptr_vibrato_table^].
                                                         vibrato.data[vibrato_page+temp]*d_factor),FALSE),3,' '),
                              LO(vibrato_def_attr(vibrato_page+temp)))
-                  else ShowVStr(vscreen,xstart+32+temp,ystart+7,
+                  else ShowVStr(vscreen,xstart+32+temp+(window_area_inc_x DIV 2),ystart+7,
                                 ExpStrR(_gfx_bar_str(Round(Abs(songdata.macro_table[ptr_vibrato_table^].
                                                                vibrato.data[vibrato_page+temp])*d_factor),TRUE),3,' '),
                                 LO(vibrato_def_attr(vibrato_page+temp)))
-                else ShowVStr(vscreen,xstart+32+temp,ystart+4,
+                else ShowVStr(vscreen,xstart+32+temp+(window_area_inc_x DIV 2),ystart+4,
                               ExpStrL('',3,' '),
                               macro_background+macro_text);
         end;
@@ -5465,32 +5464,32 @@ begin
 
   Case songdata.instr_data[current_inst].perc_voice of
     0: ShowCStr(vscreen,
-                xstart+01,ystart+24,
+                xstart+01,ystart+24+window_area_inc_y,
                 ' [MELODiC] ',
                 macro_background+macro_border,
                 macro_background+macro_hi_text);
     1: ShowCStr(vscreen,
-                xstart+01,ystart+24,
+                xstart+01,ystart+24+window_area_inc_y,
                 ' [PERC:BD] ',
                 macro_background+macro_border,
                 macro_background+macro_hi_text);
     2: ShowCStr(vscreen,
-                xstart+01,ystart+24,
+                xstart+01,ystart+24+window_area_inc_y,
                 ' [PERC:SD] ',
                 macro_background+macro_border,
                 macro_background+macro_hi_text);
     3: ShowCStr(vscreen,
-                 xstart+01,ystart+24,
+                 xstart+01,ystart+24+window_area_inc_y,
                 ' [PERC:TT] ',
                 macro_background+macro_border,
                 macro_background+macro_hi_text);
     4: ShowCStr(vscreen,
-                xstart+01,ystart+24,
+                xstart+01,ystart+24+window_area_inc_y,
                 ' [PERC:TC] ',
                 macro_background+macro_border,
                 macro_background+macro_hi_text);
     5: ShowCStr(vscreen,
-                xstart+01,ystart+24,
+                xstart+01,ystart+24+window_area_inc_y,
                 ' [PERC:HH] ',
                 macro_background+macro_border,
                 macro_background+macro_hi_text);
@@ -5510,13 +5509,16 @@ begin
       else temp_str := temp_str+'[~MACRO:ViB';
 
   If (temp_str <> ' ') then temp_str := temp_str+'~] ';
-  
-  ShowCStr(vscreen,
-           xstart+11,ystart+24,
-           ExpStrR(temp_str,21+2,'Í'),
+
+  ShowCStr(vscreen,xstart+11,ystart+24+window_area_inc_y,ExpStrR(temp_str,21+2,'Í'),
            macro_background+macro_border,
            macro_background+macro_hi_text);
-           
+ 
+  ShowCStr(vscreen,xstart+window_area_inc_x+66,ystart+24+window_area_inc_y,
+           ExpStrL(' ~[SPEED:'+Num2str(tempo*songdata.macro_speedup,10)+#3+']~ ',17,'Í'),
+           macro_background+macro_border,
+           macro_background+macro_hi_text);
+
   _preview_indic_proc(0);
   move2screen_alt;
 end;
@@ -5761,7 +5763,7 @@ end;
 procedure _scroll_cur_right;
 begin
   Repeat
-    If (fmreg_cursor_pos < 31) then Inc(fmreg_cursor_pos)
+    If (fmreg_cursor_pos < 31+window_area_inc_x) then Inc(fmreg_cursor_pos)
     else Inc(fmreg_left_margin);
   until (fmreg_str[SUCC(fmreg_left_margin+fmreg_cursor_pos-1)] = ' ') or
         (fmreg_left_margin+fmreg_cursor_pos-1 = 57);
@@ -5783,21 +5785,23 @@ end;
 label _jmp1,_jmp2,_end2;
 
 begin { MACRO_EDITOR }
-  If NOT arp_vib_mode then pos := 1
-  else pos := 8;
+  _arp_vib_mode := arp_vib_mode;
+  If (sdl_screen_mode = 0) then
+    begin
+       window_area_inc_x := 0;
+       window_area_inc_y := 0;
+    end
+  else begin
+         window_area_inc_x := 10;
+         window_area_inc_y := 10;
+       end;
 
-  fmreg_hpos := 1;
-  fmreg_page := 1;
-  fmreg_left_margin := 1;
-  fmreg_cursor_pos := 1;
-  arpeggio_page := 1;
-  vibrato_hpos := 1;
-  vibrato_page := 1;
   call_pickup_proc := FALSE;
   _source_ins := instrum_page;
   call_pickup_proc2 := FALSE;
   _source_ins2 := instrum_page;
-
+ 
+_jmp1:
   If NOT arp_vib_mode then
     begin
       ptr_arpeggio_table := Addr(songdata.instr_macros[instr].arpeggio_table);
@@ -5807,7 +5811,22 @@ begin { MACRO_EDITOR }
          ptr_arpeggio_table := Addr(arpvib_arpeggio_table);
          ptr_vibrato_table := Addr(arpvib_vibrato_table);
        end;
-_jmp1:
+   
+  pos := _macro_editor__pos[arp_vib_mode];
+  If arp_vib_mode and (pos < 8) then pos := 8
+  else If NOT arp_vib_mode and
+          (((ptr_arpeggio_table^ = 0) and (pos in [8..13])) or
+           ((ptr_vibrato_table^ = 0) and (pos in [14..20]))) then
+          pos := 1;
+
+  fmreg_hpos := _macro_editor__fmreg_hpos[arp_vib_mode];
+  fmreg_page := _macro_editor__fmreg_page[arp_vib_mode];
+  fmreg_left_margin := _macro_editor__fmreg_left_margin[arp_vib_mode];
+  fmreg_cursor_pos := _macro_editor__fmreg_cursor_pos[arp_vib_mode];
+  arpeggio_page := _macro_editor__arpeggio_page[arp_vib_mode];
+  vibrato_hpos := _macro_editor__vibrato_hpos[arp_vib_mode];
+  vibrato_page := _macro_editor__vibrato_page[arp_vib_mode];
+
   If _force_program_quit then EXIT;
 
   Move(v_ofs^,backup.screen,SizeOf(backup.screen));
@@ -5830,31 +5849,33 @@ _jmp1:
   centered_frame_vdest := Addr(vscreen);
 
   If NOT arp_vib_mode then
-    centered_frame(xstart,ystart,81,24,' MACRO EDiTOR (iNS_  ) ',
+    centered_frame(xstart,ystart,81+window_area_inc_x,24+window_area_inc_y,
+                  ' iNSTRUMENT MACRO EDiTOR (iNS_  ) ',
                    macro_background+dialog_border,
                    macro_background+dialog_title,
                    double)
   else
-    centered_frame(xstart,ystart,81,24,' MACRO EDiTOR (ARPEGGiO/ViBRATO) ',
+    centered_frame(xstart,ystart,81+window_area_inc_x,24+window_area_inc_y,
+                  ' ARPEGGiO/ViBRATO MACRO EDiTOR (iNS_  ) ',
                    macro_background+dialog_border,
                    macro_background+dialog_title,
                    double);
 
-  _pip_xloc := xstart+30;
+  _pip_xloc := xstart+30+(window_area_inc_x DIV 2);
   _pip_yloc := ystart+2;
   _pip_dest := Addr(vscreen);
 
   move_to_screen_data := Addr(vscreen);
   move_to_screen_area[1] := xstart;
   move_to_screen_area[2] := ystart;
-  move_to_screen_area[3] := xstart+81+2;
-  move_to_screen_area[4] := ystart+24+1;
+  move_to_screen_area[3] := xstart+81+2+window_area_inc_x;
+  move_to_screen_area[4] := ystart+24+1+window_area_inc_y;
   refresh;
 
   move_to_screen_area[1] := xstart+1;
   move_to_screen_area[2] := ystart+1;
-  move_to_screen_area[3] := xstart+80;
-  move_to_screen_area[4] := ystart+24;
+  move_to_screen_area[3] := xstart+80+window_area_inc_x;
+  move_to_screen_area[4] := ystart+24+window_area_inc_y;
 
   If (pos = 1) then GotoXY(xstart+17,ystart+4);
   ThinCursor;
@@ -5865,7 +5886,32 @@ _jmp1:
 
 _jmp2:
   If NOT arp_vib_mode then
-    ShowStr(centered_frame_vdest^,xstart+48,ystart,byte2hex(instr),macro_background+dialog_title);
+    begin
+      songdata.instr_macros[instr].arpeggio_table := ptr_arpeggio_table^;
+      songdata.instr_macros[instr].vibrato_table := ptr_vibrato_table^;
+    end;
+
+  If (instr <> current_inst) then
+    instr := current_inst;
+
+  If NOT arp_vib_mode then
+    begin
+      ptr_arpeggio_table := Addr(songdata.instr_macros[instr].arpeggio_table);
+      ptr_vibrato_table := Addr(songdata.instr_macros[instr].vibrato_table);
+    end;
+
+  If arp_vib_mode and (pos < 8) then pos := 8
+  else If NOT arp_vib_mode and
+          (((ptr_arpeggio_table^ = 0) and (pos in [8..13])) or
+           ((ptr_vibrato_table^ = 0) and (pos in [14..20]))) then
+          pos := 1;
+       
+  If NOT arp_vib_mode then
+    ShowStr(centered_frame_vdest^,xstart+54+(window_area_inc_x DIV 2),ystart,
+            byte2hex(instr),macro_background+dialog_title)
+  else
+    ShowStr(centered_frame_vdest^,xstart+57+(window_area_inc_x DIV 2),ystart,
+            byte2hex(instr),macro_background+dialog_title);
 
   If NOT _force_program_quit then
     Repeat
@@ -5907,44 +5953,37 @@ _jmp2:
                               else pos := 7;
 
              Case is_environment.keystroke of
-               kCtLbr:  If (_4op_to_test = 0) then
-                          If (current_inst > 1) then
-                            begin
-                              Dec(current_inst);
-                              instrum_page := current_inst;
-                              STATUS_LINE_refresh;
-                              instr := current_inst;
-                              GOTO _jmp2;
-                            end;
+               kCtLbr:  If shift_pressed then
+                          begin
+                            If (songdata.macro_speedup > 1) then
+                              Dec(songdata.macro_speedup);
+                            macro_speedup := songdata.macro_speedup;
+                          end
+                        else If (_4op_to_test = 0) then
+                               If (current_inst > 1) then
+                                 begin
+                                   Dec(current_inst);
+                                   instrum_page := current_inst;
+                                   STATUS_LINE_refresh;
+                                   GOTO _jmp2;
+                                 end;
 
-               kCtRbr:  If (_4op_to_test = 0) then
-                          If (current_inst < 255) then
-                            begin
-                              Inc(current_inst);
-                              instrum_page := current_inst;
-                              reset_4op_to_test(1,NULL);
-                              STATUS_LINE_refresh;
-                              instr := current_inst;
-                              GOTO _jmp2;
-                            end;
-
-               kCtEND:  If NOT shift_pressed then
-                          If (songdata.instr_macros[instr].length < 255) then
-                            Inc(songdata.instr_macros[instr].length)
-                          else
-                        else If (songdata.instr_macros[instr].loop_begin < 255) then
-                               begin
-                                 Inc(songdata.instr_macros[instr].loop_begin);
-                                 While NOT ((songdata.instr_macros[instr].
-                                             keyoff_pos > songdata.instr_macros[instr].
-                                                                  loop_begin+
-                                                         min0(songdata.instr_macros[instr].
-                                                              loop_length-1,0)) or
-                                            (songdata.instr_macros[instr].loop_begin = 0) or
-                                            (songdata.instr_macros[instr].loop_length = 0) or
-                                            (songdata.instr_macros[instr].keyoff_pos = 0)) do
-                                   Inc(songdata.instr_macros[instr].keyoff_pos);
-                               end;
+               kCtRbr:  If shift_pressed then
+                          begin
+                            Inc(songdata.macro_speedup);
+                            If (calc_max_speedup(tempo) < songdata.macro_speedup) then
+                              songdata.macro_speedup := calc_max_speedup(tempo);
+                            macro_speedup := songdata.macro_speedup;
+                          end
+                        else If (_4op_to_test = 0) then
+                               If (current_inst < 255) then
+                                 begin
+                                   Inc(current_inst);
+                                   instrum_page := current_inst;
+                                   reset_4op_to_test(1,NULL);
+                                   STATUS_LINE_refresh;
+                                   GOTO _jmp2;
+                                 end;
 
                kCtHOME:  If NOT shift_pressed then
                            If (songdata.instr_macros[instr].length > 0) then
@@ -5964,10 +6003,13 @@ _jmp2:
                                    Inc(songdata.instr_macros[instr].keyoff_pos);
                                end;
 
-               kCtPgDN: If NOT shift_pressed then
-                        else If (songdata.instr_macros[instr].loop_length < 255) then
+               kCtEND:  If NOT shift_pressed then
+                          If (songdata.instr_macros[instr].length < 255) then
+                            Inc(songdata.instr_macros[instr].length)
+                          else
+                        else If (songdata.instr_macros[instr].loop_begin < 255) then
                                begin
-                                 Inc(songdata.instr_macros[instr].loop_length);
+                                 Inc(songdata.instr_macros[instr].loop_begin);
                                  While NOT ((songdata.instr_macros[instr].
                                              keyoff_pos > songdata.instr_macros[instr].
                                                                   loop_begin+
@@ -5979,10 +6021,31 @@ _jmp2:
                                    Inc(songdata.instr_macros[instr].keyoff_pos);
                                end;
 
+               kCtLEFT: If (ptr_vibrato_table^ <> 0) then pos := 14
+                        else If (ptr_arpeggio_table^ <> 0) then pos := 8;
+
+               kCtRGHT: If (ptr_arpeggio_table^ <> 0) then pos := 8
+                        else If (ptr_vibrato_table^ <> 0) then pos := 14;
+
                kCtPgUP: If NOT shift_pressed then
                         else If (songdata.instr_macros[instr].loop_length > 0) then
                                begin
                                  Dec(songdata.instr_macros[instr].loop_length);
+                                 While NOT ((songdata.instr_macros[instr].
+                                             keyoff_pos > songdata.instr_macros[instr].
+                                                                  loop_begin+
+                                                         min0(songdata.instr_macros[instr].
+                                                              loop_length-1,0)) or
+                                            (songdata.instr_macros[instr].loop_begin = 0) or
+                                            (songdata.instr_macros[instr].loop_length = 0) or
+                                            (songdata.instr_macros[instr].keyoff_pos = 0)) do
+                                   Inc(songdata.instr_macros[instr].keyoff_pos);
+                               end;
+
+               kCtPgDN: If NOT shift_pressed then
+                        else If (songdata.instr_macros[instr].loop_length < 255) then
+                               begin
+                                 Inc(songdata.instr_macros[instr].loop_length);
                                  While NOT ((songdata.instr_macros[instr].
                                              keyoff_pos > songdata.instr_macros[instr].
                                                                   loop_begin+
@@ -6038,44 +6101,37 @@ _jmp2:
                      (is_environment.keystroke = kShTAB) then pos := 1;
 
              Case is_environment.keystroke of
-               kCtLbr:  If (_4op_to_test = 0) then
-                          If (current_inst > 1) then
-                            begin
-                              Dec(current_inst);
-                              instrum_page := current_inst;
-                              STATUS_LINE_refresh;
-                              instr := current_inst;
-                              GOTO _jmp2;
-                            end;
+               kCtLbr:  If shift_pressed then
+                          begin
+                            If (songdata.macro_speedup > 1) then
+                              Dec(songdata.macro_speedup);
+                            macro_speedup := songdata.macro_speedup;
+                          end
+                        else If (_4op_to_test = 0) then
+                               If (current_inst > 1) then
+                                 begin
+                                   Dec(current_inst);
+                                   instrum_page := current_inst;
+                                   STATUS_LINE_refresh;
+                                   GOTO _jmp2;
+                                 end;
 
-               kCtRbr:  If (_4op_to_test = 0) then
-                          If (current_inst < 255) then
-                            begin
-                              Inc(current_inst);
-                              instrum_page := current_inst;
-                              reset_4op_to_test(1,NULL);
-                              STATUS_LINE_refresh;
-                              instr := current_inst;
-                              GOTO _jmp2;
-                            end;
-
-               kCtEND:  If NOT shift_pressed then
-                          If (songdata.instr_macros[instr].length < 255) then
-                            Inc(songdata.instr_macros[instr].length)
-                          else
-                        else If (songdata.instr_macros[instr].loop_begin < 255) then
-                               begin
-                                 Inc(songdata.instr_macros[instr].loop_begin);
-                                 While NOT ((songdata.instr_macros[instr].
-                                             keyoff_pos > songdata.instr_macros[instr].
-                                                                  loop_begin+
-                                                         min0(songdata.instr_macros[instr].
-                                                              loop_length-1,0)) or
-                                            (songdata.instr_macros[instr].loop_begin = 0) or
-                                            (songdata.instr_macros[instr].loop_length = 0) or
-                                            (songdata.instr_macros[instr].keyoff_pos = 0)) do
-                                   Inc(songdata.instr_macros[instr].keyoff_pos);
-                               end;
+               kCtRbr:  If shift_pressed then
+                          begin
+                            Inc(songdata.macro_speedup);
+                            If (calc_max_speedup(tempo) < songdata.macro_speedup) then
+                              songdata.macro_speedup := calc_max_speedup(tempo);
+                            macro_speedup := songdata.macro_speedup;
+                          end
+                        else If (_4op_to_test = 0) then
+                               If (current_inst < 255) then
+                                 begin
+                                   Inc(current_inst);
+                                   instrum_page := current_inst;
+                                   reset_4op_to_test(1,NULL);
+                                   STATUS_LINE_refresh;
+                                   GOTO _jmp2;
+                                 end;
 
                kCtHOME:  If NOT shift_pressed then
                            If (songdata.instr_macros[instr].length > 0) then
@@ -6095,10 +6151,13 @@ _jmp2:
                                    Inc(songdata.instr_macros[instr].keyoff_pos);
                                end;
 
-               kCtPgDN: If NOT shift_pressed then
-                        else If (songdata.instr_macros[instr].loop_length < 255) then
+               kCtEND:  If NOT shift_pressed then
+                          If (songdata.instr_macros[instr].length < 255) then
+                            Inc(songdata.instr_macros[instr].length)
+                          else
+                        else If (songdata.instr_macros[instr].loop_begin < 255) then
                                begin
-                                 Inc(songdata.instr_macros[instr].loop_length);
+                                 Inc(songdata.instr_macros[instr].loop_begin);
                                  While NOT ((songdata.instr_macros[instr].
                                              keyoff_pos > songdata.instr_macros[instr].
                                                                   loop_begin+
@@ -6110,10 +6169,31 @@ _jmp2:
                                    Inc(songdata.instr_macros[instr].keyoff_pos);
                                end;
 
+               kCtLEFT: If (ptr_vibrato_table^ <> 0) then pos := 17
+                        else If (ptr_arpeggio_table^ <> 0) then pos := 10;
+
+               kCtRGHT: If (ptr_arpeggio_table^ <> 0) then pos := 10
+                        else If (ptr_vibrato_table^ <> 0) then pos := 17;
+
                kCtPgUP: If NOT shift_pressed then
                         else If (songdata.instr_macros[instr].loop_length > 0) then
                                begin
                                  Dec(songdata.instr_macros[instr].loop_length);
+                                 While NOT ((songdata.instr_macros[instr].
+                                             keyoff_pos > songdata.instr_macros[instr].
+                                                                  loop_begin+
+                                                         min0(songdata.instr_macros[instr].
+                                                              loop_length-1,0)) or
+                                            (songdata.instr_macros[instr].loop_begin = 0) or
+                                            (songdata.instr_macros[instr].loop_length = 0) or
+                                            (songdata.instr_macros[instr].keyoff_pos = 0)) do
+                                   Inc(songdata.instr_macros[instr].keyoff_pos);
+                               end;
+
+               kCtPgDN: If NOT shift_pressed then
+                        else If (songdata.instr_macros[instr].loop_length < 255) then
+                               begin
+                                 Inc(songdata.instr_macros[instr].loop_length);
                                  While NOT ((songdata.instr_macros[instr].
                                              keyoff_pos > songdata.instr_macros[instr].
                                                                   loop_begin+
@@ -6169,44 +6249,37 @@ _jmp2:
                      (is_environment.keystroke = kShTAB) then pos := 2;
 
              Case is_environment.keystroke of
-               kCtLbr:  If (_4op_to_test = 0) then
-                          If (current_inst > 1) then
-                            begin
-                              Dec(current_inst);
-                              instrum_page := current_inst;
-                              STATUS_LINE_refresh;
-                              instr := current_inst;
-                              GOTO _jmp2;
-                            end;
+               kCtLbr:  If shift_pressed then
+                          begin
+                            If (songdata.macro_speedup > 1) then
+                              Dec(songdata.macro_speedup);
+                            macro_speedup := songdata.macro_speedup;
+                          end
+                        else If (_4op_to_test = 0) then
+                               If (current_inst > 1) then
+                                 begin
+                                   Dec(current_inst);
+                                   instrum_page := current_inst;
+                                   STATUS_LINE_refresh;
+                                   GOTO _jmp2;
+                                 end;
 
-               kCtRbr:  If (_4op_to_test = 0) then
-                          If (current_inst < 255) then
-                            begin
-                              Inc(current_inst);
-                              instrum_page := current_inst;
-                              reset_4op_to_test(1,NULL);
-                              STATUS_LINE_refresh;
-                              instr := current_inst;
-                              GOTO _jmp2;
-                            end;
-
-               kCtEND:  If NOT shift_pressed then
-                          If (songdata.instr_macros[instr].length < 255) then
-                            Inc(songdata.instr_macros[instr].length)
-                          else
-                        else If (songdata.instr_macros[instr].loop_begin < 255) then
-                               begin
-                                 Inc(songdata.instr_macros[instr].loop_begin);
-                                 While NOT ((songdata.instr_macros[instr].
-                                             keyoff_pos > songdata.instr_macros[instr].
-                                                                  loop_begin+
-                                                         min0(songdata.instr_macros[instr].
-                                                              loop_length-1,0)) or
-                                            (songdata.instr_macros[instr].loop_begin = 0) or
-                                            (songdata.instr_macros[instr].loop_length = 0) or
-                                            (songdata.instr_macros[instr].keyoff_pos = 0)) do
-                                   Inc(songdata.instr_macros[instr].keyoff_pos);
-                               end;
+               kCtRbr:  If shift_pressed then
+                          begin
+                            Inc(songdata.macro_speedup);
+                            If (calc_max_speedup(tempo) < songdata.macro_speedup) then
+                              songdata.macro_speedup := calc_max_speedup(tempo);
+                            macro_speedup := songdata.macro_speedup;
+                          end
+                        else If (_4op_to_test = 0) then
+                               If (current_inst < 255) then
+                                 begin
+                                   Inc(current_inst);
+                                   instrum_page := current_inst;
+                                   reset_4op_to_test(1,NULL);
+                                   STATUS_LINE_refresh;
+                                   GOTO _jmp2;
+                                 end;
 
                kCtHOME:  If NOT shift_pressed then
                            If (songdata.instr_macros[instr].length > 0) then
@@ -6226,10 +6299,13 @@ _jmp2:
                                    Inc(songdata.instr_macros[instr].keyoff_pos);
                                end;
 
-               kCtPgDN: If NOT shift_pressed then
-                        else If (songdata.instr_macros[instr].loop_length < 255) then
+               kCtEND:  If NOT shift_pressed then
+                          If (songdata.instr_macros[instr].length < 255) then
+                            Inc(songdata.instr_macros[instr].length)
+                          else
+                        else If (songdata.instr_macros[instr].loop_begin < 255) then
                                begin
-                                 Inc(songdata.instr_macros[instr].loop_length);
+                                 Inc(songdata.instr_macros[instr].loop_begin);
                                  While NOT ((songdata.instr_macros[instr].
                                              keyoff_pos > songdata.instr_macros[instr].
                                                                   loop_begin+
@@ -6241,10 +6317,31 @@ _jmp2:
                                    Inc(songdata.instr_macros[instr].keyoff_pos);
                                end;
 
+               kCtLEFT: If (ptr_vibrato_table^ <> 0) then pos := 18
+                        else If (ptr_arpeggio_table^ <> 0) then pos := 11;
+
+               kCtRGHT: If (ptr_arpeggio_table^ <> 0) then pos := 11
+                        else If (ptr_vibrato_table^ <> 0) then pos := 18;
+
                kCtPgUP: If NOT shift_pressed then
                         else If (songdata.instr_macros[instr].loop_length > 0) then
                                begin
                                  Dec(songdata.instr_macros[instr].loop_length);
+                                 While NOT ((songdata.instr_macros[instr].
+                                             keyoff_pos > songdata.instr_macros[instr].
+                                                                  loop_begin+
+                                                         min0(songdata.instr_macros[instr].
+                                                              loop_length-1,0)) or
+                                            (songdata.instr_macros[instr].loop_begin = 0) or
+                                            (songdata.instr_macros[instr].loop_length = 0) or
+                                            (songdata.instr_macros[instr].keyoff_pos = 0)) do
+                                   Inc(songdata.instr_macros[instr].keyoff_pos);
+                               end;
+
+               kCtPgDN: If NOT shift_pressed then
+                        else If (songdata.instr_macros[instr].loop_length < 255) then
+                               begin
+                                 Inc(songdata.instr_macros[instr].loop_length);
                                  While NOT ((songdata.instr_macros[instr].
                                              keyoff_pos > songdata.instr_macros[instr].
                                                                   loop_begin+
@@ -6312,44 +6409,37 @@ _jmp2:
                      (is_environment.keystroke = kShTAB) then pos := 3;
 
              Case is_environment.keystroke of
-               kCtLbr:  If (_4op_to_test = 0) then
-                          If (current_inst > 1) then
-                            begin
-                              Dec(current_inst);
-                              instrum_page := current_inst;
-                              STATUS_LINE_refresh;
-                              instr := current_inst;
-                              GOTO _jmp2;
-                            end;
+               kCtLbr:  If shift_pressed then
+                          begin
+                            If (songdata.macro_speedup > 1) then
+                              Dec(songdata.macro_speedup);
+                            macro_speedup := songdata.macro_speedup;
+                          end
+                        else If (_4op_to_test = 0) then
+                               If (current_inst > 1) then
+                                 begin
+                                   Dec(current_inst);
+                                   instrum_page := current_inst;
+                                   STATUS_LINE_refresh;
+                                   GOTO _jmp2;
+                                 end;
 
-               kCtRbr:  If (_4op_to_test = 0) then
-                          If (current_inst < 255) then
-                            begin
-                              Inc(current_inst);
-                              instrum_page := current_inst;
-                              reset_4op_to_test(1,NULL);
-                              STATUS_LINE_refresh;
-                              instr := current_inst;
-                              GOTO _jmp2;
-                            end;
-
-               kCtEND:  If NOT shift_pressed then
-                          If (songdata.instr_macros[instr].length < 255) then
-                            Inc(songdata.instr_macros[instr].length)
-                          else
-                        else If (songdata.instr_macros[instr].loop_begin < 255) then
-                               begin
-                                 Inc(songdata.instr_macros[instr].loop_begin);
-                                 While NOT ((songdata.instr_macros[instr].
-                                             keyoff_pos > songdata.instr_macros[instr].
-                                                                  loop_begin+
-                                                         min0(songdata.instr_macros[instr].
-                                                              loop_length-1,0)) or
-                                            (songdata.instr_macros[instr].loop_begin = 0) or
-                                            (songdata.instr_macros[instr].loop_length = 0) or
-                                            (songdata.instr_macros[instr].keyoff_pos = 0)) do
-                                   Inc(songdata.instr_macros[instr].keyoff_pos);
-                               end;
+               kCtRbr:  If shift_pressed then
+                          begin
+                            Inc(songdata.macro_speedup);
+                            If (calc_max_speedup(tempo) < songdata.macro_speedup) then
+                              songdata.macro_speedup := calc_max_speedup(tempo);
+                            macro_speedup := songdata.macro_speedup;
+                          end
+                        else If (_4op_to_test = 0) then
+                               If (current_inst < 255) then
+                                 begin
+                                   Inc(current_inst);
+                                   instrum_page := current_inst;
+                                   reset_4op_to_test(1,NULL);
+                                   STATUS_LINE_refresh;
+                                   GOTO _jmp2;
+                                 end;
 
                kCtHOME:  If NOT shift_pressed then
                            If (songdata.instr_macros[instr].length > 0) then
@@ -6369,10 +6459,13 @@ _jmp2:
                                    Inc(songdata.instr_macros[instr].keyoff_pos);
                                end;
 
-               kCtPgDN: If NOT shift_pressed then
-                        else If (songdata.instr_macros[instr].loop_length < 255) then
+               kCtEND:  If NOT shift_pressed then
+                          If (songdata.instr_macros[instr].length < 255) then
+                            Inc(songdata.instr_macros[instr].length)
+                          else
+                        else If (songdata.instr_macros[instr].loop_begin < 255) then
                                begin
-                                 Inc(songdata.instr_macros[instr].loop_length);
+                                 Inc(songdata.instr_macros[instr].loop_begin);
                                  While NOT ((songdata.instr_macros[instr].
                                              keyoff_pos > songdata.instr_macros[instr].
                                                                   loop_begin+
@@ -6384,10 +6477,31 @@ _jmp2:
                                    Inc(songdata.instr_macros[instr].keyoff_pos);
                                end;
 
+               kCtLEFT: If (ptr_vibrato_table^ <> 0) then pos := 19
+                        else If (ptr_arpeggio_table^ <> 0) then pos := 12;
+
+               kCtRGHT: If (ptr_arpeggio_table^ <> 0) then pos := 12
+                        else If (ptr_vibrato_table^ <> 0) then pos := 19;
+
                kCtPgUP: If NOT shift_pressed then
                         else If (songdata.instr_macros[instr].loop_length > 0) then
                                begin
                                  Dec(songdata.instr_macros[instr].loop_length);
+                                 While NOT ((songdata.instr_macros[instr].
+                                             keyoff_pos > songdata.instr_macros[instr].
+                                                                  loop_begin+
+                                                         min0(songdata.instr_macros[instr].
+                                                              loop_length-1,0)) or
+                                            (songdata.instr_macros[instr].loop_begin = 0) or
+                                            (songdata.instr_macros[instr].loop_length = 0) or
+                                            (songdata.instr_macros[instr].keyoff_pos = 0)) do
+                                   Inc(songdata.instr_macros[instr].keyoff_pos);
+                               end;
+
+               kCtPgDN: If NOT shift_pressed then
+                        else If (songdata.instr_macros[instr].loop_length < 255) then
+                               begin
+                                 Inc(songdata.instr_macros[instr].loop_length);
                                  While NOT ((songdata.instr_macros[instr].
                                              keyoff_pos > songdata.instr_macros[instr].
                                                                   loop_begin+
@@ -6436,44 +6550,37 @@ _jmp2:
                      (is_environment.keystroke = kShTAB) then pos := 4;
 
              Case is_environment.keystroke of
-               kCtLbr:  If (_4op_to_test = 0) then
-                          If (current_inst > 1) then
-                            begin
-                              Dec(current_inst);
-                              instrum_page := current_inst;
-                              STATUS_LINE_refresh;
-                              instr := current_inst;
-                              GOTO _jmp2;
-                            end;
+               kCtLbr:  If shift_pressed then
+                          begin
+                            If (songdata.macro_speedup > 1) then
+                              Dec(songdata.macro_speedup);
+                            macro_speedup := songdata.macro_speedup;
+                          end
+                        else If (_4op_to_test = 0) then
+                               If (current_inst > 1) then
+                                 begin
+                                   Dec(current_inst);
+                                   instrum_page := current_inst;
+                                   STATUS_LINE_refresh;
+                                   GOTO _jmp2;
+                                 end;
 
-               kCtRbr:  If (_4op_to_test = 0) then
-                          If (current_inst < 255) then
-                            begin
-                              Inc(current_inst);
-                              instrum_page := current_inst;
-                              reset_4op_to_test(1,NULL);
-                              STATUS_LINE_refresh;
-                              instr := current_inst;
-                              GOTO _jmp2;
-                            end;
-
-               kCtEND:  If NOT shift_pressed then
-                          If (songdata.instr_macros[instr].length < 255) then
-                            Inc(songdata.instr_macros[instr].length)
-                          else
-                        else If (songdata.instr_macros[instr].loop_begin < 255) then
-                               begin
-                                 Inc(songdata.instr_macros[instr].loop_begin);
-                                 While NOT ((songdata.instr_macros[instr].
-                                             keyoff_pos > songdata.instr_macros[instr].
-                                                                  loop_begin+
-                                                         min0(songdata.instr_macros[instr].
-                                                              loop_length-1,0)) or
-                                            (songdata.instr_macros[instr].loop_begin = 0) or
-                                            (songdata.instr_macros[instr].loop_length = 0) or
-                                            (songdata.instr_macros[instr].keyoff_pos = 0)) do
-                                   Inc(songdata.instr_macros[instr].keyoff_pos);
-                               end;
+               kCtRbr:  If shift_pressed then
+                          begin
+                            Inc(songdata.macro_speedup);
+                            If (calc_max_speedup(tempo) < songdata.macro_speedup) then
+                              songdata.macro_speedup := calc_max_speedup(tempo);
+                            macro_speedup := songdata.macro_speedup;
+                          end
+                        else If (_4op_to_test = 0) then
+                               If (current_inst < 255) then
+                                 begin
+                                   Inc(current_inst);
+                                   instrum_page := current_inst;
+                                   reset_4op_to_test(1,NULL);
+                                   STATUS_LINE_refresh;
+                                   GOTO _jmp2;
+                                 end;
 
                kCtHOME:  If NOT shift_pressed then
                            If (songdata.instr_macros[instr].length > 0) then
@@ -6493,10 +6600,13 @@ _jmp2:
                                    Inc(songdata.instr_macros[instr].keyoff_pos);
                                end;
 
-               kCtPgDN: If NOT shift_pressed then
-                        else If (songdata.instr_macros[instr].loop_length < 255) then
+               kCtEND:  If NOT shift_pressed then
+                          If (songdata.instr_macros[instr].length < 255) then
+                            Inc(songdata.instr_macros[instr].length)
+                          else
+                        else If (songdata.instr_macros[instr].loop_begin < 255) then
                                begin
-                                 Inc(songdata.instr_macros[instr].loop_length);
+                                 Inc(songdata.instr_macros[instr].loop_begin);
                                  While NOT ((songdata.instr_macros[instr].
                                              keyoff_pos > songdata.instr_macros[instr].
                                                                   loop_begin+
@@ -6508,10 +6618,31 @@ _jmp2:
                                    Inc(songdata.instr_macros[instr].keyoff_pos);
                                end;
 
+               kCtLEFT: If (ptr_vibrato_table^ <> 0) then pos := 14
+                        else If (ptr_arpeggio_table^ <> 0) then pos := 8;
+
+               kCtRGHT: If (ptr_arpeggio_table^ <> 0) then pos := 8
+                        else If (ptr_vibrato_table^ <> 0) then pos := 14;
+
                kCtPgUP: If NOT shift_pressed then
                         else If (songdata.instr_macros[instr].loop_length > 0) then
                                begin
                                  Dec(songdata.instr_macros[instr].loop_length);
+                                 While NOT ((songdata.instr_macros[instr].
+                                             keyoff_pos > songdata.instr_macros[instr].
+                                                                  loop_begin+
+                                                         min0(songdata.instr_macros[instr].
+                                                              loop_length-1,0)) or
+                                            (songdata.instr_macros[instr].loop_begin = 0) or
+                                            (songdata.instr_macros[instr].loop_length = 0) or
+                                            (songdata.instr_macros[instr].keyoff_pos = 0)) do
+                                   Inc(songdata.instr_macros[instr].keyoff_pos);
+                               end;
+
+               kCtPgDN: If NOT shift_pressed then
+                        else If (songdata.instr_macros[instr].loop_length < 255) then
+                               begin
+                                 Inc(songdata.instr_macros[instr].loop_length);
                                  While NOT ((songdata.instr_macros[instr].
                                              keyoff_pos > songdata.instr_macros[instr].
                                                                   loop_begin+
@@ -6560,26 +6691,55 @@ _jmp2:
                      (is_environment.keystroke = kShTAB) then pos := 5;
 
              Case is_environment.keystroke of
-               kCtLbr:  If (_4op_to_test = 0) then
-                          If (current_inst > 1) then
-                            begin
-                              Dec(current_inst);
-                              instrum_page := current_inst;
-                              STATUS_LINE_refresh;
-                              instr := current_inst;
-                              GOTO _jmp2;
-                            end;
+               kCtLbr:  If shift_pressed then
+                          begin
+                            If (songdata.macro_speedup > 1) then
+                              Dec(songdata.macro_speedup);
+                            macro_speedup := songdata.macro_speedup;
+                          end
+                        else If (_4op_to_test = 0) then
+                               If (current_inst > 1) then
+                                 begin
+                                   Dec(current_inst);
+                                   instrum_page := current_inst;
+                                   STATUS_LINE_refresh;
+                                   GOTO _jmp2;
+                                 end;
 
-               kCtRbr:  If (_4op_to_test = 0) then
-                          If (current_inst < 255) then
-                            begin
-                              Inc(current_inst);
-                              instrum_page := current_inst;
-                              reset_4op_to_test(1,NULL);
-                              STATUS_LINE_refresh;
-                              instr := current_inst;
-                              GOTO _jmp2;
-                            end;
+               kCtRbr:  If shift_pressed then
+                          begin
+                            Inc(songdata.macro_speedup);
+                            If (calc_max_speedup(tempo) < songdata.macro_speedup) then
+                              songdata.macro_speedup := calc_max_speedup(tempo);
+                            macro_speedup := songdata.macro_speedup;
+                          end
+                        else If (_4op_to_test = 0) then
+                               If (current_inst < 255) then
+                                 begin
+                                   Inc(current_inst);
+                                   instrum_page := current_inst;
+                                   reset_4op_to_test(1,NULL);
+                                   STATUS_LINE_refresh;
+                                   GOTO _jmp2;
+                                 end;
+
+               kCtHOME:  If NOT shift_pressed then
+                           If (songdata.instr_macros[instr].length > 0) then
+                             Dec(songdata.instr_macros[instr].length)
+                           else
+                        else If (songdata.instr_macros[instr].loop_begin > 0) then
+                               begin
+                                 Dec(songdata.instr_macros[instr].loop_begin);
+                                 While NOT ((songdata.instr_macros[instr].
+                                             keyoff_pos > songdata.instr_macros[instr].
+                                                                  loop_begin+
+                                                         min0(songdata.instr_macros[instr].
+                                                              loop_length-1,0)) or
+                                            (songdata.instr_macros[instr].loop_begin = 0) or
+                                            (songdata.instr_macros[instr].loop_length = 0) or
+                                            (songdata.instr_macros[instr].keyoff_pos = 0)) do
+                                   Inc(songdata.instr_macros[instr].keyoff_pos);
+                               end;
 
                kCtEND:  If NOT shift_pressed then
                           If (songdata.instr_macros[instr].length < 255) then
@@ -6599,13 +6759,16 @@ _jmp2:
                                    Inc(songdata.instr_macros[instr].keyoff_pos);
                                end;
 
-               kCtHOME:  If NOT shift_pressed then
-                           If (songdata.instr_macros[instr].length > 0) then
-                             Dec(songdata.instr_macros[instr].length)
-                           else
-                        else If (songdata.instr_macros[instr].loop_begin > 0) then
+               kCtLEFT: If (ptr_vibrato_table^ <> 0) then pos := 14
+                        else If (ptr_arpeggio_table^ <> 0) then pos := 8;
+
+               kCtRGHT: If (ptr_arpeggio_table^ <> 0) then pos := 8
+                        else If (ptr_vibrato_table^ <> 0) then pos := 14;
+
+               kCtPgUP: If NOT shift_pressed then
+                        else If (songdata.instr_macros[instr].loop_length > 0) then
                                begin
-                                 Dec(songdata.instr_macros[instr].loop_begin);
+                                 Dec(songdata.instr_macros[instr].loop_length);
                                  While NOT ((songdata.instr_macros[instr].
                                              keyoff_pos > songdata.instr_macros[instr].
                                                                   loop_begin+
@@ -6632,21 +6795,6 @@ _jmp2:
                                    Inc(songdata.instr_macros[instr].keyoff_pos);
                                end;
 
-               kCtPgUP: If NOT shift_pressed then
-                        else If (songdata.instr_macros[instr].loop_length > 0) then
-                               begin
-                                 Dec(songdata.instr_macros[instr].loop_length);
-                                 While NOT ((songdata.instr_macros[instr].
-                                             keyoff_pos > songdata.instr_macros[instr].
-                                                                  loop_begin+
-                                                         min0(songdata.instr_macros[instr].
-                                                              loop_length-1,0)) or
-                                            (songdata.instr_macros[instr].loop_begin = 0) or
-                                            (songdata.instr_macros[instr].loop_length = 0) or
-                                            (songdata.instr_macros[instr].keyoff_pos = 0)) do
-                                   Inc(songdata.instr_macros[instr].keyoff_pos);
-                               end;
-
                kCtrlC:  begin
                           clipboard.object_type := objMacroTable;
                           clipboard.mcrtab_type := mttFM_reg_table;
@@ -6658,7 +6806,7 @@ _jmp2:
            end;
 
         7: begin
-             GotoXY(xstart+10+fmreg_cursor_pos-1,ystart+16);
+             GotoXY(xstart+10+fmreg_cursor_pos-1,ystart+16+(window_area_inc_y DIV 2));
              is_environment.keystroke := getkey;
 
              If (HI(is_environment.keystroke) = HI(kSlashR)) then
@@ -6702,44 +6850,37 @@ _jmp2:
                  end;
 
              Case is_environment.keystroke of
-               kCtLbr:  If (_4op_to_test = 0) then
-                          If (current_inst > 1) then
-                            begin
-                              Dec(current_inst);
-                              instrum_page := current_inst;
-                              STATUS_LINE_refresh;
-                              instr := current_inst;
-                              GOTO _jmp2;
-                            end;
+               kCtLbr:  If shift_pressed then
+                          begin
+                            If (songdata.macro_speedup > 1) then
+                              Dec(songdata.macro_speedup);
+                            macro_speedup := songdata.macro_speedup;
+                          end
+                        else If (_4op_to_test = 0) then
+                               If (current_inst > 1) then
+                                 begin
+                                   Dec(current_inst);
+                                   instrum_page := current_inst;
+                                   STATUS_LINE_refresh;
+                                   GOTO _jmp2;
+                                 end;
 
-               kCtRbr:  If (_4op_to_test = 0) then
-                          If (current_inst < 255) then
-                            begin
-                              Inc(current_inst);
-                              instrum_page := current_inst;
-                              reset_4op_to_test(1,NULL);
-                              STATUS_LINE_refresh;
-                              instr := current_inst;
-                              GOTO _jmp2;
-                            end;
-
-               kCtEND:  If NOT shift_pressed then
-                          If (songdata.instr_macros[instr].length < 255) then
-                            Inc(songdata.instr_macros[instr].length)
-                          else
-                        else If (songdata.instr_macros[instr].loop_begin < 255) then
-                               begin
-                                 Inc(songdata.instr_macros[instr].loop_begin);
-                                 While NOT ((songdata.instr_macros[instr].
-                                             keyoff_pos > songdata.instr_macros[instr].
-                                                                  loop_begin+
-                                                         min0(songdata.instr_macros[instr].
-                                                              loop_length-1,0)) or
-                                            (songdata.instr_macros[instr].loop_begin = 0) or
-                                            (songdata.instr_macros[instr].loop_length = 0) or
-                                            (songdata.instr_macros[instr].keyoff_pos = 0)) do
-                                   Inc(songdata.instr_macros[instr].keyoff_pos);
-                               end;
+               kCtRbr:  If shift_pressed then
+                          begin
+                            Inc(songdata.macro_speedup);
+                            If (calc_max_speedup(tempo) < songdata.macro_speedup) then
+                              songdata.macro_speedup := calc_max_speedup(tempo);
+                            macro_speedup := songdata.macro_speedup;
+                          end
+                        else If (_4op_to_test = 0) then
+                               If (current_inst < 255) then
+                                 begin
+                                   Inc(current_inst);
+                                   instrum_page := current_inst;
+                                   reset_4op_to_test(1,NULL);
+                                   STATUS_LINE_refresh;
+                                   GOTO _jmp2;
+                                 end;
 
                kCtHOME:  If NOT shift_pressed then
                            If (songdata.instr_macros[instr].length > 0) then
@@ -6759,10 +6900,13 @@ _jmp2:
                                    Inc(songdata.instr_macros[instr].keyoff_pos);
                                end;
 
-               kCtPgDN: If NOT shift_pressed then
-                        else If (songdata.instr_macros[instr].loop_length < 255) then
+               kCtEND:  If NOT shift_pressed then
+                          If (songdata.instr_macros[instr].length < 255) then
+                            Inc(songdata.instr_macros[instr].length)
+                          else
+                        else If (songdata.instr_macros[instr].loop_begin < 255) then
                                begin
-                                 Inc(songdata.instr_macros[instr].loop_length);
+                                 Inc(songdata.instr_macros[instr].loop_begin);
                                  While NOT ((songdata.instr_macros[instr].
                                              keyoff_pos > songdata.instr_macros[instr].
                                                                   loop_begin+
@@ -6789,11 +6933,36 @@ _jmp2:
                                    Inc(songdata.instr_macros[instr].keyoff_pos);
                                end;
 
-               kCtLEFT: If (ptr_vibrato_table^ <> 0) then pos := 20
-                        else If (ptr_arpeggio_table^ <> 0) then pos := 13;
+               kCtPgDN: If NOT shift_pressed then
+                        else If (songdata.instr_macros[instr].loop_length < 255) then
+                               begin
+                                 Inc(songdata.instr_macros[instr].loop_length);
+                                 While NOT ((songdata.instr_macros[instr].
+                                             keyoff_pos > songdata.instr_macros[instr].
+                                                                  loop_begin+
+                                                         min0(songdata.instr_macros[instr].
+                                                              loop_length-1,0)) or
+                                            (songdata.instr_macros[instr].loop_begin = 0) or
+                                            (songdata.instr_macros[instr].loop_length = 0) or
+                                            (songdata.instr_macros[instr].keyoff_pos = 0)) do
+                                   Inc(songdata.instr_macros[instr].keyoff_pos);
+                               end;
 
-               kCtRGHT: If (ptr_arpeggio_table^ <> 0) then pos := 13
-                        else If (ptr_vibrato_table^ <> 0) then pos := 20;
+               kCtLEFT: If NOT shift_pressed then
+                          If (ptr_vibrato_table^ <> 0) then pos := 20
+                          else If (ptr_arpeggio_table^ <> 0) then pos := 13
+                               else
+                        else If (fmreg_page > songdata.instr_macros[instr].length) then
+                               fmreg_page := min(1,songdata.instr_macros[instr].length)
+                             else fmreg_page := 1;
+
+               kCtRGHT: If NOT shift_pressed then
+                          If (ptr_arpeggio_table^ <> 0) then pos := 13
+                          else If (ptr_vibrato_table^ <> 0) then pos := 20
+                               else
+                        else If (fmreg_page < songdata.instr_macros[instr].length) then
+                               fmreg_page := min(1,songdata.instr_macros[instr].length)
+                             else fmreg_page := 255;
 
                kUP: If (fmreg_page > 1) then Dec(fmreg_page)
                     else If cycle_pattern then fmreg_page := 255;
@@ -6860,7 +7029,7 @@ _jmp2:
                            Inc(fmreg_hpos);
                            _scroll_cur_right;
                          end
-                       else If cycle_pattern then 
+                       else If cycle_pattern then
                               begin
                                 fmreg_hpos := 1;
                                 fmreg_cursor_pos := 1;
@@ -7448,7 +7617,7 @@ _jmp2:
                               else begin
                                      Inc(fmreg_hpos);
                                      _scroll_cur_right;
-                                   end;  
+                                   end;
                        7,20,32,
                        35:    begin
                                 If (command_typing = 2) then
@@ -7456,7 +7625,7 @@ _jmp2:
                                     If (fmreg_hpos <> 32) then Dec(fmreg_hpos)
                                     else Dec(fmreg_hpos,2);
                                     _scroll_cur_left;
-                                  end;  
+                                  end;
                                 If (fmreg_page < 255) then Inc(fmreg_page)
                                 else If cycle_pattern then fmreg_page := 1;
                               end;
@@ -7515,7 +7684,7 @@ _jmp2:
              Repeat
                temps := InputStr(byte2hex(songdata.macro_table[ptr_arpeggio_table^].
                                          arpeggio.length),
-                                 xstart+59,ystart+4,
+                                 xstart+60+window_area_inc_x,ystart+4,
                                  2,2,
                                  macro_input_bckg+macro_input,
                                  macro_def_bckg+macro_def);
@@ -7545,54 +7714,37 @@ _jmp2:
                          else pos := 20;
 
              Case is_environment.keystroke of
-               kCtLbr:  If (_4op_to_test = 0) then
-                          If (current_inst > 1) then
-                            begin
-                              Dec(current_inst);
-                              instrum_page := current_inst;
-                              STATUS_LINE_refresh;
-                              instr := current_inst;
-                              GOTO _jmp2;
-                            end;
+               kCtLbr:  If shift_pressed then
+                          begin
+                            If (songdata.macro_speedup > 1) then
+                              Dec(songdata.macro_speedup);
+                            macro_speedup := songdata.macro_speedup;
+                          end
+                        else If (_4op_to_test = 0) then
+                               If (current_inst > 1) then
+                                 begin
+                                   Dec(current_inst);
+                                   instrum_page := current_inst;
+                                   STATUS_LINE_refresh;
+                                   GOTO _jmp2;
+                                 end;
 
-               kCtRbr:  If (_4op_to_test = 0) then
-                          If (current_inst < 255) then
-                            begin
-                              Inc(current_inst);
-                              instrum_page := current_inst;
-                              reset_4op_to_test(1,NULL);
-                              STATUS_LINE_refresh;
-                              instr := current_inst;
-                              GOTO _jmp2;
-                            end;
-
-               kCtEND:  If NOT shift_pressed then
-                          If (songdata.macro_table[ptr_arpeggio_table^].
-                              arpeggio.length < 255) then
-                            Inc(songdata.macro_table[ptr_arpeggio_table^].
-                              arpeggio.length)
-                          else
-                        else If (songdata.macro_table[ptr_arpeggio_table^].
-                                 arpeggio.loop_begin < 255) then
-                               begin
-                                 Inc(songdata.macro_table[ptr_arpeggio_table^].
-                                     arpeggio.loop_begin);
-
-                                 While NOT ((songdata.macro_table[ptr_arpeggio_table^].
-                                             arpeggio.keyoff_pos > songdata.macro_table[ptr_arpeggio_table^].
-                                                                  arpeggio.loop_begin+
-                                                         min0(songdata.macro_table[ptr_arpeggio_table^].
-                                                              arpeggio.loop_length-1,0)) or
-                                            (songdata.macro_table[ptr_arpeggio_table^].
-                                             arpeggio.loop_begin = 0) or
-                                            (songdata.macro_table[ptr_arpeggio_table^].
-                                             arpeggio.loop_length = 0) or
-                                            (songdata.macro_table[ptr_arpeggio_table^].
-                                             arpeggio.keyoff_pos = 0)) do
-                                   Inc(songdata.macro_table[ptr_arpeggio_table^].
-                                       arpeggio.keyoff_pos);
-
-                               end;
+               kCtRbr:  If shift_pressed then
+                          begin
+                            Inc(songdata.macro_speedup);
+                            If (calc_max_speedup(tempo) < songdata.macro_speedup) then
+                              songdata.macro_speedup := calc_max_speedup(tempo);
+                            macro_speedup := songdata.macro_speedup;
+                          end
+                        else If (_4op_to_test = 0) then
+                               If (current_inst < 255) then
+                                 begin
+                                   Inc(current_inst);
+                                   instrum_page := current_inst;
+                                   reset_4op_to_test(1,NULL);
+                                   STATUS_LINE_refresh;
+                                   GOTO _jmp2;
+                                 end;
 
                kCtHOME:  If NOT shift_pressed then
                            If (songdata.macro_table[ptr_arpeggio_table^].
@@ -7622,14 +7774,49 @@ _jmp2:
 
                                end;
 
-               kCtPgDN: If NOT shift_pressed then
-                          If (ptr_arpeggio_table^ < 255) then
-                            Inc(ptr_arpeggio_table^)
+               kCtEND:  If NOT shift_pressed then
+                          If (songdata.macro_table[ptr_arpeggio_table^].
+                              arpeggio.length < 255) then
+                            Inc(songdata.macro_table[ptr_arpeggio_table^].
+                              arpeggio.length)
                           else
                         else If (songdata.macro_table[ptr_arpeggio_table^].
-                                 arpeggio.loop_length < 255) then
+                                 arpeggio.loop_begin < 255) then
                                begin
                                  Inc(songdata.macro_table[ptr_arpeggio_table^].
+                                     arpeggio.loop_begin);
+
+                                 While NOT ((songdata.macro_table[ptr_arpeggio_table^].
+                                             arpeggio.keyoff_pos > songdata.macro_table[ptr_arpeggio_table^].
+                                                                  arpeggio.loop_begin+
+                                                         min0(songdata.macro_table[ptr_arpeggio_table^].
+                                                              arpeggio.loop_length-1,0)) or
+                                            (songdata.macro_table[ptr_arpeggio_table^].
+                                             arpeggio.loop_begin = 0) or
+                                            (songdata.macro_table[ptr_arpeggio_table^].
+                                             arpeggio.loop_length = 0) or
+                                            (songdata.macro_table[ptr_arpeggio_table^].
+                                             arpeggio.keyoff_pos = 0)) do
+                                   Inc(songdata.macro_table[ptr_arpeggio_table^].
+                                       arpeggio.keyoff_pos);
+
+                               end;
+
+               kCtLEFT: If NOT arp_vib_mode then pos := 1
+                        else pos := 14;
+
+               kCtRGHT: If arp_vib_mode then pos := 14
+                        else If (ptr_vibrato_table^ <> 0) then pos := 14
+                             else pos := 1;
+
+               kCtPgUP: If NOT shift_pressed then
+                          If (ptr_arpeggio_table^ > 1) then
+                            Dec(ptr_arpeggio_table^)
+                          else
+                        else If (songdata.macro_table[ptr_arpeggio_table^].
+                                 arpeggio.loop_length > 0) then
+                               begin
+                                 Dec(songdata.macro_table[ptr_arpeggio_table^].
                                      arpeggio.loop_length);
 
                                  While NOT ((songdata.macro_table[ptr_arpeggio_table^].
@@ -7648,14 +7835,14 @@ _jmp2:
 
                                end;
 
-               kCtPgUP: If NOT shift_pressed then
-                          If (ptr_arpeggio_table^ > 1) then
-                            Dec(ptr_arpeggio_table^)
+               kCtPgDN: If NOT shift_pressed then
+                          If (ptr_arpeggio_table^ < 255) then
+                            Inc(ptr_arpeggio_table^)
                           else
                         else If (songdata.macro_table[ptr_arpeggio_table^].
-                                 arpeggio.loop_length > 0) then
+                                 arpeggio.loop_length < 255) then
                                begin
-                                 Dec(songdata.macro_table[ptr_arpeggio_table^].
+                                 Inc(songdata.macro_table[ptr_arpeggio_table^].
                                      arpeggio.loop_length);
 
                                  While NOT ((songdata.macro_table[ptr_arpeggio_table^].
@@ -7689,7 +7876,7 @@ _jmp2:
              Repeat
                temps := InputStr(byte2hex(songdata.macro_table[ptr_arpeggio_table^].
                                          arpeggio.speed),
-                                 xstart+59,ystart+5,
+                                 xstart+60+window_area_inc_x,ystart+5,
                                  2,2,
                                  macro_input_bckg+macro_input,
                                  macro_def_bckg+macro_def);
@@ -7717,26 +7904,65 @@ _jmp2:
                      (is_environment.keystroke = kShTAB) then pos := 8;
 
              Case is_environment.keystroke of
-               kCtLbr:  If (_4op_to_test = 0) then
-                          If (current_inst > 1) then
-                            begin
-                              Dec(current_inst);
-                              instrum_page := current_inst;
-                              STATUS_LINE_refresh;
-                              instr := current_inst;
-                              GOTO _jmp2;
-                            end;
+               kCtLbr:  If shift_pressed then
+                          begin
+                            If (songdata.macro_speedup > 1) then
+                              Dec(songdata.macro_speedup);
+                            macro_speedup := songdata.macro_speedup;
+                          end
+                        else If (_4op_to_test = 0) then
+                               If (current_inst > 1) then
+                                 begin
+                                   Dec(current_inst);
+                                   instrum_page := current_inst;
+                                   STATUS_LINE_refresh;
+                                   GOTO _jmp2;
+                                 end;
 
-               kCtRbr:  If (_4op_to_test = 0) then
-                          If (current_inst < 255) then
-                            begin
-                              Inc(current_inst);
-                              instrum_page := current_inst;
-                              reset_4op_to_test(1,NULL);
-                              STATUS_LINE_refresh;
-                              instr := current_inst;
-                              GOTO _jmp2;
-                            end;
+               kCtRbr:  If shift_pressed then
+                          begin
+                            Inc(songdata.macro_speedup);
+                            If (calc_max_speedup(tempo) < songdata.macro_speedup) then
+                              songdata.macro_speedup := calc_max_speedup(tempo);
+                            macro_speedup := songdata.macro_speedup;
+                          end
+                        else If (_4op_to_test = 0) then
+                               If (current_inst < 255) then
+                                 begin
+                                   Inc(current_inst);
+                                   instrum_page := current_inst;
+                                   reset_4op_to_test(1,NULL);
+                                   STATUS_LINE_refresh;
+                                   GOTO _jmp2;
+                                 end;
+
+               kCtHOME:  If NOT shift_pressed then
+                           If (songdata.macro_table[ptr_arpeggio_table^].
+                              arpeggio.length > 0) then
+                             Dec(songdata.macro_table[ptr_arpeggio_table^].
+                                 arpeggio.length)
+                           else
+                        else If (songdata.macro_table[ptr_arpeggio_table^].
+                                 arpeggio.loop_begin > 0) then
+                               begin
+                                 Dec(songdata.macro_table[ptr_arpeggio_table^].
+                                     arpeggio.loop_begin);
+
+                                 While NOT ((songdata.macro_table[ptr_arpeggio_table^].
+                                             arpeggio.keyoff_pos > songdata.macro_table[ptr_arpeggio_table^].
+                                                                  arpeggio.loop_begin+
+                                                         min0(songdata.macro_table[ptr_arpeggio_table^].
+                                                              arpeggio.loop_length-1,0)) or
+                                            (songdata.macro_table[ptr_arpeggio_table^].
+                                             arpeggio.loop_begin = 0) or
+                                            (songdata.macro_table[ptr_arpeggio_table^].
+                                             arpeggio.loop_length = 0) or
+                                            (songdata.macro_table[ptr_arpeggio_table^].
+                                             arpeggio.keyoff_pos = 0)) do
+                                   Inc(songdata.macro_table[ptr_arpeggio_table^].
+                                       arpeggio.keyoff_pos);
+
+                               end;
 
                kCtEND:  If NOT shift_pressed then
                           If (songdata.macro_table[ptr_arpeggio_table^].
@@ -7766,17 +7992,22 @@ _jmp2:
 
                                end;
 
-               kCtHOME:  If NOT shift_pressed then
-                           If (songdata.macro_table[ptr_arpeggio_table^].
-                              arpeggio.length > 0) then
-                             Dec(songdata.macro_table[ptr_arpeggio_table^].
-                                 arpeggio.length)
-                           else
+               kCtLEFT: If NOT arp_vib_mode then pos := 1
+                        else pos := 15;
+
+               kCtRGHT: If arp_vib_mode then pos := 15
+                        else If (ptr_vibrato_table^ <> 0) then pos := 15
+                             else pos := 1;
+
+               kCtPgUP: If NOT shift_pressed then
+                          If (ptr_arpeggio_table^ > 1) then
+                            Dec(ptr_arpeggio_table^)
+                          else
                         else If (songdata.macro_table[ptr_arpeggio_table^].
-                                 arpeggio.loop_begin > 0) then
+                                 arpeggio.loop_length > 0) then
                                begin
                                  Dec(songdata.macro_table[ptr_arpeggio_table^].
-                                     arpeggio.loop_begin);
+                                     arpeggio.loop_length);
 
                                  While NOT ((songdata.macro_table[ptr_arpeggio_table^].
                                              arpeggio.keyoff_pos > songdata.macro_table[ptr_arpeggio_table^].
@@ -7820,32 +8051,6 @@ _jmp2:
 
                                end;
 
-               kCtPgUP: If NOT shift_pressed then
-                          If (ptr_arpeggio_table^ > 1) then
-                            Dec(ptr_arpeggio_table^)
-                          else
-                        else If (songdata.macro_table[ptr_arpeggio_table^].
-                                 arpeggio.loop_length > 0) then
-                               begin
-                                 Dec(songdata.macro_table[ptr_arpeggio_table^].
-                                     arpeggio.loop_length);
-
-                                 While NOT ((songdata.macro_table[ptr_arpeggio_table^].
-                                             arpeggio.keyoff_pos > songdata.macro_table[ptr_arpeggio_table^].
-                                                                  arpeggio.loop_begin+
-                                                         min0(songdata.macro_table[ptr_arpeggio_table^].
-                                                              arpeggio.loop_length-1,0)) or
-                                            (songdata.macro_table[ptr_arpeggio_table^].
-                                             arpeggio.loop_begin = 0) or
-                                            (songdata.macro_table[ptr_arpeggio_table^].
-                                             arpeggio.loop_length = 0) or
-                                            (songdata.macro_table[ptr_arpeggio_table^].
-                                             arpeggio.keyoff_pos = 0)) do
-                                   Inc(songdata.macro_table[ptr_arpeggio_table^].
-                                       arpeggio.keyoff_pos);
-
-                               end;
-
                kCtrlC:  begin
                           clipboard.object_type := objMacroTable;
                           clipboard.mcrtab_type := mttArpeggio_table;
@@ -7861,7 +8066,7 @@ _jmp2:
              Repeat
                temps := InputStr(byte2hex(songdata.macro_table[ptr_arpeggio_table^].
                                          arpeggio.loop_begin),
-                                 xstart+59,ystart+6,
+                                 xstart+60+window_area_inc_x,ystart+6,
                                  2,2,
                                  macro_input_bckg+macro_input,
                                  macro_def_bckg+macro_def);
@@ -7903,26 +8108,65 @@ _jmp2:
                      (is_environment.keystroke = kShTAB) then pos := 9;
 
              Case is_environment.keystroke of
-               kCtLbr:  If (_4op_to_test = 0) then
-                          If (current_inst > 1) then
-                            begin
-                              Dec(current_inst);
-                              instrum_page := current_inst;
-                              STATUS_LINE_refresh;
-                              instr := current_inst;
-                              GOTO _jmp2;
-                            end;
+               kCtLbr:  If shift_pressed then
+                          begin
+                            If (songdata.macro_speedup > 1) then
+                              Dec(songdata.macro_speedup);
+                            macro_speedup := songdata.macro_speedup;
+                          end
+                        else If (_4op_to_test = 0) then
+                               If (current_inst > 1) then
+                                 begin
+                                   Dec(current_inst);
+                                   instrum_page := current_inst;
+                                   STATUS_LINE_refresh;
+                                   GOTO _jmp2;
+                                 end;
 
-               kCtRbr:  If (_4op_to_test = 0) then
-                          If (current_inst < 255) then
-                            begin
-                              Inc(current_inst);
-                              instrum_page := current_inst;
-                              reset_4op_to_test(1,NULL);
-                              STATUS_LINE_refresh;
-                              instr := current_inst;
-                              GOTO _jmp2;
-                            end;
+               kCtRbr:  If shift_pressed then
+                          begin
+                            Inc(songdata.macro_speedup);
+                            If (calc_max_speedup(tempo) < songdata.macro_speedup) then
+                              songdata.macro_speedup := calc_max_speedup(tempo);
+                            macro_speedup := songdata.macro_speedup;
+                          end
+                        else If (_4op_to_test = 0) then
+                               If (current_inst < 255) then
+                                 begin
+                                   Inc(current_inst);
+                                   instrum_page := current_inst;
+                                   reset_4op_to_test(1,NULL);
+                                   STATUS_LINE_refresh;
+                                   GOTO _jmp2;
+                                 end;
+
+               kCtHOME:  If NOT shift_pressed then
+                           If (songdata.macro_table[ptr_arpeggio_table^].
+                              arpeggio.length > 0) then
+                             Dec(songdata.macro_table[ptr_arpeggio_table^].
+                                 arpeggio.length)
+                           else
+                        else If (songdata.macro_table[ptr_arpeggio_table^].
+                                 arpeggio.loop_begin > 0) then
+                               begin
+                                 Dec(songdata.macro_table[ptr_arpeggio_table^].
+                                     arpeggio.loop_begin);
+
+                                 While NOT ((songdata.macro_table[ptr_arpeggio_table^].
+                                             arpeggio.keyoff_pos > songdata.macro_table[ptr_arpeggio_table^].
+                                                                  arpeggio.loop_begin+
+                                                         min0(songdata.macro_table[ptr_arpeggio_table^].
+                                                              arpeggio.loop_length-1,0)) or
+                                            (songdata.macro_table[ptr_arpeggio_table^].
+                                             arpeggio.loop_begin = 0) or
+                                            (songdata.macro_table[ptr_arpeggio_table^].
+                                             arpeggio.loop_length = 0) or
+                                            (songdata.macro_table[ptr_arpeggio_table^].
+                                             arpeggio.keyoff_pos = 0)) do
+                                   Inc(songdata.macro_table[ptr_arpeggio_table^].
+                                       arpeggio.keyoff_pos);
+
+                               end;
 
                kCtEND:  If NOT shift_pressed then
                           If (songdata.macro_table[ptr_arpeggio_table^].
@@ -7952,17 +8196,22 @@ _jmp2:
 
                                end;
 
-               kCtHOME:  If NOT shift_pressed then
-                           If (songdata.macro_table[ptr_arpeggio_table^].
-                              arpeggio.length > 0) then
-                             Dec(songdata.macro_table[ptr_arpeggio_table^].
-                                 arpeggio.length)
-                           else
+               kCtLEFT: If NOT arp_vib_mode then pos := 2
+                        else pos := 17;
+
+               kCtRGHT: If arp_vib_mode then pos := 17
+                        else If (ptr_vibrato_table^ <> 0) then pos := 17
+                             else pos := 2;
+
+               kCtPgUP: If NOT shift_pressed then
+                          If (ptr_arpeggio_table^ > 1) then
+                            Dec(ptr_arpeggio_table^)
+                          else
                         else If (songdata.macro_table[ptr_arpeggio_table^].
-                                 arpeggio.loop_begin > 0) then
+                                 arpeggio.loop_length > 0) then
                                begin
                                  Dec(songdata.macro_table[ptr_arpeggio_table^].
-                                     arpeggio.loop_begin);
+                                     arpeggio.loop_length);
 
                                  While NOT ((songdata.macro_table[ptr_arpeggio_table^].
                                              arpeggio.keyoff_pos > songdata.macro_table[ptr_arpeggio_table^].
@@ -8006,32 +8255,6 @@ _jmp2:
 
                                end;
 
-               kCtPgUP: If NOT shift_pressed then
-                          If (ptr_arpeggio_table^ > 1) then
-                            Dec(ptr_arpeggio_table^)
-                          else
-                        else If (songdata.macro_table[ptr_arpeggio_table^].
-                                 arpeggio.loop_length > 0) then
-                               begin
-                                 Dec(songdata.macro_table[ptr_arpeggio_table^].
-                                     arpeggio.loop_length);
-
-                                 While NOT ((songdata.macro_table[ptr_arpeggio_table^].
-                                             arpeggio.keyoff_pos > songdata.macro_table[ptr_arpeggio_table^].
-                                                                  arpeggio.loop_begin+
-                                                         min0(songdata.macro_table[ptr_arpeggio_table^].
-                                                              arpeggio.loop_length-1,0)) or
-                                            (songdata.macro_table[ptr_arpeggio_table^].
-                                             arpeggio.loop_begin = 0) or
-                                            (songdata.macro_table[ptr_arpeggio_table^].
-                                             arpeggio.loop_length = 0) or
-                                            (songdata.macro_table[ptr_arpeggio_table^].
-                                             arpeggio.keyoff_pos = 0)) do
-                                   Inc(songdata.macro_table[ptr_arpeggio_table^].
-                                       arpeggio.keyoff_pos);
-
-                               end;
-
                kCtrlC:  begin
                           clipboard.object_type := objMacroTable;
                           clipboard.mcrtab_type := mttArpeggio_table;
@@ -8047,7 +8270,7 @@ _jmp2:
              Repeat
                temps := InputStr(byte2hex(songdata.macro_table[ptr_arpeggio_table^].
                                          arpeggio.loop_length),
-                                 xstart+59,ystart+7,
+                                 xstart+60+window_area_inc_x,ystart+7,
                                  2,2,
                                  macro_input_bckg+macro_input,
                                  macro_def_bckg+macro_def);
@@ -8089,26 +8312,65 @@ _jmp2:
                      (is_environment.keystroke = kShTAB) then pos := 10;
 
              Case is_environment.keystroke of
-               kCtLbr:  If (_4op_to_test = 0) then
-                          If (current_inst > 1) then
-                            begin
-                              Dec(current_inst);
-                              instrum_page := current_inst;
-                              STATUS_LINE_refresh;
-                              instr := current_inst;
-                              GOTO _jmp2;
-                            end;
+               kCtLbr:  If shift_pressed then
+                          begin
+                            If (songdata.macro_speedup > 1) then
+                              Dec(songdata.macro_speedup);
+                            macro_speedup := songdata.macro_speedup;
+                          end
+                        else If (_4op_to_test = 0) then
+                               If (current_inst > 1) then
+                                 begin
+                                   Dec(current_inst);
+                                   instrum_page := current_inst;
+                                   STATUS_LINE_refresh;
+                                   GOTO _jmp2;
+                                 end;
 
-               kCtRbr:  If (_4op_to_test = 0) then
-                          If (current_inst < 255) then
-                            begin
-                              Inc(current_inst);
-                              instrum_page := current_inst;
-                              reset_4op_to_test(1,NULL);
-                              STATUS_LINE_refresh;
-                              instr := current_inst;
-                              GOTO _jmp2;
-                            end;
+               kCtRbr:  If shift_pressed then
+                          begin
+                            Inc(songdata.macro_speedup);
+                            If (calc_max_speedup(tempo) < songdata.macro_speedup) then
+                              songdata.macro_speedup := calc_max_speedup(tempo);
+                            macro_speedup := songdata.macro_speedup;
+                          end
+                        else If (_4op_to_test = 0) then
+                               If (current_inst < 255) then
+                                 begin
+                                   Inc(current_inst);
+                                   instrum_page := current_inst;
+                                   reset_4op_to_test(1,NULL);
+                                   STATUS_LINE_refresh;
+                                   GOTO _jmp2;
+                                 end;
+
+               kCtHOME:  If NOT shift_pressed then
+                           If (songdata.macro_table[ptr_arpeggio_table^].
+                              arpeggio.length > 0) then
+                             Dec(songdata.macro_table[ptr_arpeggio_table^].
+                                 arpeggio.length)
+                           else
+                        else If (songdata.macro_table[ptr_arpeggio_table^].
+                                 arpeggio.loop_begin > 0) then
+                               begin
+                                 Dec(songdata.macro_table[ptr_arpeggio_table^].
+                                     arpeggio.loop_begin);
+
+                                 While NOT ((songdata.macro_table[ptr_arpeggio_table^].
+                                             arpeggio.keyoff_pos > songdata.macro_table[ptr_arpeggio_table^].
+                                                                  arpeggio.loop_begin+
+                                                         min0(songdata.macro_table[ptr_arpeggio_table^].
+                                                              arpeggio.loop_length-1,0)) or
+                                            (songdata.macro_table[ptr_arpeggio_table^].
+                                             arpeggio.loop_begin = 0) or
+                                            (songdata.macro_table[ptr_arpeggio_table^].
+                                             arpeggio.loop_length = 0) or
+                                            (songdata.macro_table[ptr_arpeggio_table^].
+                                             arpeggio.keyoff_pos = 0)) do
+                                   Inc(songdata.macro_table[ptr_arpeggio_table^].
+                                       arpeggio.keyoff_pos);
+
+                               end;
 
                kCtEND:  If NOT shift_pressed then
                           If (songdata.macro_table[ptr_arpeggio_table^].
@@ -8138,17 +8400,22 @@ _jmp2:
 
                                end;
 
-               kCtHOME:  If NOT shift_pressed then
-                           If (songdata.macro_table[ptr_arpeggio_table^].
-                              arpeggio.length > 0) then
-                             Dec(songdata.macro_table[ptr_arpeggio_table^].
-                                 arpeggio.length)
-                           else
+               kCtLEFT: If NOT arp_vib_mode then pos := 3
+                        else pos := 18;
+
+               kCtRGHT: If arp_vib_mode then pos := 18
+                        else If (ptr_vibrato_table^ <> 0) then pos := 18
+                             else pos := 3;
+
+               kCtPgUP: If NOT shift_pressed then
+                          If (ptr_arpeggio_table^ > 1) then
+                            Dec(ptr_arpeggio_table^)
+                          else
                         else If (songdata.macro_table[ptr_arpeggio_table^].
-                                 arpeggio.loop_begin > 0) then
+                                 arpeggio.loop_length > 0) then
                                begin
                                  Dec(songdata.macro_table[ptr_arpeggio_table^].
-                                     arpeggio.loop_begin);
+                                     arpeggio.loop_length);
 
                                  While NOT ((songdata.macro_table[ptr_arpeggio_table^].
                                              arpeggio.keyoff_pos > songdata.macro_table[ptr_arpeggio_table^].
@@ -8192,32 +8459,6 @@ _jmp2:
 
                                end;
 
-               kCtPgUP: If NOT shift_pressed then
-                          If (ptr_arpeggio_table^ > 1) then
-                            Dec(ptr_arpeggio_table^)
-                          else
-                        else If (songdata.macro_table[ptr_arpeggio_table^].
-                                 arpeggio.loop_length > 0) then
-                               begin
-                                 Dec(songdata.macro_table[ptr_arpeggio_table^].
-                                     arpeggio.loop_length);
-
-                                 While NOT ((songdata.macro_table[ptr_arpeggio_table^].
-                                             arpeggio.keyoff_pos > songdata.macro_table[ptr_arpeggio_table^].
-                                                                  arpeggio.loop_begin+
-                                                         min0(songdata.macro_table[ptr_arpeggio_table^].
-                                                              arpeggio.loop_length-1,0)) or
-                                            (songdata.macro_table[ptr_arpeggio_table^].
-                                             arpeggio.loop_begin = 0) or
-                                            (songdata.macro_table[ptr_arpeggio_table^].
-                                             arpeggio.loop_length = 0) or
-                                            (songdata.macro_table[ptr_arpeggio_table^].
-                                             arpeggio.keyoff_pos = 0)) do
-                                   Inc(songdata.macro_table[ptr_arpeggio_table^].
-                                       arpeggio.keyoff_pos);
-
-                               end;
-
                kCtrlC:  begin
                           clipboard.object_type := objMacroTable;
                           clipboard.mcrtab_type := mttArpeggio_table;
@@ -8233,7 +8474,7 @@ _jmp2:
              Repeat
                temps := InputStr(byte2hex(songdata.macro_table[ptr_arpeggio_table^].
                                          arpeggio.keyoff_pos),
-                                 xstart+59,ystart+8,
+                                 xstart+60+window_area_inc_x,ystart+8,
                                  2,2,
                                  macro_input_bckg+macro_input,
                                  macro_def_bckg+macro_def);
@@ -8297,54 +8538,37 @@ _jmp2:
                      (is_environment.keystroke = kShTAB) then pos := 11;
 
              Case is_environment.keystroke of
-               kCtLbr:  If (_4op_to_test = 0) then
-                          If (current_inst > 1) then
-                            begin
-                              Dec(current_inst);
-                              instrum_page := current_inst;
-                              STATUS_LINE_refresh;
-                              instr := current_inst;
-                              GOTO _jmp2;
-                            end;
+               kCtLbr:  If shift_pressed then
+                          begin
+                            If (songdata.macro_speedup > 1) then
+                              Dec(songdata.macro_speedup);
+                            macro_speedup := songdata.macro_speedup;
+                          end
+                        else If (_4op_to_test = 0) then
+                               If (current_inst > 1) then
+                                 begin
+                                   Dec(current_inst);
+                                   instrum_page := current_inst;
+                                   STATUS_LINE_refresh;
+                                   GOTO _jmp2;
+                                 end;
 
-               kCtRbr:  If (_4op_to_test = 0) then
-                          If (current_inst < 255) then
-                            begin
-                              Inc(current_inst);
-                              instrum_page := current_inst;
-                              reset_4op_to_test(1,NULL);
-                              STATUS_LINE_refresh;
-                              instr := current_inst;
-                              GOTO _jmp2;
-                            end;
-
-               kCtEND:  If NOT shift_pressed then
-                          If (songdata.macro_table[ptr_arpeggio_table^].
-                              arpeggio.length < 255) then
-                            Inc(songdata.macro_table[ptr_arpeggio_table^].
-                              arpeggio.length)
-                          else
-                        else If (songdata.macro_table[ptr_arpeggio_table^].
-                                 arpeggio.loop_begin < 255) then
-                               begin
-                                 Inc(songdata.macro_table[ptr_arpeggio_table^].
-                                     arpeggio.loop_begin);
-
-                                 While NOT ((songdata.macro_table[ptr_arpeggio_table^].
-                                             arpeggio.keyoff_pos > songdata.macro_table[ptr_arpeggio_table^].
-                                                                  arpeggio.loop_begin+
-                                                         min0(songdata.macro_table[ptr_arpeggio_table^].
-                                                              arpeggio.loop_length-1,0)) or
-                                            (songdata.macro_table[ptr_arpeggio_table^].
-                                             arpeggio.loop_begin = 0) or
-                                            (songdata.macro_table[ptr_arpeggio_table^].
-                                             arpeggio.loop_length = 0) or
-                                            (songdata.macro_table[ptr_arpeggio_table^].
-                                             arpeggio.keyoff_pos = 0)) do
-                                   Inc(songdata.macro_table[ptr_arpeggio_table^].
-                                       arpeggio.keyoff_pos);
-
-                               end;
+               kCtRbr:  If shift_pressed then
+                          begin
+                            Inc(songdata.macro_speedup);
+                            If (calc_max_speedup(tempo) < songdata.macro_speedup) then
+                              songdata.macro_speedup := calc_max_speedup(tempo);
+                            macro_speedup := songdata.macro_speedup;
+                          end
+                        else If (_4op_to_test = 0) then
+                               If (current_inst < 255) then
+                                 begin
+                                   Inc(current_inst);
+                                   instrum_page := current_inst;
+                                   reset_4op_to_test(1,NULL);
+                                   STATUS_LINE_refresh;
+                                   GOTO _jmp2;
+                                 end;
 
                kCtHOME:  If NOT shift_pressed then
                            If (songdata.macro_table[ptr_arpeggio_table^].
@@ -8374,14 +8598,49 @@ _jmp2:
 
                                end;
 
-               kCtPgDN: If NOT shift_pressed then
-                          If (ptr_arpeggio_table^ < 255) then
-                            Inc(ptr_arpeggio_table^)
+               kCtEND:  If NOT shift_pressed then
+                          If (songdata.macro_table[ptr_arpeggio_table^].
+                              arpeggio.length < 255) then
+                            Inc(songdata.macro_table[ptr_arpeggio_table^].
+                              arpeggio.length)
                           else
                         else If (songdata.macro_table[ptr_arpeggio_table^].
-                                 arpeggio.loop_length < 255) then
+                                 arpeggio.loop_begin < 255) then
                                begin
                                  Inc(songdata.macro_table[ptr_arpeggio_table^].
+                                     arpeggio.loop_begin);
+
+                                 While NOT ((songdata.macro_table[ptr_arpeggio_table^].
+                                             arpeggio.keyoff_pos > songdata.macro_table[ptr_arpeggio_table^].
+                                                                  arpeggio.loop_begin+
+                                                         min0(songdata.macro_table[ptr_arpeggio_table^].
+                                                              arpeggio.loop_length-1,0)) or
+                                            (songdata.macro_table[ptr_arpeggio_table^].
+                                             arpeggio.loop_begin = 0) or
+                                            (songdata.macro_table[ptr_arpeggio_table^].
+                                             arpeggio.loop_length = 0) or
+                                            (songdata.macro_table[ptr_arpeggio_table^].
+                                             arpeggio.keyoff_pos = 0)) do
+                                   Inc(songdata.macro_table[ptr_arpeggio_table^].
+                                       arpeggio.keyoff_pos);
+
+                               end;
+
+               kCtLEFT: If NOT arp_vib_mode then pos := 4
+                        else pos := 19;
+
+               kCtRGHT: If arp_vib_mode then pos := 19
+                        else If (ptr_vibrato_table^ <> 0) then pos := 19
+                             else pos := 4;
+
+               kCtPgUP: If NOT shift_pressed then
+                          If (ptr_arpeggio_table^ > 1) then
+                            Dec(ptr_arpeggio_table^)
+                          else
+                        else If (songdata.macro_table[ptr_arpeggio_table^].
+                                 arpeggio.loop_length > 0) then
+                               begin
+                                 Dec(songdata.macro_table[ptr_arpeggio_table^].
                                      arpeggio.loop_length);
 
                                  While NOT ((songdata.macro_table[ptr_arpeggio_table^].
@@ -8400,14 +8659,14 @@ _jmp2:
 
                                end;
 
-               kCtPgUP: If NOT shift_pressed then
-                          If (ptr_arpeggio_table^ > 1) then
-                            Dec(ptr_arpeggio_table^)
+               kCtPgDN: If NOT shift_pressed then
+                          If (ptr_arpeggio_table^ < 255) then
+                            Inc(ptr_arpeggio_table^)
                           else
                         else If (songdata.macro_table[ptr_arpeggio_table^].
-                                 arpeggio.loop_length > 0) then
+                                 arpeggio.loop_length < 255) then
                                begin
-                                 Dec(songdata.macro_table[ptr_arpeggio_table^].
+                                 Inc(songdata.macro_table[ptr_arpeggio_table^].
                                      arpeggio.loop_length);
 
                                  While NOT ((songdata.macro_table[ptr_arpeggio_table^].
@@ -8437,57 +8696,40 @@ _jmp2:
            end;
 
        13: begin
-             GotoXY(xstart+54,ystart+16);
+             GotoXY(xstart+55+window_area_inc_x,ystart+16+(window_area_inc_y DIV 2));
              is_environment.keystroke := getkey;
              Case is_environment.keystroke of
-               kCtLbr:  If (_4op_to_test = 0) then
-                          If (current_inst > 1) then
-                            begin
-                              Dec(current_inst);
-                              instrum_page := current_inst;
-                              STATUS_LINE_refresh;
-                              instr := current_inst;
-                              GOTO _jmp2;
-                            end;
+               kCtLbr:  If shift_pressed then
+                          begin
+                            If (songdata.macro_speedup > 1) then
+                              Dec(songdata.macro_speedup);
+                            macro_speedup := songdata.macro_speedup;
+                          end
+                        else If (_4op_to_test = 0) then
+                               If (current_inst > 1) then
+                                 begin
+                                   Dec(current_inst);
+                                   instrum_page := current_inst;
+                                   STATUS_LINE_refresh;
+                                   GOTO _jmp2;
+                                 end;
 
-               kCtRbr:  If (_4op_to_test = 0) then
-                          If (current_inst < 255) then
-                            begin
-                              Inc(current_inst);
-                              instrum_page := current_inst;
-                              reset_4op_to_test(1,NULL);
-                              STATUS_LINE_refresh;
-                              instr := current_inst;
-                              GOTO _jmp2;
-                            end;
-
-               kCtEND:  If NOT shift_pressed then
-                          If (songdata.macro_table[ptr_arpeggio_table^].
-                              arpeggio.length < 255) then
-                            Inc(songdata.macro_table[ptr_arpeggio_table^].
-                              arpeggio.length)
-                          else
-                        else If (songdata.macro_table[ptr_arpeggio_table^].
-                                 arpeggio.loop_begin < 255) then
-                               begin
-                                 Inc(songdata.macro_table[ptr_arpeggio_table^].
-                                     arpeggio.loop_begin);
-
-                                 While NOT ((songdata.macro_table[ptr_arpeggio_table^].
-                                             arpeggio.keyoff_pos > songdata.macro_table[ptr_arpeggio_table^].
-                                                                  arpeggio.loop_begin+
-                                                         min0(songdata.macro_table[ptr_arpeggio_table^].
-                                                              arpeggio.loop_length-1,0)) or
-                                            (songdata.macro_table[ptr_arpeggio_table^].
-                                             arpeggio.loop_begin = 0) or
-                                            (songdata.macro_table[ptr_arpeggio_table^].
-                                             arpeggio.loop_length = 0) or
-                                            (songdata.macro_table[ptr_arpeggio_table^].
-                                             arpeggio.keyoff_pos = 0)) do
-                                   Inc(songdata.macro_table[ptr_arpeggio_table^].
-                                       arpeggio.keyoff_pos);
-
-                               end;
+               kCtRbr:  If shift_pressed then
+                          begin
+                            Inc(songdata.macro_speedup);
+                            If (calc_max_speedup(tempo) < songdata.macro_speedup) then
+                              songdata.macro_speedup := calc_max_speedup(tempo);
+                            macro_speedup := songdata.macro_speedup;
+                          end
+                        else If (_4op_to_test = 0) then
+                               If (current_inst < 255) then
+                                 begin
+                                   Inc(current_inst);
+                                   instrum_page := current_inst;
+                                   reset_4op_to_test(1,NULL);
+                                   STATUS_LINE_refresh;
+                                   GOTO _jmp2;
+                                 end;
 
                kCtHOME:  If NOT shift_pressed then
                            If (songdata.macro_table[ptr_arpeggio_table^].
@@ -8517,15 +8759,17 @@ _jmp2:
 
                                end;
 
-               kCtPgDN: If NOT shift_pressed then
-                          If (ptr_arpeggio_table^ < 255) then
-                            Inc(ptr_arpeggio_table^)
+               kCtEND:  If NOT shift_pressed then
+                          If (songdata.macro_table[ptr_arpeggio_table^].
+                              arpeggio.length < 255) then
+                            Inc(songdata.macro_table[ptr_arpeggio_table^].
+                              arpeggio.length)
                           else
                         else If (songdata.macro_table[ptr_arpeggio_table^].
-                                 arpeggio.loop_length < 255) then
+                                 arpeggio.loop_begin < 255) then
                                begin
                                  Inc(songdata.macro_table[ptr_arpeggio_table^].
-                                     arpeggio.loop_length);
+                                     arpeggio.loop_begin);
 
                                  While NOT ((songdata.macro_table[ptr_arpeggio_table^].
                                              arpeggio.keyoff_pos > songdata.macro_table[ptr_arpeggio_table^].
@@ -8569,13 +8813,47 @@ _jmp2:
 
                                end;
 
-               kCtLEFT: If NOT arp_vib_mode then pos := 7
-                        else pos := 20;
+               kCtPgDN: If NOT shift_pressed then
+                          If (ptr_arpeggio_table^ < 255) then
+                            Inc(ptr_arpeggio_table^)
+                          else
+                        else If (songdata.macro_table[ptr_arpeggio_table^].
+                                 arpeggio.loop_length < 255) then
+                               begin
+                                 Inc(songdata.macro_table[ptr_arpeggio_table^].
+                                     arpeggio.loop_length);
 
-               kCtRGHT: If NOT arp_vib_mode then
-                          If (ptr_vibrato_table^ <> 0) then pos := 20
-                          else pos := 7
-                        else pos := 20;
+                                 While NOT ((songdata.macro_table[ptr_arpeggio_table^].
+                                             arpeggio.keyoff_pos > songdata.macro_table[ptr_arpeggio_table^].
+                                                                  arpeggio.loop_begin+
+                                                         min0(songdata.macro_table[ptr_arpeggio_table^].
+                                                              arpeggio.loop_length-1,0)) or
+                                            (songdata.macro_table[ptr_arpeggio_table^].
+                                             arpeggio.loop_begin = 0) or
+                                            (songdata.macro_table[ptr_arpeggio_table^].
+                                             arpeggio.loop_length = 0) or
+                                            (songdata.macro_table[ptr_arpeggio_table^].
+                                             arpeggio.keyoff_pos = 0)) do
+                                   Inc(songdata.macro_table[ptr_arpeggio_table^].
+                                       arpeggio.keyoff_pos);
+
+                               end;
+
+               kCtLEFT: If NOT shift_pressed then
+                          If NOT arp_vib_mode then pos := 7
+                          else pos := 20
+                        else If (arpeggio_page > songdata.macro_table[ptr_arpeggio_table^].arpeggio.length) then
+                               arpeggio_page := min(1,songdata.macro_table[ptr_arpeggio_table^].arpeggio.length)
+                             else arpeggio_page := 1;
+
+               kCtRGHT: If NOT shift_pressed then
+                          If NOT arp_vib_mode then
+                            If (ptr_vibrato_table^ <> 0) then pos := 20
+                            else pos := 7
+                          else pos := 20
+                        else If (arpeggio_page < songdata.macro_table[ptr_arpeggio_table^].arpeggio.length) then
+                               arpeggio_page := min(1,songdata.macro_table[ptr_arpeggio_table^].arpeggio.length)
+                             else arpeggio_page := 255;
 
                kUP,kShUP: If (arpeggio_page > 1) then Dec(arpeggio_page)
                           else If cycle_pattern then arpeggio_page := 255;
@@ -8695,12 +8973,12 @@ _jmp2:
                  tstr := CHAR(LO(is_environment.keystroke));
 
                  Repeat
-                   tstr := InputStr(tstr,xstart+54,ystart+16,3,3,
+                   tstr := InputStr(tstr,xstart+55+window_area_inc_x,ystart+16+(window_area_inc_y DIV 2),3,3,
                                     macro_input_bckg+macro_input,
                                     macro_def_bckg+macro_def);
                    is_setting.append_enabled := TRUE;
 
-                   If (UpCase(tstr[1]) in ['A',UpCase(b_note),'C'..'G']) and
+                   If (UpCase(tstr[1]) in ['+','0'..'9','A',UpCase(b_note),'C'..'G']) and
                      ((is_environment.keystroke = kENTER) or
                       (is_environment.keystroke = kUP) or
                       (is_environment.keystroke = kDOWN) or
@@ -8708,55 +8986,67 @@ _jmp2:
                       (is_environment.keystroke = kShTAB)) then
                      begin
                        nope := FALSE;
-                       If (Length(tstr) = 2) then
-                         If tstr[2] in ['1'..'9'] then Insert('-',tstr,2)
-                         else If tstr[2] in ['-','#'] then
-                                tstr := tstr + Num2str(current_octave,10);
+                       If (tstr[1] = '+') then Delete(tstr,1,1);
+                       If (tstr[1] in ['0'..'9']) and
+                          (Str2num(tstr,10) >= 0) and (Str2num(tstr,10) <= 96) then
+                         begin
+                           nope := TRUE;
+                           songdata.macro_table[ptr_arpeggio_table^].
+                           arpeggio.data[arpeggio_page] := Str2num(tstr,10);
+                           If (arpeggio_page < 255) then Inc(arpeggio_page)
+                           else If cycle_pattern then arpeggio_page := 1;
+                         end
+                       else begin
+                              If (Length(tstr) = 2) then
+                                If tstr[2] in ['1'..'9'] then Insert('-',tstr,2)
+                                else If tstr[2] in ['-','#'] then
+                                       tstr := tstr + Num2str(current_octave,10);
 
-                       If (Length(tstr) = 1) then
-                         tstr := tstr + '-' + Num2str(current_octave,10);
+                              If (Length(tstr) = 1) then
+                                tstr := tstr + '-' + Num2str(current_octave,10);
 
-                       For temp1 := 1 to 12*8+1 do
-                         If (Upper(tstr) = note_layout[temp1]) then
-                           begin
-                             nope := TRUE;
-                             songdata.macro_table[ptr_arpeggio_table^].
-                             arpeggio.data[arpeggio_page] := $80+temp1;
-                             BREAK;
-                           end;
+                              For temp1 := 1 to 12*8+1 do
+                                If (Upper(tstr) = note_layout[temp1]) then
+                                  begin
+                                    nope := TRUE;
+                                    songdata.macro_table[ptr_arpeggio_table^].
+                                    arpeggio.data[arpeggio_page] := $80+temp1;
+                                    BREAK;
+                                  end;
 
-                       If NOT nope and (Length(tstr) = 2) then
-                         For temp1 := 1 to 12*8+1 do
-                           If (Copy(Upper(tstr),1,2) = Copy(note_layout[temp1],1,2)) then
-                             begin
-                               nope := TRUE;
-                               songdata.macro_table[ptr_arpeggio_table^].
-                               arpeggio.data[arpeggio_page] := $80+temp1;
-                               BREAK;
-                             end;
+                              If NOT nope and (Length(tstr) = 2) then
+                                For temp1 := 1 to 12*8+1 do
+                                  If (Copy(Upper(tstr),1,2) = Copy(note_layout[temp1],1,2)) then
+                                    begin
+                                      nope := TRUE;
+                                      songdata.macro_table[ptr_arpeggio_table^].
+                                      arpeggio.data[arpeggio_page] := $80+temp1;
+                                      BREAK;
+                                    end;
 
-                       If nope then
-                         Case is_environment.keystroke of
-                           kUP:
-                             If (arpeggio_page > 1) then Dec(arpeggio_page)
-                             else If cycle_pattern then arpeggio_page := 255;
+                              If nope then
+                                Case is_environment.keystroke of
+                                  kUP:
+                                    If (arpeggio_page > 1) then Dec(arpeggio_page)
+                                    else If cycle_pattern then arpeggio_page := 255;
 
-                           kDOWN,
-                           kENTER:
-                             If (arpeggio_page < 255) then Inc(arpeggio_page)
-                             else If cycle_pattern then arpeggio_page := 1;
-                         end;
+                                  kDOWN,
+                                  kENTER:
+                                    If (arpeggio_page < 255) then Inc(arpeggio_page)
+                                    else If cycle_pattern then arpeggio_page := 1;
+                                end;
 
-                       If NOT nope then
-                         Case songdata.macro_table[ptr_arpeggio_table^].
-                              arpeggio.data[arpeggio_page] of
-                           0: tstr := '+0';
-                           1..96: tstr := '+'+Num2str(songdata.macro_table[ptr_arpeggio_table^].
-                                                      arpeggio.data[arpeggio_page],10);
-                           $80..$80+12*8+1:
-                              tstr := note_layout[songdata.macro_table[ptr_arpeggio_table^].
-                                                  arpeggio.data[arpeggio_page]-$80];
-                         end;
+                              If NOT nope then
+                                Case songdata.macro_table[ptr_arpeggio_table^].
+                                     arpeggio.data[arpeggio_page] of
+                                  0: tstr := '+0';
+                                  1..96: tstr := '+'+Num2str(songdata.macro_table[ptr_arpeggio_table^].
+                                                             arpeggio.data[arpeggio_page],10);
+                                  $80..$80+12*8+1:
+                                     tstr := note_layout[songdata.macro_table[ptr_arpeggio_table^].
+                                                         arpeggio.data[arpeggio_page]-$80];
+                                end;
+                            end;
                      end;
                  until (nope or (is_environment.keystroke = kESC)) and
                        ((is_environment.keystroke = kESC) or
@@ -8782,6 +9072,7 @@ _jmp2:
                  is_setting.character_set  := ['+','0'..'9'];
                  is_environment.locate_pos := 2;
                  tstr := CHAR(LO(is_environment.keystroke));
+
                  If (CHAR(LO(is_environment.keystroke)) <> '+') then
                    begin
                      tstr := '+'+tstr;
@@ -8789,7 +9080,7 @@ _jmp2:
                    end;
 
                  Repeat
-                   tstr := InputStr(tstr,xstart+54,ystart+16,3,3,
+                   tstr := InputStr(tstr,xstart+55+window_area_inc_x,ystart+16+(window_area_inc_y DIV 2),3,3,
                                     macro_input_bckg+macro_input,
                                     macro_def_bckg+macro_def);
                    is_setting.append_enabled := TRUE;
@@ -8862,7 +9153,7 @@ _jmp2:
              Repeat
                temps := InputStr(byte2hex(songdata.macro_table[ptr_vibrato_table^].
                                          vibrato.length),
-                                 xstart+77,ystart+4,
+                                 xstart+77+window_area_inc_x,ystart+4,
                                  2,2,
                                  macro_input_bckg+macro_input,
                                  macro_def_bckg+macro_def);
@@ -8894,54 +9185,37 @@ _jmp2:
                          else pos := 13;
 
              Case is_environment.keystroke of
-               kCtLbr:  If (_4op_to_test = 0) then
-                          If (current_inst > 1) then
-                            begin
-                              Dec(current_inst);
-                              instrum_page := current_inst;
-                              STATUS_LINE_refresh;
-                              instr := current_inst;
-                              GOTO _jmp2;
-                            end;
+               kCtLbr:  If shift_pressed then
+                          begin
+                            If (songdata.macro_speedup > 1) then
+                              Dec(songdata.macro_speedup);
+                            macro_speedup := songdata.macro_speedup;
+                          end
+                        else If (_4op_to_test = 0) then
+                               If (current_inst > 1) then
+                                 begin
+                                   Dec(current_inst);
+                                   instrum_page := current_inst;
+                                   STATUS_LINE_refresh;
+                                   GOTO _jmp2;
+                                 end;
 
-               kCtRbr:  If (_4op_to_test = 0) then
-                          If (current_inst < 255) then
-                            begin
-                              Inc(current_inst);
-                              instrum_page := current_inst;
-                              reset_4op_to_test(1,NULL);
-                              STATUS_LINE_refresh;
-                              instr := current_inst;
-                              GOTO _jmp2;
-                            end;
-
-               kCtEND:  If NOT shift_pressed then
-                          If (songdata.macro_table[ptr_vibrato_table^].
-                              vibrato.length < 255) then
-                            Inc(songdata.macro_table[ptr_vibrato_table^].
-                              vibrato.length)
-                          else
-                        else If (songdata.macro_table[ptr_vibrato_table^].
-                                 vibrato.loop_begin < 255) then
-                               begin
-                                 Inc(songdata.macro_table[ptr_vibrato_table^].
-                                     vibrato.loop_begin);
-
-                                 While NOT ((songdata.macro_table[ptr_vibrato_table^].
-                                             vibrato.keyoff_pos > songdata.macro_table[ptr_vibrato_table^].
-                                                                  vibrato.loop_begin+
-                                                         min0(songdata.macro_table[ptr_vibrato_table^].
-                                                              vibrato.loop_length-1,0)) or
-                                            (songdata.macro_table[ptr_vibrato_table^].
-                                             vibrato.loop_begin = 0) or
-                                            (songdata.macro_table[ptr_vibrato_table^].
-                                             vibrato.loop_length = 0) or
-                                            (songdata.macro_table[ptr_vibrato_table^].
-                                             vibrato.keyoff_pos = 0)) do
-                                   Inc(songdata.macro_table[ptr_vibrato_table^].
-                                       vibrato.keyoff_pos);
-
-                               end;
+               kCtRbr:  If shift_pressed then
+                          begin
+                            Inc(songdata.macro_speedup);
+                            If (calc_max_speedup(tempo) < songdata.macro_speedup) then
+                              songdata.macro_speedup := calc_max_speedup(tempo);
+                            macro_speedup := songdata.macro_speedup;
+                          end
+                        else If (_4op_to_test = 0) then
+                               If (current_inst < 255) then
+                                 begin
+                                   Inc(current_inst);
+                                   instrum_page := current_inst;
+                                   reset_4op_to_test(1,NULL);
+                                   STATUS_LINE_refresh;
+                                   GOTO _jmp2;
+                                 end;
 
                kCtHOME:  If NOT shift_pressed then
                            If (songdata.macro_table[ptr_vibrato_table^].
@@ -8971,14 +9245,49 @@ _jmp2:
 
                                end;
 
-               kCtPgDN: If NOT shift_pressed then
-                          If (ptr_vibrato_table^ < 255) then
-                            Inc(ptr_vibrato_table^)
+               kCtEND:  If NOT shift_pressed then
+                          If (songdata.macro_table[ptr_vibrato_table^].
+                              vibrato.length < 255) then
+                            Inc(songdata.macro_table[ptr_vibrato_table^].
+                              vibrato.length)
                           else
                         else If (songdata.macro_table[ptr_vibrato_table^].
-                                 vibrato.loop_length < 255) then
+                                 vibrato.loop_begin < 255) then
                                begin
                                  Inc(songdata.macro_table[ptr_vibrato_table^].
+                                     vibrato.loop_begin);
+
+                                 While NOT ((songdata.macro_table[ptr_vibrato_table^].
+                                             vibrato.keyoff_pos > songdata.macro_table[ptr_vibrato_table^].
+                                                                  vibrato.loop_begin+
+                                                         min0(songdata.macro_table[ptr_vibrato_table^].
+                                                              vibrato.loop_length-1,0)) or
+                                            (songdata.macro_table[ptr_vibrato_table^].
+                                             vibrato.loop_begin = 0) or
+                                            (songdata.macro_table[ptr_vibrato_table^].
+                                             vibrato.loop_length = 0) or
+                                            (songdata.macro_table[ptr_vibrato_table^].
+                                             vibrato.keyoff_pos = 0)) do
+                                   Inc(songdata.macro_table[ptr_vibrato_table^].
+                                       vibrato.keyoff_pos);
+
+                               end;
+
+               kCtLEFT: If arp_vib_mode then pos := 8
+                        else If (ptr_arpeggio_table^ <> 0) then pos := 8
+                             else pos := 1;
+
+               kCtRGHT: If arp_vib_mode then pos := 8
+                        else pos := 1;
+
+               kCtPgUP: If NOT shift_pressed then
+                          If (ptr_vibrato_table^ > 1) then
+                            Dec(ptr_vibrato_table^)
+                          else
+                        else If (songdata.macro_table[ptr_vibrato_table^].
+                                 vibrato.loop_length > 0) then
+                               begin
+                                 Dec(songdata.macro_table[ptr_vibrato_table^].
                                      vibrato.loop_length);
 
                                  While NOT ((songdata.macro_table[ptr_vibrato_table^].
@@ -8997,14 +9306,14 @@ _jmp2:
 
                                end;
 
-               kCtPgUP: If NOT shift_pressed then
-                          If (ptr_vibrato_table^ > 1) then
-                            Dec(ptr_vibrato_table^)
+               kCtPgDN: If NOT shift_pressed then
+                          If (ptr_vibrato_table^ < 255) then
+                            Inc(ptr_vibrato_table^)
                           else
                         else If (songdata.macro_table[ptr_vibrato_table^].
-                                 vibrato.loop_length > 0) then
+                                 vibrato.loop_length < 255) then
                                begin
-                                 Dec(songdata.macro_table[ptr_vibrato_table^].
+                                 Inc(songdata.macro_table[ptr_vibrato_table^].
                                      vibrato.loop_length);
 
                                  While NOT ((songdata.macro_table[ptr_vibrato_table^].
@@ -9038,7 +9347,7 @@ _jmp2:
              Repeat
                temps := InputStr(byte2hex(songdata.macro_table[ptr_vibrato_table^].
                                          vibrato.speed),
-                                 xstart+77,ystart+5,
+                                 xstart+77+window_area_inc_x,ystart+5,
                                  2,2,
                                  macro_input_bckg+macro_input,
                                  macro_def_bckg+macro_def);
@@ -9066,54 +9375,37 @@ _jmp2:
                      (is_environment.keystroke = kShTAB) then pos := 14;
 
              Case is_environment.keystroke of
-               kCtLbr:  If (_4op_to_test = 0) then
-                          If (current_inst > 1) then
-                            begin
-                              Dec(current_inst);
-                              instrum_page := current_inst;
-                              STATUS_LINE_refresh;
-                              instr := current_inst;
-                              GOTO _jmp2;
-                            end;
+               kCtLbr:  If shift_pressed then
+                          begin
+                            If (songdata.macro_speedup > 1) then
+                              Dec(songdata.macro_speedup);
+                            macro_speedup := songdata.macro_speedup;
+                          end
+                        else If (_4op_to_test = 0) then
+                               If (current_inst > 1) then
+                                 begin
+                                   Dec(current_inst);
+                                   instrum_page := current_inst;
+                                   STATUS_LINE_refresh;
+                                   GOTO _jmp2;
+                                 end;
 
-               kCtRbr:  If (_4op_to_test = 0) then
-                          If (current_inst < 255) then
-                            begin
-                              Inc(current_inst);
-                              instrum_page := current_inst;
-                              reset_4op_to_test(1,NULL);
-                              STATUS_LINE_refresh;
-                              instr := current_inst;
-                              GOTO _jmp2;
-                            end;
-
-               kCtEND:  If NOT shift_pressed then
-                          If (songdata.macro_table[ptr_vibrato_table^].
-                              vibrato.length < 255) then
-                            Inc(songdata.macro_table[ptr_vibrato_table^].
-                              vibrato.length)
-                          else
-                        else If (songdata.macro_table[ptr_vibrato_table^].
-                                 vibrato.loop_begin < 255) then
-                               begin
-                                 Inc(songdata.macro_table[ptr_vibrato_table^].
-                                     vibrato.loop_begin);
-
-                                 While NOT ((songdata.macro_table[ptr_vibrato_table^].
-                                             vibrato.keyoff_pos > songdata.macro_table[ptr_vibrato_table^].
-                                                                  vibrato.loop_begin+
-                                                         min0(songdata.macro_table[ptr_vibrato_table^].
-                                                              vibrato.loop_length-1,0)) or
-                                            (songdata.macro_table[ptr_vibrato_table^].
-                                             vibrato.loop_begin = 0) or
-                                            (songdata.macro_table[ptr_vibrato_table^].
-                                             vibrato.loop_length = 0) or
-                                            (songdata.macro_table[ptr_vibrato_table^].
-                                             vibrato.keyoff_pos = 0)) do
-                                   Inc(songdata.macro_table[ptr_vibrato_table^].
-                                       vibrato.keyoff_pos);
-
-                               end;
+               kCtRbr:  If shift_pressed then
+                          begin
+                            Inc(songdata.macro_speedup);
+                            If (calc_max_speedup(tempo) < songdata.macro_speedup) then
+                              songdata.macro_speedup := calc_max_speedup(tempo);
+                            macro_speedup := songdata.macro_speedup;
+                          end
+                        else If (_4op_to_test = 0) then
+                               If (current_inst < 255) then
+                                 begin
+                                   Inc(current_inst);
+                                   instrum_page := current_inst;
+                                   reset_4op_to_test(1,NULL);
+                                   STATUS_LINE_refresh;
+                                   GOTO _jmp2;
+                                 end;
 
                kCtHOME:  If NOT shift_pressed then
                            If (songdata.macro_table[ptr_vibrato_table^].
@@ -9143,14 +9435,49 @@ _jmp2:
 
                                end;
 
-               kCtPgDN: If NOT shift_pressed then
-                          If (ptr_vibrato_table^ < 255) then
-                            Inc(ptr_vibrato_table^)
+               kCtEND:  If NOT shift_pressed then
+                          If (songdata.macro_table[ptr_vibrato_table^].
+                              vibrato.length < 255) then
+                            Inc(songdata.macro_table[ptr_vibrato_table^].
+                              vibrato.length)
                           else
                         else If (songdata.macro_table[ptr_vibrato_table^].
-                                 vibrato.loop_length < 255) then
+                                 vibrato.loop_begin < 255) then
                                begin
                                  Inc(songdata.macro_table[ptr_vibrato_table^].
+                                     vibrato.loop_begin);
+
+                                 While NOT ((songdata.macro_table[ptr_vibrato_table^].
+                                             vibrato.keyoff_pos > songdata.macro_table[ptr_vibrato_table^].
+                                                                  vibrato.loop_begin+
+                                                         min0(songdata.macro_table[ptr_vibrato_table^].
+                                                              vibrato.loop_length-1,0)) or
+                                            (songdata.macro_table[ptr_vibrato_table^].
+                                             vibrato.loop_begin = 0) or
+                                            (songdata.macro_table[ptr_vibrato_table^].
+                                             vibrato.loop_length = 0) or
+                                            (songdata.macro_table[ptr_vibrato_table^].
+                                             vibrato.keyoff_pos = 0)) do
+                                   Inc(songdata.macro_table[ptr_vibrato_table^].
+                                       vibrato.keyoff_pos);
+
+                               end;
+
+               kCtLEFT: If arp_vib_mode then pos := 9
+                        else If (ptr_arpeggio_table^ <> 0) then pos := 9
+                             else pos := 1;
+
+               kCtRGHT: If arp_vib_mode then pos := 9
+                        else pos := 1;
+
+               kCtPgUP: If NOT shift_pressed then
+                          If (ptr_vibrato_table^ > 1) then
+                            Dec(ptr_vibrato_table^)
+                          else
+                        else If (songdata.macro_table[ptr_vibrato_table^].
+                                 vibrato.loop_length > 0) then
+                               begin
+                                 Dec(songdata.macro_table[ptr_vibrato_table^].
                                      vibrato.loop_length);
 
                                  While NOT ((songdata.macro_table[ptr_vibrato_table^].
@@ -9169,14 +9496,14 @@ _jmp2:
 
                                end;
 
-               kCtPgUP: If NOT shift_pressed then
-                          If (ptr_vibrato_table^ > 1) then
-                            Dec(ptr_vibrato_table^)
+               kCtPgDN: If NOT shift_pressed then
+                          If (ptr_vibrato_table^ < 255) then
+                            Inc(ptr_vibrato_table^)
                           else
                         else If (songdata.macro_table[ptr_vibrato_table^].
-                                 vibrato.loop_length > 0) then
+                                 vibrato.loop_length < 255) then
                                begin
-                                 Dec(songdata.macro_table[ptr_vibrato_table^].
+                                 Inc(songdata.macro_table[ptr_vibrato_table^].
                                      vibrato.loop_length);
 
                                  While NOT ((songdata.macro_table[ptr_vibrato_table^].
@@ -9210,7 +9537,7 @@ _jmp2:
              Repeat
                temps := InputStr(byte2hex(songdata.macro_table[ptr_vibrato_table^].
                                          vibrato.delay),
-                                 xstart+77,ystart+6,
+                                 xstart+77+window_area_inc_x,ystart+6,
                                  2,2,
                                  macro_input_bckg+macro_input,
                                  macro_def_bckg+macro_def);
@@ -9238,26 +9565,65 @@ _jmp2:
                      (is_environment.keystroke = kShTAB) then pos := 15;
 
              Case is_environment.keystroke of
-               kCtLbr:  If (_4op_to_test = 0) then
-                          If (current_inst > 1) then
-                            begin
-                              Dec(current_inst);
-                              instrum_page := current_inst;
-                              STATUS_LINE_refresh;
-                              instr := current_inst;
-                              GOTO _jmp2;
-                            end;
+               kCtLbr:  If shift_pressed then
+                          begin
+                            If (songdata.macro_speedup > 1) then
+                              Dec(songdata.macro_speedup);
+                            macro_speedup := songdata.macro_speedup;
+                          end
+                        else If (_4op_to_test = 0) then
+                               If (current_inst > 1) then
+                                 begin
+                                   Dec(current_inst);
+                                   instrum_page := current_inst;
+                                   STATUS_LINE_refresh;
+                                   GOTO _jmp2;
+                                 end;
 
-               kCtRbr:  If (_4op_to_test = 0) then
-                          If (current_inst < 255) then
-                            begin
-                              Inc(current_inst);
-                              instrum_page := current_inst;
-                              reset_4op_to_test(1,NULL);
-                              STATUS_LINE_refresh;
-                              instr := current_inst;
-                              GOTO _jmp2;
-                            end;
+               kCtRbr:  If shift_pressed then
+                          begin
+                            Inc(songdata.macro_speedup);
+                            If (calc_max_speedup(tempo) < songdata.macro_speedup) then
+                              songdata.macro_speedup := calc_max_speedup(tempo);
+                            macro_speedup := songdata.macro_speedup;
+                          end
+                        else If (_4op_to_test = 0) then
+                               If (current_inst < 255) then
+                                 begin
+                                   Inc(current_inst);
+                                   instrum_page := current_inst;
+                                   reset_4op_to_test(1,NULL);
+                                   STATUS_LINE_refresh;
+                                   GOTO _jmp2;
+                                 end;
+
+               kCtHOME:  If NOT shift_pressed then
+                           If (songdata.macro_table[ptr_vibrato_table^].
+                              vibrato.length > 0) then
+                             Dec(songdata.macro_table[ptr_vibrato_table^].
+                                 vibrato.length)
+                           else
+                        else If (songdata.macro_table[ptr_vibrato_table^].
+                                 vibrato.loop_begin > 0) then
+                               begin
+                                 Dec(songdata.macro_table[ptr_vibrato_table^].
+                                     vibrato.loop_begin);
+
+                                 While NOT ((songdata.macro_table[ptr_vibrato_table^].
+                                             vibrato.keyoff_pos > songdata.macro_table[ptr_vibrato_table^].
+                                                                  vibrato.loop_begin+
+                                                         min0(songdata.macro_table[ptr_vibrato_table^].
+                                                              vibrato.loop_length-1,0)) or
+                                            (songdata.macro_table[ptr_vibrato_table^].
+                                             vibrato.loop_begin = 0) or
+                                            (songdata.macro_table[ptr_vibrato_table^].
+                                             vibrato.loop_length = 0) or
+                                            (songdata.macro_table[ptr_vibrato_table^].
+                                             vibrato.keyoff_pos = 0)) do
+                                   Inc(songdata.macro_table[ptr_vibrato_table^].
+                                       vibrato.keyoff_pos);
+
+                               end;
 
                kCtEND:  If NOT shift_pressed then
                           If (songdata.macro_table[ptr_vibrato_table^].
@@ -9287,17 +9653,22 @@ _jmp2:
 
                                end;
 
-               kCtHOME:  If NOT shift_pressed then
-                           If (songdata.macro_table[ptr_vibrato_table^].
-                              vibrato.length > 0) then
-                             Dec(songdata.macro_table[ptr_vibrato_table^].
-                                 vibrato.length)
-                           else
+               kCtLEFT: If arp_vib_mode then pos := 8
+                        else If (ptr_arpeggio_table^ <> 0) then pos := 8
+                             else pos := 1;
+
+               kCtRGHT: If arp_vib_mode then pos := 8
+                        else pos := 1;
+
+               kCtPgUP: If NOT shift_pressed then
+                          If (ptr_vibrato_table^ > 1) then
+                            Dec(ptr_vibrato_table^)
+                          else
                         else If (songdata.macro_table[ptr_vibrato_table^].
-                                 vibrato.loop_begin > 0) then
+                                 vibrato.loop_length > 0) then
                                begin
                                  Dec(songdata.macro_table[ptr_vibrato_table^].
-                                     vibrato.loop_begin);
+                                     vibrato.loop_length);
 
                                  While NOT ((songdata.macro_table[ptr_vibrato_table^].
                                              vibrato.keyoff_pos > songdata.macro_table[ptr_vibrato_table^].
@@ -9341,32 +9712,6 @@ _jmp2:
 
                                end;
 
-               kCtPgUP: If NOT shift_pressed then
-                          If (ptr_vibrato_table^ > 1) then
-                            Dec(ptr_vibrato_table^)
-                          else
-                        else If (songdata.macro_table[ptr_vibrato_table^].
-                                 vibrato.loop_length > 0) then
-                               begin
-                                 Dec(songdata.macro_table[ptr_vibrato_table^].
-                                     vibrato.loop_length);
-
-                                 While NOT ((songdata.macro_table[ptr_vibrato_table^].
-                                             vibrato.keyoff_pos > songdata.macro_table[ptr_vibrato_table^].
-                                                                  vibrato.loop_begin+
-                                                         min0(songdata.macro_table[ptr_vibrato_table^].
-                                                              vibrato.loop_length-1,0)) or
-                                            (songdata.macro_table[ptr_vibrato_table^].
-                                             vibrato.loop_begin = 0) or
-                                            (songdata.macro_table[ptr_vibrato_table^].
-                                             vibrato.loop_length = 0) or
-                                            (songdata.macro_table[ptr_vibrato_table^].
-                                             vibrato.keyoff_pos = 0)) do
-                                   Inc(songdata.macro_table[ptr_vibrato_table^].
-                                       vibrato.keyoff_pos);
-
-                               end;
-
                kCtrlC:  begin
                           clipboard.object_type := objMacroTable;
                           clipboard.mcrtab_type := mttVibrato_table;
@@ -9382,7 +9727,7 @@ _jmp2:
              Repeat
                temps := InputStr(byte2hex(songdata.macro_table[ptr_vibrato_table^].
                                          vibrato.loop_begin),
-                                 xstart+77,ystart+7,
+                                 xstart+77+window_area_inc_x,ystart+7,
                                  2,2,
                                  macro_input_bckg+macro_input,
                                  macro_def_bckg+macro_def);
@@ -9424,26 +9769,65 @@ _jmp2:
                      (is_environment.keystroke = kShTAB) then pos := 16;
 
              Case is_environment.keystroke of
-               kCtLbr:  If (_4op_to_test = 0) then
-                          If (current_inst > 1) then
-                            begin
-                              Dec(current_inst);
-                              instrum_page := current_inst;
-                              STATUS_LINE_refresh;
-                              instr := current_inst;
-                              GOTO _jmp2;
-                            end;
+               kCtLbr:  If shift_pressed then
+                          begin
+                            If (songdata.macro_speedup > 1) then
+                              Dec(songdata.macro_speedup);
+                            macro_speedup := songdata.macro_speedup;
+                          end
+                        else If (_4op_to_test = 0) then
+                               If (current_inst > 1) then
+                                 begin
+                                   Dec(current_inst);
+                                   instrum_page := current_inst;
+                                   STATUS_LINE_refresh;
+                                   GOTO _jmp2;
+                                 end;
 
-               kCtRbr:  If (_4op_to_test = 0) then
-                          If (current_inst < 255) then
-                            begin
-                              Inc(current_inst);
-                              instrum_page := current_inst;
-                              reset_4op_to_test(1,NULL);
-                              STATUS_LINE_refresh;
-                              instr := current_inst;
-                              GOTO _jmp2;
-                            end;
+               kCtRbr:  If shift_pressed then
+                          begin
+                            Inc(songdata.macro_speedup);
+                            If (calc_max_speedup(tempo) < songdata.macro_speedup) then
+                              songdata.macro_speedup := calc_max_speedup(tempo);
+                            macro_speedup := songdata.macro_speedup;
+                          end
+                        else If (_4op_to_test = 0) then
+                               If (current_inst < 255) then
+                                 begin
+                                   Inc(current_inst);
+                                   instrum_page := current_inst;
+                                   reset_4op_to_test(1,NULL);
+                                   STATUS_LINE_refresh;
+                                   GOTO _jmp2;
+                                 end;
+
+               kCtHOME:  If NOT shift_pressed then
+                           If (songdata.macro_table[ptr_vibrato_table^].
+                              vibrato.length > 0) then
+                             Dec(songdata.macro_table[ptr_vibrato_table^].
+                                 vibrato.length)
+                           else
+                        else If (songdata.macro_table[ptr_vibrato_table^].
+                                 vibrato.loop_begin > 0) then
+                               begin
+                                 Dec(songdata.macro_table[ptr_vibrato_table^].
+                                     vibrato.loop_begin);
+
+                                 While NOT ((songdata.macro_table[ptr_vibrato_table^].
+                                             vibrato.keyoff_pos > songdata.macro_table[ptr_vibrato_table^].
+                                                                  vibrato.loop_begin+
+                                                         min0(songdata.macro_table[ptr_vibrato_table^].
+                                                              vibrato.loop_length-1,0)) or
+                                            (songdata.macro_table[ptr_vibrato_table^].
+                                             vibrato.loop_begin = 0) or
+                                            (songdata.macro_table[ptr_vibrato_table^].
+                                             vibrato.loop_length = 0) or
+                                            (songdata.macro_table[ptr_vibrato_table^].
+                                             vibrato.keyoff_pos = 0)) do
+                                   Inc(songdata.macro_table[ptr_vibrato_table^].
+                                       vibrato.keyoff_pos);
+
+                               end;
 
                kCtEND:  If NOT shift_pressed then
                           If (songdata.macro_table[ptr_vibrato_table^].
@@ -9473,17 +9857,22 @@ _jmp2:
 
                                end;
 
-               kCtHOME:  If NOT shift_pressed then
-                           If (songdata.macro_table[ptr_vibrato_table^].
-                              vibrato.length > 0) then
-                             Dec(songdata.macro_table[ptr_vibrato_table^].
-                                 vibrato.length)
-                           else
+               kCtLEFT: If arp_vib_mode then pos := 10
+                        else If (ptr_arpeggio_table^ <> 0) then pos := 10
+                             else pos := 2;
+
+               kCtRGHT: If arp_vib_mode then pos := 10
+                        else pos := 2;
+
+               kCtPgUP: If NOT shift_pressed then
+                          If (ptr_vibrato_table^ > 1) then
+                            Dec(ptr_vibrato_table^)
+                          else
                         else If (songdata.macro_table[ptr_vibrato_table^].
-                                 vibrato.loop_begin > 0) then
+                                 vibrato.loop_length > 0) then
                                begin
                                  Dec(songdata.macro_table[ptr_vibrato_table^].
-                                     vibrato.loop_begin);
+                                     vibrato.loop_length);
 
                                  While NOT ((songdata.macro_table[ptr_vibrato_table^].
                                              vibrato.keyoff_pos > songdata.macro_table[ptr_vibrato_table^].
@@ -9527,32 +9916,6 @@ _jmp2:
 
                                end;
 
-               kCtPgUP: If NOT shift_pressed then
-                          If (ptr_vibrato_table^ > 1) then
-                            Dec(ptr_vibrato_table^)
-                          else
-                        else If (songdata.macro_table[ptr_vibrato_table^].
-                                 vibrato.loop_length > 0) then
-                               begin
-                                 Dec(songdata.macro_table[ptr_vibrato_table^].
-                                     vibrato.loop_length);
-
-                                 While NOT ((songdata.macro_table[ptr_vibrato_table^].
-                                             vibrato.keyoff_pos > songdata.macro_table[ptr_vibrato_table^].
-                                                                  vibrato.loop_begin+
-                                                         min0(songdata.macro_table[ptr_vibrato_table^].
-                                                              vibrato.loop_length-1,0)) or
-                                            (songdata.macro_table[ptr_vibrato_table^].
-                                             vibrato.loop_begin = 0) or
-                                            (songdata.macro_table[ptr_vibrato_table^].
-                                             vibrato.loop_length = 0) or
-                                            (songdata.macro_table[ptr_vibrato_table^].
-                                             vibrato.keyoff_pos = 0)) do
-                                   Inc(songdata.macro_table[ptr_vibrato_table^].
-                                       vibrato.keyoff_pos);
-
-                               end;
-
                kCtrlC:  begin
                           clipboard.object_type := objMacroTable;
                           clipboard.mcrtab_type := mttVibrato_table;
@@ -9568,7 +9931,7 @@ _jmp2:
              Repeat
                temps := InputStr(byte2hex(songdata.macro_table[ptr_vibrato_table^].
                                          vibrato.loop_length),
-                                 xstart+77,ystart+8,
+                                 xstart+77+window_area_inc_x,ystart+8,
                                  2,2,
                                  macro_input_bckg+macro_input,
                                  macro_def_bckg+macro_def);
@@ -9610,26 +9973,65 @@ _jmp2:
                      (is_environment.keystroke = kShTAB) then pos := 17;
 
              Case is_environment.keystroke of
-               kCtLbr:  If (_4op_to_test = 0) then
-                          If (current_inst > 1) then
-                            begin
-                              Dec(current_inst);
-                              instrum_page := current_inst;
-                              STATUS_LINE_refresh;
-                              instr := current_inst;
-                              GOTO _jmp2;
-                            end;
+               kCtLbr:  If shift_pressed then
+                          begin
+                            If (songdata.macro_speedup > 1) then
+                              Dec(songdata.macro_speedup);
+                            macro_speedup := songdata.macro_speedup;
+                          end
+                        else If (_4op_to_test = 0) then
+                               If (current_inst > 1) then
+                                 begin
+                                   Dec(current_inst);
+                                   instrum_page := current_inst;
+                                   STATUS_LINE_refresh;
+                                   GOTO _jmp2;
+                                 end;
 
-               kCtRbr:  If (_4op_to_test = 0) then
-                          If (current_inst < 255) then
-                            begin
-                              Inc(current_inst);
-                              instrum_page := current_inst;
-                              reset_4op_to_test(1,NULL);
-                              STATUS_LINE_refresh;
-                              instr := current_inst;
-                              GOTO _jmp2;
-                            end;
+               kCtRbr:  If shift_pressed then
+                          begin
+                            Inc(songdata.macro_speedup);
+                            If (calc_max_speedup(tempo) < songdata.macro_speedup) then
+                              songdata.macro_speedup := calc_max_speedup(tempo);
+                            macro_speedup := songdata.macro_speedup;
+                          end
+                        else If (_4op_to_test = 0) then
+                               If (current_inst < 255) then
+                                 begin
+                                   Inc(current_inst);
+                                   instrum_page := current_inst;
+                                   reset_4op_to_test(1,NULL);
+                                   STATUS_LINE_refresh;
+                                   GOTO _jmp2;
+                                 end;
+
+               kCtHOME:  If NOT shift_pressed then
+                           If (songdata.macro_table[ptr_vibrato_table^].
+                              vibrato.length > 0) then
+                             Dec(songdata.macro_table[ptr_vibrato_table^].
+                                 vibrato.length)
+                           else
+                        else If (songdata.macro_table[ptr_vibrato_table^].
+                                 vibrato.loop_begin > 0) then
+                               begin
+                                 Dec(songdata.macro_table[ptr_vibrato_table^].
+                                     vibrato.loop_begin);
+
+                                 While NOT ((songdata.macro_table[ptr_vibrato_table^].
+                                             vibrato.keyoff_pos > songdata.macro_table[ptr_vibrato_table^].
+                                                                  vibrato.loop_begin+
+                                                         min0(songdata.macro_table[ptr_vibrato_table^].
+                                                              vibrato.loop_length-1,0)) or
+                                            (songdata.macro_table[ptr_vibrato_table^].
+                                             vibrato.loop_begin = 0) or
+                                            (songdata.macro_table[ptr_vibrato_table^].
+                                             vibrato.loop_length = 0) or
+                                            (songdata.macro_table[ptr_vibrato_table^].
+                                             vibrato.keyoff_pos = 0)) do
+                                   Inc(songdata.macro_table[ptr_vibrato_table^].
+                                       vibrato.keyoff_pos);
+
+                               end;
 
                kCtEND:  If NOT shift_pressed then
                           If (songdata.macro_table[ptr_vibrato_table^].
@@ -9659,17 +10061,22 @@ _jmp2:
 
                                end;
 
-               kCtHOME:  If NOT shift_pressed then
-                           If (songdata.macro_table[ptr_vibrato_table^].
-                              vibrato.length > 0) then
-                             Dec(songdata.macro_table[ptr_vibrato_table^].
-                                 vibrato.length)
-                           else
+               kCtLEFT: If arp_vib_mode then pos := 11
+                        else If (ptr_arpeggio_table^ <> 0) then pos := 11
+                             else pos := 3;
+
+               kCtRGHT: If arp_vib_mode then pos := 11
+                        else pos := 3;
+
+               kCtPgUP: If NOT shift_pressed then
+                          If (ptr_vibrato_table^ > 1) then
+                            Dec(ptr_vibrato_table^)
+                          else
                         else If (songdata.macro_table[ptr_vibrato_table^].
-                                 vibrato.loop_begin > 0) then
+                                 vibrato.loop_length > 0) then
                                begin
                                  Dec(songdata.macro_table[ptr_vibrato_table^].
-                                     vibrato.loop_begin);
+                                     vibrato.loop_length);
 
                                  While NOT ((songdata.macro_table[ptr_vibrato_table^].
                                              vibrato.keyoff_pos > songdata.macro_table[ptr_vibrato_table^].
@@ -9713,32 +10120,6 @@ _jmp2:
 
                                end;
 
-               kCtPgUP: If NOT shift_pressed then
-                          If (ptr_vibrato_table^ > 1) then
-                            Dec(ptr_vibrato_table^)
-                          else
-                        else If (songdata.macro_table[ptr_vibrato_table^].
-                                 vibrato.loop_length > 0) then
-                               begin
-                                 Dec(songdata.macro_table[ptr_vibrato_table^].
-                                     vibrato.loop_length);
-
-                                 While NOT ((songdata.macro_table[ptr_vibrato_table^].
-                                             vibrato.keyoff_pos > songdata.macro_table[ptr_vibrato_table^].
-                                                                  vibrato.loop_begin+
-                                                         min0(songdata.macro_table[ptr_vibrato_table^].
-                                                              vibrato.loop_length-1,0)) or
-                                            (songdata.macro_table[ptr_vibrato_table^].
-                                             vibrato.loop_begin = 0) or
-                                            (songdata.macro_table[ptr_vibrato_table^].
-                                             vibrato.loop_length = 0) or
-                                            (songdata.macro_table[ptr_vibrato_table^].
-                                             vibrato.keyoff_pos = 0)) do
-                                   Inc(songdata.macro_table[ptr_vibrato_table^].
-                                       vibrato.keyoff_pos);
-
-                               end;
-
                kCtrlC:  begin
                           clipboard.object_type := objMacroTable;
                           clipboard.mcrtab_type := mttVibrato_table;
@@ -9754,7 +10135,7 @@ _jmp2:
              Repeat
                temps := InputStr(byte2hex(songdata.macro_table[ptr_vibrato_table^].
                                          vibrato.keyoff_pos),
-                                 xstart+77,ystart+9,
+                                 xstart+77+window_area_inc_x,ystart+9,
                                  2,2,
                                  macro_input_bckg+macro_input,
                                  macro_def_bckg+macro_def);
@@ -9818,54 +10199,37 @@ _jmp2:
                      (is_environment.keystroke = kShTAB) then pos := 18;
 
              Case is_environment.keystroke of
-               kCtLbr:  If (_4op_to_test = 0) then
-                          If (current_inst > 1) then
-                            begin
-                              Dec(current_inst);
-                              instrum_page := current_inst;
-                              STATUS_LINE_refresh;
-                              instr := current_inst;
-                              GOTO _jmp2;
-                            end;
+               kCtLbr:  If shift_pressed then
+                          begin
+                            If (songdata.macro_speedup > 1) then
+                              Dec(songdata.macro_speedup);
+                            macro_speedup := songdata.macro_speedup;
+                          end
+                        else If (_4op_to_test = 0) then
+                               If (current_inst > 1) then
+                                 begin
+                                   Dec(current_inst);
+                                   instrum_page := current_inst;
+                                   STATUS_LINE_refresh;
+                                   GOTO _jmp2;
+                                 end;
 
-               kCtRbr:  If (_4op_to_test = 0) then
-                          If (current_inst < 255) then
-                            begin
-                              Inc(current_inst);
-                              instrum_page := current_inst;
-                              reset_4op_to_test(1,NULL);
-                              STATUS_LINE_refresh;
-                              instr := current_inst;
-                              GOTO _jmp2;
-                            end;
-
-               kCtEND:  If NOT shift_pressed then
-                          If (songdata.macro_table[ptr_vibrato_table^].
-                              vibrato.length < 255) then
-                            Inc(songdata.macro_table[ptr_vibrato_table^].
-                              vibrato.length)
-                          else
-                        else If (songdata.macro_table[ptr_vibrato_table^].
-                                 vibrato.loop_begin < 255) then
-                               begin
-                                 Inc(songdata.macro_table[ptr_vibrato_table^].
-                                     vibrato.loop_begin);
-
-                                 While NOT ((songdata.macro_table[ptr_vibrato_table^].
-                                             vibrato.keyoff_pos > songdata.macro_table[ptr_vibrato_table^].
-                                                                  vibrato.loop_begin+
-                                                         min0(songdata.macro_table[ptr_vibrato_table^].
-                                                              vibrato.loop_length-1,0)) or
-                                            (songdata.macro_table[ptr_vibrato_table^].
-                                             vibrato.loop_begin = 0) or
-                                            (songdata.macro_table[ptr_vibrato_table^].
-                                             vibrato.loop_length = 0) or
-                                            (songdata.macro_table[ptr_vibrato_table^].
-                                             vibrato.keyoff_pos = 0)) do
-                                   Inc(songdata.macro_table[ptr_vibrato_table^].
-                                       vibrato.keyoff_pos);
-
-                               end;
+               kCtRbr:  If shift_pressed then
+                          begin
+                            Inc(songdata.macro_speedup);
+                            If (calc_max_speedup(tempo) < songdata.macro_speedup) then
+                              songdata.macro_speedup := calc_max_speedup(tempo);
+                            macro_speedup := songdata.macro_speedup;
+                          end
+                        else If (_4op_to_test = 0) then
+                               If (current_inst < 255) then
+                                 begin
+                                   Inc(current_inst);
+                                   instrum_page := current_inst;
+                                   reset_4op_to_test(1,NULL);
+                                   STATUS_LINE_refresh;
+                                   GOTO _jmp2;
+                                 end;
 
                kCtHOME:  If NOT shift_pressed then
                            If (songdata.macro_table[ptr_vibrato_table^].
@@ -9895,14 +10259,49 @@ _jmp2:
 
                                end;
 
-               kCtPgDN: If NOT shift_pressed then
-                          If (ptr_vibrato_table^ < 255) then
-                            Inc(ptr_vibrato_table^)
+               kCtEND:  If NOT shift_pressed then
+                          If (songdata.macro_table[ptr_vibrato_table^].
+                              vibrato.length < 255) then
+                            Inc(songdata.macro_table[ptr_vibrato_table^].
+                              vibrato.length)
                           else
                         else If (songdata.macro_table[ptr_vibrato_table^].
-                                 vibrato.loop_length < 255) then
+                                 vibrato.loop_begin < 255) then
                                begin
                                  Inc(songdata.macro_table[ptr_vibrato_table^].
+                                     vibrato.loop_begin);
+
+                                 While NOT ((songdata.macro_table[ptr_vibrato_table^].
+                                             vibrato.keyoff_pos > songdata.macro_table[ptr_vibrato_table^].
+                                                                  vibrato.loop_begin+
+                                                         min0(songdata.macro_table[ptr_vibrato_table^].
+                                                              vibrato.loop_length-1,0)) or
+                                            (songdata.macro_table[ptr_vibrato_table^].
+                                             vibrato.loop_begin = 0) or
+                                            (songdata.macro_table[ptr_vibrato_table^].
+                                             vibrato.loop_length = 0) or
+                                            (songdata.macro_table[ptr_vibrato_table^].
+                                             vibrato.keyoff_pos = 0)) do
+                                   Inc(songdata.macro_table[ptr_vibrato_table^].
+                                       vibrato.keyoff_pos);
+
+                               end;
+
+               kCtLEFT: If arp_vib_mode then pos := 12
+                        else If (ptr_arpeggio_table^ <> 0) then pos := 12
+                             else pos := 4;
+
+               kCtRGHT: If arp_vib_mode then pos := 12
+                        else pos := 4;
+
+               kCtPgUP: If NOT shift_pressed then
+                          If (ptr_vibrato_table^ > 1) then
+                            Dec(ptr_vibrato_table^)
+                          else
+                        else If (songdata.macro_table[ptr_vibrato_table^].
+                                 vibrato.loop_length > 0) then
+                               begin
+                                 Dec(songdata.macro_table[ptr_vibrato_table^].
                                      vibrato.loop_length);
 
                                  While NOT ((songdata.macro_table[ptr_vibrato_table^].
@@ -9921,14 +10320,14 @@ _jmp2:
 
                                end;
 
-               kCtPgUP: If NOT shift_pressed then
-                          If (ptr_vibrato_table^ > 1) then
-                            Dec(ptr_vibrato_table^)
+               kCtPgDN: If NOT shift_pressed then
+                          If (ptr_vibrato_table^ < 255) then
+                            Inc(ptr_vibrato_table^)
                           else
                         else If (songdata.macro_table[ptr_vibrato_table^].
-                                 vibrato.loop_length > 0) then
+                                 vibrato.loop_length < 255) then
                                begin
-                                 Dec(songdata.macro_table[ptr_vibrato_table^].
+                                 Inc(songdata.macro_table[ptr_vibrato_table^].
                                      vibrato.loop_length);
 
                                  While NOT ((songdata.macro_table[ptr_vibrato_table^].
@@ -9958,57 +10357,40 @@ _jmp2:
            end;
 
        20: begin
-             GotoXY(xstart+72+vibrato_hpos-1,ystart+16);
+             GotoXY(xstart+72+vibrato_hpos-1+window_area_inc_x,ystart+16+(window_area_inc_y DIV 2));
              is_environment.keystroke := getkey;
              Case is_environment.keystroke of
-               kCtLbr:  If (_4op_to_test = 0) then
-                          If (current_inst > 1) then
-                            begin
-                              Dec(current_inst);
-                              instrum_page := current_inst;
-                              STATUS_LINE_refresh;
-                              instr := current_inst;
-                              GOTO _jmp2;
-                            end;
+               kCtLbr:  If shift_pressed then
+                          begin
+                            If (songdata.macro_speedup > 1) then
+                              Dec(songdata.macro_speedup);
+                            macro_speedup := songdata.macro_speedup;
+                          end
+                        else If (_4op_to_test = 0) then
+                               If (current_inst > 1) then
+                                 begin
+                                   Dec(current_inst);
+                                   instrum_page := current_inst;
+                                   STATUS_LINE_refresh;
+                                   GOTO _jmp2;
+                                 end;
 
-               kCtRbr:  If (_4op_to_test = 0) then
-                          If (current_inst < 255) then
-                            begin
-                              Inc(current_inst);
-                              instrum_page := current_inst;
-                              reset_4op_to_test(1,NULL);
-                              STATUS_LINE_refresh;
-                              instr := current_inst;
-                              GOTO _jmp2;
-                            end;
-
-               kCtEND:  If NOT shift_pressed then
-                          If (songdata.macro_table[ptr_vibrato_table^].
-                              vibrato.length < 255) then
-                            Inc(songdata.macro_table[ptr_vibrato_table^].
-                              vibrato.length)
-                          else
-                        else If (songdata.macro_table[ptr_vibrato_table^].
-                                 vibrato.loop_begin < 255) then
-                               begin
-                                 Inc(songdata.macro_table[ptr_vibrato_table^].
-                                     vibrato.loop_begin);
-
-                                 While NOT ((songdata.macro_table[ptr_vibrato_table^].
-                                             vibrato.keyoff_pos > songdata.macro_table[ptr_vibrato_table^].
-                                                                  vibrato.loop_begin+
-                                                         min0(songdata.macro_table[ptr_vibrato_table^].
-                                                              vibrato.loop_length-1,0)) or
-                                            (songdata.macro_table[ptr_vibrato_table^].
-                                             vibrato.loop_begin = 0) or
-                                            (songdata.macro_table[ptr_vibrato_table^].
-                                             vibrato.loop_length = 0) or
-                                            (songdata.macro_table[ptr_vibrato_table^].
-                                             vibrato.keyoff_pos = 0)) do
-                                   Inc(songdata.macro_table[ptr_vibrato_table^].
-                                       vibrato.keyoff_pos);
-
-                               end;
+               kCtRbr:  If shift_pressed then
+                          begin
+                            Inc(songdata.macro_speedup);
+                            If (calc_max_speedup(tempo) < songdata.macro_speedup) then
+                              songdata.macro_speedup := calc_max_speedup(tempo);
+                            macro_speedup := songdata.macro_speedup;
+                          end
+                        else If (_4op_to_test = 0) then
+                               If (current_inst < 255) then
+                                 begin
+                                   Inc(current_inst);
+                                   instrum_page := current_inst;
+                                   reset_4op_to_test(1,NULL);
+                                   STATUS_LINE_refresh;
+                                   GOTO _jmp2;
+                                 end;
 
                kCtHOME:  If NOT shift_pressed then
                            If (songdata.macro_table[ptr_vibrato_table^].
@@ -10038,15 +10420,17 @@ _jmp2:
 
                                end;
 
-               kCtPgDN: If NOT shift_pressed then
-                          If (ptr_vibrato_table^ < 255) then
-                            Inc(ptr_vibrato_table^)
+               kCtEND:  If NOT shift_pressed then
+                          If (songdata.macro_table[ptr_vibrato_table^].
+                              vibrato.length < 255) then
+                            Inc(songdata.macro_table[ptr_vibrato_table^].
+                              vibrato.length)
                           else
                         else If (songdata.macro_table[ptr_vibrato_table^].
-                                 vibrato.loop_length < 255) then
+                                 vibrato.loop_begin < 255) then
                                begin
                                  Inc(songdata.macro_table[ptr_vibrato_table^].
-                                     vibrato.loop_length);
+                                     vibrato.loop_begin);
 
                                  While NOT ((songdata.macro_table[ptr_vibrato_table^].
                                              vibrato.keyoff_pos > songdata.macro_table[ptr_vibrato_table^].
@@ -10090,12 +10474,47 @@ _jmp2:
 
                                end;
 
-               kCtLEFT: If NOT arp_vib_mode then
-                          If (ptr_arpeggio_table^ <> 0) then pos := 13
-                          else pos := 7
-                        else pos := 13;
-               kCtRGHT: If NOT arp_vib_mode then pos := 7
-                        else pos := 13;
+               kCtPgDN: If NOT shift_pressed then
+                          If (ptr_vibrato_table^ < 255) then
+                            Inc(ptr_vibrato_table^)
+                          else
+                        else If (songdata.macro_table[ptr_vibrato_table^].
+                                 vibrato.loop_length < 255) then
+                               begin
+                                 Inc(songdata.macro_table[ptr_vibrato_table^].
+                                     vibrato.loop_length);
+
+                                 While NOT ((songdata.macro_table[ptr_vibrato_table^].
+                                             vibrato.keyoff_pos > songdata.macro_table[ptr_vibrato_table^].
+                                                                  vibrato.loop_begin+
+                                                         min0(songdata.macro_table[ptr_vibrato_table^].
+                                                              vibrato.loop_length-1,0)) or
+                                            (songdata.macro_table[ptr_vibrato_table^].
+                                             vibrato.loop_begin = 0) or
+                                            (songdata.macro_table[ptr_vibrato_table^].
+                                             vibrato.loop_length = 0) or
+                                            (songdata.macro_table[ptr_vibrato_table^].
+                                             vibrato.keyoff_pos = 0)) do
+                                   Inc(songdata.macro_table[ptr_vibrato_table^].
+                                       vibrato.keyoff_pos);
+
+                               end;
+
+               kCtLEFT: If NOT shift_pressed then
+                          If NOT arp_vib_mode then
+                            If (ptr_arpeggio_table^ <> 0) then pos := 13
+                            else pos := 7
+                          else pos := 13
+                        else If (vibrato_page > songdata.macro_table[ptr_vibrato_table^].vibrato.length) then
+                               vibrato_page := min(1,songdata.macro_table[ptr_vibrato_table^].vibrato.length)
+                             else vibrato_page := 1;
+
+               kCtRGHT: If NOT shift_pressed then
+                          If NOT arp_vib_mode then pos := 7
+                          else pos := 13
+                        else If (vibrato_page < songdata.macro_table[ptr_vibrato_table^].vibrato.length) then
+                               vibrato_page := min(1,songdata.macro_table[ptr_vibrato_table^].vibrato.length)
+                             else vibrato_page := 255;
 
                kUP,kShUP: If (vibrato_page > 1) then Dec(vibrato_page)
                           else If cycle_pattern then vibrato_page := 255;
@@ -10260,7 +10679,7 @@ _jmp2:
                                 If (vibrato_page < 255) then Inc(vibrato_page)
                                 else If cycle_pattern then vibrato_page := 1;
                               end
-                            else Inc(vibrato_hpos);  
+                            else Inc(vibrato_hpos);
                      end;
                  end;
            end;
@@ -10271,7 +10690,7 @@ _jmp2:
           refresh;
           HideCursor;
           _pip_dest := v_ofs;
-          If (_4op_to_test <> 0) then _macro_preview_init(1,byte(NOT NULL))
+          If (_4op_to_test <> 0) then _macro_preview_init(1,BYTE(NOT NULL))
           else _macro_preview_init(1,NULL);
 
           If ctrl_pressed and (is_environment.keystroke = kSPACE) then
@@ -10290,30 +10709,45 @@ _jmp2:
               begin
                 is_environment.keystroke := getkey;
                 Case is_environment.keystroke of
-                  kCtLbr:  If (_4op_to_test = 0) then
-                             If (current_inst > 1) then
-                               begin
-                                 Dec(current_inst);
-                                 instrum_page := current_inst;
-                                 STATUS_LINE_refresh;
-                                 instr := current_inst;
-                                 If NOT arp_vib_mode then
-                                   ShowStr(centered_frame_vdest^,xstart+48,ystart,byte2hex(instr),macro_background+dialog_title);
-                                 refresh;
-                               end;
+                  kCtLbr:  If shift_pressed then
+                             begin
+                               If (songdata.macro_speedup > 1) then
+                                 Dec(songdata.macro_speedup);
+                               macro_speedup := songdata.macro_speedup;
+                               reset_player;                               
+                             end
+                           else If (_4op_to_test = 0) then
+                                  If (current_inst > 1) then
+                                    Dec(current_inst);
 
-                  kCtRbr:  If (_4op_to_test = 0) then
-                             If (current_inst < 255) then
-                               begin
-                                 Inc(current_inst);
-                                 instrum_page := current_inst;
-                                 STATUS_LINE_refresh;
-                                 instr := current_inst;
-                                 If NOT arp_vib_mode then
-                                   ShowStr(centered_frame_vdest^,xstart+48,ystart,byte2hex(instr),macro_background+dialog_title);
-                                 refresh;
-                               end;
+                  kCtRbr:  If shift_pressed then
+                             begin
+                               Inc(songdata.macro_speedup);
+                               If (calc_max_speedup(tempo) < songdata.macro_speedup) then
+                                 songdata.macro_speedup := calc_max_speedup(tempo);
+                               macro_speedup := songdata.macro_speedup;
+                               reset_player;
+                             end
+                           else If (_4op_to_test = 0) then
+                                  If (current_inst < 255) then
+                                    Inc(current_inst);
                 end;
+
+                If (is_environment.keystroke = kCtLbr) or
+                   (is_environment.keystroke = kCtRbr) then
+                  begin                    
+                    ShowCStr(centered_frame_vdest^,xstart+window_area_inc_x+66,ystart+24+window_area_inc_y,
+                             ExpStrL(' ~[SPEED:'+Num2str(tempo*songdata.macro_speedup,10)+#3+']~ ',17,'Í'),
+                             macro_background+macro_border,
+                             macro_background+macro_hi_text);
+                    instrum_page := current_inst;
+                    STATUS_LINE_refresh;
+                    instr := current_inst;
+                    If NOT arp_vib_mode then
+                      ShowStr(centered_frame_vdest^,xstart+48,ystart,byte2hex(instr),
+                              macro_background+dialog_title);
+                    refresh;
+                  end;
 
                 If (_4op_to_test <> 0) then
                   _macro_preview_body(LO(_4op_to_test),HI(_4op_to_test),count_channel(pattern_hpos),is_environment.keystroke)
@@ -10330,17 +10764,17 @@ _jmp2:
                 If shift_pressed and (is_environment.keystroke = kSPACE) then
                   is_environment.keystroke := $0ffff;
               end
-            else If NOT (seconds_counter >= ssaver_time) then goto _end2 //CONTINUE
+            else If NOT (seconds_counter >= ssaver_time) then GOTO _end2 //CONTINUE
                  else begin
                         screen_saver;
-                        goto _end2; //CONTINUE;
+                        GOTO _end2; //CONTINUE;
                       end;
           _end2:
             emulate_screen;
           until (is_environment.keystroke = kSPACE) or
                 (is_environment.keystroke = kESC);
 
-          If (_4op_to_test <> 0) then _macro_preview_init(0,byte(NOT NULL))
+          If (_4op_to_test <> 0) then _macro_preview_init(0,BYTE(NOT NULL))
           else _macro_preview_init(0,NULL);
           macro_preview_indic_proc := NIL;
           _pip_dest := Addr(vscreen);
@@ -10354,11 +10788,20 @@ _jmp2:
           (is_environment.keystroke = kF2)     or
           (is_environment.keystroke = kCtrlF2) or
           (is_environment.keystroke = kF3)     or
-          (is_environment.keystroke = kCtrlF3) or
           (is_environment.keystroke = kCtrlL)  or
           (is_environment.keystroke = kCtrlS)  or
+          (is_environment.keystroke = kCtrlM)  or
           call_pickup_proc or
           call_pickup_proc2;
+
+  _macro_editor__pos[arp_vib_mode] := pos;
+  _macro_editor__fmreg_hpos[arp_vib_mode] := fmreg_hpos;
+  _macro_editor__fmreg_page[arp_vib_mode] := fmreg_page;
+  _macro_editor__fmreg_left_margin[arp_vib_mode] := fmreg_left_margin;
+  _macro_editor__fmreg_cursor_pos[arp_vib_mode] := fmreg_cursor_pos;
+  _macro_editor__arpeggio_page[arp_vib_mode] := arpeggio_page;
+  _macro_editor__vibrato_hpos[arp_vib_mode] := vibrato_hpos;
+  _macro_editor__vibrato_page[arp_vib_mode] := vibrato_page;
 
   If NOT arp_vib_mode then
     begin
@@ -10387,11 +10830,10 @@ _jmp2:
   move_to_screen_data := Addr(backup.screen);
   move_to_screen_area[1] := xstart;
   move_to_screen_area[2] := ystart;
-  move_to_screen_area[3] := xstart+81+2;
-  move_to_screen_area[4] := ystart+24+1;
-
+  move_to_screen_area[3] := xstart+81+2+window_area_inc_x;
+  move_to_screen_area[4] := ystart+24+1+window_area_inc_x;
   move2screen;
-
+ 
   Case is_environment.keystroke of
     kAltC:   begin
                If (pos in [7,13,20]) then
@@ -10425,10 +10867,11 @@ _jmp2:
     kENTER:  If call_pickup_proc2 then
                begin
                  call_pickup_proc2 := FALSE;
-                 temp := INSTRUMENT_CONTROL_alt(_source_ins2,'PASTE DATA TO iNSTRUMENT REGiSTERS');
-                 _source_ins2 := mn_environment.curr_pos;
+                 temp := INSTRUMENT_CONTROL_alt(_source_ins2,'PASTE DATA TO REGiSTERS [iNS_'+
+                                                             byte2hex(_source_ins2)+']');
                  If (temp <> 0) then
                    begin
+                     _source_ins2 := temp;
                      songdata.instr_data[_source_ins2].fm_data :=
                      songdata.instr_macros[instr].data[fmreg_page].fm_data;
                      songdata.instr_data[_source_ins2].panning :=
@@ -10455,10 +10898,11 @@ _jmp2:
     kCtENTR: If call_pickup_proc then
                begin
                  call_pickup_proc := FALSE;
-                 temp := INSTRUMENT_CONTROL_alt(_source_ins,'PASTE DATA FROM iNSTRUMENT REGiSTERS');
-                 _source_ins := mn_environment.curr_pos;
+                 temp := INSTRUMENT_CONTROL_alt(_source_ins,'PASTE DATA FROM REGiSTERS [iNS_'+
+                                                            byte2hex(_source_ins)+']');
                  If (temp <> 0) then
                    begin
+                     _source_ins := temp;
                      temp := songdata.instr_macros[instr].data[fmreg_page].
                              fm_data.FEEDBACK_FM;
                      songdata.instr_macros[instr].data[fmreg_page].fm_data :=
@@ -10497,56 +10941,46 @@ _jmp2:
                quick_cmd := FALSE;
                If NOT arp_vib_mode then FILE_save('a2w');
                GOTO _jmp1;
-             end;             
+             end;
     kF3,
     kCtrlL:  begin
-               If NOT arp_vib_mode and 
-                 ((is_environment.keystroke = kF3) or
-                  (is_environment.keystroke = kCtrlL)) then temps := '*.a2f$'
+               If (pos < 8) then
+                 temps := '*.a2i$*.a2f$*.a2b$*.a2w$'+
+                          '*.bnk$*.cif$*.fib$*.fin$*.ibk$*.ins$*.sbi$*.sgi$'
                else temps := '*.a2w$';
                quick_cmd := FALSE;
-               If arp_vib_mode then _arp_vib_loader := TRUE;
-               If (FILE_open(temps) <> NULL) then
-                 If NOT arp_vib_mode and
-                    ((is_environment.keystroke = kF3) or
-                     (is_environment.keystroke = kCtrlL)) then
-                   begin
-                     pos := 1;
-                     fmreg_hpos := 1;
-                     fmreg_page := 1;
-                     fmreg_left_margin := 1;
-                     fmreg_cursor_pos := 1;
-                     arpeggio_page := 1;
-                     vibrato_hpos := 1;
-                     vibrato_page := 1;
-                   end;
-
+               If NOT (pos < 8) then _arp_vib_loader := TRUE
+               else _arp_vib_loader := FALSE;
+               If _arp_vib_loader then
+                 begin
+                   arp_tab_selected := pos in [8..13];
+                   vib_tab_selected := pos in [14..20];
+                   If NOT arp_vib_mode then
+                     begin
+                       arpvib_arpeggio_table := ptr_arpeggio_table^;
+                       arpvib_vibrato_table := ptr_vibrato_table^;
+                     end;  
+                 end
+               else begin
+                      arp_tab_selected := ptr_arpeggio_table^ <> 0;
+                      vib_tab_selected := ptr_vibrato_table^ <> 0;
+                      If NOT (arp_tab_selected or vib_tab_selected) then
+                        begin
+                          arp_tab_selected := TRUE;
+                          vib_tab_selected := TRUE;
+                        end;  
+                    end;
+               FILE_open(temps,FALSE);
                update_instr_data(instrum_page);
                GOTO _jmp1;
              end;
 
-    kCtrlF3: If NOT arp_vib_mode then
-               begin
-                 temps := '*.a2w$';
-                 quick_cmd := FALSE;
-                 _arp_vib_loader := TRUE;
-                 If (FILE_open(temps) <> NULL) then
-                   begin
-                     pos := 1;
-                     fmreg_hpos := 1;
-                     fmreg_page := 1;
-                     fmreg_left_margin := 1;
-                     fmreg_cursor_pos := 1;
-                     arpeggio_page := 1;
-                     vibrato_hpos := 1;
-                     vibrato_page := 1;
-                   end;
-
-                 update_instr_data(instrum_page);
-                 GOTO _jmp1;
-               end;
-
     kCtrlO:  begin OCTAVE_CONTROL; GOTO _jmp1; end;
+
+    kCtrlM:  begin
+               MACRO_BROWSER((pos < 8),FALSE);
+               GOTO _jmp1;
+             end;
 
     kF1:     begin
                If NOT arp_vib_mode then HELP('macro_editor')
@@ -10557,18 +10991,24 @@ _jmp2:
   _pip_loop := FALSE;
 end;
 
+procedure MACRO_BROWSER(instrBrowser: Boolean; updateCurInstr: Boolean);
+begin
+  songdata_crc := Update32(songdata,SizeOf(songdata),0);
+  a2w_file_loader(FALSE,NOT instrBrowser,TRUE,FALSE,updateCurInstr); // browse internal A2W data
+  If (Update32(songdata,SizeOf(songdata),0) <> songdata_crc) then
+    module_archived := FALSE;
+end;
+
 procedure NUKE;
 
 var
   temp1,temp2: Byte;
 
 begin
-  smooth_appear := FALSE;
   temp1 := Dialog('SO YOU THiNK iT REALLY SUCKS, DON''T YOU?$'+
                   'WHAT DO YOU WANT TO BE NUKED?$',
                   '~O~RDER$~P~ATTERNS$iNSTR [$~N~AMES$~R~EGS$~M~ACROS$]$ARP/~V~iB$~A~LL$',
                   ' NUKE''M ',clearpos);
-  smooth_appear := TRUE;
   clearpos := temp1;
 
   If (dl_environment.keystroke <> kESC) then
@@ -10605,10 +11045,30 @@ begin
         FillChar(songdata.instr_data,SizeOf(songdata.instr_data),0);
 
       If (temp1 = 6) then
-        FillChar(songdata.instr_macros,SizeOf(songdata.instr_macros),0);
+        begin
+          FillChar(songdata.instr_macros,SizeOf(songdata.instr_macros),0);
+          _macro_editor__pos[FALSE] := 1;
+          _macro_editor__fmreg_hpos[FALSE] := 1;
+          _macro_editor__fmreg_hpos[TRUE] := 1;
+          _macro_editor__fmreg_page[FALSE] := 1;
+          _macro_editor__fmreg_page[TRUE] := 1;
+          _macro_editor__fmreg_left_margin[FALSE] := 1;
+          _macro_editor__fmreg_left_margin[TRUE] := 1;
+          _macro_editor__fmreg_cursor_pos[FALSE] := 1;
+          _macro_editor__fmreg_cursor_pos[TRUE] := 1;
+        end;  
 
       If (temp1 = 8) then
-        FillChar(songdata.macro_table,SizeOf(songdata.macro_table),0);
+        begin
+          FillChar(songdata.macro_table,SizeOf(songdata.macro_table),0);
+          _macro_editor__pos[TRUE] := 8;
+          _macro_editor__arpeggio_page[FALSE] := 1;
+          _macro_editor__arpeggio_page[TRUE] := 1;
+          _macro_editor__vibrato_hpos[FALSE] := 1;
+          _macro_editor__vibrato_hpos[TRUE] := 1;
+          _macro_editor__vibrato_page[FALSE] := 1;
+          _macro_editor__vibrato_page[TRUE] := 1;
+        end;  
 
       If (temp1 = 9) then
         begin
@@ -10636,6 +11096,23 @@ begin
           replace_data.new_event.fx_2 := '???';
           current_inst := 1;
           pattern_list__page := 1;
+          add_bank_position('?internal_instrument_data',255+3,1);
+          _macro_editor__pos[FALSE] := 1;
+          _macro_editor__pos[TRUE] := 8;
+          _macro_editor__fmreg_hpos[FALSE] := 1;
+          _macro_editor__fmreg_hpos[TRUE] := 1;
+          _macro_editor__fmreg_page[FALSE] := 1;
+          _macro_editor__fmreg_page[TRUE] := 1;
+          _macro_editor__fmreg_left_margin[FALSE] := 1;
+          _macro_editor__fmreg_left_margin[TRUE] := 1;
+          _macro_editor__fmreg_cursor_pos[FALSE] := 1;
+          _macro_editor__fmreg_cursor_pos[TRUE] := 1;
+          _macro_editor__arpeggio_page[FALSE] := 1;
+          _macro_editor__arpeggio_page[TRUE] := 1;
+          _macro_editor__vibrato_hpos[FALSE] := 1;
+          _macro_editor__vibrato_hpos[TRUE] := 1;
+          _macro_editor__vibrato_page[FALSE] := 1;
+          _macro_editor__vibrato_page[TRUE] := 1;      
         end
       else module_archived := FALSE;
     end;
@@ -10652,25 +11129,23 @@ begin
       fkey := kESC;
       EXIT;
     end;
-  smooth_appear := FALSE;
   temp := Dialog('...AND YOU WiLL KNOW MY NAME iS THE LORD, WHEN i LAY$'+
                  'MY VENGEANCE UPON THEE...$',
                  '~Q~UiT$~O~OOPS$',
                  ' EZECHiEL 25:17 ',1);
-  smooth_appear := TRUE;
   If (dl_environment.keystroke <> kESC) and (temp = 1) then
     begin
 	  fkey := kESC;
 	  _force_program_quit := TRUE;
-	end  
+	end
   else fkey := kENTER;
 end;
 
 const
-  last_dir:  array[1..4] of String[80] = ('','','','');
+  last_dir:  array[1..4] of String[DIR_SIZE] = ('','','','');
   last_file: array[1..4] of String[FILENAME_SIZE] = ('FNAME:EXT','FNAME:EXT',
-                                          'FNAME:EXT','FNAME:EXT');
-function FILE_open(masks: String): Byte;
+                                                     'FNAME:EXT','FNAME:EXT');
+function FILE_open(masks: String; loadBankPossible: Boolean): Byte;
 
 var
   temp: String;
@@ -10733,7 +11208,7 @@ _jmp1:
           (ExtOnly(temp) = 'a2f') or
           (ExtOnly(temp) = 'a2p')) then
     EXIT;
-     
+
   nul_volume_bars;
   no_status_refresh := TRUE;
   If (ExtOnly(temp) = 'a2m') then a2m_file_loader;
@@ -10752,25 +11227,48 @@ _jmp1:
   If (ExtOnly(temp) = 'xms') then amd_file_loader;
   If (ExtOnly(temp) = 'a2i') then a2i_file_loader;
   If (ExtOnly(temp) = 'a2f') then a2f_file_loader;
-  If (ExtOnly(temp) = 'a2b') then a2b_file_loader;
+
+  If (ExtOnly(temp) = 'a2b') then
+    If shift_pressed and NOT ctrl_pressed and
+       NOT alt_pressed then
+      begin
+        If loadBankPossible then
+          begin
+            index := Dialog('ALL UNSAVED INSTRUMENT DATA WiLL BE LOST$'+
+                            'DO YOU WiSH TO CONTiNUE?$',
+                            '~Y~UP$~N~OPE$',' A2B LOADER ',1);
+            If (dl_environment.keystroke <> kESC) and (index = 1) then
+              a2b_file_loader(FALSE,loadBankPossible); // w/o bank selector
+          end
+        else a2b_file_loader(TRUE,loadBankPossible); // w/ bank selector
+      end
+    else a2b_file_loader(TRUE,loadBankPossible); // w/ bank selector
 
   If (ExtOnly(temp) = 'a2w') then
-    If _arp_vib_loader then
+    If shift_pressed and NOT ctrl_pressed and
+       NOT alt_pressed then
       begin
-        index := Dialog('ALL UNSAVED ARPEGGiO/ViBRATO MACRO DATA WiLL BE LOST$'+
-                        'DO YOU WiSH TO CONTiNUE?$',
-                        '~Y~UP$~N~OPE$',' A2W LOADER ',1);
-        If (dl_environment.keystroke <> kESC) and (index = 1) then    
-          a2w_file_loader(TRUE);
+        If loadBankPossible then
+          begin
+            If _arp_vib_loader then
+              index := Dialog('ALL UNSAVED ARPEGGiO/ViBRATO MACRO DATA WiLL BE LOST$'+
+                              'DO YOU WiSH TO CONTiNUE?$',
+                              '~Y~UP$~N~OPE$',' A2W LOADER ',1)
+            else
+              index := Dialog('ALL UNSAVED iNSTRUMENT AND MACRO DATA WiLL BE LOST$'+
+                              'DO YOU WiSH TO CONTiNUE?$',
+                              '~Y~UP$~N~OPE$',' A2W LOADER ',1);
+            If (dl_environment.keystroke <> kESC) and (index = 1) then
+              a2w_file_loader(TRUE,_arp_vib_loader,FALSE,loadBankPossible,FALSE); // w/o bank selector
+          end
+        else a2w_file_loader(TRUE,_arp_vib_loader,TRUE,loadBankPossible,FALSE); // w/ bank selector
         _arp_vib_loader := FALSE;
-      end  
-    else begin
-           index := Dialog('ALL UNSAVED iNSTRUMENT AND MACRO DATA WiLL BE LOST$'+
-                           'DO YOU WiSH TO CONTiNUE?$',
-                           '~Y~UP$~N~OPE$',' A2W LOADER ',1);
-           If (dl_environment.keystroke <> kESC) and (index = 1) then    
-             a2w_file_loader(FALSE);
-         end;  
+      end
+    else
+      begin
+        a2w_file_loader(TRUE,_arp_vib_loader,TRUE,loadBankPossible,FALSE); // w/ bank selector
+        _arp_vib_loader := FALSE;
+      end;
 
   If (ExtOnly(temp) = 'bnk') then bnk_file_loader;
   If (ExtOnly(temp) = 'cif') then cif_file_loader;
@@ -10801,7 +11299,7 @@ _jmp1:
                  quick_cmd := TRUE;
                  songdata_source := old_songdata_source;
                  FILE_open('*.a2m$*.a2t$*.a2p$*.amd$*.cff$*.dfm$*.hsc$*.mtk$*.rad$'+
-                           '*.s3m$*.sat$*.sa2$*.xms$');
+                           '*.s3m$*.sat$*.sa2$*.xms$',FALSE);
                  quick_cmd := FALSE;
                end;
            end
@@ -10839,7 +11337,7 @@ _jmp1:
                      quick_cmd := TRUE;
                      songdata_source := old_songdata_source;
                      FILE_open('*.a2m$*.a2t$*.a2p$*.amd$*.cff$*.dfm$*.hsc$*.mtk$*.rad$'+
-                               '*.s3m$*.sat$*.sa2$*.xms$');
+                               '*.s3m$*.sat$*.sa2$*.xms$',FALSE);
                      quick_cmd := FALSE;
                    end;
                end
@@ -10915,11 +11413,27 @@ _jmp1:
                replace_data.new_event.fx_2 := '???';
                current_inst := 1;
                pattern_list__page := 1;
+               add_bank_position('?internal_instrument_data',255+3,1);
+               _macro_editor__pos[FALSE] := 1;
+               _macro_editor__pos[TRUE] := 8;
+               _macro_editor__fmreg_hpos[FALSE] := 1;
+               _macro_editor__fmreg_hpos[TRUE] := 1;
+               _macro_editor__fmreg_page[FALSE] := 1;
+               _macro_editor__fmreg_page[TRUE] := 1;
+               _macro_editor__fmreg_left_margin[FALSE] := 1;
+               _macro_editor__fmreg_left_margin[TRUE] := 1;
+               _macro_editor__fmreg_cursor_pos[FALSE] := 1;
+               _macro_editor__fmreg_cursor_pos[TRUE] := 1;
+               _macro_editor__arpeggio_page[FALSE] := 1;
+               _macro_editor__arpeggio_page[TRUE] := 1;
+               _macro_editor__vibrato_hpos[FALSE] := 1;
+               _macro_editor__vibrato_hpos[TRUE] := 1;
+               _macro_editor__vibrato_page[FALSE] := 1;
+               _macro_editor__vibrato_page[TRUE] := 1;
              end
            else begin
                   For index := 1 to 255 do
                      songdata.instr_names[index][1] := temp_marks[index];
-
                   For index := 0 to $7f do
                      songdata.pattern_names[index][1] := temp_marks2[index];
                 end;
@@ -11038,8 +11552,8 @@ var
   f: File;
   header: tHEADER;
   temp,index: Longint;
-  temps{,temp_str}: String;
-  {steps,}xstart,ystart: Byte;
+  temps: String;
+  xstart,ystart: Byte;
   temp_marks: array[1..255] of Char;
   temp_marks2: array[0..$7f] of Char;
 
@@ -11050,10 +11564,7 @@ begin
   move_to_screen_area[2] := ystart;
   move_to_screen_area[3] := xstart+43+2+1;
   move_to_screen_area[4] := ystart+3+1;
-
   move2screen;
-//  SetCursor(backup.cursor);
-//  GotoXY(backup.oldx,backup.oldy);
 end;
 
 begin
@@ -11294,8 +11805,8 @@ var
   header: tHEADER;
   instruments: Byte;
   temp,temp2,index: Longint;
-  temps{,temp_str}: String;
-  {steps,}xstart,ystart: Byte;
+  temps: String;
+  xstart,ystart: Byte;
 
 procedure _restore;
 begin
@@ -11304,10 +11815,7 @@ begin
   move_to_screen_area[2] := ystart;
   move_to_screen_area[3] := xstart+43+2+1;
   move_to_screen_area[4] := ystart+3+1;
-
   move2screen;
-//  SetCursor(backup.cursor);
-//  GotoXY(backup.oldx,backup.oldy);
 end;
 
 begin
@@ -11962,7 +12470,6 @@ var
   header: tHEADER;
   temp,temp2,temp3: Longint;
   crc: Longint;
-  {temp_str: String;}
   temp_marks: array[1..255] of Char;
 
 begin
@@ -12085,8 +12592,7 @@ type
 var
   f: File;
   header: tHEADER;
-  temp,{temp2,}temp3: Longint;
-  {temp_str: String;}
+  temp,temp3: Longint;
   temp_marks: array[1..255] of Char;
 
 begin
@@ -12302,7 +12808,7 @@ _jmp1:
       else dl_environment.input_str := iCASE_file(a2p_default_path)+NameOnly(songdata_source);
 
     Dialog('{PATH}[FiLENAME] EXTENSiON iS SET TO "'+iCASE_file(ext)+'"$',
-           '%string_input%80$50'+
+           '%string_input%255$50'+
            '$'+Num2str(dialog_input_bckg+dialog_input,16)+
            '$'+Num2str(dialog_def_bckg+dialog_def,16)+
            '$',' SAVE FiLE ',0);

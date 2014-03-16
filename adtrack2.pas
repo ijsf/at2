@@ -147,11 +147,10 @@ begin { MAIN }
   C3WriteLn(02+(MAX_COLUMNS-57) DIV 2,temp+25,ascii_line_26,$08,$09,$01);
   virtual_screen_font := Addr(vga_font8x16);
   emulate_screen;
-  SDL_Delay(5000);
+  SDL_Delay(3000);
   sys_deinit;
   snd_Deinit;
 
   { terminating program (phase:4) }
-  HALT(0); { the last opportunity to properly exit?! :) }
+  (* HALT(0); // the last opportunity to properly exit?! :) *)
 end.
-

@@ -20,7 +20,6 @@ end;
 procedure show_bar(chan,level,xpos,from_pos,to_pos,attr: Byte);
 
 var
-  {index1,index2: Byte;}
   temp: Byte;
 
 begin
@@ -134,6 +133,7 @@ procedure status_refresh;
 var
   temps: String;
   temp,temp2,chan: Byte;
+  wav_indicator_attr: array[Boolean] of Byte;
 
 begin
   If really_no_status_refresh then EXIT;
@@ -224,7 +224,7 @@ begin
     show_str(12,01,ExpStrR('',14,'ฤ'),
          main_background+main_border);
 
-  temps := BaseNameOnly(songdata_title);
+  temps := BaseNameOnly(FilterStr2(songdata_title,_valid_characters,'_'));
 
   While (8+_name_scrl_shift > Length(temps)) and (_name_scrl_shift > 0) do
     Dec(_name_scrl_shift);
@@ -251,19 +251,23 @@ begin
                 end;
     end;
 
-  If NOT module_archived then
-    show_str(09,07,#29,
-         status_background+status_dynamic_txt)
-  else show_str(09,07,'อ',
-            status_background+status_border);
-
+  wav_indicator_attr[FALSE] := main_background+main_behavior;
+  If (play_status = isPlaying) and NOT opl3_channel_recording_mode then
+    wav_indicator_attr[TRUE] := (main_behavior SHL 4) AND $0f0
+  else wav_indicator_attr[TRUE] := main_background+main_behavior;
+  
   If NOT (sdl_screen_mode <> 0) and (@mn_environment.ext_proc_rt <> NIL) then
     If (sdl_opl3_emulator <> 0) then
-	  show_str(13,01,'WAV',main_background+main_behavior)
+	  show_str(13,01,'WAV',wav_indicator_attr[_generic_blink_event_flag])
     else show_str(13,01,'ฤฤฤ',main_background+main_border)
   else If (sdl_opl3_emulator = 1) then
-         show_str(08,07,'[WAV]',main_background+main_behavior)
-       else show_str(08,07,'อออออ',status_background+status_border);
+         show_str(08,07,'[WAV]',wav_indicator_attr[_generic_blink_event_flag])
+       else If NOT module_archived then
+              show_cstr(08,07,'[~'+#29+'~]ออ',
+                        status_background+status_border,
+                        status_background+status_dynamic_txt)
+            else show_str(08,07,'อออออ',
+                          status_background+status_border);
 
   If (command_typing = 1) then
     If NOT cycle_pattern then

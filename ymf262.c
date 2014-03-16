@@ -4,13 +4,25 @@
 **                  FM sound generator type OPL3
 **
 ** Copyright Jarek Burczynski
+** Updates since SVN 0.148u1 (version 0.2) by subz3ro/Altair
 **
-** Version 0.3
+** Version 0.3.1
 **
 
 Revision History:
 
-02-18-2014: updated to version 0.3 by subz3ro/Altair
+02-26-2014: version 0.3.1
+ - removed obsolete parts of code in YMF262UpdateOne
+ - added 'per channel' sample output buffers
+ 
+02-18-2014: version 0.3
+ - removed 'logerror' and saving to file stuff
+ - completely rewritten 4op channel output level handling according Yamaha YMF262 datasheet
+ - fixed KSL selection according Yamaha YMF262 datasheet
+ - experimental treating of total output level for 1op rhythm channels
+
+SVN 0.148u1 (version 0.2)
+
 03-03-2003: initial release
  - thanks to Olivier Galibert and Chris Hardy for YMF262 and YAC512 chips
  - thanks to Stiletto for the datasheets
@@ -58,8 +70,6 @@ differences between OPL2 and OPL3 shown in datasheets:
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
-
-//#include "driver.h"           /* use M.A.M.E. */
 #include "ymf262.h"
 
 #ifndef PI
@@ -571,10 +581,6 @@ static int num_lock = 0;
 /* work table */
 static void *cur_chip = NULL;                   /* current chip point */
 
-#if 0
-static OPL3_SLOT *SLOT7_1,*SLOT7_2,*SLOT8_1,*SLOT8_2;
-#endif
-
 #define SLOT7_1 (&chip->P_CH[7].SLOT[SLOT1])
 #define SLOT7_2 (&chip->P_CH[7].SLOT[SLOT2])
 #define SLOT8_1 (&chip->P_CH[8].SLOT[SLOT1])
@@ -717,9 +723,9 @@ INLINE void advance(OPL3 *chip)
 
                                 if(op->eg_type)         /* non-percussive mode */
                                 {
-                                                                        /* do nothing */
+                                        /* do nothing */
                                 }
-                                else                            /* percussive mode */
+                                else                    /* percussive mode */
                                 {
                                         /* during sustain phase chip adds Release Rate (in percussive mode) */
 //                                      if ( !(chip->eg_cnt & ((1<<op->eg_sh_rr)-1) ) )
@@ -1146,7 +1152,7 @@ static int init_tables(void)
         for (i=0; i<SIN_LEN; i++)
         {
                 /* non-standard sinus */
-                m = sin( ((i*2)+1) * PI / SIN_LEN ); /* checked against the real chip */
+                m = sin( ((i*2)+1) * PI / SIN_LEN );    /* checked against the real chip */
 
                 /* we never reach zero here due to ((i*2)+1) */
 
@@ -1158,7 +1164,7 @@ static int init_tables(void)
                 o = o / (ENV_STEP/4);
 
                 n = (int)(2.0*o);
-                if (n&1)                                                /* round to nearest */
+                if (n&1)                                /* round to nearest */
                         n = (n>>1)+1;
                 else
                         n = n>>1;
@@ -1257,10 +1263,6 @@ static void OPL3_initalize(OPL3 *chip)
 
         /* frequency base */
         chip->freqbase  = (chip->rate) ? ((double)chip->clock / (8.0*36)) / chip->rate  : 0;
-#if 0
-        chip->rate = (double)chip->clock / (8.0*36);
-        chip->freqbase  = 1.0;
-#endif
 
         /* Timer base time */
         chip->TimerBase = 1 / ((double)chip->clock / (8*36) );
@@ -1429,13 +1431,13 @@ INLINE void set_ksl_tl(OPL3 *chip,int slot,int v)
         /*** by Yamaha YMF262 datasheet                       ***/
         /***                                                  ***/
         /***   +-----+-------------+                          ***/
-		/***   | KSL | Attenuation |                          ***/
-		/***   +-----+-------------+                          ***/
-		/***   |  0  | none        |                          ***/
-		/***   |  2  | 1.5 dB/oct  |                          ***/
-		/***   |  1  | 3.0 dB/oct  |                          ***/
-		/***   |  3  | 6.0 dB/oct  |                          ***/
-		/***   +-----+-------------+                          ***/
+        /***   | KSL | Attenuation |                          ***/
+        /***   +-----+-------------+                          ***/
+        /***   |  0  | none        |                          ***/
+        /***   |  2  | 1.5 dB/oct  |                          ***/
+        /***   |  1  | 3.0 dB/oct  |                          ***/
+        /***   |  3  | 6.0 dB/oct  |                          ***/
+        /***   +-----+-------------+                          ***/
         /***                                                  ***/       
         /********************************************************/
         
@@ -1453,7 +1455,7 @@ INLINE void set_ksl_tl(OPL3 *chip,int slot,int v)
                 /*** UPDATE IN VERSION 0.3 ******************************/
                 /***                                                  ***/
                 /*** EXPERIMENTAL!!!                                  ***/
-                /*** Treat total output level for 2op rhythm channels ***/
+                /*** Treat total output level for 1op rhythm channels ***/
                 /*** SD, TT, TC, HH -> approx. 50% down               ***/
                 /***                                                  ***/
                 /********************************************************/
@@ -1982,7 +1984,7 @@ static void OPL3WriteReg(OPL3 *chip, int r, int v)
                                 /*** UPDATE IN VERSION 0.3 ******************************/
                                 /***                                                  ***/
                                 /*** EXPERIMENTAL!!!                                  ***/
-                                /*** Treat total output level for 2op rhythm channels ***/
+                                /*** Treat total output level for 1op rhythm channels ***/
                                 /*** SD, TT, TC, HH -> 50% down                       ***/
                                 /***                                                  ***/
                                 /********************************************************/
@@ -2528,35 +2530,42 @@ void YMF262SetUpdateHandler(int which,OPL3_UPDATEHANDLER UpdateHandler,int param
         OPL3SetUpdateHandler(YMF262[which], UpdateHandler, param);
 }
 
+/*** UPDATE IN VERSION 0.3.1 ****************************/
+/***                                                  ***/
+/*** Removed obsolete (dead) parts of code            ***/
+/*** and added 'per channel' sample output buffers    ***/
+/***                                                  ***/
+/********************************************************/
+
 /*
 ** Generate samples for one of the YMF262's
 **
 ** 'which' is the virtual YMF262 number
-** '**buffers' is table of 4 pointers to the buffers: CH.A, CH.B, CH.C and CH.D
+** '**buffers' is table of 2 pointers to the buffers for left/right channel
+** '**buffers_chan' is table of 18*2 pointers to the buffers for 18 * left/right channel
 ** 'length' is the number of samples that should be generated
 */
 
-#if 0
-void YMF262UpdateOne(int which, INT16 **buffers, int length)
-#else
-void YMF262UpdateOne(int which, INT16 *buffer, int length)
-#endif
+void YMF262UpdateOne(int which, INT16 *buffer, INT16 *buffers_chan[], int length)
 {
-        OPL3            *chip  = YMF262[which];
-        UINT8           rhythm = chip->rhythm&0x20;
-#if 0
-        OPL3SAMPLE      *ch_a = buffers[0];
-        OPL3SAMPLE      *ch_b = buffers[1];
-        OPL3SAMPLE      *ch_c = buffers[2];
-        OPL3SAMPLE      *ch_d = buffers[3];
-#endif
-        int i;
-    signed int *chanout = chip->chanout;
+        OPL3 *chip  = YMF262[which];
+        UINT8 rhythm = chip->rhythm&0x20;
+        signed int *chanout = chip->chanout;
+        INT16 a_ch_swap,b_ch_swap;
+       
+        /* mapping of channels from OPL3 emulator to real channels */
+        static const int CHAN_MAPPING_TABLE[18] = {
+            1,3,5,      // 4op (register set #1) - 1st pair
+            0,2,4,      // 4op (register set #1) - 2nd pair
+            6,7,8,      // rhythm channels
+            10,12,14,   // 4op (register set #2) - 1st pair
+            9,11,13,    // 4op (register set #2) - 2nd pair
+            15,16,17 }; // (fixed) 2op channels
 
-
-        for( i=0; i < length ; i++ )
+        for(int i=0; i < length ; i++ )
         {
-                int a,b,c,d;
+                int a,b;
+                int a_ch[18],b_ch[18];
 
 
                 advance_lfo(chip);
@@ -2564,7 +2573,6 @@ void YMF262UpdateOne(int which, INT16 *buffer, int length)
                 /* clear channel outputs */
                 memset(chip->chanout, 0, sizeof(chip->chanout));
 
-#if 1
                 /* register set #1 */
                 chan_calc(chip, &chip->P_CH[0]);            /* extended 4op ch#0 part 1 or 2op ch#0 */
                 if (chip->P_CH[0].extended)
@@ -2624,116 +2632,140 @@ void YMF262UpdateOne(int which, INT16 *buffer, int length)
                 chan_calc(chip, &chip->P_CH[15]);
                 chan_calc(chip, &chip->P_CH[16]);
                 chan_calc(chip, &chip->P_CH[17]);
-#endif
 
-                /* accumulator register set #1 */
-                a =  chanout[0] & chip->pan[0];
-                b =  chanout[0] & chip->pan[1];
-                c =  chanout[0] & chip->pan[2];
-                d =  chanout[0] & chip->pan[3];
-#if 1
-                a += chanout[1] & chip->pan[4];
-                b += chanout[1] & chip->pan[5];
-                c += chanout[1] & chip->pan[6];
-                d += chanout[1] & chip->pan[7];
-                a += chanout[2] & chip->pan[8];
-                b += chanout[2] & chip->pan[9];
-                c += chanout[2] & chip->pan[10];
-                d += chanout[2] & chip->pan[11];
+                a = 0;
+                b = 0;
 
-                a += chanout[3] & chip->pan[12];
-                b += chanout[3] & chip->pan[13];
-                c += chanout[3] & chip->pan[14];
-                d += chanout[3] & chip->pan[15];
-                a += chanout[4] & chip->pan[16];
-                b += chanout[4] & chip->pan[17];
-                c += chanout[4] & chip->pan[18];
-                d += chanout[4] & chip->pan[19];
-                a += chanout[5] & chip->pan[20];
-                b += chanout[5] & chip->pan[21];
-                c += chanout[5] & chip->pan[22];
-                d += chanout[5] & chip->pan[23];
+                for(int idx=0; idx < 18 ; idx++ )
+                {
+                    a += chanout[idx] & chip->pan[idx*4+0];
+                    b += chanout[idx] & chip->pan[idx*4+1];
 
-                a += chanout[6] & chip->pan[24];
-                b += chanout[6] & chip->pan[25];
-                c += chanout[6] & chip->pan[26];
-                d += chanout[6] & chip->pan[27];
-                a += chanout[7] & chip->pan[28];
-                b += chanout[7] & chip->pan[29];
-                c += chanout[7] & chip->pan[30];
-                d += chanout[7] & chip->pan[31];
-                a += chanout[8] & chip->pan[32];
-                b += chanout[8] & chip->pan[33];
-                c += chanout[8] & chip->pan[34];
-                d += chanout[8] & chip->pan[35];
+                    // indexes for 'per channel' output buffers must be remapped
+                    // according CHAN_MAPPING_TABLE[]
+                    a_ch[CHAN_MAPPING_TABLE[idx]] = chanout[idx] & chip->pan[idx*4+0];
+                    b_ch[CHAN_MAPPING_TABLE[idx]] = chanout[idx] & chip->pan[idx*4+1];
+                }
 
-                /* accumulator register set #2 */
-                a += chanout[9] & chip->pan[36];
-                b += chanout[9] & chip->pan[37];
-                c += chanout[9] & chip->pan[38];
-                d += chanout[9] & chip->pan[39];
-                a += chanout[10] & chip->pan[40];
-                b += chanout[10] & chip->pan[41];
-                c += chanout[10] & chip->pan[42];
-                d += chanout[10] & chip->pan[43];
-                a += chanout[11] & chip->pan[44];
-                b += chanout[11] & chip->pan[45];
-                c += chanout[11] & chip->pan[46];
-                d += chanout[11] & chip->pan[47];
+                // treat 4op channel pair -> chan# 1 / 2
+                if (chip->P_CH[0].extended)
+                {
+                    a_ch[0] += a_ch[1];
+                    b_ch[0] += b_ch[1];
+                    a_ch[0] >>= FINAL_SH;
+                    b_ch[0] >>= FINAL_SH;
+                    a_ch[0] = limit( a_ch[0] , MAXOUT, MINOUT );
+                    b_ch[0] = limit( b_ch[0] , MAXOUT, MINOUT );
+                    a_ch[1] = 0;
+                    b_ch[1] = 0;
+                }
 
-                a += chanout[12] & chip->pan[48];
-                b += chanout[12] & chip->pan[49];
-                c += chanout[12] & chip->pan[50];
-                d += chanout[12] & chip->pan[51];
-                a += chanout[13] & chip->pan[52];
-                b += chanout[13] & chip->pan[53];
-                c += chanout[13] & chip->pan[54];
-                d += chanout[13] & chip->pan[55];
-                a += chanout[14] & chip->pan[56];
-                b += chanout[14] & chip->pan[57];
-                c += chanout[14] & chip->pan[58];
-                d += chanout[14] & chip->pan[59];
+                // treat 4op channel pair -> chan# 3 / 4
+                if (chip->P_CH[1].extended)
+                {
+                    a_ch[2] += a_ch[3];
+                    b_ch[2] += b_ch[3];
+                    a_ch[2] >>= FINAL_SH;
+                    b_ch[2] >>= FINAL_SH;
+                    a_ch[2] = limit( a_ch[2] , MAXOUT, MINOUT );
+                    b_ch[2] = limit( b_ch[2] , MAXOUT, MINOUT );
+                    a_ch[3] = 0;
+                    b_ch[3] = 0;
+                }
 
-                a += chanout[15] & chip->pan[60];
-                b += chanout[15] & chip->pan[61];
-                c += chanout[15] & chip->pan[62];
-                d += chanout[15] & chip->pan[63];
-                a += chanout[16] & chip->pan[64];
-                b += chanout[16] & chip->pan[65];
-                c += chanout[16] & chip->pan[66];
-                d += chanout[16] & chip->pan[67];
-                a += chanout[17] & chip->pan[68];
-                b += chanout[17] & chip->pan[69];
-                c += chanout[17] & chip->pan[70];
-                d += chanout[17] & chip->pan[71];
-#endif
+                // treat 4op channel pair -> chan# 5 / 6
+                if (chip->P_CH[2].extended)
+                {
+                    a_ch[4] += a_ch[5];
+                    b_ch[4] += b_ch[5];
+                    a_ch[4] >>= FINAL_SH;
+                    b_ch[4] >>= FINAL_SH;
+                    a_ch[4] = limit( a_ch[4] , MAXOUT, MINOUT );
+                    b_ch[4] = limit( b_ch[4] , MAXOUT, MINOUT );
+                    a_ch[5] = 0;
+                    b_ch[5] = 0;
+                }
+
+                // treat 4op channel pair -> chan# 10 / 11
+                if (chip->P_CH[9].extended)
+                {
+                    a_ch[9] += a_ch[10];
+                    b_ch[9] += b_ch[10];
+                    a_ch[9] >>= FINAL_SH;
+                    b_ch[9] >>= FINAL_SH;
+                    a_ch[9] = limit( a_ch[9] , MAXOUT, MINOUT );
+                    b_ch[9] = limit( b_ch[9] , MAXOUT, MINOUT );
+                    a_ch[10] = 0;
+                    b_ch[10] = 0;
+                }
+
+                // treat 4op channel pair -> chan# 12 / 13
+                if (chip->P_CH[10].extended)
+                {
+                    a_ch[11] += a_ch[12];
+                    b_ch[11] += b_ch[12];
+                    a_ch[11] >>= FINAL_SH;
+                    b_ch[11] >>= FINAL_SH;
+                    a_ch[11] = limit( a_ch[11] , MAXOUT, MINOUT );
+                    b_ch[11] = limit( b_ch[11] , MAXOUT, MINOUT );
+                    a_ch[12] = 0;
+                    b_ch[12] = 0;
+                }
+
+                // treat 4op channel pair -> chan# 14 / 15
+                if (chip->P_CH[12].extended)
+                {
+                    a_ch[13] += a_ch[14];
+                    b_ch[13] += b_ch[14];
+                    a_ch[13] >>= FINAL_SH;
+                    b_ch[13] >>= FINAL_SH;
+                    a_ch[13] = limit( a_ch[13] , MAXOUT, MINOUT );
+                    b_ch[13] = limit( b_ch[13] , MAXOUT, MINOUT );
+                    a_ch[14] = 0;
+                    b_ch[14] = 0;
+                }
+
+                if(rhythm)
+                {
+                    // in Rhythm mode swap channel sample buffers like following:
+                    // 6 <-> 15
+                    a_ch_swap = a_ch[15];
+                    b_ch_swap = b_ch[15];
+                    a_ch[15] = a_ch[6];
+                    b_ch[15] = b_ch[6];
+                    a_ch[6] = a_ch_swap;
+                    b_ch[6] = b_ch_swap;
+                    // 7 <-> 16
+                    a_ch_swap = a_ch[16];
+                    b_ch_swap = b_ch[16];
+                    a_ch[16] = a_ch[7];
+                    b_ch[16] = b_ch[7];
+                    a_ch[7] = a_ch_swap;
+                    b_ch[7] = b_ch_swap;
+                    // 8 <-> 17
+                    a_ch_swap = a_ch[17];
+                    b_ch_swap = b_ch[17];
+                    a_ch[17] = a_ch[8];
+                    b_ch[17] = b_ch[8];
+                    a_ch[8] = a_ch_swap;
+                    b_ch[8] = b_ch_swap;
+                }
+                
                 a >>= FINAL_SH;
                 b >>= FINAL_SH;
-                c >>= FINAL_SH;
-                d >>= FINAL_SH;
-
-                /* limit check */
                 a = limit( a , MAXOUT, MINOUT );
                 b = limit( b , MAXOUT, MINOUT );
-                c = limit( c , MAXOUT, MINOUT );
-                d = limit( d , MAXOUT, MINOUT );
-
-                #ifdef SAVE_SAMPLE
-                if (which==0)
-                {
-                        SAVE_ALL_CHANNELS
-                }
-                #endif
 
                 /* store to sound buffer */
                 *buffer++=(INT16)a;
-                *buffer++=(INT16)b;
-#if 0
-                ch_a[i] = a;
-                ch_b[i] = b;
-                ch_c[i] = c;
-                ch_d[i] = d;
-#endif
+                *buffer++=(INT16)b;                
+
+                /* store to 'per channel' sound buffers */
+                for(int idx=0; idx < 18 ; idx++ )
+                {
+                    *buffers_chan[idx]++=(INT16)a_ch[idx];
+                    *buffers_chan[idx]++=(INT16)b_ch[idx];
+                }    
 
                 advance(chip);
         }
