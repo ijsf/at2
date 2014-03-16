@@ -1135,14 +1135,23 @@ begin
 
   result := isEqual;
   For idx := 1 to len do
-    If (FilterStr2(str1[idx],_valid_characters,'_') > FilterStr2(str2[idx],_valid_characters,'_')) then
+    If (FilterStr2(str1[idx],_valid_characters,#01) > FilterStr2(str2[idx],_valid_characters,#01)) then
       begin
         result := isMore;
+        BREAK;
+      end
+    Else
+    If (FilterStr2(str1[idx],_valid_characters,#01) < FilterStr2(str2[idx],_valid_characters,#01)) then
+      begin
+        result := isLess;
         BREAK;
       end;
 
   If (result = isEqual) and (Length(str2) > Length(str1)) then
-    result := isLess;
+    result := isLess
+  Else
+  If (result = isEqual) and (Length(str2) < Length(str1)) then
+    result := isMore;
 
   CompareStr := result;
 end;
@@ -1159,7 +1168,7 @@ begin
   For idx2 := first to last do
     For idx1 := first to last-1 do
       If (CompareStr(stream.stuff[idx1].name,
-                     stream.stuff[idx1+1].name) = isLess) then
+                     stream.stuff[idx1+1].name) = isMore) then
         begin
           temp := stream.stuff[idx1];
           stream.stuff[idx1] := stream.stuff[idx1+1];
