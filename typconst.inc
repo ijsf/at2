@@ -67,6 +67,9 @@ type
                    vibrato:  tVIBRATO_TABLE;
                  end;
 type
+  tARP_VIB_MACRO_TABLE = array[1..255] of tMACRO_TABLE;
+  
+type
   tFM_PARAMETER_TABLE = Record
                           adsrw_car,
                           adsrw_mod: Record
@@ -101,7 +104,7 @@ type
                       instr_names:   array[1..255] of String[42];
                       instr_data:    array[1..255] of tADTRACK2_INS;
                       instr_macros:  array[1..255] of tREGISTER_TABLE;
-                      macro_table:   array[1..255] of tMACRO_TABLE;
+                      macro_table:   tARP_VIB_MACRO_TABLE;
                       pattern_order: array[0..$7f] of Byte;
                       tempo:         Byte;
                       speed:         Byte;
@@ -183,7 +186,6 @@ type
                                   macros: array[1..255] of tREGISTER_TABLE;
                                   arpvib: array[1..255] of tMACRO_TABLE;
                                   dis_fmreg_col: array[1..255] of tDIS_FMREG_COL;
-                                                 {array[0..27]  of Boolean;}
                                 end;
                  mcrtab_type:   tMACRO_TABLE_TYPE;
                  fmreg_table:   tREGISTER_TABLE;
@@ -226,7 +228,7 @@ const
   kF3     = $3d00; kRIGHT  = $4d00; kTAB    = $0f09; kCtLbr  = $1a1b;
   kShF3   = $5600; kShRGHT = $4d36; kShTAB  = $0f00; kCtRbr  = $1b1d;
   kF4     = $3e00; kCtRGHT = $7400; kSPACE  = $3920; kCtrlF3 = $6000;
-  kF5     = $3f00; kUP     = $4800; kBkSPC  = $0e08;
+  kF5     = $3f00; kUP     = $4800; kBkSPC  = $0e08; kAltV   = $2f00;
   kShF5   = $5800; kShUP   = $4838; kNPastr = $372a;
   kF6     = $4000; kDOWN   = $5000; kNPplus = $4e2b;
   kShF6   = $5900; kShDOWN = $5032; kNPmins = $4a2d;
@@ -564,7 +566,7 @@ const
     ' COPY MA~C~RO-TABLE COLUMN');
 
 const
-  _valid_characters: Set of Char = [#$00,#$20..#$7e,#$b0..#$df,#$fa,#$fb,#$fe,#$ff];
+  _valid_characters: Set of Char = [#0,#32..#127,#176..#223,#254,#255];
 
 const
   _panning: array[0..2] of Byte = ($30,$10,$20);

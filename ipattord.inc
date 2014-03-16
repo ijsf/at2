@@ -43,21 +43,30 @@ begin
             end;
 
     kAltP,
+    kAltV,
     kCtrlV: If (clipboard.object_type = objPattern) then
               begin
-                If NOT shift_pressed or
-                   (left_shift_pressed and NOT right_shift_pressed) then
-                  For temp2 := 0 to PRED(songdata.patt_len) do
-                    For temp1 := 1 to songdata.nm_tracks do
-                      put_chunk(mn_environment.curr_pos-1,temp2,temp1,
-                                clipboard.pattern[temp1][temp2]);
+                For temp2 := 0 to PRED(songdata.patt_len) do
+                  For temp1 := 1 to songdata.nm_tracks do
+                    begin
+                      If (mn_environment.keystroke <> kAltV) then
+                        put_chunk(mn_environment.curr_pos-1,temp2,temp1,
+                                  clipboard.pattern[temp1][temp2]);
+                      If NOT (shift_pressed and (mn_environment.keystroke = kCtrlV)) then
+                        songdata.pattern_names[mn_environment.curr_pos-1] :=
+                          Copy(songdata.pattern_names[mn_environment.curr_pos-1],1,8)+
+                          clipboard._string;
+                    end;    
 
-                If NOT shift_pressed or
-                   (NOT left_shift_pressed and right_shift_pressed) then
-                  songdata.pattern_names[mn_environment.curr_pos-1] :=
-                    Copy(songdata.pattern_names[mn_environment.curr_pos-1],1,8)+
-                    clipboard._string;
-
+                If NOT Empty(pattdata^[(mn_environment.curr_pos-1) DIV 8]
+                                      [(mn_environment.curr_pos-1) MOD 8],
+                             PATTERN_SIZE) then
+                  begin
+                    songdata.pattern_names[mn_environment.curr_pos-1][9] := '';
+                    Inc(_nm_patterns);
+                  end
+                else songdata.pattern_names[mn_environment.curr_pos-1][9] := '';
+                
                 PATTERN_ORDER_page_refresh(pattord_page);
                 PATTERN_page_refresh(pattern_page);
               end;
@@ -79,27 +88,20 @@ begin
                      PATTERN_SIZE);
 
                 temps := Copy(songdata.pattern_names[_1st],9,33);
+                Move(pattdata^[_2nd DIV 8][_2nd MOD 8],
+                     pattdata^[_1st DIV 8][_1st MOD 8],
+                     PATTERN_SIZE);
 
-                If NOT shift_pressed or
-                   (left_shift_pressed and NOT right_shift_pressed) then
-                  Move(pattdata^[_2nd DIV 8][_2nd MOD 8],
-                       pattdata^[_1st DIV 8][_1st MOD 8],
-                       PATTERN_SIZE);
-
-                If NOT shift_pressed or
-                   (NOT left_shift_pressed and right_shift_pressed) then
+                If shift_pressed then
                   songdata.pattern_names[_1st] :=
                     Copy(songdata.pattern_names[_1st],1,8)+
                     Copy(songdata.pattern_names[_2nd],9,33);
 
-                If NOT shift_pressed or
-                   (left_shift_pressed and NOT right_shift_pressed) then
-                  Move(buffer,
-                       pattdata^[_2nd DIV 8][_2nd MOD 8],
-                       PATTERN_SIZE);
+                Move(buffer,
+                     pattdata^[_2nd DIV 8][_2nd MOD 8],
+                     PATTERN_SIZE);
 
-                If NOT shift_pressed or
-                   (NOT left_shift_pressed and right_shift_pressed) then
+                If shift_pressed then
                   songdata.pattern_names[_2nd] :=
                     Copy(songdata.pattern_names[_2nd],1,8)+
                     temps;
@@ -264,7 +266,7 @@ _jmp1:
     kCtrlL: begin
               If (mn_environment.keystroke = kShF3) then quick_cmd := TRUE;
               pattern2use := pattern_list__page-1;
-              FILE_open('*.a2p$');
+              FILE_open('*.a2p$',FALSE);
               pattern2use := NULL;
               quick_cmd := FALSE;
               GOTO _jmp1;
@@ -447,7 +449,7 @@ procedure PATTERN_ORDER_edit(var page,hpos,vpos: Byte);
 var
   nope: Boolean;
   tstr,temps: String;
-  temp{,temp2}: Byte;
+  temp: Byte;
   temp1: Word;
   xstart: Byte;
 
@@ -506,7 +508,7 @@ begin { PATTERN_ORDER_edit }
       end;
 
     nope := FALSE;
-    If keypressed then fkey := getkey else goto _end; //CONTINUE;
+    If keypressed then fkey := getkey else GOTO _end; //CONTINUE;
 
     Case fkey of
       kLEFT:   If hpos > 1 then Dec(hpos) else If page > 0  then Dec(page);
@@ -559,13 +561,15 @@ begin { PATTERN_ORDER_edit }
                      else
                        Inc(songdata.pattern_order[vpos+4*(hpos+page-1)-1]);
                    end;
-      kNPastr: begin
-                 For temp := 1 to songdata.nm_tracks do
-                   begin
-                     channel_flag[temp] := NOT channel_flag[temp];
-                     If NOT channel_flag[temp] then reset_chan_data(temp);
-                   end;
-               end;
+
+      kNPastr: If NOT (opl3_channel_recording_mode and (play_status <> isStopped)) then
+                 begin
+                   For temp := 1 to songdata.nm_tracks do
+                     begin
+                       channel_flag[temp] := NOT channel_flag[temp];
+                       If NOT channel_flag[temp] then reset_chan_data(temp);
+                     end;
+                 end;
 
       kBkSPC:  begin
                  songdata.pattern_order[vpos+4*(hpos+page-1)-1] := $80;
@@ -608,50 +612,53 @@ begin { PATTERN_ORDER_edit }
                    PATTERN_page_refresh(pattern_page);
                  end;
 
-      kAltS:   begin
-                 For temp := 1 to songdata.nm_tracks do
-                   If (temp <> count_channel(pattern_hpos)) then
-                     begin
-                       channel_flag[temp] := FALSE;
-                       reset_chan_data(temp);
-                     end
-                   else channel_flag[temp] := TRUE;
-               end;
-
-      kAltR:   FillChar(channel_flag,songdata.nm_tracks,BYTE(TRUE));
-      kAlt1..
-      kAlt0:   If (fkey <> kAlt0) then
+      kAltS:   If NOT (opl3_channel_recording_mode and (play_status <> isStopped)) then
                  begin
-                   If (HI(fkey)-$77 <= songdata.nm_tracks) then
-                     begin
-                       channel_flag[HI(fkey)-$77] := NOT channel_flag[HI(fkey)-$77];
-                       If NOT channel_flag[HI(fkey)-$77] then reset_chan_data(HI(fkey)-$77);
-                     end;
-                 end
-               else begin
-                      If NOT percussion_mode then temps := '1~0~$1~1~$1~2~$1~3~$1~4~$1~5~$1~6~$1~7~$1~8~$1~9~$2~0~$'
-                      else temps := '1~0~$1~1~$1~2~$1~3~$1~4~$1~5~$16 ~B~D$17 ~S~D$18 ~T~T$19 T~C~$20 ~H~H$';
-                      temps := FlipStr(temps);
-                      For temp := 10 to 20 do
-                        If (temp > songdata.nm_tracks) then
-                          begin
-                            Delete(temps,Pos('~',temps),1);
-                            Delete(temps,Pos('~',temps),1);
-                          end;
-                      temps := FlipStr(temps);
-                      If (Pos('~',temps) <> 0) then
-                        begin
-                          chpos := Dialog('USE CURSOR KEYS OR DiRECTLY PRESS HOTKEY '+
-                                          'TO TOGGLE TRACK ON/OFF$',
-                                          temps,
-                                          ' TRACK ON/OFF ',chpos);
-                          If (dl_environment.keystroke <> kESC) then
+                   For temp := 1 to songdata.nm_tracks do
+                     If (temp <> count_channel(pattern_hpos)) then
+                       begin
+                         channel_flag[temp] := FALSE;
+                         reset_chan_data(temp);
+                       end
+                     else channel_flag[temp] := TRUE;
+                 end;
+
+      kAltR:   If NOT (opl3_channel_recording_mode and (play_status <> isStopped)) then
+                 FillChar(channel_flag,songdata.nm_tracks,BYTE(TRUE));
+      kAlt1..
+      kAlt0:   If NOT (opl3_channel_recording_mode and (play_status <> isStopped)) then
+                 If (fkey <> kAlt0) then
+                   begin
+                     If (HI(fkey)-$77 <= songdata.nm_tracks) then
+                       begin
+                         channel_flag[HI(fkey)-$77] := NOT channel_flag[HI(fkey)-$77];
+                         If NOT channel_flag[HI(fkey)-$77] then reset_chan_data(HI(fkey)-$77);
+                       end;
+                   end
+                 else begin
+                        If NOT percussion_mode then temps := '1~0~$1~1~$1~2~$1~3~$1~4~$1~5~$1~6~$1~7~$1~8~$1~9~$2~0~$'
+                        else temps := '1~0~$1~1~$1~2~$1~3~$1~4~$1~5~$16 ~B~D$17 ~S~D$18 ~T~T$19 T~C~$20 ~H~H$';
+                        temps := FlipStr(temps);
+                        For temp := 10 to 20 do
+                          If (temp > songdata.nm_tracks) then
                             begin
-                              channel_flag[9+chpos] := NOT channel_flag[9+chpos];
-                              If NOT channel_flag[9+chpos] then reset_chan_data(9+chpos);
+                              Delete(temps,Pos('~',temps),1);
+                              Delete(temps,Pos('~',temps),1);
                             end;
-                        end;
-                    end;
+                        temps := FlipStr(temps);
+                        If (Pos('~',temps) <> 0) then
+                          begin
+                            chpos := Dialog('USE CURSOR KEYS OR DiRECTLY PRESS HOTKEY '+
+                                            'TO TOGGLE TRACK ON/OFF$',
+                                            temps,
+                                            ' TRACK ON/OFF ',chpos);
+                            If (dl_environment.keystroke <> kESC) then
+                              begin
+                                channel_flag[9+chpos] := NOT channel_flag[9+chpos];
+                                If NOT channel_flag[9+chpos] then reset_chan_data(9+chpos);
+                              end;
+                          end;
+                      end;
 
       kINSERT: begin
                  For temp := $7f downto (page+hpos-1)*4+vpos do
@@ -692,6 +699,7 @@ begin { PATTERN_ORDER_edit }
       kCtrlI:  INSTRUMENT_CONTROL;
       kCtrlQ:  MACRO_EDITOR(current_inst,FALSE);
       kCtrlE:  MACRO_EDITOR(current_inst,TRUE);
+      kCtrlM:  MACRO_BROWSER(TRUE,TRUE);
 
       kCtLEFT: If (play_status = isPlaying) then rewind := TRUE;
       kCtRGHT: If (play_status = isPlaying) then fast_forward := TRUE;
@@ -713,7 +721,8 @@ begin { PATTERN_ORDER_edit }
                    no_status_refresh := FALSE;
                  end;
 
-      kF1:     HELP('pattern_order');
+      kF1:     If (sdl_opl3_emulator = 1) and ((play_status = isPlaying) or opl3_channel_recording_mode) then HELP('wav_recorder')
+               else HELP('pattern_order');
       kF2,
       kShF2,
       kCtrlS:  begin
@@ -726,7 +735,7 @@ begin { PATTERN_ORDER_edit }
 
       kF3,
       kCtrlL:  FILE_open('*.a2m$*.a2t$*.amd$*.cff$*.dfm$*.fmk$*.hsc$*.mtk$*.rad$'+
-                         '*.s3m$*.sat$*.sa2$*.xms$');
+                         '*.s3m$*.sat$*.sa2$*.xms$',FALSE);
       kF4,
       kCtrlA:  NUKE;
       kF5,
@@ -1048,7 +1057,7 @@ begin { PATTERN_ORDER_edit }
              (is_environment.keystroke <> kESC) then
             begin
               If (Str2num(tstr,16) > $7f) and
-                 (Str2num(tstr,16)-$80 = vpos+4*(hpos+page-1)-1) then goto _end; //CONTINUE;
+                 (Str2num(tstr,16)-$80 = vpos+4*(hpos+page-1)-1) then GOTO _end; //CONTINUE;
               nope := TRUE;
               songdata.pattern_order[vpos+4*(hpos+page-1)-1] :=
                                      Str2num(tstr,16);

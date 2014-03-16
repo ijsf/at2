@@ -43,7 +43,7 @@ void YMF262ResetChip(int which);
 int  YMF262Write(int which, int a, int v);
 unsigned char YMF262Read(int which, int a);
 int  YMF262TimerOver(int which, int c);
-void YMF262UpdateOne(int which, INT16 *buffers, int length);
+void YMF262UpdateOne(int which, INT16 *buffer, INT16 *buffers_chan[], int length);
 
 void YMF262SetTimerHandler(int which, OPL3_TIMERHANDLER TimerHandler, int channelOffset);
 void YMF262SetIRQHandler(int which, OPL3_IRQHANDLER IRQHandler, int param);

@@ -7,9 +7,6 @@ uses
   Adt2vscr,AdT2unit,AdT2keyb,AdT2ext2,
   StringIO,ParserIO,TxtScrIO;
 
-const
-  smooth_appear: Boolean = TRUE;
-
 type
   tDIALOG_SETTING = Record
                       frame_type:     String;
@@ -51,6 +48,7 @@ type
                     contxt2_attr:   Byte;
                     topic_attr:     Byte;
                     hi_topic_attr:  Byte;
+                    topic_mask_chr: Set of Char;
                     center_box:     Boolean;
                     cycle_moves:    Boolean;
                     edit_contents:  Boolean;
@@ -92,8 +90,9 @@ type
                       end;
 
 const
-    FILENAME_SIZE = 80;
-    DIR_SIZE = 170;
+  FILENAME_SIZE = 80;
+  DIR_SIZE = 170;
+  PATH_SIZE = 255;
 
 type
   tFSELECT_ENVIRONMENT = Record
@@ -149,13 +148,14 @@ const
      contxt2_attr:   $07;
      topic_attr:     $07;
      hi_topic_attr:  $0f;
+     topic_mask_chr: [];
      center_box:     TRUE;
      cycle_moves:    TRUE;
      edit_contents:  FALSE;
      reverse_use:    FALSE;
      show_scrollbar: TRUE;
      topic_len:      0;
-     fixed_len:      0;
+     fixed_len:      0;     
      terminate_keys: ($011b,$1c0d,$0000,$0000,$0000,
                       $0000,$0000,$0000,$0000,$0000,
                       $0000,$0000,$0000,$0000,$0000,
@@ -211,13 +211,11 @@ type
               screen: array[1..180*60*SizeOf(WORD)] of Byte;
             end;
 var
-  i,k,l,m,{p1,p2,}pos,max,mx2,num,nm2,xstart,ystart,count,
+  i,k,l,m,pos,max,mx2,num,nm2,xstart,ystart,count,
   ln,ln1,len2b,atr1,atr2,page,first,last,temp,temp2,opage,opos: Word;
   old_fr_shadow_enabled: Boolean;
-  {old_mn_unpolite: Boolean;}
   key:    Word;
   str:    String;
-  {tempb:  Boolean;}
   solid:  Boolean;
   qflg:   Boolean;
   dbuf:   tDBUFFR;
@@ -356,12 +354,7 @@ begin
   CurrentKey := temp;
 end;
 
-label _end;
-
 begin { Dialog }
-  {If fr_setting.wide_range_type then begin p1 := 3; p2 := 1; end
-  else begin p1 := 0; p2 := 0; end;}
-
   pos := 1;
   max := Length(title);
   num := 0;
@@ -512,54 +505,56 @@ begin { Dialog }
       If keys = '$' then EXIT;
 
       Repeat
-        if keypressed then key := getkey else goto _end;
+        key := getkey;
         If LookUpKey(key,dl_setting.terminate_keys,50) then qflg := TRUE;
 
-        If NOT qflg then Case LO(key) of
-          $00: Case HI(key) of
-                 $4b: If (k > 1) or
-                         NOT dl_setting.cycle_moves then SubPos(k)
-                      else begin
-                             k := nm2;
-                             If NOT dbuf[k].use then SubPos(k);
-                           end;
-
-                 $4d: If (k < nm2) or
-                         NOT dl_setting.cycle_moves then
-                        begin
-                          temp := k;
-                          AddPos(k);
-                          If (k = temp) then
+        If NOT qflg then
+          Case LO(key) of
+            $00: If NOT shift_pressed and
+                    NOT ctrl_pressed and NOT alt_pressed then
+                   Case HI(key) of
+                     $4b: If (k > 1) or
+                             NOT dl_setting.cycle_moves then SubPos(k)
+                          else begin
+                                 k := nm2;
+                                 If NOT dbuf[k].use then SubPos(k);
+                               end;
+               
+                     $4d: If (k < nm2) or
+                             NOT dl_setting.cycle_moves then
                             begin
-                              k := 1;
-                              If NOT dbuf[k].use then AddPos(k);
-                            end;
-                        end
-                      else begin
-                             k := 1;
-                             If NOT dbuf[k].use then AddPos(k);
-                           end;
-
-                 $47: begin
-                        k := 1;
-                        If NOT dbuf[k].use then AddPos(k);
-                      end;
-
-                 $4f: begin
-                        k := nm2;
-                        If NOT dbuf[k].use then SubPos(k);
-                      end;
-               end;
-
-          $20..$0ff:
-            begin
-              RetKey(LO(key),m);
-              If m <> 0 then begin qflg := TRUE; k := m; end;
-            end;
-        end;
+                              temp := k;
+                              AddPos(k);
+                              If (k = temp) then
+                                begin
+                                  k := 1;
+                                  If NOT dbuf[k].use then AddPos(k);
+                                end;
+                            end
+                          else begin
+                                 k := 1;
+                                 If NOT dbuf[k].use then AddPos(k);
+                               end;
+               
+                     $47: begin
+                            k := 1;
+                            If NOT dbuf[k].use then AddPos(k);
+                          end;
+               
+                     $4f: begin
+                            k := nm2;
+                            If NOT dbuf[k].use then SubPos(k);
+                          end;
+                   end;
+          
+            $20..$0ff:
+              begin
+                RetKey(LO(key),m);
+                If m <> 0 then begin qflg := TRUE; k := m; end;
+              end;
+          end;
 
         ShowItem;
-_end:
         emulate_screen;
       until qflg or _force_program_quit;
 
@@ -578,9 +573,6 @@ _end:
     end
   else
     Move(backup.screen,v_ofs^,SizeOf(backup.screen));
-
-//  SetCursor(backup.cursor);
-//  GotoXY(backup.oldx,backup.oldy);
 end;
 
 var
@@ -589,7 +581,6 @@ var
   mnu_count: Word;
 
 var
-  {hscrollbar_pos,}
   vscrollbar_pos: Word;
 
 function pstr(item: Word): String;
@@ -598,9 +589,30 @@ var
   temp: String;
 
 begin
-  Move(Pointer(Ptr(0, Ofs(mnu_data^)+(item-1)*(mnu_len+1)))^,temp,mnu_len+1);
+  Move(POINTER(Ptr(0,Ofs(mnu_data^)+(item-1)*(mnu_len+1)))^,temp,mnu_len+1);
   If NOT solid then pstr := ExpStrR(temp,mnu_len-2,' ')
   else pstr := ExpStrR(temp,mnu_len,' ');
+end;
+
+function pstr2(item: Word): String;
+
+var
+  idx: Byte;
+  temp,result: String;
+
+begin
+  Move(POINTER(Ptr(0,Ofs(mnu_data^)+(item-1)*(mnu_len+1)))^,temp,mnu_len+1);
+  If NOT solid then temp := ExpStrR(temp,mnu_len-2,' ')
+  else temp := ExpStrR(temp,mnu_len,' ');  
+  If (mn_setting.fixed_len <> 0) then result := temp
+  else begin
+         result := '';
+         For idx := 1 to Length(temp) do
+         If (temp[idx] in mn_setting.topic_mask_chr) then
+           result := result+'`'+temp[idx]+'`'
+         else result := result+temp[idx];
+       end; 
+  pstr2 := result;
 end;
 
 function pdes(item: Word): String;
@@ -610,7 +622,7 @@ var
 
 begin
   If mn_environment.descr <> NIL then
-    Move(pointer(ptr(0, Ofs(mn_environment.descr^)+
+    Move(POINTER(Ptr(0,Ofs(mn_environment.descr^)+
       (item-1)*(mn_environment.descr_len+1)))^,temp,mn_environment.descr_len+1)
   else temp := '';
   pdes := ExpStrR(temp,mn_environment.descr_len,' ');
@@ -628,7 +640,7 @@ var
 begin
   If NOT (mn_setting.fixed_len <> 0) then
     begin
-      ShowCStr(dest,x,y,str,atr1,atr2);
+      ShowC3Str(dest,x,y,str,atr1,atr2,atr1 AND $0f0+mn_setting.topic_attr AND $0f);
       EXIT;
     end;
 
@@ -667,31 +679,37 @@ begin { refresh }
   For i := page to mnu_len2+page-1 do
     If (i = k+page-1) then
       ShowCStr_clone(mn_environment.v_dest^,mnu_x+1,mnu_y+k,
-                     ExpStrR(pstr(k+page-1)+pdes(k+page-1),
-                     max+(Length(pstr(k+page-1))+Length(pdes(k+page-1))-
-                     CStrLen(pstr(k+page-1)+pdes(k+page-1))),' '),
-                     mn_setting.text2_attr,mn_setting.short2_attr,
-                     mn_setting.text_attr,mn_setting.short_attr)
+                     ExpStrR(pstr2(k+page-1)+pdes(k+page-1),
+                     max+(Length(pstr2(k+page-1))+Length(pdes(k+page-1))-
+                     (C3StrLen(pstr2(k+page-1))+CStrLen(pdes(k+page-1)))),' '),
+                     mn_setting.text2_attr,
+                     mn_setting.short2_attr,
+                     mn_setting.text_attr,
+                     mn_setting.short_attr)
     else
-      If (i <= mnu_topic_len) then
+      If (i-page+1 <= mnu_topic_len) then
         ShowCStr(mn_environment.v_dest^,mnu_x+1,mnu_y+i-page+1,
-                 ExpStrR(pstr(i)+pdes(i),
-                 max+(Length(pstr(i))+Length(pdes(k+page-1))-
-                 CStrLen(pstr(i)+pdes(i))),' '),
-                 mn_setting.topic_attr,mn_setting.hi_topic_attr)
+                 ExpStrR(pstr(i-page+1)+pdes(i-page+1),
+                 max+(Length(pstr(i-page+1))+Length(pdes(k+page-1))-
+                 CStrLen(pstr(i-page+1)+pdes(i-page+1))),' '),
+                 mn_setting.topic_attr,
+                 mn_setting.hi_topic_attr)
       else
         If mbuf[i].use then
-          ShowCStr(mn_environment.v_dest^,mnu_x+1,mnu_y+i-page+1,
-                   ExpStrR(pstr(i)+pdes(i),
-                   max+(Length(pstr(i))+Length(pdes(k+page-1))-
-                   CStrLen(pstr(i)+pdes(i))),' '),
-                   mn_setting.text_attr,mn_setting.short_attr)
+          ShowC3Str(mn_environment.v_dest^,mnu_x+1,mnu_y+i-page+1,
+                    ExpStrR(pstr2(i)+pdes(i),
+                    max+(Length(pstr2(i))+Length(pdes(k+page-1))-
+                    (C3StrLen(pstr2(i))+CStrLen(pdes(i)))),' '),
+                    mn_setting.text_attr,
+                    mn_setting.short_attr,
+                    mn_setting.topic_attr)
         else
           ShowCStr(mn_environment.v_dest^,mnu_x+1,mnu_y+i-page+1,
                    ExpStrR(pstr(i)+pdes(i),
                    max+(Length(pstr(i))+Length(pdes(k+page-1))-
                    CStrLen(pstr(i)+pdes(i))),' '),
-                   mn_setting.disbld_attr,mn_setting.disbld_attr);
+                   mn_setting.disbld_attr,
+                   mn_setting.disbld_attr);
 
   If mn_setting.show_scrollbar then
     vscrollbar_pos :=
@@ -774,14 +792,12 @@ begin
         temp := Copy(pstr(item),1,mn_environment.edit_pos)+temp
       else
         temp := CutStr(temp);
-      Move(temp,pointer(ptr(0, Ofs(data)+(item-1)*(len+1)))^,len+1);
+      Move(temp,POINTER(Ptr(0,Ofs(data)+(item-1)*(len+1)))^,len+1);
     end;
 
   mn_environment.do_refresh := TRUE;
   refresh;
 end;
-
-label _end;
 
 begin { Menu }
   If count = 0 then begin Menu := 0; EXIT; end;
@@ -876,7 +892,7 @@ begin { Menu }
 
       mn_setting.topic_len := mnu_topic_len;
       mnu_topic_len := 0;
-      mnu_data := Pointer(Ofs(data)+SUCC(len)*mn_setting.topic_len);
+      mnu_data := POINTER(Ofs(data)+SUCC(len)*mn_setting.topic_len);
 
       Inc(mnu_y,mn_setting.topic_len);
       Dec(len2,mn_setting.topic_len);
@@ -904,63 +920,59 @@ begin { Menu }
     begin
       mn_environment.curr_page := page;
       mn_environment.curr_pos := k+page-1;
+      mn_environment.curr_item := CutStr(pstr(k+page-1));
+      mn_environment.keystroke := $0ffff;
       If Addr(mn_environment.ext_proc) <> NIL then mn_environment.ext_proc;
 
-      Repeat
+      Repeat        
         mn_environment.keystroke := key;
-        if keypressed then key := getkey else begin
-          If tracing then trace_update_proc
-              else If (play_status = isPlaying) then
-                     begin
-                       PATTERN_ORDER_page_refresh(pattord_page);
-                       PATTERN_page_refresh(pattern_page);
-                     end;
-          goto _end;
-        end;
-
-        If NOT qflg then Case LO(key) of
-          $00: Case HI(key) of
-                 $48: If (page+k-1 > first) or
-                         NOT mn_setting.cycle_moves then SubPos(k)
-                      else begin
-                             k := len2; page := count-len2+1;
-                             If NOT mbuf[k+page-1].use then SubPos(k);
-                           end;
-
-                 $50: If (page+k-1 < last) or
-                         NOT mn_setting.cycle_moves then AddPos(k)
-                      else begin
-                             k := 1; page := 1;
-                             If NOT mbuf[k+page-1].use then AddPos(k);
-                           end;
-
-                 $47: begin
-                        k := 1; page := 1;
-                        If NOT mbuf[k+page-1].use then AddPos(k);
-                      end;
-
-                 $4f: begin
-                        k := len2; page := count-len2+1;
-                        If NOT mbuf[k+page-1].use then SubPos(k);
-                      end;
-
-                 $49: For temp := 1 to len2-1 do SubPos(k);
-                 $51: For temp := 1 to len2-1 do AddPos(k);
-               end;
-
-          $20..$0ff:
-            begin
-              RetKey(LO(key),m);
-              If m <> 0 then
-                begin
-                  refresh;
-                  k := m;
-                  If NOT ((key = mn_setting.terminate_keys[2]) and
-                           mn_setting.edit_contents) then qflg := TRUE
-                  else edit_contents(m);
-                end;
-            end;
-        end;
+        key := getkey;
+        If NOT qflg then
+          Case LO(key) of
+            $00: If NOT shift_pressed and
+                    NOT ctrl_pressed and NOT alt_pressed then
+                   Case HI(key) of
+                     $48: If (page+k-1 > first) or
+                             NOT mn_setting.cycle_moves then SubPos(k)
+                          else begin
+                                 k := len2; page := count-len2+1;
+                                 If NOT mbuf[k+page-1].use then SubPos(k);
+                               end;
+               
+                     $50: If (page+k-1 < last) or
+                             NOT mn_setting.cycle_moves then AddPos(k)
+                          else begin
+                                 k := 1; page := 1;
+                                 If NOT mbuf[k+page-1].use then AddPos(k);
+                               end;
+               
+                     $47: begin
+                            k := 1; page := 1;
+                            If NOT mbuf[k+page-1].use then AddPos(k);
+                          end;
+               
+                     $4f: begin
+                            k := len2; page := count-len2+1;
+                            If NOT mbuf[k+page-1].use then SubPos(k);
+                          end;
+               
+                     $49: For temp := 1 to len2-1 do SubPos(k);
+                     $51: For temp := 1 to len2-1 do AddPos(k);
+                   end;
+      
+            $20..$0ff:
+              begin
+                RetKey(LO(key),m);
+                If m <> 0 then
+                  begin
+                    refresh;
+                    k := m;
+                    If NOT ((key = mn_setting.terminate_keys[2]) and
+                             mn_setting.edit_contents) then qflg := TRUE
+                    else edit_contents(m);
+                  end;
+              end;
+          end;
 
         If LookUpKey(key,mn_setting.terminate_keys,50) then
           If NOT ((key = mn_setting.terminate_keys[2]) and
@@ -976,7 +988,6 @@ begin { Menu }
         If Addr(mn_environment.ext_proc) <> NIL then mn_environment.ext_proc;
 
         keyboard_reset_buffer;
-_end:
         emulate_screen;
       until qflg or _force_program_quit;
     end;
@@ -994,9 +1005,6 @@ _end:
          end
       else
         Move(backup.screen,mn_environment.v_dest^,SizeOf(backup.screen));
-
-//      SetCursor(backup.cursor);
-//      GotoXY(backup.oldx,backup.oldy);
     end;
 
   Menu := k+page-1;
@@ -1041,17 +1049,17 @@ var
   i: longint;
 
 begin
-    okay := FALSE;
-    For i := 1 to count do
-          begin
-        // UpCase fixes matching on Windows
-        If SameName(UpCase(masks[i]),UpCase(filename)) then
-                  begin
-                    okay := TRUE;
-                        BREAK;
-                  end;
+  okay := FALSE;
+  For i := 1 to count do
+    begin
+      // UpCase fixes matching on Windows
+      If SameName(UpCase(masks[i]),UpCase(filename)) then
+        begin
+          okay := TRUE;
+          BREAK;
+        end;
     end;
-    LookUpMask := okay;
+  LookUpMask := okay;
 end;
 
 var
@@ -1071,7 +1079,7 @@ begin
       begin
         info := 'DRiVE';
         BREAK;
-      end;    
+      end;
   If (info <> '') then valid_drive := TRUE;
 end;
 
@@ -1082,41 +1090,60 @@ var
   count1,count2: Word;
   drive: Char;
 
-procedure QuickSort(l,r: Word);
+type
+  tCOMPARE_STR_RESULT = (isLess,isMore,isEqual);
+
+function CompareStr(str1,str2: String): tCOMPARE_STR_RESULT;
 
 var
-  i,j: Word;
-  cmp: tSEARCH;
-  tmp: tSEARCH;
+  idx,len: Byte;
+  result: tCOMPARE_STR_RESULT;
 
 begin
-  If l >= r then EXIT;
-  cmp := stream.stuff[(l+r) DIV 2]; i := l; j := r;
+  If (Length(str1) > Length(str2)) then len := Length(str1)
+  else len := Length(str2);
 
-  Repeat
-    While (stream.stuff[i].name < cmp.name) do Inc(i);
-    While (stream.stuff[j].name > cmp.name) do Dec(j);
-
-    If i <= j then
+  result := isEqual;
+  For idx := 1 to len do
+    If (FilterStr2(str1[idx],_valid_characters,'_') > FilterStr2(str2[idx],_valid_characters,'_')) then
       begin
-        tmp := stream.stuff[i];
-        stream.stuff[i] := stream.stuff[j];
-        stream.stuff[j] := tmp;
-        Inc(i); Dec(j);
+        result := isMore;
+        BREAK;
       end;
-  until i > j;
 
-  If l < j then QuickSort(l,j);
-  If i < r then QuickSort(i,r);
+  If (result = isEqual) and (Length(str2) > Length(str1)) then
+    result := isLess;
+
+  CompareStr := result;
 end;
- 
+
+procedure StreamSort(first,last: Word);
+
+var
+  idx1,idx2: Word;
+  temp: tSEARCH;
+
+begin
+  If (first >= last) then EXIT;
+
+  For idx2 := first to last do
+    For idx1 := first to last-1 do
+      If (CompareStr(stream.stuff[idx1].name,
+                     stream.stuff[idx1+1].name) = isLess) then
+        begin
+          temp := stream.stuff[idx1];
+          stream.stuff[idx1] := stream.stuff[idx1+1];
+          stream.stuff[idx1+1] := temp;
+        end;
+end;
+
 begin { make_stream }
   GetLogicalDriveStrings(SizeOf(vDrives),vDrives);
   If (stream.drive_count = 0) then
     begin
       count1 := 0;
       For drive := 'A' to 'Z' do
-        If valid_drive(drive,stream.stuff[SUCC(count1)].info) then // check all drives A-Z
+        If valid_drive(drive,stream.stuff[SUCC(count1)].info) then
           begin
             Inc(count1);
             stream.stuff[count1].name := drive;
@@ -1178,25 +1205,31 @@ begin { make_stream }
       FindNext(search);
     end;
 
-  QuickSort(stream.drive_count+1,count1);
-  QuickSort(count1+1,count1+count2);
+  StreamSort(stream.drive_count+1,count1);
+  StreamSort(count1+1,count1+count2);
   stream.count := count1+count2;
   stream.match_count := count2;
 end;
 
 var
-  path: array[1..26] of String[80];
+  path: array[1..26] of String[PATH_SIZE];
+  old_fselect_external_proc: Procedure;
+
+procedure new_fselect_external_proc;
+begin
+  mn_environment.curr_item := fstream.stuff[mn_environment.curr_pos].name;
+  If (@old_fselect_external_proc <> NIL) then old_fselect_external_proc;
+end;
 
 function Fselect(mask: String): String;
 
 var
-  temp3: String;
-  temp4: String;
-  temp5: Word;
-  temp6: String;
-  temp7: String;
-  temp8: Byte;
-  lastp: Word;
+  temp1,temp2: Longint;
+  temp3,temp4: String;
+  temp5: Longint;
+  temp6,temp7: String;
+  temp8: Longint;
+  lastp: Longint;
 
 function path_filter(path: String): String;
 begin
@@ -1206,7 +1239,7 @@ begin
 end;
 
 var
-    idx: Integer;
+  idx: Integer;
 
 begin { Fselect }
   idx := 1;
@@ -1214,17 +1247,16 @@ begin { Fselect }
 
   Repeat // split mask string into masks and fill masks[1..20] array
     temp6 := Upper(ReadChunk(mask, idx)); // read first part: *.a2m etc
-    Inc(idx ,Length(temp6) + 1); // advance
+    Inc(idx ,Length(temp6)+1); // advance
     If NOT (temp6 = '') then
-          begin
-            Inc(count);
-                masks[count] := temp6;
-          end;
+      begin
+        Inc(count);
+        masks[count] := temp6;
+      end;
   until (idx >= Length(mask)) or (temp6 = '');
 
-  //temp7 := fs_environment.last_dir;
   {$i-}
-  GetDir(0, temp6); // get current dir
+  GetDir(0,temp6); // get current dir
   {$i+}
 
   // if error, take last dir
@@ -1262,37 +1294,40 @@ begin { Fselect }
     make_stream(temp3,mask,fstream);
 
     For temp2 := 1 to fstream.count do
-      If (fstream.stuff[temp2].name <> 'updir') then
-        begin
-          If (fstream.stuff[temp2].attr AND directory <> 0) then
-            menudat[temp2] := ' '+iCASE(ExpStrR(Copy(fstream.stuff[temp2].name,1,23),23,' '))+' '
-          else                        
-            menudat[temp2] := ' '+ExpStrR(Copy(BaseNameOnly(
-                                    fstream.stuff[temp2].name),1,20),20,' ')+' '+
-                                  ExpStrR(Copy(ExtOnly(
-                                    fstream.stuff[temp2].name),1,3),3,' ')+' ';
-        end
+      If (fstream.stuff[temp2].attr AND directory <> 0) then
+        If (fstream.stuff[temp2].name = 'updir') then
+                  begin
+                    menudat[temp2] := ' '+ExpStrR('..',24,' ')+' ';
+            descr[temp2] := ExpStrL('[UP-DiR]',mn_environment.descr_len-1,' ');
+            fstream.stuff[temp2].name := '..';
+                  end
+                else
+          begin
+                    temp1 := 24+(mn_environment.descr_len-1-10);
+                        temp7 := iCASE(DietStr(FilterStr2(fstream.stuff[temp2].name,_valid_characters,'_'),temp1));
+                        If (Length(temp7) < 24) then
+                          begin
+                            menudat[temp2] := ' '+ExpStrR(temp7,24,' ')+' ';
+                            descr[temp2] := ExpStrR('',mn_environment.descr_len-1-10,' ');
+                          end
+                        else
+              begin
+                menudat[temp2] := ' '+iCASE(ExpStrR(Copy(temp7,1,24),24,' '));
+                            descr[temp2] := ExpStrR(Copy(temp7,25,Length(temp7)-23),mn_environment.descr_len-1-10,' ');
+              end;
+                        descr[temp2] := descr[temp2]+ExpStrL('[DiR]',10,' ');
+          end
       else
-        begin
-          menudat[temp2] := ' '+ExpStrR('..',20,' ')+' '+
-                                ExpStrR(ExtOnly(fstream.stuff[temp2].name),3,' ')+' ';
-          fstream.stuff[temp2].name := '..';
-        end;
+        menudat[temp2] := ' '+ExpStrR(DietStr(BaseNameOnly(
+                                FilterStr2(fstream.stuff[temp2].name,_valid_characters,'_')),23),23,' ')+' ';
 
     For temp2 := 1 to fstream.count do
       If (fstream.stuff[temp2].attr = volumeid) then
         begin
-          If (fstream.stuff[temp2].name = '~'+#$ff+'~') then descr[temp2] := ''
+                  If (fstream.stuff[temp2].name = '~'+#$ff+'~') then descr[temp2] := ''
           else descr[temp2] := '[~'+fstream.stuff[temp2].info+'~]';
         end
-      else If (fstream.stuff[temp2].attr AND directory <> 0) then
-             begin
-               If fstream.stuff[temp2].name = '..' then
-                 descr[temp2] := ExpStrL('[UP-DiR]',mn_environment.descr_len-1,' ')
-               else
-                 descr[temp2] := ExpStrL('[DiR]',mn_environment.descr_len-1,' ')
-             end
-           else
+      else If NOT (fstream.stuff[temp2].attr AND directory <> 0) then
              begin
                temp7 := Num2str(fstream.stuff[temp2].size,10);
                descr[temp2] := '';
@@ -1301,7 +1336,10 @@ begin { Fselect }
                    descr[temp2] := temp7[Length(temp7)-temp8+1]+descr[temp2]
                  else
                    descr[temp2] := ','+temp7[Length(temp7)-temp8+1]+descr[temp2];
-               descr[temp2] := ExpStrL(descr[temp2],mn_environment.descr_len-1,' ');
+                           descr[temp2] := ExpStrR(Copy(ExtOnly(
+                                    fstream.stuff[temp2].name),1,3),3,' ')+' '+
+                                                           ExpStrL(DietStr(descr[temp2],mn_environment.descr_len-1-4),
+                                                                   mn_environment.descr_len-1-4,' ');
              end;
 
     For temp2 := 1 to fstream.count do
@@ -1328,16 +1366,19 @@ begin { Fselect }
     mn_environment.context := ' ~'+Num2str(fstream.match_count,10)+' FiLES FOUND~ ';
     mn_setting.terminate_keys[3] := $0e08;
     mn_setting.terminate_keys[4] := $2b5c;
+    old_fselect_external_proc := mn_environment.ext_proc;
+    mn_environment.ext_proc := new_fselect_external_proc;
 
     If (sdl_screen_mode = 0) then
       temp2 := Menu(menudat,01,01,lastp,
                     1+23+1,work_MaxLn-5,fstream.count,' '+
                     iCASE(DietStr(path_filter(temp3),40))+' ')
-    else                    
+    else
       temp2 := Menu(menudat,01,01,lastp,
                     1+23+1,work_MaxLn-15,fstream.count,' '+
                     iCASE(DietStr(path_filter(temp3),40))+' ');
- 
+
+    mn_environment.ext_proc := old_fselect_external_proc;
     mn_setting.reverse_use := FALSE;
     mn_environment.context := '';
     mn_setting.terminate_keys[3] := 0;
@@ -1502,62 +1543,65 @@ begin
 end;
 
 procedure DialogIO_Init;
+
 var
-    index: longint;
+  index: Byte;
+
 begin
-    dl_setting.frame_type    := double;
-    dl_setting.title_attr    := dialog_background+dialog_title;
-    dl_setting.box_attr      := dialog_background+dialog_border;
-    dl_setting.text_attr     := dialog_background+dialog_text;
-    dl_setting.text2_attr    := dialog_background+dialog_hi_text;
-    dl_setting.keys_attr     := dialog_background+dialog_button;
-    dl_setting.keys2_attr    := dialog_sel_btn_bck+dialog_sel_btn;
-    dl_setting.short_attr    := dialog_background+dialog_short;
-    dl_setting.short2_attr   := dialog_sel_btn_bck+dialog_sel_short;
-    dl_setting.disbld_attr   := dialog_background+dialog_button_dis;
-    dl_setting.contxt_attr   := dialog_background+dialog_context;
-    dl_setting.contxt2_attr  := dialog_background+dialog_context_dis;
+  dl_setting.frame_type      := double;
+  dl_setting.title_attr      := dialog_background+dialog_title;
+  dl_setting.box_attr        := dialog_background+dialog_border;
+  dl_setting.text_attr       := dialog_background+dialog_text;
+  dl_setting.text2_attr      := dialog_background+dialog_hi_text;
+  dl_setting.keys_attr       := dialog_background+dialog_button;
+  dl_setting.keys2_attr      := dialog_sel_btn_bck+dialog_sel_btn;
+  dl_setting.short_attr      := dialog_background+dialog_short;
+  dl_setting.short2_attr     := dialog_sel_btn_bck+dialog_sel_short;
+  dl_setting.disbld_attr     := dialog_background+dialog_button_dis;
+  dl_setting.contxt_attr     := dialog_background+dialog_context;
+  dl_setting.contxt2_attr    := dialog_background+dialog_context_dis;
 
-    mn_setting.frame_type    := double;
-    mn_setting.title_attr    := menu_background+menu_title;
-    mn_setting.menu_attr     := menu_background+menu_border;
-    mn_setting.text_attr     := menu_background+menu_item;
-    mn_setting.text2_attr    := menu_sel_item_bckg+menu_sel_item;
-    mn_setting.default_attr  := menu_default_bckg+menu_default;
-    mn_setting.short_attr    := menu_background+menu_short;
-    mn_setting.short2_attr   := menu_sel_item_bckg+menu_sel_short;
-    mn_setting.disbld_attr   := menu_background+menu_item_dis;
-    mn_setting.contxt_attr   := menu_background+menu_context;
-    mn_setting.contxt2_attr  := menu_background+menu_context_dis;
-    mn_setting.topic_attr    := menu_background+menu_topic;
-    mn_setting.hi_topic_attr := menu_background+menu_hi_topic;
+  mn_setting.frame_type      := double;
+  mn_setting.title_attr      := menu_background+menu_title;
+  mn_setting.menu_attr       := menu_background+menu_border;
+  mn_setting.text_attr       := menu_background+menu_item;
+  mn_setting.text2_attr      := menu_sel_item_bckg+menu_sel_item;
+  mn_setting.default_attr    := menu_default_bckg+menu_default;
+  mn_setting.short_attr      := menu_background+menu_short;
+  mn_setting.short2_attr     := menu_sel_item_bckg+menu_sel_short;
+  mn_setting.disbld_attr     := menu_background+menu_item_dis;
+  mn_setting.contxt_attr     := menu_background+menu_context;
+  mn_setting.contxt2_attr    := menu_background+menu_context_dis;
+  mn_setting.topic_attr      := menu_background+menu_topic;
+  mn_setting.hi_topic_attr   := menu_background+menu_hi_topic;
+  mn_setting.topic_mask_chr  := [];
 
-    mn_environment.v_dest      := v_ofs;
-    dl_environment.keystroke   := $0000;
-    mn_environment.keystroke   := $0000;
-    dl_environment.context     := '';
-    mn_environment.context     := '';
-    mn_environment.unpolite    := FALSE;
-    dl_environment.input_str   := '';
-    mn_environment.winshade    := TRUE;
-    mn_environment.intact_area := FALSE;
-    mn_environment.ext_proc    := NIL;
-    mn_environment.ext_proc_rt := NIL;
-    mn_environment.refresh     := NIL;
-    mn_environment.do_refresh  := FALSE;
-    mn_environment.preview     := FALSE;
-    mn_environment.fixed_start := 0;
-    mn_environment.descr_len   := 0;
-    mn_environment.descr       := NIL;
-    mn_environment.is_editing  := FALSE;
-    fs_environment.last_file   := 'FNAME:EXT';
-    fs_environment.last_dir    := '';
-    mn_environment.xpos        := 0;
-    mn_environment.xpos        := 0;
-    mn_environment.desc_pos    := 0;
-    
-    For index := 1 to 26 do
-        path[index] := CHR(ORD('a')+PRED(index))+':\';
+  mn_environment.v_dest      := v_ofs;
+  dl_environment.keystroke   := $0000;
+  mn_environment.keystroke   := $0000;
+  dl_environment.context     := '';
+  mn_environment.context     := '';
+  mn_environment.unpolite    := FALSE;
+  dl_environment.input_str   := '';
+  mn_environment.winshade    := TRUE;
+  mn_environment.intact_area := FALSE;
+  mn_environment.ext_proc    := NIL;
+  mn_environment.ext_proc_rt := NIL;
+  mn_environment.refresh     := NIL;
+  mn_environment.do_refresh  := FALSE;
+  mn_environment.preview     := FALSE;
+  mn_environment.fixed_start := 0;
+  mn_environment.descr_len   := 0;
+  mn_environment.descr       := NIL;
+  mn_environment.is_editing  := FALSE;
+  fs_environment.last_file   := 'FNAME:EXT';
+  fs_environment.last_dir    := '';
+  mn_environment.xpos        := 0;
+  mn_environment.xpos        := 0;
+  mn_environment.desc_pos    := 0;
+
+  For index := 1 to 26 do
+    path[index] := CHR(ORD('a')+PRED(index))+':\';
 end;
 
 end.

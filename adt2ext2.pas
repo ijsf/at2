@@ -6,8 +6,7 @@ unit AdT2ext2;
 interface
 
 const
-  _check_ADSR_preview_flag: Boolean = FALSE;
-  _ADSR_preview_flag: Boolean = TRUE;
+
   quick_mark_type: Byte = 0;
   discard_block: Boolean = FALSE;
   old_chan_pos: Byte = 1;
@@ -100,6 +99,7 @@ begin
   If (play_status = isStopped) or (sdl_opl3_emulator = 0) then
     begin
       sdl_opl3_emulator := 0;
+      opl3_channel_recording_mode := FALSE;
       EXIT;
     end;
 
@@ -169,7 +169,10 @@ begin
     'FADiNG iN SONG PLAYBACK... ',
     dialog_background+dialog_text);
 
+  flush_WAV_data;
   sdl_opl3_emulator := 0;
+  opl3_channel_recording_mode := FALSE;
+  
   For temp := 0 to 63 do
     begin
       If scankey(1) then GOTO _end;
@@ -198,7 +201,9 @@ begin
 
 _end:
 
+  flush_WAV_data;
   sdl_opl3_emulator := 0;
+  opl3_channel_recording_mode := FALSE;  
   fade_out_volume := 63;
   set_global_volume;
 
@@ -207,10 +212,7 @@ _end:
   move_to_screen_area[2] := ystart;
   move_to_screen_area[3] := xstart+43+2+1;
   move_to_screen_area[4] := ystart+3+1;
-
   move2screen;
-//  SetCursor(backup.cursor);
-//  GotoXY(backup.oldx,backup.oldy);
 end;
 
 procedure FADE_IN_RECORDING;
@@ -308,7 +310,9 @@ begin
           frame_start := SDL_GetTicks;
           If scankey(1) then GOTO _end;
         end;
-    end;
+    end
+  else
+    SDL_Delay(100);
 
   show_progress(0); 
   ShowStr(v_ofs^,xstart+2,ystart+1,
@@ -330,7 +334,7 @@ begin
                end;
   end;
 
-  If NOT smooth_fadeOut then fade_out_playback(FALSE);
+  fade_out_playback(FALSE);
   sdl_opl3_emulator := 1;
 
   For temp := 0 to 63 do
@@ -378,10 +382,7 @@ _end:
   move_to_screen_area[2] := ystart;
   move_to_screen_area[3] := xstart+43+2+1;
   move_to_screen_area[4] := ystart+3+1;
-
   move2screen;
-//  SetCursor(backup.cursor);
-//  GotoXY(backup.oldx,backup.oldy);
 end;
 
 procedure process_global_keys;
@@ -448,21 +449,34 @@ begin
           end;
       end;
 
-  If scankey(SC_F11) and alt_pressed and
-     NOT ctrl_pressed then
-    If NOT shift_pressed then sdl_opl3_emulator := 1
-    else FADE_IN_RECORDING;
+  If scankey(SC_F11) and
+     ((alt_pressed and NOT ctrl_pressed) or
+      (ctrl_pressed and NOT alt_pressed)) then
+    begin
+      If ctrl_pressed and
+         ((sdl_opl3_emulator = 0) or (play_status = isStopped)) then
+	    begin
+          opl3_channel_recording_mode := TRUE;
+          If shift_pressed then sdl_opl3_emulator := 0;
+		end;
+      If NOT shift_pressed then sdl_opl3_emulator := 1
+      else FADE_IN_RECORDING;
+	  keyboard_reset_buffer;
+    end;  
 
-  If scankey(SC_F12) and alt_pressed and
-     NOT ctrl_pressed then
-    If NOT shift_pressed then sdl_opl3_emulator := 0
-    else FADE_OUT_RECORDING;
-
-   If _check_ADSR_preview_flag then
-     If ctrl_pressed and left_shift_pressed and not right_shift_pressed then
-       _ADSR_preview_flag := FALSE
-     else If ctrl_pressed and right_shift_pressed and not left_shift_pressed then
-            _ADSR_preview_flag := TRUE;
+  If scankey(SC_F12) and
+     ((alt_pressed and NOT ctrl_pressed) or
+      (ctrl_pressed and NOT alt_pressed)) then
+    begin
+      If NOT shift_pressed then
+        begin
+          flush_WAV_data;
+          sdl_opl3_emulator := 0;
+          opl3_channel_recording_mode := FALSE;
+        end          
+      else FADE_OUT_RECORDING;
+      keyboard_reset_buffer;	  
+    end;
 end;
 
 procedure PROGRAM_SCREEN_init;

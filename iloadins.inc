@@ -15,9 +15,12 @@
     procedure fib_file_loader_alt(instr: Word);
     procedure import_sbi_instrument_alt(var data);
     procedure ibk_file_loader_alt(instr: Word);
-    procedure test_instrument_alt(chan: Byte; fkey: Word);
+    procedure test_instrument_alt(chan: Byte; fkey: Word; loadMacros: Boolean; bankSelector: Boolean; loadArpVib: Boolean);
     procedure test_instrument_alt2(chan: Byte; fkey: Word);
     procedure fselect_external_proc;
+    procedure a2b_lister_external_proc;
+    procedure a2w_lister_external_proc_callback;
+    procedure a2w_macro_lister_external_proc_callback;
     procedure bnk_lister_external_proc;
     procedure fib_lister_external_proc;
     procedure ibk_lister_external_proc;
@@ -398,7 +401,6 @@ var
   f: File;
   buffer: tFIN_DATA;
   temp: Longint;
-  {temp_str: String;}
 
 begin
   FillChar(temp_instrument,SizeOf(temp_instrument),0);
@@ -954,19 +956,20 @@ end;
 var
   ins__fmreg_table_backup: tREGISTER_TABLE;
   ins__dis_fmreg_col_backup: tDIS_FMREG_COL;
+  arp_vib_macro_table_backup: tARP_VIB_MACRO_TABLE;
   chan_handle: array[1..18] of Byte;
 
-procedure test_instrument_alt(chan: Byte; fkey: Word);
+procedure test_instrument_alt(chan: Byte; fkey: Word; loadMacros: Boolean; bankSelector: Boolean; loadArpVib: Boolean);
 
 const
   _perc_sim_chan: array[19..20] of Byte = (18,17);
 
 var
   temp,temp2,temp3,temp5: Byte;
-  {freq: Word;}
   valid_key,temp4: Boolean;
   temps: String;
   channels: Byte;
+  bank_instrument: Byte;
 
 function output_note(chan,board_pos: Byte): Boolean;
 
@@ -1037,8 +1040,7 @@ asm
         inc     ebx
         jmp     @@1
 @@4:    popa
-@@5:
-        pop     edi
+@@5:    pop     edi
         pop     esi
         pop     edx
         pop     ecx
@@ -1057,33 +1059,100 @@ begin { test_instrument_alt }
 
   If NOT percussion_mode then channels := 18
   else channels := 15;
-
+ 
   temp2 := temp;
-  temp := Pos(' ',mn_environment.curr_item);
-  temps := mn_environment.curr_item;
-  While (temps[temp] = ' ') do Delete(temps,temp,1);
-  Insert('.',temps,temp);
-  load_flag_alt := NULL;
+  If bankSelector or loadArpVib then
+    If NOT loadArpVib then
+      begin
+        bank_instrument := Str2num(Copy(mn_environment.curr_item,7,2),16);
+        If NOT (bank_instrument in [1..255]) then EXIT;
+        temps := '';
+        load_flag_alt := NULL;
+        Move(temp_songdata.instr_data[bank_instrument],
+             temp_instrument,
+             SizeOf(temp_instrument));           
+        Move(temp_songdata.instr_macros[bank_instrument],
+             temp_instrument_macro,
+             SizeOf(temp_instrument_macro));
+        Move(temp_songdata.dis_fmreg_col[bank_instrument],
+             temp_instrument_dis_fmreg_col,
+             SizeOf(temp_instrument_dis_fmreg_col));
+      end
+    else
+      begin
+        load_flag_alt := NULL;
+        Move(songdata.instr_data[current_inst],
+             temp_instrument,
+             SizeOf(temp_instrument));           
+        Move(songdata.instr_macros[current_inst],
+             temp_instrument_macro,
+             SizeOf(temp_instrument_macro));
+        Move(songdata.dis_fmreg_col[current_inst],
+             temp_instrument_dis_fmreg_col,
+             SizeOf(temp_instrument_dis_fmreg_col));
+      end
+  else
+    begin  
+      temps := mn_environment.curr_item;
+      load_flag_alt := NULL;
+      keyboard_toggle_sleep;
+      If (ExtOnly(temps) = 'a2i') then
+        a2i_file_loader_alt(temps)
+      else If (ExtOnly(temps) = 'a2f') then
+             a2f_file_loader_alt(temps)
+           else If (ExtOnly(temps) = 'cif') then
+                  cif_file_loader_alt(temps)
+                else If (ExtOnly(temps) = 'fin') then
+                       fin_file_loader_alt(temps)
+                     else If (ExtOnly(temps) = 'ins') then
+                            ins_file_loader_alt(temps)
+                           else If (ExtOnly(temps) = 'sbi') then
+                                  sbi_file_loader_alt(temps)
+                                 else If (ExtOnly(temps) = 'sgi') then
+                                        sgi_file_loader_alt(temps);
+      keyboard_toggle_sleep;
+      If (load_flag_alt = NULL) then EXIT;
+    end;
+ 
+  Move(songdata.macro_table,
+       arp_vib_macro_table_backup,
+       SizeOf(arp_vib_macro_table_backup));
 
-  keyboard_toggle_sleep;
-  If (ExtOnly(temps) = 'a2i') then
-    a2i_file_loader_alt(temps)
-  else If (ExtOnly(temps) = 'a2f') then
-         a2f_file_loader_alt(temps)
-       else If (ExtOnly(temps) = 'cif') then
-              cif_file_loader_alt(temps)
-            else If (ExtOnly(temps) = 'fin') then
-                   fin_file_loader_alt(temps)
-                 else If (ExtOnly(temps) = 'ins') then
-                        ins_file_loader_alt(temps)
-                       else If (ExtOnly(temps) = 'sbi') then
-                              sbi_file_loader_alt(temps)
-                             else If (ExtOnly(temps) = 'sgi') then
-                                    sgi_file_loader_alt(temps);
-
-  keyboard_toggle_sleep;
-  If (load_flag_alt = NULL) then EXIT;
-
+  If loadArpVib then
+    begin
+      If arp_tab_selected then
+        begin
+          temp_instrument_macro.arpeggio_table := arpvib_arpeggio_table;
+          Move(temp_songdata.macro_table[arpvib_arpeggio_table].arpeggio,
+               songdata.macro_table[arpvib_arpeggio_table].arpeggio,
+               SizeOf(songdata.macro_table[arpvib_arpeggio_table]));
+           
+        end
+      else temp_instrument_macro.arpeggio_table := 0;  
+      If vib_tab_selected then
+        begin
+          temp_instrument_macro.vibrato_table := arpvib_vibrato_table;
+          Move(temp_songdata.macro_table[arpvib_vibrato_table].vibrato,
+               songdata.macro_table[arpvib_vibrato_table].vibrato,
+               SizeOf(songdata.macro_table[arpvib_vibrato_table]));
+        end
+      else temp_instrument_macro.vibrato_table := 0;
+      Move(temp_instrument_macro,
+           songdata.instr_macros[current_inst],
+           SizeOf(songdata.instr_macros[current_inst]));
+    end
+  else If bankSelector and loadMacros then
+         begin
+           If (temp_instrument_macro.arpeggio_table <> 0) then
+             Move(temp_songdata.macro_table[temp_instrument_macro.arpeggio_table].arpeggio,
+                  songdata.macro_table[temp_instrument_macro.arpeggio_table].arpeggio,
+                  SizeOf(songdata.macro_table[temp_instrument_macro.arpeggio_table]));
+           If (temp_instrument_macro.vibrato_table <> 0) then
+             Move(temp_songdata.macro_table[temp_instrument_macro.vibrato_table].vibrato,
+                  songdata.macro_table[temp_instrument_macro.vibrato_table].vibrato,
+                  SizeOf(songdata.macro_table[temp_instrument_macro.vibrato_table]));
+         end;
+    
   status_backup.replay_forbidden := replay_forbidden;
   status_backup.play_status := play_status;
   replay_forbidden := TRUE;
@@ -1092,7 +1161,7 @@ begin { test_instrument_alt }
   really_no_status_refresh := TRUE;
   reset_player;
 
-  If (ExtOnly(temps) = 'a2f') then
+  If (ExtOnly(temps) = 'a2f') or loadMacros or loadArpVib then
     begin
       Move(songdata.instr_macros[current_inst],
            ins__fmreg_table_backup,
@@ -1100,15 +1169,19 @@ begin { test_instrument_alt }
       Move(songdata.dis_fmreg_col[current_inst],
            ins__dis_fmreg_col_backup,
            SizeOf(ins__dis_fmreg_col_backup));
-
       Move(temp_instrument_macro,
            songdata.instr_macros[current_inst],
            SizeOf(songdata.instr_macros[current_inst]));
       Move(temp_instrument_dis_fmreg_col,
            songdata.dis_fmreg_col[current_inst],
            SizeOf(songdata.dis_fmreg_col[current_inst]));
+    end
+  else
+    begin
+      FillChar(songdata.instr_macros[current_inst],SizeOf(songdata.instr_macros[current_inst]),0);
+      FillChar(songdata.dis_fmreg_col[current_inst],SizeOf(songdata.dis_fmreg_col[current_inst]),0);
     end;
-
+ 
   Move(channel_flag,channel_flag_backup,SizeOf(channel_flag_backup));
   Move(event_table,event_table_backup,SizeOf(event_table_backup));
   common_flag_backup := songdata.common_flag;
@@ -1196,8 +1269,8 @@ begin { test_instrument_alt }
       _emulate_screen_without_delay := TRUE;
       emulate_screen;
     end;
-    
-  If (ExtOnly(temps) = 'a2f') then
+   
+  If (ExtOnly(temps) = 'a2f') or loadMacros then
     begin
       Move(ins__fmreg_table_backup,
            songdata.instr_macros[current_inst],
@@ -1206,6 +1279,10 @@ begin { test_instrument_alt }
            songdata.dis_fmreg_col[current_inst],
            SizeOf(songdata.dis_fmreg_col[current_inst]));
     end;
+
+  Move(arp_vib_macro_table_backup,
+       songdata.macro_table,
+       SizeOf(songdata.macro_table));
 
   songdata.flag_4op := flag_4op_backup;
   Move(fmpar_table_backup,fmpar_table,SizeOf(fmpar_table));
@@ -1237,7 +1314,6 @@ const
 
 var
   temp,temp2,temp3,temp5: Byte;
-  {freq: Word;}
   valid_key,temp4: Boolean;
   temps: String;
   channels: Byte;
@@ -1311,8 +1387,7 @@ asm
         inc     ebx
         jmp     @@1
 @@4:    popa
-@@5:
-        pop     edi
+@@5:    pop     edi
         pop     esi
         pop     edx
         pop     ecx
@@ -1333,10 +1408,7 @@ begin { test_instrument_alt2 }
   else channels := 15;
 
   temp2 := temp;
-  temp := Pos(' ',mn_environment.curr_item);
   temps := mn_environment.curr_item;
-  While (temps[temp] = ' ') do Delete(temps,temp,1);
-  Insert('.',temps,temp);
   load_flag_alt := NULL;
 
   keyboard_toggle_sleep;
@@ -1470,17 +1542,37 @@ begin { test_instrument_alt2 }
 end;
 
 procedure fselect_external_proc;
-
-{var
-  ins1,ins2: Byte;
-  temp_inst: Record
-               name: String[32];
-               data: tADTRACK2_INS;
-             end;}
 begin
   If NOT shift_pressed and NOT alt_pressed and NOT ctrl_pressed then
     test_instrument_alt(count_channel(pattern_hpos),
-                        mn_environment.keystroke);
+                        mn_environment.keystroke,
+                        FALSE,FALSE,FALSE);
+end;
+
+procedure a2b_lister_external_proc;
+begin
+  If NOT shift_pressed and NOT alt_pressed and NOT ctrl_pressed then
+    test_instrument_alt(count_channel(pattern_hpos),
+                        mn_environment.keystroke,
+                        FALSE,TRUE,FALSE); // test instrument from bank, without any macros
+end;
+
+procedure a2w_lister_external_proc_callback;
+begin
+  If NOT shift_pressed and NOT alt_pressed and NOT ctrl_pressed then
+    test_instrument_alt(count_channel(pattern_hpos),
+                        mn_environment.keystroke,
+                        TRUE,TRUE,FALSE); // test instrument from bank, with chosen FM-data and macro
+                                          // and current Arp./Vib. macro tables
+end;
+
+procedure a2w_macro_lister_external_proc_callback;
+begin
+  If NOT shift_pressed and NOT alt_pressed and NOT ctrl_pressed then
+    test_instrument_alt(count_channel(pattern_hpos),
+                        mn_environment.keystroke,
+                        FALSE,FALSE,TRUE);  // test current instr, with current FM-data and macro
+                                            // and chosen Arp./Vib. macro tables from bank
 end;
 
 procedure bnk_lister_external_proc;

@@ -104,15 +104,12 @@ type
               screen: array[1..8000] of Byte
             end;
 var
-  i,k,{l,}m,{p1,p2,pos,}max,{mx2,num,nm2,xstart,ystart,
-  ln,ln1,}len2b,{atr1,atr2,}page,first,last,temp,temp2,opage,opos: Word;
-  old_fr_shadow_enabled{,
-  old_mn_unpolite}: Boolean;
+  i,k,m,max,
+  len2b,page,first,last,temp,temp2,opage,opos: Word;
+  old_fr_shadow_enabled: Boolean;
   key:    Word;
-  {str:    String;}
   solid:  Boolean;
   qflg:   Boolean;
-  {dbuf:   tDBUFFR;}
   mbuf:   tMBUFFR;
   contxt: String;
   backup: tBACKUP;
@@ -123,7 +120,6 @@ var
   mnu_count: Word;
 
 var
-  {hscrollbar_pos,}
   vscrollbar_pos: Word;
 
 function LookUpKey(key: Word; var table; size: Byte): Boolean; assembler;
@@ -166,8 +162,7 @@ var
   temp: String;
 
 begin
-  {Move(MEM[Ofs(mnu_data^)+(item-1)*(mnu_len+1)],temp,mnu_len+1);}
-  Move(pointer(ptr(0,Ofs(mnu_data^)+(item-1)*(mnu_len+1)))^,temp,mnu_len+1);
+  Move(POINTER(Ptr(0,Ofs(mnu_data^)+(item-1)*(mnu_len+1)))^,temp,mnu_len+1);
   If NOT solid then pstr := ExpStrR(temp,mnu_len-2,' ')
   else pstr := ExpStrR(temp,mnu_len,' ');
 end;
@@ -179,9 +174,7 @@ var
 
 begin
   If mn_environment.descr <> NIL then
-    {Move(MEM[Ofs(mn_environment.descr^)+
-      (item-1)*(mn_environment.descr_len+1)],temp,mn_environment.descr_len+1)}
-    Move(pointer(ptr(0, Ofs(mn_environment.descr^)+
+    Move(POINTER(Ptr(0,Ofs(mn_environment.descr^)+
       (item-1)*(mn_environment.descr_len+1)))^,temp,mn_environment.descr_len+1)
   else temp := '';
   pdes := ExpStrR(temp,mn_environment.descr_len,' ');
@@ -328,8 +321,7 @@ begin
         temp := Copy(pstr(item),1,MenuLib2_mn_environment.edit_pos)+temp
       else
         temp := CutStr(temp);
-      {Move(temp,MEM[Ofs(data)+(item-1)*(len+1)],len+1);}
-      Move(temp,pointer(ptr(0, Ofs(data)+(item-1)*(len+1)))^,len+1);
+      Move(temp,POINTER(Ptr(0,Ofs(data)+(item-1)*(len+1)))^,len+1);
     end;
 
   ShowCStr(MenuLib2_mn_environment.v_dest^,x+1,y+k,
@@ -435,7 +427,7 @@ begin { MenuLib2_Menu }
                      PATTERN_ORDER_page_refresh(pattord_page);
                      PATTERN_page_refresh(pattern_page);
                    end;
-        goto _end;
+        GOTO _end;
       end;
 
       If LookUpKey(key,MenuLib2_mn_setting.terminate_keys,50) then
@@ -443,35 +435,38 @@ begin { MenuLib2_Menu }
                  MenuLib2_mn_setting.edit_contents) then qflg := TRUE
         else edit_contents(k+page-1);
 
-      If NOT qflg then Case Lo(key) of
-        $00: Case Hi(key) of
-               $48: If (page+k-1 > first) or
-                       NOT MenuLib2_mn_setting.cycle_moves then SubPos(k)
-                    else begin
-                           k := len2; page := count-len2+1;
-                           If NOT mbuf[k+page-1].use then SubPos(k);
-                         end;
-
-               $50: If (page+k-1 < last) or
-                       NOT MenuLib2_mn_setting.cycle_moves then AddPos(k)
-                    else begin
-                           k := 1; page := 1;
-                           If NOT mbuf[k+page-1].use then AddPos(k);
-                         end;
-
-               $47: begin
-                      k := 1; page := 1;
-                      If NOT mbuf[k+page-1].use then AddPos(k);
-                    end;
-
-               $4f: begin
-                      k := len2; page := count-len2+1;
-                      If NOT mbuf[k+page-1].use then SubPos(k);
-                    end;
-
-               $49: For temp := 1 to len2-1 do SubPos(k);
-               $51: For temp := 1 to len2-1 do AddPos(k);
-             end;
+      If NOT qflg then
+        Case LO(key) of
+          $00: If NOT shift_pressed and
+                  NOT ctrl_pressed and NOT alt_pressed then
+                 Case HI(key) of
+                   $48: If (page+k-1 > first) or
+                           NOT MenuLib2_mn_setting.cycle_moves then SubPos(k)
+                        else begin
+                               k := len2; page := count-len2+1;
+                               If NOT mbuf[k+page-1].use then SubPos(k);
+                             end;
+             
+                   $50: If (page+k-1 < last) or
+                           NOT MenuLib2_mn_setting.cycle_moves then AddPos(k)
+                        else begin
+                               k := 1; page := 1;
+                               If NOT mbuf[k+page-1].use then AddPos(k);
+                             end;
+             
+                   $47: begin
+                          k := 1; page := 1;
+                          If NOT mbuf[k+page-1].use then AddPos(k);
+                        end;
+             
+                   $4f: begin
+                          k := len2; page := count-len2+1;
+                          If NOT mbuf[k+page-1].use then SubPos(k);
+                        end;
+             
+                   $49: For temp := 1 to len2-1 do SubPos(k);
+                   $51: For temp := 1 to len2-1 do AddPos(k);
+                 end;
 
         $32..$0ff:
           begin
@@ -511,9 +506,6 @@ _end:
          end
       else
         Move(backup.screen,MenuLib2_mn_environment.v_dest^,SizeOf(backup.screen));
-
-//      SetCursor(backup.cursor);
-//      GotoXY(backup.oldx,backup.oldy);
     end;
 
   MenuLib2_Menu := k+page-1;
