@@ -1,15 +1,10 @@
-{
-    Virtual text screen stuff
-    Various string functions dealing with text video memory layout (char+attr)
-    Rendering virtual text screen to 8bpp video buffer
-}
 unit AdT2vscr;
 {$PACKRECORDS 1}
 interface
 
 var
-  PATEDIT_lastpos: Byte;   
-  
+  PATEDIT_lastpos: Byte;
+
 {$i font8x16.inc}
 var
   vscreen: array[0..PRED(180*60*2)] of Byte;
@@ -22,8 +17,18 @@ const
   virtual_cur_shape: Word = 0;
   virtual_cur_pos: Word = 0;
   cursor_sync: Boolean = FALSE;
-  hard_maxcol: Byte = 0;
-  hard_maxln:  Byte = 0;
+  emulate_screen: procedure = NIL;
+
+const
+  area_x1: Byte = 0;
+  area_y1: Byte = 0;
+  area_x2: Byte = 0;
+  area_y2: Byte = 0;
+  scroll_pos0: Byte = BYTE(NOT 0);
+  scroll_pos1: Byte = BYTE(NOT 0);
+  scroll_pos2: Byte = BYTE(NOT 0);
+  scroll_pos3: Byte = BYTE(NOT 0);
+  scroll_pos4: Byte = BYTE(NOT 0);
 
 const
   _FrameBuffer: Pointer = NIL; { CHANGE TO SDL_SURFACE LATER }
@@ -39,8 +44,10 @@ const
   LGray   = $07;  White    = $0f;
   Blink   = $80;
 
-procedure emulate_screen_all;
+procedure emulate_screen_proc;
+procedure move2screen;
 procedure move2screen_alt;
+
 procedure show_str(xpos,ypos: Byte; str: String; color: Byte);
 procedure show_cstr(xpos,ypos: Byte; str: String; attr1,attr2: Byte);
 procedure show_vstr(xpos,ypos: Byte; str: String; color: Byte);
@@ -59,11 +66,7 @@ function  C3StrLen(str: String): Byte;
 function  AbsPos(x,y: Byte): Word;
 function  Color(fgnd,bgnd: Byte): Byte;
 procedure CleanScreen(var dest);
-procedure reset_critical_area;
 procedure Frame(var dest; x1,y1,x2,y2,atr1: Byte; title: String; atr2: Byte; border: String);
-
-const
-  emulate_screen: Procedure = nil;
 
 type
   tFRAME_SETTING = Record
@@ -89,11 +92,84 @@ const
 
 implementation
 uses
-  AdT2unit,
+  AdT2unit,AdT2sys,
   DialogIO,TxtScrIO,ParserIO;
 
+const
+  SCREEN_SIZE = 180*60*SizeOf(WORD);
+
+type
+//  pSCREEN = ^tSCREEN;
+  tSCREEN = array[0..PRED(SCREEN_SIZE)] of Byte;
+
+var
+  screen_mirror: tSCREEN;
+  temp_screen: tSCREEN;
+
+procedure move2screen;
+begin
+  _debug_str_ := 'ADT2VSCR.PAS:move2screen';
+  move2screen_alt;
+  area_x1 := 0;
+  area_y1 := 0;
+  area_x2 := 0;
+  area_y2 := 0;
+  scroll_pos0 := $0ff;
+  scroll_pos1 := $0ff;
+  scroll_pos2 := $0ff;
+  scroll_pos3 := $0ff;
+  scroll_pos4 := $0ff;
+end;
+
+procedure move2screen_alt; assembler;
+asm
+        push    ecx
+        push    esi
+        push    edi
+        mov     esi,dword ptr [virtual_screen]
+        lea     edi,[temp_screen]
+        mov     ecx,SCREEN_SIZE
+        push    edi
+        push    esi
+        push    ecx
+        rep     movsb
+        mov     esi,[move_to_screen_data]
+        lea     edi,[temp_screen]
+        xor     ecx,ecx
+        mov     cl,byte ptr [move_to_screen_area+1]
+@@1:    push    ecx
+        xor     ecx,ecx
+        mov     cl,byte ptr [move_to_screen_area+0]
+@@2:    pop     eax
+        push    eax
+        push    ecx
+        push    eax
+        call    AbsPos
+        push    esi
+        push    edi
+        add     esi,eax
+        add     edi,eax
+        movsw
+        pop     edi
+        pop     esi
+        inc     ecx
+        cmp     cl,byte ptr [move_to_screen_area+2]
+        jbe     @@2
+        pop     ecx
+        inc     ecx
+        cmp     cl,byte ptr [move_to_screen_area+3]
+        jbe     @@1
+        pop     ecx
+        pop     edi
+        pop     esi
+        rep     movsb
+        pop     edi
+        pop     esi
+        pop     ecx
+end;
+
 procedure emulate_screen_720x480; assembler;
- 
+
 var
    bit_pos,bit_mask: Byte;
    pos_x,pos_y: Byte;
@@ -132,7 +208,7 @@ asm
         add     eax,edx
         mov     dl,[esi+eax]
         mov     bit_mask,dl
-        mov     loop_idx4,8        
+        mov     loop_idx4,8
 @@5:    mov     edx,1
         mov     ecx,loop_idx4
         shl     dx,cl
@@ -196,11 +272,11 @@ asm
         pop     esi
         pop     edx
         pop     ecx
-        pop     ebx        
+        pop     ebx
 end;
 
 procedure emulate_screen_960x800; assembler;
- 
+
 var
    bit_pos,bit_mask: Byte;
    pos_x,pos_y: Byte;
@@ -233,7 +309,7 @@ asm
         add     eax,edx
         mov     dl,[esi+eax]
         mov     bit_mask,dl
-        mov     loop_idx4,8        
+        mov     loop_idx4,8
 @@5:    mov     edx,1
         mov     ecx,loop_idx4
         shl     dx,cl
@@ -287,11 +363,11 @@ asm
         pop     esi
         pop     edx
         pop     ecx
-        pop     ebx        
+        pop     ebx
 end;
 
 procedure emulate_screen_1440x960; assembler;
- 
+
 var
    bit_pos,bit_mask: Byte;
    pos_x,pos_y: Byte;
@@ -324,7 +400,7 @@ asm
         add     eax,edx
         mov     dl,[esi+eax]
         mov     bit_mask,dl
-        mov     loop_idx4,8        
+        mov     loop_idx4,8
 @@5:    mov     edx,1
         mov     ecx,loop_idx4
         shl     dx,cl
@@ -378,79 +454,20 @@ asm
         pop     esi
         pop     edx
         pop     ecx
-        pop     ebx        
+        pop     ebx
 end;
 
-const
-  SCREEN_SIZE = 180*60*SizeOf(WORD);
-
-type
-//  pSCREEN = ^tSCREEN;
-  tSCREEN = array[0..PRED(SCREEN_SIZE)] of Byte;
-
-var
-  screen_mirror: tSCREEN;
-  temp_screen: tSCREEN;
-  area_x1,area_y1,area_x2,area_y2: Byte;
-
-procedure emulate_screen_all;
+procedure emulate_screen_proc;
 begin
   _update_sdl_screen := FALSE;
   If Compare(screen_mirror,virtual_screen,MAX_COLUMNS*MAX_ROWS*2) then EXIT
   else Move(virtual_screen,screen_mirror,MAX_COLUMNS*MAX_ROWS*2);
   _update_sdl_screen := TRUE;
-  Case sdl_screen_mode of
+  Case program_screen_mode of
     0: emulate_screen_720x480;
     1: emulate_screen_960x800;
     2: emulate_screen_1440x960;
   end;
-end;
-
-procedure move2screen_alt; assembler;
-asm
-        push    ecx
-        push    esi
-        push    edi
-        mov     esi,dword ptr [virtual_screen]
-        lea     edi,[temp_screen]
-        mov     ecx,SCREEN_SIZE
-        push    edi
-        push    esi
-        push    ecx
-        rep     movsb
-        mov     esi,[move_to_screen_data]
-        lea     edi,[temp_screen]
-        xor     ecx,ecx
-        mov     cl,byte ptr [move_to_screen_area+1]
-@@1:    push    ecx
-        xor     ecx,ecx
-        mov     cl,byte ptr [move_to_screen_area+0]
-@@2:    pop     eax
-        push    eax
-        push    ecx
-        push    eax
-        call    AbsPos
-        push    esi
-        push    edi
-        add     esi,eax
-        add     edi,eax
-        movsw
-        pop     edi
-        pop     esi
-        inc     ecx
-        cmp     cl,byte ptr [move_to_screen_area+2]
-        jbe     @@2
-        pop     ecx
-        inc     ecx
-        cmp     cl,byte ptr [move_to_screen_area+3]
-        jbe     @@1
-        pop     ecx
-        pop     edi
-        pop     esi
-        rep     movsb
-        pop     edi
-        pop     esi
-        pop     ecx
 end;
 
 procedure show_str(xpos,ypos: Byte; str: String; color: Byte); assembler;
@@ -1007,8 +1024,7 @@ asm
         stosw
         add     edi,ebx
         loop    @@1
-@@2:
-        pop     edi
+@@2:    pop     edi
         pop     esi
         pop     edx
         pop     ecx
@@ -1363,8 +1379,8 @@ end;
 
 function AbsPos(x,y: Byte): Word; assembler;
 asm
-        push    ecx // AAARRRGHHH!!! another stupid bug !!! TMT saves all the regs, but FPC not!!!
-        mov     al,x // move2screen_alt relies on ecx being saved!
+        push    ecx
+        mov     al,x
         mov     ah,y
         xor     ecx,ecx
         call    DupChar
@@ -1377,18 +1393,16 @@ begin
     Color := (bgnd SHL 8) OR fgnd;
 end;
 
-procedure CleanScreen(var dest);
-
-type
-  tVIRTUAL_SCREEN = array[0..PRED(180)*PRED(60)] of Word;
-
-var
-  idx1,idx2: Byte;
-
-begin
-  For idx2 := 0 to PRED(180) do
-      For idx1 := 0 to PRED(60) do
-        tVIRTUAL_SCREEN(dest)[idx2*MaxLn+idx1] := $0007;
+procedure CleanScreen(var dest); assembler;
+asm
+        push    ecx
+        push    edi
+        mov     edi,[dest]
+        mov     ecx,180*60
+		mov		ax,07h
+		rep		stosw
+        pop     edi
+        pop     ecx
 end;
 
 procedure Frame(var dest; x1,y1,x2,y2,atr1: Byte;
@@ -1600,14 +1614,6 @@ asm
         pop     edx
         pop     ecx
         pop     ebx
-end;
-
-procedure reset_critical_area;
-begin
-  area_x1 := 0;
-  area_y1 := 0;
-  area_x2 := 0;
-  area_y2 := 0;
 end;
 
 end.

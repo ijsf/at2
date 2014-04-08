@@ -34,6 +34,7 @@ var
 
 procedure import_standard_instrument_alt(var data);
 begin
+  _debug_str_ := 'ILOADINS.INC:import_standard_instrument_alt';
   With temp_instrument do
     begin
       fm_data.AM_VIB_EG_modulator := tDUMMY_BUFF(data)[0];
@@ -55,6 +56,7 @@ end;
 
 procedure import_fin_instrument_alt(var data);
 begin
+   _debug_str_ := 'ILOADINS.INC:import_fin_instrument_alt';
   With temp_instrument do
     begin
       fm_data.AM_VIB_EG_modulator := tDUMMY_BUFF(data)[0];
@@ -76,6 +78,7 @@ end;
 
 procedure import_hsc_instrument_alt(var data);
 begin
+  _debug_str_ := 'ILOADINS.INC:import_hsc_instrument_alt';
   With temp_instrument do
     begin
       fm_data.AM_VIB_EG_carrier   := tDUMMY_BUFF(data)[0];
@@ -97,6 +100,7 @@ end;
 
 procedure import_sat_instrument_alt(var data);
 begin
+  _debug_str_ := 'ILOADINS.INC:import_sat_instrument_alt';
   With temp_instrument do
     begin
       fm_data.FEEDBACK_FM         := tDUMMY_BUFF(data)[0] AND $0f;
@@ -143,6 +147,7 @@ var
   crc: Word;
 
 begin
+  _debug_str_ := 'ILOADINS.INC:a2i_file_loader_alt';
   FillChar(temp_instrument,SizeOf(temp_instrument),0);
   {$i-}
   Assign(f,fname);
@@ -176,7 +181,7 @@ begin
           EXIT;
         end;
 
-      crc := WORD(NOT 0);
+      crc := WORD_NULL;
       crc := Update16(header.b0len,1,crc);
       crc := Update16(buf1,header.b0len,crc);
 
@@ -206,7 +211,7 @@ begin
           EXIT;
         end;
 
-      crc := WORD(NOT 0);
+      crc := WORD_NULL;
       crc := Update16(header.b0len,1,crc);
       crc := Update16(buf1,header.b0len,crc);
 
@@ -243,7 +248,7 @@ begin
           EXIT;
         end;
 
-      crc := WORD(NOT 0);
+      crc := WORD_NULL;
       crc := Update16(header2.b0len,1,crc);
       crc := Update16(buf1,header2.b0len,crc);
 
@@ -279,6 +284,7 @@ var
   crc,temp: Longint;
 
 begin
+  _debug_str_ := 'ILOADINS.INC:a2f_file_loader_alt';
   FillChar(temp_instrument,SizeOf(temp_instrument),0);
   FillChar(temp_instrument_macro,SizeOf(temp_instrument_macro),0);
   FillChar(temp_instrument_dis_fmreg_col,SizeOf(temp_instrument_dis_fmreg_col),0);
@@ -314,7 +320,7 @@ begin
           EXIT;
         end;
 
-      crc := NOT 0;
+      crc := DWORD_NULL;
       crc := Update32(header.b0len,1,crc);
       crc := Update32(buf1,header.b0len,crc);
 
@@ -364,6 +370,7 @@ const
                  SizeOf(buffer.idata)+
                  SizeOf(buffer.resrv);
 begin
+  _debug_str_ := 'ILOADINS.INC:cif_file_loader_alt';
   FillChar(temp_instrument,SizeOf(temp_instrument),0);
   {$i-}
   Assign(f,fname);
@@ -403,6 +410,7 @@ var
   temp: Longint;
 
 begin
+  _debug_str_ := 'ILOADINS.INC:fin_file_loader_alt';
   FillChar(temp_instrument,SizeOf(temp_instrument),0);
   {$i-}
   Assign(f,fname);
@@ -445,6 +453,7 @@ var
   result: Boolean;
 
 begin
+  _debug_str_ := 'ILOADINS.INC:ins_file_loader_alt:correct_ins';
   result := TRUE;
   If NOT (tADTRACK2_INS(data).fm_data.WAVEFORM_modulator in [0..3]) then
     result := FALSE;
@@ -456,6 +465,7 @@ begin
 end;
 
 begin { ins_file_loader_alt }
+  _debug_str_ := 'ILOADINS.INC:ins_file_loader_alt';
   FillChar(temp_instrument,SizeOf(temp_instrument),0);
   {$i-}
   Assign(f,fname);
@@ -517,6 +527,7 @@ var
   temp: Longint;
 
 begin
+  _debug_str_ := 'ILOADINS.INC:sbi_file_loader_alt';
   FillChar(temp_instrument,SizeOf(temp_instrument),0);
   {$i-}
   Assign(f,fname);
@@ -578,6 +589,7 @@ var
 
 procedure import_sgi_instrument(inst: Byte; var data);
 begin
+  _debug_str_ := 'ILOADINS.INC:sgi_file_loader_alt:import_sgi_instrument';
   FillChar(temp_instrument,SizeOf(temp_instrument),0);
   With temp_instrument do
     begin
@@ -611,6 +623,7 @@ begin
 end;
 
 begin { sgi_file_loader_alt }
+  _debug_str_ := 'ILOADINS.INC:sgi_file_loader_alt';
   FillChar(temp_instrument,SizeOf(temp_instrument),0);
   {$i-}
   Assign(f,fname);
@@ -688,6 +701,7 @@ var
 
 procedure import_instrument_from_data_record;
 begin
+  _debug_str_ := 'ILOADINS.INC:import_instrument_from_data_record';
   FillChar(temp_instrument,SizeOf(temp_instrument),0);
   With temp_instrument.fm_data do
     begin
@@ -752,6 +766,7 @@ var
   temp: Longint;
 
 begin
+  _debug_str_ := 'ILOADINS.INC:bnk_file_loader_alt';
   {$i-}
   Assign(f,instdata_source);
   ResetF(f);
@@ -835,6 +850,7 @@ var
   instrument_data: tFIN_DATA;
 
 begin
+  _debug_str_ := 'ILOADINS.INC:fib_file_loader_alt';
   {$i-}
   Assign(f,instdata_source);
   ResetF(f);
@@ -885,6 +901,7 @@ var
 
 procedure import_sbi_instrument_alt(var data);
 begin
+  _debug_str_ := 'ILOADINS.INC:import_sbi_instrument_alt';
   FillChar(temp_instrument,SizeOf(temp_instrument),0);
   With temp_instrument do
     begin
@@ -920,6 +937,7 @@ var
                    end;
 
 begin
+  _debug_str_ := 'ILOADINS.INC:ibk_file_loader_alt';
   {$i-}
   Assign(f,instdata_source);
   ResetF(f);
@@ -978,6 +996,7 @@ var
   freq: Word;
 
 begin
+  _debug_str_ := 'ILOADINS.INC:test_instrument_alt:output_note';
   note := board_pos+12*(current_octave-1);
   If NOT (note in [0..12*8+1]) then
     begin
@@ -1008,46 +1027,8 @@ begin
   init_macro_table(chan,note,current_inst,freq);
 end;
 
-function chanpos(var data; channels,scancode: Byte): Byte; assembler;
-asm
-        push    ebx
-        push    ecx
-        push    edx
-        push    esi
-        push    edi
-        xor     ebx,ebx
-@@1:    mov     edi,[data]
-        add     edi,ebx
-        xor     ecx,ecx
-        mov     cl,channels
-        mov     al,scancode
-        sub     ecx,ebx
-        jecxz   @@2
-        repnz   scasb
-        jnz     @@2
-        xor     eax,eax
-        mov     al,channels
-        sub     eax,ecx
-        jmp     @@3
-@@2:    xor     eax,eax
-        jmp     @@5
-@@3:    pusha
-        push    eax
-        call    is_4op_chan
-        or      al,al
-        jz      @@4
-        popa
-        inc     ebx
-        jmp     @@1
-@@4:    popa
-@@5:    pop     edi
-        pop     esi
-        pop     edx
-        pop     ecx
-        pop     ebx
-end;
-
 begin { test_instrument_alt }
+  _debug_str_ := 'ILOADINS.INC:test_instrument_alt';
   valid_key := FALSE;
   For temp := 1 to 29 do
     If NOT shift_pressed then
@@ -1067,7 +1048,7 @@ begin { test_instrument_alt }
         bank_instrument := Str2num(Copy(mn_environment.curr_item,7,2),16);
         If NOT (bank_instrument in [1..255]) then EXIT;
         temps := '';
-        load_flag_alt := NULL;
+        load_flag_alt := BYTE_NULL;
         Move(temp_songdata.instr_data[bank_instrument],
              temp_instrument,
              SizeOf(temp_instrument));           
@@ -1080,7 +1061,7 @@ begin { test_instrument_alt }
       end
     else
       begin
-        load_flag_alt := NULL;
+        load_flag_alt := BYTE_NULL;
         Move(songdata.instr_data[current_inst],
              temp_instrument,
              SizeOf(temp_instrument));           
@@ -1094,7 +1075,7 @@ begin { test_instrument_alt }
   else
     begin  
       temps := mn_environment.curr_item;
-      load_flag_alt := NULL;
+      load_flag_alt := BYTE_NULL;
       keyboard_toggle_sleep;
       If (ExtOnly(temps) = 'a2i') then
         a2i_file_loader_alt(temps)
@@ -1111,7 +1092,7 @@ begin { test_instrument_alt }
                                  else If (ExtOnly(temps) = 'sgi') then
                                         sgi_file_loader_alt(temps);
       keyboard_toggle_sleep;
-      If (load_flag_alt = NULL) then EXIT;
+      If (load_flag_alt = BYTE_NULL) then EXIT;
     end;
  
   Move(songdata.macro_table,
@@ -1126,7 +1107,6 @@ begin { test_instrument_alt }
           Move(temp_songdata.macro_table[arpvib_arpeggio_table].arpeggio,
                songdata.macro_table[arpvib_arpeggio_table].arpeggio,
                SizeOf(songdata.macro_table[arpvib_arpeggio_table]));
-           
         end
       else temp_instrument_macro.arpeggio_table := 0;  
       If vib_tab_selected then
@@ -1188,7 +1168,7 @@ begin { test_instrument_alt }
   volume_scaling_backup := volume_scaling;
   songdata.common_flag := songdata.common_flag AND NOT $80;
   volume_scaling := FALSE;
-  FillData(channel_flag,SizeOf(channel_flag),BYTE(TRUE));
+  FillChar(channel_flag,SizeOf(channel_flag),BYTE(TRUE));
   Move(pan_lock,pan_lock_backup,SizeOf(pan_lock));
   Move(volume_lock,volume_lock_backup,SizeOf(volume_lock));
   Move(peak_lock,peak_lock_backup,SizeOf(volume_lock));
@@ -1220,7 +1200,7 @@ begin { test_instrument_alt }
                    BYTE(percussion_mode) SHL 5;
   key_off(17);
   key_off(18);
-  opl3out(_instr[11],misc_register);
+  opl2out(_instr[11],misc_register);
 
   If percussion_mode and
      (temp_instrument.perc_voice in [1..5]) then
@@ -1239,9 +1219,9 @@ begin { test_instrument_alt }
          For temp := 1 to 29 do
            begin
              temp2 := board_scancodes[temp];
-             temp3 := chanpos(chan_handle,channels,temp2);
+             temp3 := get_chanpos(chan_handle,channels,temp2);
              temp4 := scankey(temp2);
-             temp5 := chanpos(chan_handle,channels,0);
+             temp5 := get_chanpos(chan_handle,channels,0);
 
              If temp4 then valid_key := TRUE;
              If temp4 and (temp3 = 0) and (temp5 <> 0) then
@@ -1325,6 +1305,7 @@ var
   freq: Word;
 
 begin
+  _debug_str_ := 'ILOADINS.INC:test_instrument_alt2:output_note';
   note := board_pos+12*(current_octave-1);
   If NOT (note in [0..12*8+1]) then
     begin
@@ -1355,46 +1336,8 @@ begin
   init_macro_table(chan,note,current_inst,freq);
 end;
 
-function chanpos(var data; channels,scancode: Byte): Byte; assembler;
-asm
-        push    ebx
-        push    ecx
-        push    edx
-        push    esi
-        push    edi
-        xor     ebx,ebx
-@@1:    mov     edi,[data]
-        add     edi,ebx
-        xor     ecx,ecx
-        mov     cl,channels
-        mov     al,scancode
-        sub     ecx,ebx
-        jecxz   @@2
-        repnz   scasb
-        jnz     @@2
-        xor     eax,eax
-        mov     al,channels
-        sub     eax,ecx
-        jmp     @@3
-@@2:    xor     eax,eax
-        jmp     @@5
-@@3:    pusha
-        push    eax
-        call    is_4op_chan
-        or      al,al
-        jz      @@4
-        popa
-        inc     ebx
-        jmp     @@1
-@@4:    popa
-@@5:    pop     edi
-        pop     esi
-        pop     edx
-        pop     ecx
-        pop     ebx
-end;
-
 begin { test_instrument_alt2 }
+  _debug_str_ := 'ILOADINS.INC:test_instrument_alt2';
   valid_key := FALSE;
   For temp := 1 to 29 do
     If NOT shift_pressed then
@@ -1409,7 +1352,7 @@ begin { test_instrument_alt2 }
 
   temp2 := temp;
   temps := mn_environment.curr_item;
-  load_flag_alt := NULL;
+  load_flag_alt := BYTE_NULL;
 
   keyboard_toggle_sleep;
   If (ExtOnly(temps) = 'bnk') then
@@ -1420,7 +1363,7 @@ begin { test_instrument_alt2 }
               ibk_file_loader_alt(Str2num(BaseNameOnly(mn_environment.curr_item),10));
 
   keyboard_toggle_sleep;
-  If (load_flag_alt = NULL) then EXIT;
+  If (load_flag_alt = BYTE_NULL) then EXIT;
 
   status_backup.replay_forbidden := replay_forbidden;
   status_backup.play_status := play_status;
@@ -1436,7 +1379,7 @@ begin { test_instrument_alt2 }
   volume_scaling_backup := volume_scaling;
   songdata.common_flag := songdata.common_flag AND NOT $80;
   volume_scaling := FALSE;
-  FillData(channel_flag,SizeOf(channel_flag),BYTE(TRUE));
+  FillChar(channel_flag,SizeOf(channel_flag),BYTE(TRUE));
   flag_4op_backup := songdata.flag_4op;
   If NOT percussion_mode and
      NOT is_4op_mode then channels := 18
@@ -1468,7 +1411,7 @@ begin { test_instrument_alt2 }
                    BYTE(percussion_mode) SHL 5;
   key_off(17);
   key_off(18);
-  opl3out(_instr[11],misc_register);
+  opl2out(_instr[11],misc_register);
 
   If percussion_mode and
      (temp_instrument.perc_voice in [1..5]) then
@@ -1487,9 +1430,9 @@ begin { test_instrument_alt2 }
          For temp := 1 to 29 do
            begin
              temp2 := board_scancodes[temp];
-             temp3 := chanpos(chan_handle,channels,temp2);
+             temp3 := get_chanpos(chan_handle,channels,temp2);
              temp4 := scankey(temp2);
-             temp5 := chanpos(chan_handle,channels,0);
+             temp5 := get_chanpos(chan_handle,channels,0);
 
              If temp4 then valid_key := TRUE;
              If temp4 and (temp3 = 0) and (temp5 <> 0) then
@@ -1543,6 +1486,7 @@ end;
 
 procedure fselect_external_proc;
 begin
+  _debug_str_ := 'ILOADINS.INC:fselect_external_proc';
   If NOT shift_pressed and NOT alt_pressed and NOT ctrl_pressed then
     test_instrument_alt(count_channel(pattern_hpos),
                         mn_environment.keystroke,
@@ -1551,6 +1495,7 @@ end;
 
 procedure a2b_lister_external_proc;
 begin
+  _debug_str_ := 'ILOADINS.INC:a2b_lister_external_proc';
   If NOT shift_pressed and NOT alt_pressed and NOT ctrl_pressed then
     test_instrument_alt(count_channel(pattern_hpos),
                         mn_environment.keystroke,
@@ -1559,6 +1504,7 @@ end;
 
 procedure a2w_lister_external_proc_callback;
 begin
+  _debug_str_ := 'ILOADINS.INC:a2w_lister_external_proc';
   If NOT shift_pressed and NOT alt_pressed and NOT ctrl_pressed then
     test_instrument_alt(count_channel(pattern_hpos),
                         mn_environment.keystroke,
@@ -1568,6 +1514,7 @@ end;
 
 procedure a2w_macro_lister_external_proc_callback;
 begin
+  _debug_str_ := 'ILOADINS.INC:a2w_macro_lister_external_proc_callback';
   If NOT shift_pressed and NOT alt_pressed and NOT ctrl_pressed then
     test_instrument_alt(count_channel(pattern_hpos),
                         mn_environment.keystroke,
@@ -1577,6 +1524,7 @@ end;
 
 procedure bnk_lister_external_proc;
 begin
+  _debug_str_ := 'ILOADINS.INC:bnk_lister_external_proc';
   mn_environment.curr_item :=
     Num2str(mn_environment.curr_pos+bnk_skip,10)+'.bnk';
   If NOT shift_pressed and NOT alt_pressed and NOT ctrl_pressed then
@@ -1586,6 +1534,7 @@ end;
 
 procedure fib_lister_external_proc;
 begin
+  _debug_str_ := 'ILOADINS.INC:fib_lister_external_proc';
   mn_environment.curr_item :=
     Num2str(mn_environment.curr_pos+bnk_skip,10)+'.fib';
   If NOT shift_pressed and NOT alt_pressed and NOT ctrl_pressed then
@@ -1595,6 +1544,7 @@ end;
 
 procedure ibk_lister_external_proc;
 begin
+  _debug_str_ := 'ILOADINS.INC:ibk_lister_external_proc';
   mn_environment.curr_item :=
     Num2str(mn_environment.curr_pos+ibk_skip,10)+'.ibk';
   If NOT shift_pressed and NOT alt_pressed and NOT ctrl_pressed then

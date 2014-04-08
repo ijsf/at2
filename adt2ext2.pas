@@ -1,12 +1,8 @@
-{
-    Unit that manages reading ini file and setting options
-}
 unit AdT2ext2;
 {$PACKRECORDS 1}
 interface
 
 const
-
   quick_mark_type: Byte = 0;
   discard_block: Boolean = FALSE;
   old_chan_pos: Byte = 1;
@@ -51,7 +47,7 @@ implementation
 
 uses
   CRT,SDL_Timer,
-  AdT2vid,AdT2vscr,AdT2keyb,AdT2opl3,AdT2unit,AdT2extn,AdT2text,AdT2apak,
+  AdT2sys,AdT2vid,AdT2vscr,AdT2keyb,AdT2opl3,AdT2unit,AdT2extn,AdT2text,AdT2apak,
   StringIO,DialogIO,ParserIO,TxtScrIO;
 
 {$i instedit.inc}
@@ -75,21 +71,12 @@ begin
   If (progress_new_value <> progress_old_value) then
     begin
       progress_old_value := progress_new_value;
-      ShowCStr(v_ofs^,
+      ShowCStr(screen_ptr^,
                progress_xstart,progress_ystart,
                '~'+ExpStrL('',progress_new_value,'€')+'~'+
                ExpStrL('',40-progress_new_value,'€'),
                dialog_background+dialog_prog_bar1,
                dialog_background+dialog_prog_bar2);
-
-      If tracing then trace_update_proc
-      else If (play_status = isPlaying) then
-             begin
-               PATTERN_ORDER_page_refresh(pattord_page);
-               PATTERN_page_refresh(pattern_page);
-             end;
-      _emulate_screen_without_delay := TRUE;
-      emulate_screen;
     end;
 end;
 
@@ -103,7 +90,7 @@ begin
       EXIT;
     end;
 
-  Move(v_ofs^,backup.screen,SizeOf(backup.screen));
+  Move(screen_ptr^,backup.screen,SizeOf(backup.screen));
   backup.cursor := GetCursor;
   backup.oldx   := WhereX;
   backup.oldy   := WhereY;
@@ -113,19 +100,19 @@ begin
   centered_frame(xstart,ystart,43,3,' WAV RECORDER ',
                  dialog_background+dialog_border,
                  dialog_background+dialog_title,double);
-  ShowStr(v_ofs^,xstart+43-Length(dl_environment.context),ystart+3,
-                 dl_environment.context,
-                 dialog_background+dialog_border);
+  ShowStr(screen_ptr^,xstart+43-Length(dl_environment.context),ystart+3,
+          dl_environment.context,
+          dialog_background+dialog_border);
   dl_environment.context := '';
 
   show_progress(40); 
-  ShowStr(v_ofs^,xstart+2,ystart+1,
-    'FADiNG OUT WAV RECORDiNG...',
-    dialog_background+dialog_text);
+  ShowStr(screen_ptr^,xstart+2,ystart+1,
+          'FADiNG OUT WAV RECORDiNG...',
+          dialog_background+dialog_text);
 
   progress_xstart := xstart+2;
   progress_ystart := ystart+2;
-  progress_old_value := NULL;
+  progress_old_value := BYTE_NULL;
   progress_step := 40/63;
 
   For temp := 63 downto 0 do
@@ -133,15 +120,9 @@ begin
       If scankey(1) then GOTO _jmp1;
       fade_out_volume := temp;
       set_global_volume;
-      ShowStr(v_ofs^,xstart+30,ystart+1,
-        Num2Str(Round(100/63*temp),10)+'%  ',
-        dialog_background+dialog_hi_text);        
-      If (@trace_update_proc <> NIL) then trace_update_proc
-      else If (play_status = isPlaying) then
-             begin
-               PATTERN_ORDER_page_refresh(pattord_page);
-               PATTERN_page_refresh(pattern_page);
-             end;
+      ShowStr(screen_ptr^,xstart+30,ystart+1,
+              Num2Str(Round(100/63*temp),10)+'%  ',
+              dialog_background+dialog_hi_text);        
       show_progress(temp);
       For temp2 := 1 to 10 do
         begin
@@ -165,9 +146,9 @@ begin
  _jmp1:
 
   show_progress(0);
-  ShowStr(v_ofs^,xstart+2,ystart+1,
-    'FADiNG iN SONG PLAYBACK... ',
-    dialog_background+dialog_text);
+  ShowStr(screen_ptr^,xstart+2,ystart+1,
+          'FADiNG iN SONG PLAYBACK... ',
+          dialog_background+dialog_text);
 
   flush_WAV_data;
   sdl_opl3_emulator := 0;
@@ -178,15 +159,9 @@ begin
       If scankey(1) then GOTO _end;
       fade_out_volume := temp;
       set_global_volume;
-      ShowStr(v_ofs^,xstart+30,ystart+1,
-        Num2Str(Round(100/63*temp),10)+'%  ',
-        dialog_background+dialog_hi_text);        
-      If (@trace_update_proc <> NIL) then trace_update_proc
-      else If (play_status = isPlaying) then
-             begin
-               PATTERN_ORDER_page_refresh(pattord_page);
-               PATTERN_page_refresh(pattern_page);
-             end;
+      ShowStr(screen_ptr^,xstart+30,ystart+1,
+              Num2Str(Round(100/63*temp),10)+'%  ',
+              dialog_background+dialog_hi_text);        
       show_progress(temp);
       If scankey(1) then GOTO _end;
       _emulate_screen_without_delay := TRUE;
@@ -233,21 +208,12 @@ begin
   If (progress_new_value <> progress_old_value) then
     begin
       progress_old_value := progress_new_value;
-      ShowCStr(v_ofs^,
+      ShowCStr(screen_ptr^,
                progress_xstart,progress_ystart,
                '~'+ExpStrL('',progress_new_value,'€')+'~'+
                ExpStrL('',40-progress_new_value,'€'),
                dialog_background+dialog_prog_bar1,
                dialog_background+dialog_prog_bar2);
-
-      If tracing then trace_update_proc
-      else If (play_status = isPlaying) then
-             begin
-               PATTERN_ORDER_page_refresh(pattord_page);
-               PATTERN_page_refresh(pattern_page);
-             end;
-      _emulate_screen_without_delay := TRUE;
-      emulate_screen;
     end;
 end;
 
@@ -258,7 +224,7 @@ begin
   If (play_status = isStopped) then smooth_fadeOut := FALSE
   else smooth_fadeOut := TRUE;
 
-  Move(v_ofs^,backup.screen,SizeOf(backup.screen));
+  Move(screen_ptr^,backup.screen,SizeOf(backup.screen));
   backup.cursor := GetCursor;
   backup.oldx   := WhereX;
   backup.oldy   := WhereY;
@@ -268,37 +234,31 @@ begin
   centered_frame(xstart,ystart,43,3,' WAV RECORDER ',
                  dialog_background+dialog_border,
                  dialog_background+dialog_title,double);
-  ShowStr(v_ofs^,xstart+43-Length(dl_environment.context),ystart+3,
-                 dl_environment.context,
-                 dialog_background+dialog_border);
+  ShowStr(screen_ptr^,xstart+43-Length(dl_environment.context),ystart+3,
+          dl_environment.context,
+          dialog_background+dialog_border);
   dl_environment.context := '';
 
   progress_xstart := xstart+2;
   progress_ystart := ystart+2;
-  progress_old_value := NULL;
+  progress_old_value := BYTE_NULL;
   progress_step := 40/63;
 
   If smooth_fadeOut then
     begin
       show_progress(40);
-      ShowStr(v_ofs^,xstart+2,ystart+1,
-        'FADiNG OUT SONG PLAYBACK...',
-        dialog_background+dialog_text);   
+      ShowStr(screen_ptr^,xstart+2,ystart+1,
+              'FADiNG OUT SONG PLAYBACK...',
+              dialog_background+dialog_text);   
       
       For temp := 63 downto 0 do
         begin
           If scankey(1) then GOTO _end;
           fade_out_volume := temp;
           set_global_volume;
-          ShowStr(v_ofs^,xstart+30,ystart+1,
-            Num2Str(Round(100/63*temp),10)+'%  ',
-            dialog_background+dialog_hi_text);        
-          If (@trace_update_proc <> NIL) then trace_update_proc
-          else If (play_status = isPlaying) then
-                 begin
-                   PATTERN_ORDER_page_refresh(pattord_page);
-                   PATTERN_page_refresh(pattern_page);
-                 end;
+          ShowStr(screen_ptr^,xstart+30,ystart+1,
+                  Num2Str(Round(100/63*temp),10)+'%  ',
+                  dialog_background+dialog_hi_text);        
           show_progress(temp);
           _emulate_screen_without_delay := TRUE;
           emulate_screen;
@@ -315,9 +275,9 @@ begin
     SDL_Delay(100);
 
   show_progress(0); 
-  ShowStr(v_ofs^,xstart+2,ystart+1,
-    'FADiNG iN WAV RECORDiNG... ',
-    dialog_background+dialog_text);   
+  ShowStr(screen_ptr^,xstart+2,ystart+1,
+          'FADiNG iN WAV RECORDiNG... ',
+          dialog_background+dialog_text);   
     
   Case play_status of
     isStopped: begin
@@ -342,16 +302,13 @@ begin
       If scankey(1) then GOTO _end;
       fade_out_volume := temp;
       set_global_volume;
-      ShowStr(v_ofs^,xstart+30,ystart+1,
-        Num2Str(Round(100/63*temp),10)+'%  ',
-        dialog_background+dialog_hi_text);        
-      If (@trace_update_proc <> NIL) then trace_update_proc
-      else If (play_status = isPlaying) then
-             begin
-               PATTERN_ORDER_page_refresh(pattord_page);
-               PATTERN_page_refresh(pattern_page);
-             end;
+      ShowStr(screen_ptr^,xstart+30,ystart+1,
+              Num2Str(Round(100/63*temp),10)+'%  ',
+              dialog_background+dialog_hi_text);        
       show_progress(temp);
+      _emulate_screen_without_delay := TRUE;      
+      emulate_screen;
+
       For temp2 := 1 to 10 do
         begin
           If scankey(1) then GOTO _end;
@@ -408,9 +365,9 @@ begin
       For temp := 1 to 8 do
         If (temp <> current_octave) then
           show_str(30+temp,MAX_PATTERN_ROWS+12,CHR(48+temp),
-               main_background+main_stat_line)
+                   main_background+main_stat_line)
         else show_str(30+temp,MAX_PATTERN_ROWS+12,CHR(48+temp),
-                  main_background+main_hi_stat_line);
+                      main_background+main_hi_stat_line);
     end;
 
   If scankey(SC_LALT) or scankey(SC_RALT) then
@@ -482,61 +439,69 @@ end;
 procedure PROGRAM_SCREEN_init;
 
 var
-  temp: longint;
+  temp: Byte;
 
 begin
   fr_setting.shadow_enabled := FALSE;
-  Frame(v_ofs^,01,MAX_PATTERN_ROWS+12,MAX_COLUMNS,MAX_PATTERN_ROWS+22,main_background+main_border,'',
-                                                                      main_background+main_title,double);
-  Frame(v_ofs^,01,01,MAX_COLUMNS,MAX_PATTERN_ROWS+12,main_background+main_border,'-'+ExpStrL('',20,' ')+'-',
-                                                     main_background+main_border,single);
-  Frame(v_ofs^,02,02,24,07,status_background+status_border,' STATUS ',
-                                      status_background+status_border,double);
-  Frame(v_ofs^,25,02,25+MAX_ORDER_COLS*7-1+PATTORD_xshift*2,07,order_background+order_border,' PATTERN ORDER (  ) ',
-                                      order_background+order_border,double);
-  fr_setting.shadow_enabled := TRUE;
-  reset_critical_area;
+  Frame(screen_ptr^,01,MAX_PATTERN_ROWS+12,MAX_COLUMNS,MAX_PATTERN_ROWS+22,
+        main_background+main_border,'',
+        main_background+main_title,double);
+  Frame(screen_ptr^,01,01,MAX_COLUMNS,MAX_PATTERN_ROWS+12,
+        main_background+main_border,'-'+ExpStrL('',20,' ')+'-',
+        main_background+main_border,single);
+  Frame(screen_ptr^,02,02,24,07,
+        status_background+status_border,' STATUS ',
+        status_background+status_border,double);
+  Frame(screen_ptr^,25,02,25+MAX_ORDER_COLS*7-1+PATTORD_xshift*2,07,
+        order_background+order_border,' PATTERN ORDER (  ) ',
+        order_background+order_border,double);
 
-  ShowVStr(v_ofs^,02,MAX_PATTERN_ROWS+13,ExpStrL('',9,' '),analyzer_bckg+analyzer);
-  ShowVStr(v_ofs^,03,MAX_PATTERN_ROWS+13,'MAX   MiN',analyzer_bckg+analyzer);
+  fr_setting.shadow_enabled := TRUE;
+  area_x1 := 0;
+  area_y1 := 0;
+  area_x2 := 0;
+  area_y2 := 0;
+
+  ShowVStr(screen_ptr^,02,MAX_PATTERN_ROWS+13,ExpStrL('',9,' '),analyzer_bckg+analyzer);
+  ShowVStr(screen_ptr^,03,MAX_PATTERN_ROWS+13,'MAX   MiN',analyzer_bckg+analyzer);
 
   For temp := 05 to MAX_COLUMNS-6 do
-    ShowVStr(v_ofs^,temp,MAX_PATTERN_ROWS+13,'Ú‡‡‡‡‡‡‡Û',analyzer_bckg+analyzer);
+    ShowVStr(screen_ptr^,temp,MAX_PATTERN_ROWS+13,'Ú‡‡‡‡‡‡‡Û',analyzer_bckg+analyzer);
 
-  ShowVStr(v_ofs^,04,MAX_PATTERN_ROWS+13,ExpStrL('',9,' '),analyzer_bckg+analyzer);
-  ShowVStr(v_ofs^,MAX_COLUMNS-5,MAX_PATTERN_ROWS+13,ExpStrL('',9,' '),analyzer_bckg+analyzer);
-  ShowVStr(v_ofs^,MAX_COLUMNS-4,MAX_PATTERN_ROWS+13,ExpStrL('',9,' '),analyzer_bckg+analyzer);
-  ShowVStr(v_ofs^,MAX_COLUMNS-3,MAX_PATTERN_ROWS+13,ExpStrL('',9,' '),analyzer_bckg+analyzer);
-  ShowVStr(v_ofs^,MAX_COLUMNS-2,MAX_PATTERN_ROWS+13,ExpStrL('',9,' '),analyzer_bckg+analyzer);
-  ShowVStr(v_ofs^,MAX_COLUMNS-1,MAX_PATTERN_ROWS+13,ExpStrL('',9,' '),analyzer_bckg+analyzer);
+  ShowVStr(screen_ptr^,04,MAX_PATTERN_ROWS+13,ExpStrL('',9,' '),analyzer_bckg+analyzer);
+  ShowVStr(screen_ptr^,MAX_COLUMNS-5,MAX_PATTERN_ROWS+13,ExpStrL('',9,' '),analyzer_bckg+analyzer);
+  ShowVStr(screen_ptr^,MAX_COLUMNS-4,MAX_PATTERN_ROWS+13,ExpStrL('',9,' '),analyzer_bckg+analyzer);
+  ShowVStr(screen_ptr^,MAX_COLUMNS-3,MAX_PATTERN_ROWS+13,ExpStrL('',9,' '),analyzer_bckg+analyzer);
+  ShowVStr(screen_ptr^,MAX_COLUMNS-2,MAX_PATTERN_ROWS+13,ExpStrL('',9,' '),analyzer_bckg+analyzer);
+  ShowVStr(screen_ptr^,MAX_COLUMNS-1,MAX_PATTERN_ROWS+13,ExpStrL('',9,' '),analyzer_bckg+analyzer);
 
-  ShowStr(v_ofs^,MAX_COLUMNS-4,MAX_PATTERN_ROWS+13,'dB', analyzer_bckg+analyzer);
-  ShowStr(v_ofs^,MAX_COLUMNS-4,MAX_PATTERN_ROWS+14,'‡47',analyzer_bckg+analyzer);
-  ShowStr(v_ofs^,MAX_COLUMNS-4,MAX_PATTERN_ROWS+15,'‡',  analyzer_bckg+analyzer);
-  ShowStr(v_ofs^,MAX_COLUMNS-4,MAX_PATTERN_ROWS+16,'‡23',analyzer_bckg+analyzer);
-  ShowStr(v_ofs^,MAX_COLUMNS-4,MAX_PATTERN_ROWS+17,'‡',  analyzer_bckg+analyzer);
-  ShowStr(v_ofs^,MAX_COLUMNS-4,MAX_PATTERN_ROWS+18,'‡12',analyzer_bckg+analyzer);
-  ShowStr(v_ofs^,MAX_COLUMNS-4,MAX_PATTERN_ROWS+19,'‡4', analyzer_bckg+analyzer);
-  ShowStr(v_ofs^,MAX_COLUMNS-4,MAX_PATTERN_ROWS+20,'‡2', analyzer_bckg+analyzer);
+  ShowStr(screen_ptr^,MAX_COLUMNS-4,MAX_PATTERN_ROWS+13,'dB', analyzer_bckg+analyzer);
+  ShowStr(screen_ptr^,MAX_COLUMNS-4,MAX_PATTERN_ROWS+14,'‡47',analyzer_bckg+analyzer);
+  ShowStr(screen_ptr^,MAX_COLUMNS-4,MAX_PATTERN_ROWS+15,'‡',  analyzer_bckg+analyzer);
+  ShowStr(screen_ptr^,MAX_COLUMNS-4,MAX_PATTERN_ROWS+16,'‡23',analyzer_bckg+analyzer);
+  ShowStr(screen_ptr^,MAX_COLUMNS-4,MAX_PATTERN_ROWS+17,'‡',  analyzer_bckg+analyzer);
+  ShowStr(screen_ptr^,MAX_COLUMNS-4,MAX_PATTERN_ROWS+18,'‡12',analyzer_bckg+analyzer);
+  ShowStr(screen_ptr^,MAX_COLUMNS-4,MAX_PATTERN_ROWS+19,'‡4', analyzer_bckg+analyzer);
+  ShowStr(screen_ptr^,MAX_COLUMNS-4,MAX_PATTERN_ROWS+20,'‡2', analyzer_bckg+analyzer);
 
-  ShowCStr(v_ofs^,03,03,'~ORDER/PATTERN ~  /',
+  ShowCStr(screen_ptr^,03,03,'~ORDER/PATTERN ~  /',
            status_background+status_dynamic_txt,
            status_background+status_static_txt);
-  ShowCStr(v_ofs^,03,04,'~ROW           ~',
+  ShowCStr(screen_ptr^,03,04,'~ROW           ~',
            status_background+status_dynamic_txt,
            status_background+status_static_txt);
-  ShowCStr(v_ofs^,03,05,'~SPEED/TEMPO   ~  /',
+  ShowCStr(screen_ptr^,03,05,'~SPEED/TEMPO   ~  /',
            status_background+status_dynamic_txt,
            status_background+status_static_txt);
 
-  ShowStr(v_ofs^,02,08,patt_win[1],pattern_bckg+pattern_border);
-  ShowStr(v_ofs^,02,09,patt_win[2],pattern_bckg+pattern_border);
-  ShowStr(v_ofs^,02,10,patt_win[3],pattern_bckg+pattern_border);
+  ShowStr(screen_ptr^,02,08,patt_win[1],pattern_bckg+pattern_border);
+  ShowStr(screen_ptr^,02,09,patt_win[2],pattern_bckg+pattern_border);
+  ShowStr(screen_ptr^,02,10,patt_win[3],pattern_bckg+pattern_border);
 
   For temp := 11 to 11+MAX_PATTERN_ROWS-1 do
-    ShowStr(v_ofs^,02,temp,patt_win[4],pattern_bckg+pattern_border);
+    ShowStr(screen_ptr^,02,temp,patt_win[4],pattern_bckg+pattern_border);
 
-  ShowStr(v_ofs^,02,11+MAX_PATTERN_ROWS,patt_win[5],pattern_bckg+pattern_border);
+  ShowStr(screen_ptr^,02,11+MAX_PATTERN_ROWS,patt_win[5],pattern_bckg+pattern_border);
 end;
 
 procedure process_config_file;
@@ -601,6 +566,8 @@ var
   result: Boolean;
 
 begin
+  If _debug_ then
+    _debug_str_ := 'ADT2EXT2.PAS:process_config_file:check_boolean';
   result := default;
   If SameName(str+'=???',data) and
      (Length(data) < Length(str)+5) then
@@ -617,6 +584,8 @@ var
   result: tRGB;
 
 begin
+  If _debug_ then
+    _debug_str_ := 'ADT2EXT2.PAS:process_config_file:check_rgb';
   If SameName(str+'=??,??,??',data) and
      (Length(data) < Length(str)+10) then
     begin
@@ -630,6 +599,7 @@ begin
 end;
 
 begin { process_config_file }
+  _debug_str_ := 'ADT2EXT2.PAS:process_config_file';
   Write('Reading configuration file ... ');
   {$i-}
   Assign(txtf,'adtrack2.ini');
@@ -1326,22 +1296,22 @@ begin { process_config_file }
       sdl_typematic_delay :=
         check_number('sdl_typematic_delay',10,0,2000,sdl_typematic_delay);
 
-          If (Copy(data,1,18) = 'sdl_wav_directory=') and
+      If (Copy(data,1,18) = 'sdl_wav_directory=') and
          (Length(data) > 18) then
         begin
-                  temp_str := Copy(data,19,Length(data)-18);
-                  If (temp_str[1] = PATHSEP) then Delete(temp_str,1,1);
+          temp_str := Copy(data,19,Length(data)-18);
+          If (temp_str[1] = PATHSEP) then Delete(temp_str,1,1);
           If (temp_str <> '') then
-                    begin
+            begin
               If (Length(temp_str) > 4) then
-                            If NOT (Lower(Copy(temp_str,Length(temp_str)-3,4)) = '.wav') then
-                                  temp_str := temp_str+PATHSEP
-                                else opl3_flushmode := TRUE
-                          else If (temp_str[Length(temp_str)] <> PATHSEP) then
-                     temp_str := temp_str+PATHSEP;
-                        end;
-              sdl_wav_directory := temp_str;
-              If NOT (Pos(':',sdl_wav_directory) <> 0) then
+                If NOT (Lower(Copy(temp_str,Length(temp_str)-3,4)) = '.wav') then
+                                   temp_str := temp_str+PATHSEP
+                else opl3_flushmode := TRUE
+               else If (temp_str[Length(temp_str)] <> PATHSEP) then
+                      temp_str := temp_str+PATHSEP;
+             end;
+          sdl_wav_directory := temp_str;
+          If NOT (Pos(':',sdl_wav_directory) <> 0) then
             sdl_wav_directory := PathOnly(ParamStr(0))+PATHSEP+sdl_wav_directory;
         end;
 

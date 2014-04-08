@@ -2,10 +2,10 @@ unit AdT2text;
 interface
 
 const
-{__AT2REV__}at2rev  = '053';
-{__AT2VER__}at2ver  = '2.4.13';
-{__AT2DAT__}at2date = '03-14-2014';
-{__AT2LNK__}at2link = '11:15am';
+{__AT2REV__}at2rev  = '054';
+{__AT2VER__}at2ver  = '2.4.14';
+{__AT2DAT__}at2date = '04-04-2014';
+{__AT2LNK__}at2link = '3:27pm';
 
 const
   ascii_line_01 = 'ฺ-ฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ--๙๚               ๚๙-ฟ';
@@ -42,11 +42,11 @@ procedure ShowStartMessage;
 implementation
 
 uses
-    AdT2vscr,AdT2unit,AdT2keyb,
+    AdT2sys,AdT2vscr,AdT2unit,AdT2keyb,
     StringIO,DialogIO,TxtScrIO;
 
 const
-  LINES = 961;
+  LINES = 969;
   help_data: array[1..LINES] of String[128] = (
     '@topic:general',
     'อหอออออออออออออออออออออออหอ',
@@ -171,19 +171,19 @@ const
     '~[Shift] PgDn,PgUp (+,-)~  Move to next/previous pattern',
     '~[Shift] Home,End~         Move fwd./bckwd. to the first/last pattern',
     '~^Home,^End~               Move to the end/top of previous/next pattern',
+    '~Space~                    Advance to next row',
     '~^PgUp,^PgDn~              Transpose note or block halftone up/down',
     '~Backspace~                Remove note or clear attributes',
-    '~Insert~                   Insert new track-line',
-    '~Delete~                   Delete track-line',
-    '~[Shift] Insert~           Insert new pattern-line',
-    '~[Shift] Delete~           Delete pattern-line',
+    '~Insert~                   Insert new line (within track only)',
+    '~Delete~                   Delete line (within track only)',
+    '~[Shift] Insert~           Insert new line',
+    '~[Shift] Delete~           Delete line',
     '~[Shift] Enter~            Toggle fixed and regular note',
     '~^K~                       Insert Key-Off',
     '~^C~                       Copy object at cursor to clipboard',
     '~^V~                       Paste object from clipboard',
     '~[Ctrl][Tab] V~            Multiple paste object from clipboard',
     '~{Ctrl} "[","]"~           Change current instrument',
-    '~Space~                    Advance to next row',
     '~[Alt] F2~                 Save current pattern to file',
     '~^F2~                      Save module in tiny format',
     '~[Shift] F3~               Quick load recent pattern data',
@@ -213,7 +213,7 @@ const
     'ณ "Paste block" operation has two other functional variants        ณ',
     'ณ with different key shortcuts for activation:                     ณ',
     'ณ 1) ~[Alt] V~ toggles "Mix block" operation, when block data        ณ',
-    'ณ    from clipboard is applied without overwriting existing data,  ณ',
+    'ณ    from clipboard is applied without overwriting existing data;  ณ',
     'ณ 2) ~[Shift] ^V~ toggles "Selective paste block" operation,         ณ',
     'ณ    when only block data from clipboard corresponding to current  ณ',
     'ณ    cursor position is being applied (i.e. note, instrument,      ณ',
@@ -280,6 +280,7 @@ const
     '~Space~                    Select item',
     '~^Space~                   Toggle ADSR preview ON/OFF',
     '~[Ctrl] "[","]"~           Change current instrument',
+    '~[Ctrl][Shift] "[","]"~    Change macro speed',
     '~Enter~                    Toggle carrier and modulator slot settings',
     '~[Shift] M,B,S,T,C,H~      Toggle ~m~elodic and percussion (~B~D,~S~D,~T~T,T~C~,~H~H)',
     '~[Shift] F2~               Save instrument w/ fm-register macro to file',
@@ -301,6 +302,7 @@ const
     '~[Shift] ^Left,^Right~     Navigate to start/end of macro table',
     '~^PgUp,^PgDown~            Change current arpeggio/vibrato table',
     '~[Ctrl] "[","]"~           Change current instrument',
+    '~[Ctrl][Shift] "[","]"~    Change macro speed',
     '~^C~                       Copy line in table (whole table respectively)',
     '~[Shift] ^C~               Copy column in table',
     '~^V~                       Paste object from clipboard',
@@ -341,6 +343,7 @@ const
     '~[Shift] ^Left,^Right~     Navigate to start/end of macro table',
     '~^PgUp,^PgDown~            Change current arpeggio/vibrato table',
     '~[Ctrl] "[","]"~           Change current instrument',
+    '~[Ctrl][Shift] "[","]"~    Change macro speed',
     '~^C~                       Copy line in table (whole table respectively)',
     '~[Shift] ^C~               Copy column in table',
     '~^V~                       Paste object from clipboard',
@@ -360,9 +363,14 @@ const
     'อสออออออออออออออออออออออออออออออออออออออออสอออออออออออออออออออออออออออออออ',
     '~Up,Down,PgUp,PgDown~',
     '~Home,End~                 Cursor navigation',
+    '~[Shift] Up,Down~          Move up/down in macro table',
+    '~[Shift] Left,Right~       Move left/right in macro table',
+    '~[Shift] PgUp,PgDown~      Move page up/down in macro table',
+    '~[Shift] Home,End~         Move to the start/end of macro table',
+    '~[Ctrl] Home,End~          Move to the start/end of line in macro table',
     '~Enter~                    Load selected macro data',
     '~^Enter~                   Load all macro data from bank (if available)',
-    '~[Ctrl] "[","]"~           Change current instrument',
+    '~[Ctrl] "[","]"~           Change current instrument (if possible)',
     '~[Ctrl][Shift] "[","]"~    Change macro speed',
     '~MBoard keys <hold down>~  Preview instrument with selected macro data',
     '~Tab~                      Switch to Arpeggio/Vibrato Macro Browser window',
@@ -382,7 +390,7 @@ const
     '~^Space~                   Toggle vibrato table selection         ู',
     '~[Shift] Home,End~         Navigate to start/end of arpeggio table',
     '~^Home,^End~               Navigate to start/end of vibrato table',
-    '~[Ctrl] "[","]"~           Change current instrument',
+    '~[Ctrl] "[","]"~           Change current instrument (if possible)',
     '~[Ctrl][Shift] "[","]"~    Change macro speed',
     '~MBoard keys <hold down>~  Preview instrument with selected macro data',
     '~Enter~                    Load selected macro data',
@@ -1056,8 +1064,10 @@ begin
                       ExpStrR(str,74+Length(str)-C3StrLen(str),' '),
                       atr1,atr2,atr3);
 end;
+
 begin
-  Move(v_ofs^,backup.screen,SizeOf(backup.screen));
+  _debug_str_ := 'ADT2TEXT.PAS:Help';
+  Move(screen_ptr^,backup.screen,SizeOf(backup.screen));
   backup.cursor := GetCursor;
   backup.oldx   := WhereX;
   backup.oldy   := WhereY;
@@ -1078,10 +1088,10 @@ begin
   Repeat
     If (page > 1) then temps := '' else temps := '-';
     If (page < LINES-(MAX_PATTERN_ROWS+6)) then temps := temps+'' else temps := temps+'-';
-    ShowCStr(v_ofs^,xstart+1+74-Length(temps),ystart+MAX_PATTERN_ROWS+8,
-                               '[~'+temps+'~]',
-                               help_background+help_border,
-                               help_background+help_indicators);
+    ShowCStr(screen_ptr^,xstart+1+74-Length(temps),ystart+MAX_PATTERN_ROWS+8,
+             '[~'+temps+'~]',
+             help_background+help_border,
+             help_background+help_indicators);
     ypos := ystart+1;
     temp := page;
     While (ypos <= ystart+(MAX_PATTERN_ROWS+6)+1) and (temp <= LINES) do
@@ -1090,102 +1100,102 @@ begin
            (Copy(help_data[temp],1,6) <> '@input') then
           begin
             If (Copy(help_data[temp],1,3) <> ' บ ') then
-              ListCStr(v_ofs^,xstart+2,ypos,
-                                     help_data[temp],
-                                     help_background+help_text,
-                                     help_background+help_keys,
-                                     help_background+help_hi_text)
+              ListCStr(screen_ptr^,xstart+2,ypos,
+                       help_data[temp],
+                       help_background+help_text,
+                       help_background+help_keys,
+                       help_background+help_hi_text)
             else
-              ListCStr(v_ofs^,xstart+2,ypos,
-                                     help_data[temp],
-                                     help_background+help_text,
-                                     help_background+help_keys,
-                                     help_background+help_topic);
+              ListCStr(screen_ptr^,xstart+2,ypos,
+                       help_data[temp],
+                       help_background+help_text,
+                       help_background+help_keys,
+                       help_background+help_topic);
             Inc(ypos);
           end
         else If (Copy(help_data[temp],8,
                  Length(help_data[temp])-7) = 'key_comment') then
             begin
               If NOT use_H_for_B then
-                ListCStr(v_ofs^,xstart+2,ypos,
-                                  key_comment_B,
-                                  help_background+help_text,
-                                  help_background+help_keys,
-                                  help_background+help_topic)
+                ListCStr(screen_ptr^,xstart+2,ypos,
+                         key_comment_B,
+                         help_background+help_text,
+                         help_background+help_keys,
+                         help_background+help_topic)
               else
-                ListCStr(v_ofs^,xstart+2,ypos,
-                                  key_comment_H,
-                                  help_background+help_text,
-                                  help_background+help_keys,
-                                  help_background+help_topic);
+                ListCStr(screen_ptr^,xstart+2,ypos,
+                         key_comment_H,
+                         help_background+help_text,
+                         help_background+help_keys,
+                         help_background+help_topic);
               Inc(ypos);
             end
           else If (Copy(help_data[temp],8,
                    Length(help_data[temp])-7) = 'shift_f5') then
             begin
               If NOT trace_by_default then
-                ListCStr(v_ofs^,xstart+2,ypos,
-                                  shift_f5_1,
-                                  help_background+help_text,
-                                  help_background+help_keys,
-                                  help_background+help_topic)
+                ListCStr(screen_ptr^,xstart+2,ypos,
+                         shift_f5_1,
+                         help_background+help_text,
+                         help_background+help_keys,
+                         help_background+help_topic)
               else
-                ListCStr(v_ofs^,xstart+2,ypos,
-                                  shift_f5_2,
-                                  help_background+help_text,
-                                  help_background+help_keys,
-                                  help_background+help_topic);
+                ListCStr(screen_ptr^,xstart+2,ypos,
+                         shift_f5_2,
+                         help_background+help_text,
+                         help_background+help_keys,
+                         help_background+help_topic);
               Inc(ypos);
             end
           else If (Copy(help_data[temp],8,
                   Length(help_data[temp])-7) = 'shift_f8') then
             begin
               If NOT trace_by_default then
-                ListCStr(v_ofs^,xstart+2,ypos,
-                                  shift_f8_1,
-                                  help_background+help_text,
-                                  help_background+help_keys,
-                                  help_background+help_topic)
+                ListCStr(screen_ptr^,xstart+2,ypos,
+                         shift_f8_1,
+                         help_background+help_text,
+                         help_background+help_keys,
+                         help_background+help_topic)
               else
-                ListCStr(v_ofs^,xstart+2,ypos,
-                                  shift_f8_2,
-                                  help_background+help_text,
-                                  help_background+help_keys,
-                                  help_background+help_topic);
+                ListCStr(screen_ptr^,xstart+2,ypos,
+                         shift_f8_2,
+                         help_background+help_text,
+                         help_background+help_keys,
+                         help_background+help_topic);
               Inc(ypos);
             end
           else If (Copy(help_data[temp],8,
                    Length(help_data[temp])-7) = 'shift_f9') then
             begin
               If NOT trace_by_default then
-                ListCStr(v_ofs^,xstart+2,ypos,
-                                  shift_f9_1,
-                                  help_background+help_text,
-                                  help_background+help_keys,
-                                  help_background+help_topic)
+                ListCStr(screen_ptr^,xstart+2,ypos,
+                         shift_f9_1,
+                         help_background+help_text,
+                         help_background+help_keys,
+                         help_background+help_topic)
               else
-                ListCStr(v_ofs^,xstart+2,ypos,
-                                  shift_f9_2,
-                                  help_background+help_text,
-                                  help_background+help_keys,
-                                  help_background+help_topic);
+                ListCStr(screen_ptr^,xstart+2,ypos,
+                         shift_f9_2,
+                         help_background+help_text,
+                         help_background+help_keys,
+                         help_background+help_topic);
               Inc(ypos);
             end
           else If (Copy(help_data[temp],8,
                    Length(help_data[temp])-7) = 'alt_f8') then
             begin
               If NOT nosync_by_default then
-                ListCStr(v_ofs^,xstart+2,ypos,
-                                  alt_f8_1,
-                                  help_background+help_text,
-                                  help_background+help_keys,
-                                  help_background+help_topic)
+                ListCStr(screen_ptr^,xstart+2,ypos,
+                         alt_f8_1,
+                         help_background+help_text,
+                         help_background+help_keys,
+                         help_background+help_topic)
               else
-                ListCStr(v_ofs^,xstart+2,ypos,
-                                  alt_f8_2,
-                                  help_background+help_text,
-                                  help_background+help_keys,
-                                  help_background+help_topic);
+                ListCStr(screen_ptr^,xstart+2,ypos,
+                         alt_f8_2,
+                         help_background+help_text,
+                         help_background+help_keys,
+                         help_background+help_topic);
               Inc(ypos);
             end;
 
@@ -1235,7 +1245,7 @@ end;
 
 procedure C3WriteLn(posX,posY: Byte; str: String; atr1,atr2,atr3: Byte);
 begin
-  ShowC3Str(v_ofs^,posX,posY,
+  ShowC3Str(screen_ptr^,posX,posY,
             str,
             atr1,atr2,atr3);
 end;
@@ -1243,22 +1253,22 @@ end;
 procedure ShowStartMessage;
 
 var
-   i: longint;
+  temp: Byte;
 
 begin
-    For i := 0 to 18 do
-      adt2_title[i] := RotStrL('/ดDLiB TR/ดCK3R ][', ' - REViSiON '+at2rev+' - ',i);
+  For temp := 0 to 18 do
+    adt2_title[temp] := RotStrL('/ดDLiB TR/ดCK3R ][', ' - REViSiON '+at2rev+' - ',temp);
 
-    adt2_title[18] := '-+ REViSiON '+at2rev+' +-';
+  adt2_title[18] := '-+ REViSiON '+at2rev+' +-';
 
-    For i := 19 to 36 do
-       adt2_title[i] := RotStrL(' - REViSiON '+at2rev+' - ', '/ดDLiB TR/ดCK3R ][',i-18);
+  For temp := 19 to 36 do
+     adt2_title[temp] := RotStrL(' - REViSiON '+at2rev+' - ', '/ดDLiB TR/ดCK3R ][',temp-18);
 
-    WriteLn;
-    WriteLn('/ดDLiB TR/ดCK3R ][ SDL (win32)');
-    WriteLn('coded by subz3ro/Altair, SDL portation support by Dmitry Smagin, Linux port by Florian Jung');
-    WriteLn('version ',at2ver,' built on ',at2date,' ',at2link);
-    WriteLn;
+  WriteLn;
+  WriteLn('/ดDLiB TR/ดCK3R ][ SDL (win32)');
+  WriteLn('coded by subz3ro/Altair, SDL portation support by Dmitry Smagin, Linux port by Florian Jung');
+  WriteLn('version ',at2ver,' built on ',at2date,' ',at2link);
+  WriteLn;
 end;
 
 end.

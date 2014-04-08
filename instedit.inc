@@ -43,6 +43,7 @@ var
   freq: Word;
 
 begin
+  _debug_str_ := 'INSTEDIT.INC:INSTRUMENT_test:output_note';
   note := board_pos+12*(current_octave-1);
   If NOT (note in [0..12*8+1]) then
     begin
@@ -51,18 +52,19 @@ begin
     end;
 
   chan_handle[chan] := board_scancodes[board_pos];
-  If is_4op_mode and (instr2 <> NULL) then chan := _4op_chan[chan];
+  If is_4op_mode and (instr2 <> BYTE_NULL) then chan := _4op_chan[chan];
   load_instrument(songdata.instr_data[instr],chan);
 
   If percussion_mode and
      (songdata.instr_data[instr].perc_voice in [4,5]) then
     load_instrument(songdata.instr_data[instr],_perc_sim_chan[chan]);
 
-  If is_4op_mode and (instr2 <> NULL) then
+  If is_4op_mode and (instr2 <> BYTE_NULL) then
     load_instrument(songdata.instr_data[instr2],PRED(chan));
 
   freq := nFreq(note-1)+$2000+
-           SHORTINT(tDUMMY_BUFF(Addr(songdata.instr_data[instr])^)[12]);
+          SHORTINT(tDUMMY_BUFF(Addr(songdata.instr_data[instr])^)[12]);
+
   event_table[chan].note := note;
   opl3out($0b0+_chan_n[chan],0);
   opl3out($0a0+_chan_n[chan],LO(freq));
@@ -80,7 +82,7 @@ begin
          macro_table[chan].vib_table := 0;
        end;
 
-  If is_4op_mode and (instr2 <> NULL) then
+  If is_4op_mode and (instr2 <> BYTE_NULL) then
     begin
       freq_table[PRED(chan)] := freq;
       freqtable2[PRED(chan)] := freq;
@@ -93,62 +95,8 @@ begin
     end;
 end;
 
-function chanpos(var data; channels,scancode: Byte): Byte; assembler;
-asm
-        push    ebx
-        push    ecx
-        push    edi
-        xor     ebx,ebx
-@@1:    mov     edi,[data]
-        add     edi,ebx
-        xor     ecx,ecx
-        mov     cl,channels
-        mov     al,scancode
-        sub     ecx,ebx
-        repnz   scasb
-        jnz     @@2
-        xor     eax,eax
-        mov     al,channels
-        sub     eax,ecx
-        jmp     @@3
-@@2:    xor     eax,eax
-        jmp     @@5
-@@3:    pusha
-        push    eax
-        call    is_4op_chan
-        or      al,al
-        jz      @@4
-        popa
-        inc     ebx
-        jmp     @@1
-@@4:    popa
-@@5:
-        pop     edi
-        pop     ecx
-        pop     ebx
-end;
-
-function chanpos2(var data; channels,scancode: Byte): Byte; assembler;
-asm
-        push    ecx
-        push    edi
-        mov     edi,[data]
-        xor     ecx,ecx
-        mov     cl,channels
-        mov     al,scancode
-        repnz   scasb
-        jnz     @@1
-        xor     eax,eax
-        mov     al,channels
-        sub     eax,ecx
-        jmp     @@2
-@@1:    xor     eax,eax
-@@2:
-        pop     edi
-        pop     ecx
-end;
-
 begin { INSTRUMENT_test }
+  _debug_str_ := 'INSTEDIT.INC:INSTRUMENT_test';
   If ctrl_pressed or alt_pressed or shift_pressed then EXIT;
   valid_key := FALSE;
   For temp := 1 to 29 do
@@ -173,7 +121,7 @@ begin { INSTRUMENT_test }
   volume_scaling_backup := volume_scaling;
   songdata.common_flag := songdata.common_flag AND NOT $80;
   volume_scaling := FALSE;
-  FillData(channel_flag,SizeOf(channel_flag),BYTE(TRUE));
+  FillChar(channel_flag,SizeOf(channel_flag),BYTE(TRUE));
   Move(pan_lock,pan_lock_backup,SizeOf(pan_lock));
   Move(volume_lock,volume_lock_backup,SizeOf(volume_lock));
   Move(peak_lock,peak_lock_backup,SizeOf(volume_lock));
@@ -186,7 +134,7 @@ begin { INSTRUMENT_test }
      NOT is_4op_mode then channels := 18
   else If NOT is_4op_mode then channels := 15
        else begin
-              If (instr2 <> NULL) then
+              If (instr2 <> BYTE_NULL) then
                 begin
                   songdata.flag_4op := $3f;
                   channels := 6;
@@ -212,7 +160,7 @@ begin { INSTRUMENT_test }
                    BYTE(percussion_mode) SHL 5;
   key_off(17);
   key_off(18);
-  opl3out(_instr[11],misc_register);
+  opl2out(_instr[11],misc_register);
 
   If percussion_mode and
      (songdata.instr_data[instr].perc_voice in [1..5]) then
@@ -234,14 +182,14 @@ begin { INSTRUMENT_test }
              temp2 := board_scancodes[temp];
              temp4 := scankey(temp2);
 
-             If NOT (is_4op_mode and (instr2 <> NULL)) then
+             If NOT (is_4op_mode and (instr2 <> BYTE_NULL)) then
                begin
-                 temp3 := chanpos(chan_handle,channels,temp2);
-                 temp5 := chanpos(chan_handle,channels,0)
+                 temp3 := get_chanpos(chan_handle,channels,temp2);
+                 temp5 := get_chanpos(chan_handle,channels,0)
                end
              else begin
-                    temp3 := chanpos2(chan_handle,channels,temp2);
-                    temp5 := chanpos2(chan_handle,channels,0)
+                    temp3 := get_chanpos2(chan_handle,channels,temp2);
+                    temp5 := get_chanpos2(chan_handle,channels,0)
                   end;
 
              If temp4 then valid_key := TRUE;
@@ -405,6 +353,8 @@ const
   _index: array[1..13] of Byte = (1,0,3,2,5,4,7,6,9,8,10,11,12);
 
 begin
+  If _debug_ then
+    _debug_str_ := 'INSTEDIT.INC:INSTRUMENT_CONTROL_page_refresh';
   If (ins_parameter(page,10) AND 1 <> 1) then
     For temp := 1 to 18 do
       ShowCStr(mn_environment.v_dest^,
@@ -506,7 +456,7 @@ begin
       else temp_str := temp_str+'[~MACRO:ViB';
 
   If (temp_str <> ' ') then temp_str := temp_str+'~] ';
-  
+
   ShowCStr(mn_environment.v_dest^,
            INSCTRL_xshift+19,INSCTRL_yshift+26,
            ExpStrR(temp_str,21+2,'อ'),
@@ -552,6 +502,7 @@ begin
 end;
 
 begin { _show_adsr }
+  _debug_str_ := 'INSTEDIT.INC:_show_adsr';
   fr_setting.update_area := FALSE;
   fr_setting.shadow_enabled := FALSE;
 
@@ -703,6 +654,7 @@ const
   _index: array[1..13] of Byte = (1,0,3,2,5,4,7,6,9,8,10,11,12);
 
 begin
+  _debug_str_ := 'INSTEDIT.INC:INSTRUMENT_CONTROL_page_refresh_alt';
   If (ins_parameter(page,10) AND 1 <> 1) then
     For temp := 1 to 18 do
       ShowCStr(mn_environment.v_dest^,INSCTRL_xshift+10,INSCTRL_yshift+06+temp,inst_itm1[temp].str,
@@ -772,7 +724,7 @@ begin
                 menu_background+menu_border,
                 menu_background+menu_context);
   end;
-        
+
   If (songdata.instr_macros[page].length <> 0) then temp_str := ' [~MACRO:FM'
   else temp_str := ' ';
 
@@ -789,7 +741,7 @@ begin
       else temp_str := temp_str+'[~MACRO:ViB';
 
   If (temp_str <> ' ') then temp_str := temp_str+'~] ';
-  
+
   ShowCStr(mn_environment.v_dest^,INSCTRL_xshift+19,INSCTRL_yshift+26,
            ExpStrR(temp_str,21+2,'อ'),
            menu_background+menu_border,
@@ -933,10 +885,11 @@ var
   temp_str: String;
 
 begin
+  _debug_str_ := 'INSTEDIT.INC:INSTRUMENT_CONTROL_edit:page_build';
   ShowStr(vscreen,xstart+45,ystart,
           byte2hex(instrum_page),
           instrument_bckg+instrument_title);
- 
+
   Case tADTRACK2_INS(inst^).perc_voice of
     0: ShowCStr(vscreen,xstart,ystart+25,' [~MELODiC~]',
                 instrument_bckg+instrument_border,
@@ -974,25 +927,17 @@ begin
       else temp_str := temp_str+'[~MACRO:ViB';
 
   If (temp_str <> ' ') then temp_str := temp_str+'~] ';
-  
+
   ShowCStr(vscreen,
            xstart+10,ystart+25,
            ExpStrR(temp_str,21+2,'อ'),
            instrument_bckg+instrument_border,
            instrument_bckg+instrument_context);
-  
-  If NOT (tADTRACK2_INS(inst^).perc_voice in [2..5]) then
-    If carrier then
-      ShowCStr(vscreen,xstart+45,ystart+25,' ENTER ฤ ~MODULATOR SLOT~ ',
-               instrument_bckg+instrument_border,
-               instrument_bckg+instrument_context)
-    else
-      ShowCStr(vscreen,xstart+45,ystart+25,'ออ ENTER ฤ ~CARRiER SLOT~ ',
-               instrument_bckg+instrument_border,
-               instrument_bckg+instrument_context)
-  else
-    ShowStr(vscreen,xstart+45,ystart+25,ExpStrL('',25,'อ'),
-            instrument_bckg+instrument_border);
+
+  ShowCStr(vscreen,xstart+55,ystart+25,
+           ExpStrL(' ~[SPEED:'+Num2str(songdata.tempo*songdata.macro_speedup,10)+#3+']~ ',17,'อ'),
+           macro_background+macro_border,
+           macro_background+macro_hi_text);
 
   If carrier or (tADTRACK2_INS(inst^).perc_voice in [2..5]) then
     begin
@@ -1162,6 +1107,7 @@ var
   temps1,temps2: String;
 
 begin
+  _debug_str_ := 'INSTEDIT.INC:INSTRUMENT_CONTROL_edit:page_refresh';
   x0 := xstart;
   y0 := ystart;
 
@@ -1169,11 +1115,11 @@ begin
      NOT _ADSR_preview_flag then
     begin
       _show_adsr(vscreen,x0+4,y0+10,
-                 NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,
+                 BYTE_NULL,BYTE_NULL,BYTE_NULL,BYTE_NULL,BYTE_NULL,BYTE_NULL,BYTE_NULL,BYTE_NULL,
                  TRUE);
       page_build;
     end;
-    
+
   If _ADSR_preview_flag then
     ShowCStr(vscreen,xstart+29,ystart+25,' [ADSR:~ON~] '+#205,
              instrument_bckg+instrument_border,
@@ -1413,28 +1359,28 @@ const
 label _jmp1,_end;
 
 begin { INSTRUMENT_CONTROL_edit }
+  _debug_str_ := 'INSTEDIT.INC:INSTRUMENT_CONTROL_edit';
   inst := Addr(songdata.instr_data[instrum_page]);
   If (tADTRACK2_INS(inst^).perc_voice in [0,1]) then carrier := TRUE
   else carrier := FALSE;
 
   hpos := 1; vpos := 1;
 
-_jmp1: 
+_jmp1:
   If _force_program_quit then EXIT;
 
-  Move(v_ofs^,backup.screen,SizeOf(backup.screen));
+  Move(screen_ptr^,backup.screen,SizeOf(backup.screen));
   backup.cursor := GetCursor;
   backup.oldx   := WhereX;
   backup.oldy   := WhereY;
 
   HideCursor;
-
-  Move(v_ofs^,vscreen,SizeOf(vscreen));
+  Move(screen_ptr^,vscreen,SizeOf(vscreen));
   centered_frame_vdest := Addr(vscreen);
   centered_frame(xstart,ystart,71,25,' iNSTRUMENT EDiTOR (iNS_  ) ',
                  instrument_bckg+instrument_border,
                  instrument_bckg+instrument_title,double);
-  centered_frame_vdest := v_ofs;
+  centered_frame_vdest := screen_ptr;
 
   move_to_screen_data := Addr(vscreen);
   move_to_screen_area[1] := xstart;
@@ -1448,7 +1394,7 @@ _jmp1:
   move_to_screen_area[3] := xstart+70;
   move_to_screen_area[4] := ystart+25;
   Inc(xstart);
-  
+
   If NOT _force_program_quit then
     Repeat
       keyboard_poll_input;
@@ -1531,7 +1477,7 @@ _jmp1:
       If NOT shift_pressed and NOT alt_pressed and NOT ctrl_pressed then
         If (_4op_to_test <> 0) then
           INSTRUMENT_test(LO(_4op_to_test),HI(_4op_to_test),count_channel(pattern_hpos),fkey,TRUE)
-        else INSTRUMENT_test(instrum_page,NULL,count_channel(pattern_hpos),fkey,TRUE);
+        else INSTRUMENT_test(instrum_page,BYTE_NULL,count_channel(pattern_hpos),fkey,TRUE);
 
       Case fkey of
         kLEFT:   If (hpos > 1) and (_hpos[vpos,hpos-1] <> 0) then Dec(hpos)
@@ -1691,31 +1637,31 @@ _jmp1:
                        2: If (hpos = 2) then
                             If carrier then tADTRACK2_INS(inst^).fm_data.WAVEFORM_carrier := 0
                             else tADTRACK2_INS(inst^).fm_data.WAVEFORM_modulator := 0;
-               
+
                        3: If carrier then tADTRACK2_INS(inst^).fm_data.WAVEFORM_carrier := 1
                           else tADTRACK2_INS(inst^).fm_data.WAVEFORM_modulator := 1;
-               
+
                        4: If (hpos = 2) then
                             If carrier then tADTRACK2_INS(inst^).fm_data.WAVEFORM_carrier := 2
                             else tADTRACK2_INS(inst^).fm_data.WAVEFORM_modulator := 2;
-               
+
                        5: If (hpos = 2) then
                             If carrier then tADTRACK2_INS(inst^).fm_data.WAVEFORM_carrier := 3
                             else tADTRACK2_INS(inst^).fm_data.WAVEFORM_modulator := 3;
-               
+
                        6: If carrier then tADTRACK2_INS(inst^).fm_data.WAVEFORM_carrier := 4
                           else tADTRACK2_INS(inst^).fm_data.WAVEFORM_modulator := 4;
-               
+
                        7: If (hpos = 2) then
                             If carrier then tADTRACK2_INS(inst^).fm_data.WAVEFORM_carrier := 5
                             else tADTRACK2_INS(inst^).fm_data.WAVEFORM_modulator := 5;
-               
+
                        8: If carrier then tADTRACK2_INS(inst^).fm_data.WAVEFORM_carrier := 6
                           else tADTRACK2_INS(inst^).fm_data.WAVEFORM_modulator := 6;
-               
+
                        9: If carrier then tADTRACK2_INS(inst^).fm_data.WAVEFORM_carrier := 7
                           else tADTRACK2_INS(inst^).fm_data.WAVEFORM_modulator := 7;
-               
+
                       10,11,
                       12: If carrier then
                             tADTRACK2_INS(inst^).fm_data.KSL_VOLUM_carrier :=
@@ -1723,7 +1669,7 @@ _jmp1:
                           else
                             tADTRACK2_INS(inst^).fm_data.KSL_VOLUM_modulator :=
                             tADTRACK2_INS(inst^).fm_data.KSL_VOLUM_modulator AND $3f+KSL_volume[vpos-10];
-               
+
                       13: If (hpos = 1) then
                             begin
                               If carrier then
@@ -1734,10 +1680,10 @@ _jmp1:
                                 tADTRACK2_INS(inst^).fm_data.KSL_VOLUM_modulator AND $3f+KSL_volume[vpos-10];
                              end
                            else tADTRACK2_INS(inst^).panning := panning_pos[hpos-2];
-               
+
                       16: tADTRACK2_INS(inst^).fm_data.FEEDBACK_FM := hpos-1+
                           tADTRACK2_INS(inst^).fm_data.FEEDBACK_FM AND $0e;
-               
+
                       17,18,19,
                       20: If (hpos = 1) then
                             begin
@@ -1897,30 +1843,47 @@ _jmp1:
                    update_instr_data(instrum_page);
                  end;
 
-        kCtLbr:  If (_4op_to_test = 0) then
-                   If (current_inst > 1) then
-                     begin
-                       Dec(current_inst);
-                       instrum_page := current_inst;
-                       STATUS_LINE_refresh;
-                       inst := Addr(songdata.instr_data[instrum_page]);
-                       If NOT (tADTRACK2_INS(inst^).perc_voice in [0,1]) then carrier := FALSE;
-                       page_build;
-                       page_refresh;
-                     end;
+      kCtLbr:  If shift_pressed then
+                 begin
+                   If (songdata.macro_speedup > 1) then
+                     Dec(songdata.macro_speedup);
+                   macro_speedup := songdata.macro_speedup;
+                   keyboard_reset_buffer;
+                 end
+               else If (_4op_to_test = 0) then
+                      If (current_inst > 1) then
+                        begin
+                          Dec(current_inst);
+                          instrum_page := current_inst;
+                          STATUS_LINE_refresh;
+                          inst := Addr(songdata.instr_data[instrum_page]);
+                          If NOT (tADTRACK2_INS(inst^).perc_voice in [0,1]) then
+                            carrier := FALSE;
+                          page_build;
+                          page_refresh;
+                        end;
 
-        kCtRbr:  If (_4op_to_test = 0) then
-                   If (current_inst < 255) then
-                     begin
-                       Inc(current_inst);
-                       instrum_page := current_inst;
-                       STATUS_LINE_refresh;
-                       inst := Addr(songdata.instr_data[instrum_page]);
-                       If NOT (tADTRACK2_INS(inst^).perc_voice in [0,1]) then carrier := FALSE;
-                       page_build;
-                       page_refresh;
-                     end;
-                  
+      kCtRbr:  If shift_pressed then
+                 begin
+                   Inc(songdata.macro_speedup);
+                   If (calc_max_speedup(songdata.tempo) < songdata.macro_speedup) then
+                     songdata.macro_speedup := calc_max_speedup(songdata.tempo);
+                   macro_speedup := songdata.macro_speedup;
+                   keyboard_reset_buffer;
+                 end
+               else If (_4op_to_test = 0) then
+                      If (current_inst < 255) then
+                        begin
+                          Inc(current_inst);
+                          instrum_page := current_inst;
+                          STATUS_LINE_refresh;
+                          inst := Addr(songdata.instr_data[instrum_page]);
+                          If NOT (tADTRACK2_INS(inst^).perc_voice in [0,1]) then
+                            carrier := FALSE;
+                          page_build;
+                          page_refresh;
+                        end;
+
         kF1:     begin
                    Dec(xstart);
                    HideCursor;
@@ -1930,7 +1893,6 @@ _jmp1:
                    move_to_screen_area[3] := xstart+71+2;
                    move_to_screen_area[4] := ystart+25+1;
                    move2screen;
-
                    HELP('instrument_editor');
                    GOTO _jmp1;
                  end;
@@ -1963,7 +1925,7 @@ _jmp1:
                    quick_cmd := FALSE;
                    FILE_save('a2f');
                    GOTO _jmp1;
-                 end;  
+                 end;
         kF3,
         kCtrlL:  begin
                    Dec(xstart);
@@ -1991,7 +1953,6 @@ _jmp1:
                    move_to_screen_area[3] := xstart+71+2;
                    move_to_screen_area[4] := ystart+25+1;
                    move2screen;
-
                    OCTAVE_CONTROL;
                    GOTO _jmp1;
                  end;
@@ -2005,7 +1966,6 @@ _jmp1:
                    move_to_screen_area[3] := xstart+71+2;
                    move_to_screen_area[4] := ystart+25+1;
                    move2screen;
-
                    MACRO_EDITOR(current_inst,FALSE);
                    GOTO _jmp1;
                  end;
@@ -2019,7 +1979,6 @@ _jmp1:
                    move_to_screen_area[3] := xstart+71+2;
                    move_to_screen_area[4] := ystart+25+1;
                    move2screen;
-
                    MACRO_EDITOR(current_inst,TRUE);
                    GOTO _jmp1;
                  end;
@@ -2028,10 +1987,10 @@ _jmp1:
                    carrier := NOT carrier;
         else nope := TRUE;
       end;
-      
+
       If shift_pressed and
          (UpCase(CHR(LO(fkey))) in ['M','B','S','T','C','H']) then
-        begin           
+        begin
           Case UpCase(CHR(LO(fkey))) of
             'M': tADTRACK2_INS(inst^).perc_voice := 0;
             'B': tADTRACK2_INS(inst^).perc_voice := 1;
@@ -2047,6 +2006,7 @@ _jmp1:
         end;
 _end:
       emulate_screen;
+      // keyboard_reset_buffer;
     until (nope and (fkey = kESC)) or _force_program_quit;
 
   Dec(xstart);
@@ -2056,7 +2016,7 @@ _end:
   move_to_screen_area[2] := ystart;
   move_to_screen_area[3] := xstart+71+2;
   move_to_screen_area[4] := ystart+25+1;
-  move2screen; 
+  move2screen;
 end;
 
 procedure copy_object;
@@ -2065,6 +2025,7 @@ var
   temp: Byte;
 
 begin
+  _debug_str_ := 'INSTEDIT.INC:copy_object';
   Case clipboard.object_type of
     objInstrument:
       begin
@@ -2101,6 +2062,7 @@ var
   temp: Byte;
 
 begin
+  _debug_str_ := 'INSTEDIT.INC:paste_object';
   Case clipboard.object_type of
     objInstrument:
       Case mode of
@@ -2183,6 +2145,7 @@ var
   istr: String;
 
 begin
+  _debug_str_ := 'INSTEDIT.INC:instr_control_ai';
   istr := '';
   For temp := 1 to 18 do
     iflag[temp] := ai_table[mn_environment.curr_page+temp-1];
@@ -2225,6 +2188,7 @@ var
                macros: tREGISTER_TABLE;
              end;
 begin
+  _debug_str_ := 'INSTEDIT.INC:instr_control_proc';
   Case mn_environment.keystroke of
       kNPmins: If (play_status <> isStopped) then
                  If NOT mn_environment.is_editing then
@@ -2385,7 +2349,7 @@ begin
                If NOT shift_pressed then paste_object(2);
                mn_environment.do_refresh := TRUE;
                mn_environment.refresh;
-             end;         
+             end;
 
     kCtrlW:  If (marked_instruments = 2) then
                begin
@@ -2511,7 +2475,7 @@ begin
   If NOT shift_pressed and NOT alt_pressed and NOT ctrl_pressed then
     If (_4op_to_test <> 0) then
       INSTRUMENT_test(LO(_4op_to_test),HI(_4op_to_test),count_channel(pattern_hpos),mn_environment.keystroke,TRUE)
-    else INSTRUMENT_test(instrum_page,NULL,count_channel(pattern_hpos),mn_environment.keystroke,TRUE);
+    else INSTRUMENT_test(instrum_page,BYTE_NULL,count_channel(pattern_hpos),mn_environment.keystroke,TRUE);
 end;
 
 function INSTRUMENT_CONTROL: Byte;
@@ -2527,6 +2491,7 @@ var
 label _jmp1;
 
 begin
+  _debug_str_ := 'INSTEDIT.INC:INSTRUMENT_CONTROL';
   For temp := 1 to 255 do
     begin
       temp_marks[temp] := songdata.instr_names[temp][1];
@@ -2541,12 +2506,12 @@ _jmp1:
   If _force_program_quit then EXIT;
 
   keyboard_reset_buffer;
-  Move(v_ofs^,backup.screen,SizeOf(backup.screen));
+  Move(screen_ptr^,backup.screen,SizeOf(backup.screen));
   backup.cursor := GetCursor;
   backup.oldx   := WhereX;
   backup.oldy   := WhereY;
 
-  Move(v_ofs^,vscreen,SizeOf(vscreen));
+  Move(screen_ptr^,vscreen,SizeOf(vscreen));
   mn_environment.v_dest := Addr(vscreen);
 
   mn_setting.center_box := FALSE;
@@ -2625,7 +2590,7 @@ _jmp1:
   move_to_screen_area[4] := INSCTRL_yshift+26+1;
   move2screen_alt;
 
-  mn_environment.v_dest := v_ofs;
+  mn_environment.v_dest := screen_ptr;
   If NOT _force_program_quit then
     temp := Menu(songdata.instr_names,INSCTRL_xshift+38,INSCTRL_yshift+06,instrum_page,42,18,255,'');
 
@@ -2675,7 +2640,7 @@ _jmp1:
 
     kCtrlO:  begin
                OCTAVE_CONTROL;
-               mn_environment.keystroke := NULL;
+               mn_environment.keystroke := BYTE_NULL;
                GOTO _jmp1;
              end;
 
@@ -2707,7 +2672,7 @@ _jmp1:
                quick_cmd := FALSE;
                FILE_save('a2f');
                GOTO _jmp1;
-             end;  
+             end;
 
     kCtrlF2: begin
                quick_cmd := FALSE;
@@ -2750,11 +2715,12 @@ end;
 
 procedure instr_control_proc_alt;
 begin
+  _debug_str_ := 'INSTEDIT.INC:instr_control_proc_alt';
   INSTRUMENT_CONTROL_page_refresh_alt(mn_environment.curr_pos);
   If NOT shift_pressed and NOT alt_pressed and NOT ctrl_pressed then
     If (_4op_to_test <> 0) then
       INSTRUMENT_test(LO(_4op_to_test),HI(_4op_to_test),count_channel(pattern_hpos),mn_environment.keystroke,FALSE)
-    else INSTRUMENT_test(mn_environment.curr_pos,NULL,count_channel(pattern_hpos),mn_environment.keystroke,FALSE);
+    else INSTRUMENT_test(mn_environment.curr_pos,BYTE_NULL,count_channel(pattern_hpos),mn_environment.keystroke,FALSE);
 end;
 
 function INSTRUMENT_CONTROL_alt(instr: Byte; title: String): Byte;
@@ -2763,13 +2729,14 @@ var
   temp: Byte;
 
 begin
+  _debug_str_ := 'INSTEDIT.INC:INSTRUMENT_CONTROL_alt';
   keyboard_reset_buffer;
-  Move(v_ofs^,backup.screen,SizeOf(backup.screen));
+  Move(screen_ptr^,backup.screen,SizeOf(backup.screen));
   backup.cursor := GetCursor;
   backup.oldx   := WhereX;
   backup.oldy   := WhereY;
 
-  Move(v_ofs^,vscreen,SizeOf(vscreen));
+  Move(screen_ptr^,vscreen,SizeOf(vscreen));
   mn_environment.v_dest := Addr(vscreen);
 
   mn_setting.center_box := FALSE;
@@ -2839,7 +2806,7 @@ begin
   move_to_screen_area[4] := INSCTRL_yshift+26+1;
   move2screen_alt;
 
-  mn_environment.v_dest := v_ofs;
+  mn_environment.v_dest := screen_ptr;
   If NOT _force_program_quit then
     temp := Menu(songdata.instr_names,INSCTRL_xshift+38,INSCTRL_yshift+06,instr,42,18,255,'');
 

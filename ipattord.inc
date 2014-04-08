@@ -1,9 +1,9 @@
 {
-	procedure pattern_list__proc;
-	function PATTERN_LIST(page: Byte): Byte;
-	function PATTERN_LIST_alt(page: Byte): Byte;
-	procedure PATTERN_ORDER_page_refresh(page: Byte);
-	procedure PATTERN_ORDER_edit(var page,hpos,vpos: Byte);
+        procedure pattern_list__proc;
+        function PATTERN_LIST(page: Byte): Byte;
+        function PATTERN_LIST_alt(page: Byte): Byte;
+        procedure PATTERN_ORDER_page_refresh(page: Byte);
+        procedure PATTERN_ORDER_edit(var page,hpos,vpos: Byte);
 }
 
 var
@@ -18,6 +18,8 @@ var
   temps: String;
 
 begin
+  If _debug_ then
+    _debug_str_ := 'IPATTORD.INC:pattern_list__proc';
   Case mn_environment.keystroke of
     kSPACE:
       If ctrl_pressed then
@@ -56,7 +58,7 @@ begin
                         songdata.pattern_names[mn_environment.curr_pos-1] :=
                           Copy(songdata.pattern_names[mn_environment.curr_pos-1],1,8)+
                           clipboard._string;
-                    end;    
+                    end;
 
                 If NOT Empty(pattdata^[(mn_environment.curr_pos-1) DIV 8]
                                       [(mn_environment.curr_pos-1) MOD 8],
@@ -66,7 +68,7 @@ begin
                     Inc(_nm_patterns);
                   end
                 else songdata.pattern_names[mn_environment.curr_pos-1][9] := '';
-                
+
                 PATTERN_ORDER_page_refresh(pattord_page);
                 PATTERN_page_refresh(pattern_page);
               end;
@@ -126,7 +128,7 @@ begin
                       songdata.pattern_names[SUCC(temp)][9];
                   end;
 
-                FillData(pattdata^[PRED(max_patterns) DIV 8][PRED(max_patterns) MOD 8],
+                FillChar(pattdata^[PRED(max_patterns) DIV 8][PRED(max_patterns) MOD 8],
                          PATTERN_SIZE,0);
                 songdata.pattern_names[PRED(max_patterns)] :=
                   ' '+
@@ -153,7 +155,7 @@ begin
                       songdata.pattern_names[temp][9];
                   end;
 
-                FillData(pattdata^[(mn_environment.curr_pos-1) DIV 8]
+                FillChar(pattdata^[(mn_environment.curr_pos-1) DIV 8]
                                   [(mn_environment.curr_pos-1) MOD 8],
                          PATTERN_SIZE,0);
                 songdata.pattern_names[(mn_environment.curr_pos-1)] :=
@@ -167,7 +169,7 @@ begin
   end;
 
   nm_marked := _patts_marked;
-  ShowCStr(v_ofs^,
+  ShowCStr(screen_ptr^,
            mn_environment.xpos+16,
            mn_environment.desc_pos,
            ' ~USED:'+
@@ -176,7 +178,7 @@ begin
            menu_background+menu_border,
            menu_background+menu_context_dis);
 
-  ShowCStr(v_ofs^,
+  ShowCStr(screen_ptr^,
            mn_environment.xpos+31,
            mn_environment.desc_pos,
            ' ~MARKED:'+
@@ -193,8 +195,7 @@ function PATTERN_LIST(page: Byte): Byte;
 const
   new_keys: array[1..8] of Word = (kESC,kENTER,kF1,kF2,kCtrlS,
                                    kF3,kCtrlL,kShF3);
-
-  var
+var
   temp: Byte;
   old_keys: array[1..8] of Word;
   temp_marks: array[0..$7f] of Char;
@@ -203,6 +204,7 @@ const
 label _jmp1;
 
 begin
+  _debug_str_ := 'IPATTORD.INC:PATTERN_LIST';
   For temp := 0 to $7f do
     begin
       temp_marks[temp] := songdata.pattern_names[temp][1];
@@ -217,7 +219,7 @@ begin
 
 _jmp1:
   If _force_program_quit then EXIT;
-  
+
   PATTERN_ORDER_page_refresh(pattord_page);
   PATTERN_page_refresh(pattern_page);
   _nm_patterns := 0;
@@ -257,7 +259,7 @@ _jmp1:
               quick_cmd := FALSE;
               pattern2use := pattern_list__page-1;
               FILE_save('a2p');
-              pattern2use := NULL;
+              pattern2use := BYTE_NULL;
               GOTO _jmp1;
             end;
 
@@ -267,7 +269,7 @@ _jmp1:
               If (mn_environment.keystroke = kShF3) then quick_cmd := TRUE;
               pattern2use := pattern_list__page-1;
               FILE_open('*.a2p$',FALSE);
-              pattern2use := NULL;
+              pattern2use := BYTE_NULL;
               quick_cmd := FALSE;
               GOTO _jmp1;
             end;
@@ -288,7 +290,7 @@ _jmp1:
     songdata.pattern_names[temp][1] := temp_marks[temp];
 
   If (mn_environment.keystroke <> kESC) then PATTERN_LIST := pattern_list__page
-  else PATTERN_LIST := NULL;
+  else PATTERN_LIST := BYTE_NULL;
 end;
 
 function PATTERN_LIST_alt(page: Byte): Byte;
@@ -309,10 +311,11 @@ var
 label _jmp1;
 
 begin
+  _debug_str_ := 'IPATTORD.INC:PATTERN_LIST_alt';
   If NOT (clipboard.object_type in [objNote,objInstrumentDef,objEffect,objEffect2,
                                     objLine,objTrack,objPattern,objMarkedBlock]) then
     begin
-      PATTERN_LIST_alt := NULL;
+      PATTERN_LIST_alt := BYTE_NULL;
       EXIT;
     end;
 
@@ -344,7 +347,7 @@ _jmp1:
     end;
 
   If (mn_environment.keystroke <> kESC) then PATTERN_LIST_alt := pattern_list__page
-  else PATTERN_LIST_alt := NULL;
+  else PATTERN_LIST_alt := BYTE_NULL;
 end;
 
 procedure PATTERN_ORDER_page_refresh(page: Byte);
@@ -359,7 +362,7 @@ begin
            byte2hex(pattord_vpos+4*(pattord_hpos+pattord_page-1)-1),
            order_background+order_border);
 
-  xstart := 20+PATTORD_xshift;  
+  xstart := 20+PATTORD_xshift;
   For temp1 := 1 to MAX_ORDER_COLS do
     For temp2 := 03 to 06 do
       begin
@@ -416,7 +419,7 @@ begin
   If tracing then count_order(temp1);
   If scroll_bars then
     begin
-      If (sdl_screen_mode <> 2) then
+      If (program_screen_mode <> 2) then
         If (temp1 <> 0) then
           scroll_pos0 := vscroll_bar(MAX_COLUMNS-2,02,6,temp1,
                             (page+pattord_hpos-1)*4+pattord_vpos,scroll_pos0,
@@ -434,7 +437,7 @@ begin
     end
   else
     begin
-      If (sdl_screen_mode <> 2) then
+      If (program_screen_mode <> 2) then
         scroll_pos0 := vscroll_bar(MAX_COLUMNS-2,02,6,1,1,$0ff,
                                    scrollbar_bckg+scrollbar_text,
                                    scrollbar_bckg+scrollbar_mark);
@@ -455,6 +458,7 @@ var
 
 procedure copy_object;
 begin
+  _debug_str_ := 'IPATTORD.INC:PATTERN_ORDER_edit:copy_object';
   Case clipboard.object_type of
     objPatternDef:
       clipboard.pattern_order[0] :=
@@ -468,6 +472,7 @@ end;
 
 procedure paste_object;
 begin
+  _debug_str_ := 'IPATTORD.INC:PATTERN_ORDER_edit:paste_object';
   Case clipboard.object_type of
     objPatternDef:
       begin
@@ -487,17 +492,18 @@ end;
 label _end;
 
 begin { PATTERN_ORDER_edit }
+  _debug_str_ := 'IPATTORD.INC:PATTERN_ORDER_edit';
   songdata_crc_ord := Update32(songdata.pattern_order,
                                SizeOf(songdata.pattern_order),0);
   Repeat
     PATTERN_ORDER_page_refresh(page);
     PATTERN_page_refresh(pattern_page);
-    
-    xstart := 23+PATTORD_xshift;   
+
+    xstart := 23+PATTORD_xshift;
     GotoXY(xstart+pos1[hpos]-1,03+vpos-1);
 
     If tracing then fkey := PATTERN_trace
-	else ThinCursor;
+    else ThinCursor;
 
     If (scankey(SC_LCTRL) or scankey(SC_RCTRL)) { CTRL } and
        (scankey(SC_LALT) or scankey(SC_RALT)) { ALT } then
@@ -835,7 +841,7 @@ begin { PATTERN_ORDER_edit }
                  end
                else If NOT play_single_patt and
                        (songdata.pattern_order[vpos+4*(hpos+page-1)-1] < $80) and
-                       (calc_pattern_pos(songdata.pattern_order[vpos+4*(hpos+page-1)-1]) <> NULL) then
+                       (calc_pattern_pos(songdata.pattern_order[vpos+4*(hpos+page-1)-1]) <> BYTE_NULL) then
                       begin
                         fade_out_playback(FALSE);
                         calibrate_player(vpos+4*(hpos+page-1)-1,0,TRUE,FALSE);
@@ -859,9 +865,8 @@ begin { PATTERN_ORDER_edit }
                  begin
                    fade_out_playback(FALSE);
                    stop_playing;
-                   FillData(ai_table,SizeOf(ai_table),0);
+                   FillChar(ai_table,SizeOf(ai_table),0);
                  end;
-
       kF8,
       kAltF8,
       kShF8:   If play_single_patt and (play_status = isPaused) then
@@ -901,7 +906,7 @@ begin { PATTERN_ORDER_edit }
                               end;
 
                    isStopped: If (songdata.pattern_order[vpos+4*(hpos+page-1)-1] < $80) and
-                                 (calc_pattern_pos(songdata.pattern_order[vpos+4*(hpos+page-1)-1]) <> NULL) then
+                                 (calc_pattern_pos(songdata.pattern_order[vpos+4*(hpos+page-1)-1]) <> BYTE_NULL) then
                                 begin
                                   debugging := FALSE;
                                   If (NOT nosync_by_default and (fkey = kAltF8)) or
@@ -984,7 +989,7 @@ begin { PATTERN_ORDER_edit }
                               end;
 
                    isStopped: If (songdata.pattern_order[vpos+4*(hpos+page-1)-1] < $80) and
-                                 (calc_pattern_pos(songdata.pattern_order[vpos+4*(hpos+page-1)-1]) <> NULL) then
+                                 (calc_pattern_pos(songdata.pattern_order[vpos+4*(hpos+page-1)-1]) <> BYTE_NULL) then
                                 begin
                                   debugging := FALSE;
                                   If (NOT nosync_by_default and (fkey = kAltF9)) or
@@ -1091,13 +1096,11 @@ begin { PATTERN_ORDER_edit }
         is_setting.terminate_keys[6] := 0;
       end;
 
-
-    keyboard_reset_buffer;
-
     If (Update32(songdata.pattern_order,SizeOf(songdata.pattern_order),0) <> songdata_crc_ord) then
       module_archived := FALSE;
 _end:
     emulate_screen;
+    // keyboard_reset_buffer;
   until (nope and ((fkey = kENTER) or (fkey = kESC) or (fkey = kF10))) or _force_program_quit;
   PATTERN_ORDER_page_refresh(page);
 end;

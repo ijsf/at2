@@ -19,35 +19,35 @@ begin { MAIN }
   ShowStartMessage;
 
   { read and process adtrack2.ini file }
-  If __debug__ then WriteLn('--- updating user configuration');
+  If _debug_ then WriteLn('--- updating user configuration');
+  _debug_str_ := 'updating user configuration';
   process_config_file;
+  program_screen_mode := sdl_screen_mode;
 
   { init system things }
   sys_init;
 
   { allocate memory for patterns }
-  If __debug__ then WriteLn('--- allocating frame buffer for patterns');
+  If _debug_ then WriteLn('--- allocating frame buffer for patterns');
+  _debug_str_ := 'allocating frame buffer for patterns';
   GetMem(pattdata,PATTERN_SIZE*max_patterns);
   If (max_patterns <> $80) then
       WriteLn('WARNING: Maximum number of patterns is ',max_patterns,'!');
 
   { adlib player init }
-  If __debug__ then WriteLn('--- initializing player routine');
-    init_player;
+  If _debug_ then WriteLn('--- initializing player routine');
+  _debug_str_ := 'initializing player routine';
+  init_player;    
 
-  { txtscrio init }
+  { initialize unit data }
   TxtScrIO_Init;
-  
-  { dialogio init }
   DialogIO_Init;
-
-  { MenuLib1 init }
   MenuLib1_Init;
-
-  { MenuLib2 init }
   MenuLib2_Init;
 
-  If __debug__ then WriteLn('--- initializing songdata');  
+  If _debug_ then WriteLn('--- initializing songdata');
+  _debug_str_ := 'initializing songdata';
+  
   tempo := init_tempo;
   speed := init_speed;
   init_songdata;
@@ -65,10 +65,13 @@ begin { MAIN }
     If NOT use_h_for_b then note_layout[temp][1] := 'B'
     else note_layout[temp][1] := 'H';
 
-  If __debug__ then WriteLn('--- executing program core');
+  If _debug_ then WriteLn('--- executing program core');
+  _debug_str_ := 'executing program core';
+  //Delay(3000); 
   vid_SetVideoMode(TRUE);
 
-  { initializing interface (phase:4) }
+  { initializing interface (phase:1) }
+  _debug_str_ := 'initializing interface (phase:1)';
   PROGRAM_SCREEN_init;
   POSITIONS_reset;
 
@@ -77,18 +80,22 @@ begin { MAIN }
   ThinCursor;
 
   { initializing timer }
+  _debug_str_ := 'initializing timer';
   init_timer_proc;
 
   { initializing keyboard }
+   _debug_str_ := 'initializing keyboard';
   keyboard_init;
   stop_playing;
 
   do_slide := TRUE;
   do_synchronize := TRUE;
 
-  { initializing interface (phase:5) }
+  { initializing interface (phase:2) }
+  _debug_str_ := 'initializing interface (phase:2)';
  
   { Main loop }
+  _debug_str_ := 'redirecting to main loop';
   fkey := kENTER;
   Repeat
     If (fkey = kENTER) then PATTERN_edit(pattern_patt,pattern_page,pattern_hpos);
@@ -96,26 +103,26 @@ begin { MAIN }
   until (fkey = kESC) or (fkey = kF10) or _force_program_quit;
 
   { terminating program (phase:1) }
+   _debug_str_ := 'terminating program (phase:1)';
+  
   If NOT tracing then ThinCursor;
   do_synchronize := FALSE;
-
-  { terminating program (phase:2) }
-  
   fade_out_playback(TRUE); // fade playback together with screen
   stop_playing;
   FillChar(decay_bar,SizeOf(decay_bar),0);
   FillChar(volum_bar,SizeOf(volum_bar),0);
-  decay_bars_refresh;
   keyboard_done;
   done_timer_proc;
   opl3_deinit;
-  Dispose(pattdata);
-  ThinCursor;
+
+  { terminating program (phase:2) }
+  _debug_str_ := 'terminating program (phase:2)';
   
-  sdl_screen_mode := 0;
+  _realtime_gfx_no_update := TRUE;
+  program_screen_mode := 0;
   TxtScrIO_Init;
   vid_SetVideoMode(FALSE);
-  CleanScreen(v_ofs^);
+  CleanScreen(screen_ptr^);
   vid_SetRGBPalette(Addr(vga_rgb_color)^);
   temp := screen_scroll_offset DIV 16 + 3;
 
@@ -148,9 +155,10 @@ begin { MAIN }
   virtual_screen_font := Addr(vga_font8x16);
   emulate_screen;
   SDL_Delay(3000);
-  sys_deinit;
-  snd_Deinit;
 
-  { terminating program (phase:4) }
-  (* HALT(0); // the last opportunity to properly exit?! :) *)
+  { terminating program (phase:3) }
+  _debug_str_ := 'terminating program (phase:3)';
+  sys_deinit;
+  snd_deinit; 
+  FreeMem(pattdata,PATTERN_SIZE*max_patterns);
 end.

@@ -80,8 +80,7 @@ asm
         mov     al,TRUE
         jmp     @@2
 @@1:    mov     al,FALSE
-@@2:
-        pop     edi
+@@2:    pop     edi
         pop     ecx
 end;
 
@@ -96,7 +95,7 @@ var
 
 begin
   patts := '';
-  order := 0; patt := NULL;
+  order := 0; patt := BYTE_NULL;
 
   Repeat
     If (Pos(CHR(songdata.pattern_order[order]),patts) <> 0) or
@@ -161,9 +160,11 @@ begin
   FillChar(old_songdata.pattern_order,SizeOf(old_songdata.pattern_order),$080);
   FillChar(old_songdata.instr_data,SizeOf(old_songdata.instr_data),0);
 
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
   For temp := 1 to 250 do
     old_songdata.instr_names[temp] :=
       ' iNS_'+byte2hex(temp)+'๗ ';
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
 end;
 
 var
@@ -409,13 +410,13 @@ begin
   patts := '';
   FillChar(adsr_carrier,SizeOf(adsr_carrier),0);
 
-  order := 0; patt := NULL;
+  order := 0; patt := BYTE_NULL;
   Repeat
     If (songdata.pattern_order[order] >= $80) then Inc(order)
     else
       begin
         patt := songdata.pattern_order[order];
-        patt_break := NULL;
+        patt_break := BYTE_NULL;
         For temp2 := 0 to $3f do
           For temp3 := 1 to 9 do
             begin
@@ -664,6 +665,9 @@ var
   xlen: array[0..6] of Word;
 
 begin
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+  _debug_str_ := 'ILOADERS.INC:a2m_file_loader';
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
   {$i-}
   Assign(f,songdata_source);
   ResetF(f);
@@ -671,9 +675,11 @@ begin
   If (IOresult <> 0) then
     begin
       CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
       Dialog('ERROR READiNG DATA - DiSK ERROR?$'+
              'LOADiNG STOPPED$',
              '~O~KAY$',' A2M LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
       EXIT;
     end;
 
@@ -682,18 +688,23 @@ begin
   If NOT ((temp = SizeOf(header)) and (header.ident = id)) then
     begin
       CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
       Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
              'LOADiNG STOPPED$',
              '~O~KAY$',' A2M LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
       EXIT;
     end;
 
+{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  load_flag := $7f;}
   If NOT (header.ffver in [1..11]) then
     begin
       CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
       Dialog('UNKNOWN FiLE FORMAT VERSiON$'+
              'LOADiNG STOPPED$',
              '~O~KAY$',' A2M LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
       EXIT;
     end;
 
@@ -706,9 +717,11 @@ begin
       If NOT ((temp = SizeOf(header2)) and (header2.ident = id)) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2M LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -720,20 +733,24 @@ begin
       If (IOresult <> 0) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2M LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
-      crc := NOT 0;
+      crc := DWORD_NULL;
       BlockReadF(f,buffer,header2.b0len,temp);
       If NOT (temp = header2.b0len) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2M LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -742,9 +759,11 @@ begin
       If NOT (temp = header2.b1len) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2M LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -756,9 +775,11 @@ begin
             If NOT (temp = xlen[temp2]) then
               begin
                 CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
                 Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                        'LOADiNG STOPPED$',
                        '~O~KAY$',' A2M LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
                 EXIT;
               end;
             crc := Update32(buffer,temp,crc);
@@ -773,9 +794,11 @@ begin
       If (crc <> header2.crc32) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('CRC FAiLED - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2M LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -790,9 +813,11 @@ begin
       If (IOresult <> 0) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2M LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -800,9 +825,11 @@ begin
       If NOT (temp = header2.b0len) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2M LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -820,9 +847,11 @@ begin
       If NOT (temp = header2.b1len) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2M LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -841,9 +870,11 @@ begin
             If NOT (temp = xlen[temp2]) then
               begin
                 CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
                 Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                        'LOADiNG STOPPED$',
                        '~O~KAY$',' A2M LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
                 EXIT;
               end;
 
@@ -867,9 +898,11 @@ begin
       If NOT ((temp = SizeOf(header2)) and (header2.ident = id)) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2M LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -881,14 +914,16 @@ begin
       xlen[5] := header2.b7len;
       xlen[6] := header2.b8len;
 
-      crc := NOT 0;
+      crc := DWORD_NULL;
       BlockReadF(f,buffer,header2.b0len,temp);
       If NOT (temp = header2.b0len) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2M LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -897,9 +932,11 @@ begin
       If NOT (temp = header2.b1len) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2M LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -911,9 +948,11 @@ begin
             If NOT (temp = xlen[temp2]) then
               begin
                 CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
                 Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                        'LOADiNG STOPPED$',
                        '~O~KAY$',' A2M LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
                 EXIT;
               end;
             crc := Update32(buffer,temp,crc);
@@ -928,9 +967,11 @@ begin
       If (crc <> header2.crc32) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('CRC FAiLED - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2M LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -945,9 +986,11 @@ begin
       If (IOresult <> 0) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2M LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -955,9 +998,11 @@ begin
       If NOT (temp = header2.b0len) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2M LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -972,9 +1017,11 @@ begin
       If NOT (temp = header2.b1len) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2M LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -993,9 +1040,11 @@ begin
             If NOT (temp = xlen[temp2]) then
               begin
                 CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
                 Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                        'LOADiNG STOPPED$',
                        '~O~KAY$',' A2M LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
                 EXIT;
               end;
 
@@ -1012,14 +1061,16 @@ begin
 
   If (header.ffver in [9,10,11]) then
     begin
-      crc := NOT 0;
+      crc := DWORD_NULL;
       BlockReadF(f,buffer,header.b0len,temp);
       If NOT (temp = header.b0len) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2M LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -1028,9 +1079,11 @@ begin
       If NOT (temp = header.b1len[0]) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2M LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -1042,9 +1095,11 @@ begin
             If NOT (temp = header.b1len[temp2]) then
               begin
                 CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
                 Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                        'LOADiNG STOPPED$',
                        '~O~KAY$',' A2M LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
                 EXIT;
               end;
             crc := Update32(buffer,temp,crc);
@@ -1057,9 +1112,11 @@ begin
       If (crc <> header.crc32) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('CRC FAiLED - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2M LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -1070,9 +1127,11 @@ begin
       If (IOresult <> 0) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2M LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -1080,9 +1139,11 @@ begin
       If NOT (temp = header.b0len) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2M LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -1091,15 +1152,18 @@ begin
       If NOT (temp = header.b1len[0]) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2M LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
       If (header.ffver = 9) then
         import_old_flags;
 
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
       For temp := 1 to 255 do
         Insert(songdata.instr_names[temp][1]+
                'iNS_'+byte2hex(temp)+'๗ ',
@@ -1110,6 +1174,7 @@ begin
           Insert(songdata.pattern_names[temp][1]+
                  'PAT_'+byte2hex(temp)+'  ๗ ',
                  songdata.pattern_names[temp],1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
 
       APACK_decompress(buffer,pattdata^[0]);
       For temp2 := 1 to 15 do
@@ -1119,9 +1184,11 @@ begin
             If NOT (temp = header.b1len[temp2]) then
               begin
                 CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
                 Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                        'LOADiNG STOPPED$',
                        '~O~KAY$',' A2M LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
                 EXIT;
               end;
 
@@ -1136,17 +1203,22 @@ begin
 
   CloseF(f);
   songdata_title := NameOnly(songdata_source);
-
+{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  Case header.ffver of
+{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>    1..4: load_flag := 1;
+{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>    else  load_flag := 2;
+{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  end;
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
   temp := calc_max_speedup(songdata.tempo);
   If (songdata.macro_speedup > temp) then
      begin
-       Dialog('DUE TO SDL LiMiTATiONS, ~MACRO SPEEDUP~ VALUE IS ~CHANGED~$'+
+       Dialog('DUE TO SYSTEM LiMiTATiONS, ~MACRO SPEEDUP~ VALUE IS ~CHANGED~$'+
               'SLOWDOWN: ~'+Num2str(songdata.macro_speedup,10)+'X -> '+Num2str(temp,10)+'X~$',
               '~O~KAY$',' A2M LOADER ',1);
        songdata.macro_speedup := temp;
      end;
 
   load_flag := 1;
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
 end;
 
 procedure a2t_file_loader;
@@ -1260,6 +1332,9 @@ var
   xlen: array[0..6] of Word;
 
 begin
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+  _debug_str_ := 'ILOADERS.INC:a2t_file_loader';
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
   {$i-}
   Assign(f,songdata_source);
   ResetF(f);
@@ -1267,9 +1342,11 @@ begin
   If (IOresult <> 0) then
     begin
       CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
       Dialog('ERROR READiNG DATA - DiSK ERROR?$'+
              'LOADiNG STOPPED$',
              '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
       EXIT;
     end;
 
@@ -1278,18 +1355,23 @@ begin
   If NOT ((temp = SizeOf(header)) and (header.ident = id)) then
     begin
       CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
       Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
              'LOADiNG STOPPED$',
              '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
       EXIT;
     end;
 
+{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  load_flag := $7f;}
   If NOT (header.ffver in [1..11]) then
     begin
       CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
       Dialog('UNKNOWN FiLE FORMAT VERSiON$'+
              'LOADiNG STOPPED$',
              '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
       EXIT;
     end;
 
@@ -1302,9 +1384,11 @@ begin
       If NOT ((temp = SizeOf(header2)) and (header2.ident = id)) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -1312,14 +1396,16 @@ begin
       xlen[1] := header2.b4len;
       xlen[2] := header2.b5len;
 
-      crc := NOT 0;
+      crc := DWORD_NULL;
       BlockReadF(f,buffer,header2.b0len,temp);
       If NOT (temp = header2.b0len) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -1328,9 +1414,11 @@ begin
       If NOT (temp = header2.b1len) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -1339,9 +1427,11 @@ begin
       If NOT (temp = header2.b2len) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -1353,9 +1443,11 @@ begin
             If NOT (temp = xlen[temp2]) then
               begin
                 CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
                 Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                        'LOADiNG STOPPED$',
                        '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
                 EXIT;
               end;
             crc := Update32(buffer,temp,crc);
@@ -1371,9 +1463,11 @@ begin
       If (crc <> header2.crc32) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('CRC FAiLED - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -1388,9 +1482,11 @@ begin
       If (IOresult <> 0) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -1398,9 +1494,11 @@ begin
       If NOT (temp = header2.b0len) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -1421,9 +1519,11 @@ begin
       If NOT (temp = header2.b1len) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -1438,9 +1538,11 @@ begin
       If NOT (temp = header2.b2len) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -1460,9 +1562,11 @@ begin
             If NOT (temp = xlen[temp2]) then
               begin
                 CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
                 Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                        'LOADiNG STOPPED$',
                        '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
                 EXIT;
               end;
 
@@ -1487,9 +1591,11 @@ begin
       If NOT ((temp = SizeOf(header3)) and (header3.ident = id)) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -1501,14 +1607,16 @@ begin
       xlen[5] := header3.b8len;
       xlen[6] := header3.b9len;
 
-      crc := NOT 0;
+      crc := DWORD_NULL;
       BlockReadF(f,buffer,header3.b0len,temp);
       If NOT (temp = header3.b0len) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -1517,9 +1625,11 @@ begin
       If NOT (temp = header3.b1len) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -1528,9 +1638,11 @@ begin
       If NOT (temp = header3.b2len) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -1542,9 +1654,11 @@ begin
             If NOT (temp = xlen[temp2]) then
               begin
                 CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
                 Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                        'LOADiNG STOPPED$',
                        '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
                 EXIT;
               end;
             crc := Update32(buffer,temp,crc);
@@ -1560,9 +1674,11 @@ begin
       If (crc <> header3.crc32) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('CRC FAiLED - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -1577,9 +1693,11 @@ begin
       If (IOresult <> 0) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -1587,9 +1705,11 @@ begin
       If NOT (temp = header3.b0len) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -1608,9 +1728,11 @@ begin
       If NOT (temp = header3.b1len) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -1625,9 +1747,11 @@ begin
       If NOT (temp = header3.b2len) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -1647,9 +1771,11 @@ begin
             If NOT (temp = xlen[temp2]) then
               begin
                 CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
                 Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                        'LOADiNG STOPPED$',
                        '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
                 EXIT;
               end;
 
@@ -1672,20 +1798,24 @@ begin
       If NOT ((temp = SizeOf(header4)) and (header4.ident = id)) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
-      crc := NOT 0;
+      crc := DWORD_NULL;
       BlockReadF(f,buffer,header4.b0len,temp);
       If NOT (temp = header4.b0len) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -1694,9 +1824,11 @@ begin
       If NOT (temp = header4.b1len) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -1705,9 +1837,11 @@ begin
       If NOT (temp = header4.b2len) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -1716,9 +1850,11 @@ begin
       If NOT (temp = header4.b3len) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -1727,9 +1863,11 @@ begin
       If NOT (temp = header4.b4len[0]) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -1741,9 +1879,11 @@ begin
             If NOT (temp = header4.b4len[temp2]) then
               begin
                 CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
                 Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                        'LOADiNG STOPPED$',
                        '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
                 EXIT;
               end;
             crc := Update32(buffer,temp,crc);
@@ -1760,9 +1900,11 @@ begin
       If (crc <> header4.crc32) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('CRC FAiLED - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -1773,9 +1915,11 @@ begin
       If (IOresult <> 0) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -1783,9 +1927,11 @@ begin
       If NOT (temp = header4.b0len) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -1794,9 +1940,11 @@ begin
       If NOT (temp = header4.b1len) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -1805,9 +1953,11 @@ begin
       If NOT (temp = header4.b2len) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -1816,9 +1966,11 @@ begin
       If NOT (temp = header4.b3len) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -1835,9 +1987,11 @@ begin
       If NOT (temp = header4.b4len[0]) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -1849,9 +2003,11 @@ begin
             If NOT (temp = header4.b4len[temp2]) then
               begin
                 CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
                 Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                        'LOADiNG STOPPED$',
                        '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
                 EXIT;
               end;
 
@@ -1868,20 +2024,24 @@ begin
       If NOT ((temp = SizeOf(header5)) and (header5.ident = id)) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
-      crc := NOT 0;
+      crc := DWORD_NULL;
       BlockReadF(f,buffer,header5.b0len,temp);
       If NOT (temp = header5.b0len) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -1890,9 +2050,11 @@ begin
       If NOT (temp = header5.b1len) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -1901,9 +2063,11 @@ begin
       If NOT (temp = header5.b2len) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -1912,9 +2076,11 @@ begin
       If NOT (temp = header5.b3len) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -1923,9 +2089,11 @@ begin
       If NOT (temp = header5.b4len[0]) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -1937,9 +2105,11 @@ begin
             If NOT (temp = header5.b4len[temp2]) then
               begin
                 CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
                 Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                        'LOADiNG STOPPED$',
                        '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
                 EXIT;
               end;
             crc := Update32(buffer,temp,crc);
@@ -1956,9 +2126,11 @@ begin
       If (crc <> header5.crc32) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('CRC FAiLED - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -1969,9 +2141,11 @@ begin
       If (IOresult <> 0) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -1979,9 +2153,11 @@ begin
       If NOT (temp = header5.b0len) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -1990,9 +2166,11 @@ begin
       If NOT (temp = header5.b1len) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -2001,9 +2179,11 @@ begin
       If NOT (temp = header5.b2len) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -2012,9 +2192,11 @@ begin
       If NOT (temp = header5.b3len) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -2032,9 +2214,11 @@ begin
       If NOT (temp = header5.b4len[0]) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -2046,9 +2230,11 @@ begin
             If NOT (temp = header5.b4len[temp2]) then
               begin
                 CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
                 Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                        'LOADiNG STOPPED$',
                        '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
                 EXIT;
               end;
 
@@ -2060,14 +2246,16 @@ begin
 
   If (header.ffver = 11) then
     begin
-      crc := NOT 0;
+      crc := DWORD_NULL;
       BlockReadF(f,buffer,header.b0len,temp);
       If NOT (temp = header.b0len) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -2076,9 +2264,11 @@ begin
       If NOT (temp = header.b1len) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -2087,9 +2277,11 @@ begin
       If NOT (temp = header.b2len) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -2098,9 +2290,11 @@ begin
       If NOT (temp = header.b3len) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -2109,9 +2303,11 @@ begin
       If NOT (temp = header.b4len) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -2120,9 +2316,11 @@ begin
       If NOT (temp = header.b5len[0]) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -2134,9 +2332,11 @@ begin
             If NOT (temp = header.b5len[temp2]) then
               begin
                 CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
                 Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                        'LOADiNG STOPPED$',
                        '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
                 EXIT;
               end;
             crc := Update32(buffer,temp,crc);
@@ -2154,9 +2354,11 @@ begin
       If (crc <> header.crc32) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('CRC FAiLED - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -2167,9 +2369,11 @@ begin
       If (IOresult <> 0) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -2177,9 +2381,11 @@ begin
       If NOT (temp = header.b0len) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -2188,9 +2394,11 @@ begin
       If NOT (temp = header.b1len) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -2199,9 +2407,11 @@ begin
       If NOT (temp = header.b2len) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -2210,9 +2420,11 @@ begin
       If NOT (temp = header.b3len) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -2221,9 +2433,11 @@ begin
       If NOT (temp = header.b4len) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -2241,9 +2455,11 @@ begin
       If NOT (temp = header.b5len[0]) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -2255,9 +2471,11 @@ begin
             If NOT (temp = header.b5len[temp2]) then
               begin
                 CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
                 Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                        'LOADiNG STOPPED$',
                        '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
                 EXIT;
               end;
 
@@ -2272,19 +2490,25 @@ begin
 
   CloseF(f);
   songdata_title := NameOnly(songdata_source);
-
+{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  Case header.ffver of
+{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>    1..4: load_flag := 3;
+{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>    else  load_flag := 4;
+{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  end;
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
   temp := calc_max_speedup(songdata.tempo);
   If (songdata.macro_speedup > temp) then
      begin
-       Dialog('DUE TO SDL LiMiTATiONS, ~MACRO SPEEDUP~ VALUE IS ~CHANGED~$'+
+       Dialog('DUE TO SYSTEM LiMiTATiONS, ~MACRO SPEEDUP~ VALUE IS ~CHANGED~$'+
               'SLOWDOWN: ~'+Num2str(songdata.macro_speedup,10)+'X -> '+Num2str(temp,10)+'X~$',
               '~O~KAY$',' A2T LOADER ',1);
        songdata.macro_speedup := temp;
      end;
 
   load_flag := 1;
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
 end;
 
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
 procedure a2p_file_loader;
 
 type
@@ -2322,7 +2546,8 @@ var
   _pattern: Byte;
 
 begin
-  If (pattern2use <> NULL) then _pattern := pattern2use
+  _debug_str_ := 'ILOADERS.INC:a2p_file_loader';
+  If (pattern2use <> BYTE_NULL) then _pattern := pattern2use
   else _pattern := pattern_patt;
 
   {$i-}
@@ -2362,7 +2587,7 @@ begin
   If (header.ffver in [1..4]) then
     begin
       FillChar(adsr_carrier,SizeOf(adsr_carrier),BYTE(FALSE));
-      crc := NOT 0;
+      crc := DWORD_NULL;
       BlockReadF(f,buffer,header.b0len,temp);
       If NOT (temp = header.b0len) then
         begin
@@ -2398,7 +2623,7 @@ begin
         1: SIXPACK_decompress(buffer,old_hash_buffer,header.b0len);
       end;
 
-      If (pattern2use <> NULL) and (_patts_marked <> 0) then
+      If (pattern2use <> BYTE_NULL) and (_patts_marked <> 0) then
         For temp := 0 to PRED(max_patterns) do
           begin
             If (songdata.pattern_names[temp][1] <> ' ') then
@@ -2424,7 +2649,7 @@ begin
 
   If (header.ffver in [5..8]) then
     begin
-      crc := NOT 0;
+      crc := DWORD_NULL;
       BlockReadF(f,buffer,header.b0len,temp);
       If NOT (temp = header.b0len) then
         begin
@@ -2460,7 +2685,7 @@ begin
         5: SIXPACK_decompress(buffer,hash_buffer[0],header.b0len);
       end;
 
-      If (pattern2use <> NULL) and (_patts_marked <> 0) then
+      If (pattern2use <> BYTE_NULL) and (_patts_marked <> 0) then
         For temp := 0 to PRED(max_patterns) do
           begin
             If (songdata.pattern_names[temp][1] <> ' ') then
@@ -2497,7 +2722,7 @@ begin
           EXIT;
         end;
 
-      crc := NOT 0;
+      crc := DWORD_NULL;
       BlockReadF(f,buffer,header2.b0len,temp);
       If NOT (temp = header2.b0len) then
         begin
@@ -2526,7 +2751,7 @@ begin
           stop_playing;
         end;
 
-      If (pattern2use <> NULL) and (_patts_marked <> 0) then
+      If (pattern2use <> BYTE_NULL) and (_patts_marked <> 0) then
         For temp := 0 to PRED(max_patterns) do
           begin
             If (songdata.pattern_names[temp][1] <> ' ') then
@@ -2556,7 +2781,7 @@ begin
           EXIT;
         end;
 
-      crc := NOT 0;
+      crc := DWORD_NULL;
       BlockReadF(f,buffer,header2.b0len,temp);
       If NOT (temp = header2.b0len) then
         begin
@@ -2585,7 +2810,7 @@ begin
           stop_playing;
         end;
 
-      If (pattern2use <> NULL) and (_patts_marked <> 0) then
+      If (pattern2use <> BYTE_NULL) and (_patts_marked <> 0) then
         For temp := 0 to PRED(max_patterns) do
           begin
             If (songdata.pattern_names[temp][1] <> ' ') then
@@ -2623,6 +2848,7 @@ begin
   CloseF(f);
   load_flag := 1;
 end;
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
 
 function dec2hex(dec: Byte): Byte;
 begin dec2hex := (dec DIV 10)*16 +(dec MOD 10); end;
@@ -2906,7 +3132,10 @@ begin
   Inc(pos);
 end;
 
-begin { amd_file_loader }
+begin
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+  _debug_str_ := 'ILOADERS.INC:amd_file_loader';
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
   {$i-}
   Assign(f,songdata_source);
   ResetF(f);
@@ -2914,9 +3143,11 @@ begin { amd_file_loader }
   If (IOresult <> 0) then
     begin
       CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
       Dialog('ERROR READiNG DATA - DiSK ERROR?$'+
              'LOADiNG STOPPED$',
              '~O~KAY$',' '+iCASE(ExtOnly(songdata_source))+' LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
       EXIT;
     end;
 
@@ -2925,18 +3156,23 @@ begin { amd_file_loader }
          ((header.ident = id_amd) or (header.ident = id_xms))) then
     begin
       CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
       Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
              'LOADiNG STOPPED$',
              '~O~KAY$',' '+iCASE(ExtOnly(songdata_source))+' LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
       EXIT;
     end;
 
+{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  load_flag := $7f;}
   If NOT (header.versn in [$10,$11]) then
     begin
       CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
       Dialog('UNKNOWN FiLE FORMAT VERSiON$'+
              'LOADiNG STOPPED$',
              '~O~KAY$',' '+iCASE(ExtOnly(songdata_source))+' LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
       EXIT;
     end;
 
@@ -2945,13 +3181,15 @@ begin { amd_file_loader }
   If (IOresult <> 0) then
     begin
       CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
       Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
              'LOADiNG STOPPED$',
              '~O~KAY$',' '+iCASE(ExtOnly(songdata_source))+' LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
       EXIT;
     end;
 
-  tmp2 := $0ffff;
+  tmp2 := WORD_NULL;
   If (temp = SizeOf(buffer)) then
     begin
       FillChar(buf2,SizeOf(buf2),0);
@@ -2959,9 +3197,11 @@ begin { amd_file_loader }
       If (IOresult <> 0) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' '+iCASE(ExtOnly(songdata_source))+' LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
     end;
@@ -3012,7 +3252,11 @@ begin { amd_file_loader }
 
   CloseF(f);
   songdata_title := NameOnly(songdata_source);
+{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  If (header.ident = id_amd) then load_flag := 5}
+{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  else load_flag := 6;}
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
   load_flag := 1;
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
 end;
 
 procedure import_hsc_instrument(inst: Byte; var data); forward;
@@ -3134,7 +3378,7 @@ begin
                      end;
                end;
   { PAUSE }
-    $6d: chunk.note := NULL;
+    $6d: chunk.note := BYTE_NULL;
   end;
 
   put_chunk(patt,line,chan,chunk);
@@ -3171,14 +3415,14 @@ begin
                                             tPATDAT(data)[temp][temp2][temp3][1],
                                             tPATDAT(data)[temp][temp2][temp3][2]);
   order := 0;
-  patt := NULL;
+  patt := BYTE_NULL;
 
   Repeat
     If (songdata.pattern_order[order] > $24) then Inc(order)
     else
       begin
         patt := songdata.pattern_order[order];
-        patt_break := NULL;
+        patt_break := BYTE_NULL;
         For temp2 := 0 to $3f do
           For temp3 := 1 to 9 do
              begin
@@ -3463,7 +3707,10 @@ begin
   LZTYR_decompress := output_length;
 end;
 
-begin { cff_file_loader }
+begin
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+  _debug_str_ := 'ILOADERS.INC:cff_file_loader';
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
   {$i-}
   Assign(f,songdata_source);
   ResetF(f);
@@ -3471,9 +3718,11 @@ begin { cff_file_loader }
   If (IOresult <> 0) then
     begin
       CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
       Dialog('ERROR READiNG DATA - DiSK ERROR?$'+
              'LOADiNG STOPPED$',
              '~O~KAY$',' CFF LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
       EXIT;
     end;
 
@@ -3482,12 +3731,15 @@ begin { cff_file_loader }
      (FileSize(f) > SizeOf(buffer)) then
     begin
       CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
       Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
              'LOADiNG STOPPED$',
              '~O~KAY$',' CFF LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
       EXIT;
     end;
 
+{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  load_flag := $7f;}
   If (header.cflag = 1) then
     begin
       FillChar(buffer,SizeOf(buffer),0);
@@ -3496,9 +3748,11 @@ begin { cff_file_loader }
       If (IOresult <> 0) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - DiSK ERROR?$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' CFF LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -3509,9 +3763,11 @@ begin { cff_file_loader }
       offs := SensitiveScan(hash_buffer,0,temp,ascii_blab);
       If (offs <> _PRE_ASCII_BLAB_SIZE) then
         begin
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR DECOMPRESSiNG MODULE DATA$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' CFF LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -3526,9 +3782,11 @@ begin { cff_file_loader }
       If NOT ((temp = SizeOf(headr2)) and (headr2.ascii = ascii_blab)) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' CFF LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -3537,9 +3795,11 @@ begin { cff_file_loader }
       If (IOresult <> 0) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - DiSK ERROR?$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' CFF LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
       CloseF(f);
@@ -3578,7 +3838,10 @@ begin { cff_file_loader }
 
   import_cff_patterns(buffer,headr2.nopat);
   songdata_title := NameOnly(songdata_source);
+{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  load_flag := 7;}
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
   load_flag := 1;
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
 end;
 
 procedure import_standard_instrument(inst: Byte; var data);
@@ -3634,7 +3897,7 @@ begin
   If (byte1 AND $0f in [1..12,15]) and ((byte1 SHR 4) AND 7 in [0..7]) then
     If (byte1 AND $0f <> 15) then
       chunk.note := SUCC(PRED(byte1 AND $0f)+((byte1 SHR 4) AND 7)*12)
-    else chunk.note := NULL;
+    else chunk.note := BYTE_NULL;
 
   Case byte2 SHR 5 of
    { INSTRUMENT CHANGE }
@@ -3684,7 +3947,7 @@ begin
   patts := '';
   FillChar(instr_cache,SizeOf(instr_cache),0);
   order := 0;
-  patt := NULL;
+  patt := BYTE_NULL;
 
   Repeat
     If (songdata.pattern_order[order] >= $80) then Inc(order)
@@ -3717,7 +3980,10 @@ begin
   until (patt >= patterns) or (order > $7f);
 end;
 
-begin { dfm_file_loader }
+begin
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+  _debug_str_ := 'ILOADERS.INC:dfm_file_loader';
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
   {$i-}
   Assign(f,songdata_source);
   ResetF(f);
@@ -3725,9 +3991,11 @@ begin { dfm_file_loader }
   If (IOresult <> 0) then
     begin
       CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
       Dialog('ERROR READiNG DATA - DiSK ERROR?$'+
              'LOADiNG STOPPED$',
              '~O~KAY$',' DFM LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
       EXIT;
     end;
 
@@ -3735,20 +4003,25 @@ begin { dfm_file_loader }
   If NOT ((temp = SizeOf(header)) and (header.ident = id)) then
     begin
       CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
       Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
              'LOADiNG STOPPED$',
              '~O~KAY$',' DFM LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
       EXIT;
     end;
 
+{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  load_flag := $7f;}
   FillChar(buffer,SizeOf(buffer),0);
   BlockReadF(f,buffer,SizeOf(buffer),temp);
   If (IOresult <> 0) then
     begin
       CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
       Dialog('ERROR READiNG DATA - DiSK ERROR?$'+
              'LOADiNG STOPPED$',
              '~O~KAY$',' DFM LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
       EXIT;
     end;
 
@@ -3797,9 +4070,11 @@ begin { dfm_file_loader }
     If (pattern > 127) then
       begin
         CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
         Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                'LOADiNG STOPPED$',
                '~O~KAY$',' DFM LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
         EXIT;
       end;
 
@@ -3813,9 +4088,11 @@ begin { dfm_file_loader }
           If (temp2 >= temp) then
             begin
               CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
               Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                      'LOADiNG STOPPED$',
                      '~O~KAY$',' DFM LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
               EXIT;
             end
           else Inc(temp2);
@@ -3833,14 +4110,16 @@ begin { dfm_file_loader }
   CloseF(f);
 
   songdata_title := NameOnly(songdata_source);
+{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  load_flag := 8;}
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
   load_flag := 1;
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
 end;
 
 type
   tHSC_PATTERNS = array[0..$31] of
                   array[0..$3f] of array[1..9] of Word;
 type
-//  pHSC_DATA = ^tHSC_DATA;
   tHSC_DATA = Record
                 instr: array[0..$7f] of array[0..$0b] of Byte;
                 order: array[0..$31] of Byte;
@@ -3863,14 +4142,14 @@ begin
                         chunk.note := 12*8+1;
                     end;
   { PAUSE }
-    $7f: chunk.note := NULL;
+    $7f: chunk.note := BYTE_NULL;
 
   { INSTRUMENT }
     $80: begin
            chunk.effect_def := ef_Extended;
            chunk.effect := ef_ex_ExtendedCmd*16+ef_ex_cmd_ResetVol;
            chunk.instr_def := LO(event)+1;
-           chunk.note := NULL;
+           chunk.note := BYTE_NULL;
          end;
   end;
 
@@ -3952,14 +4231,14 @@ begin { import_hsc_patterns }
           import_hsc_event(temp,temp2,temp3,_hsc_event(temp,temp2,temp3));
 
   order := 0;
-  patt := NULL;
+  patt := BYTE_NULL;
 
   Repeat
     If (songdata.pattern_order[order] > $31) then Inc(order)
     else
       begin
         patt := songdata.pattern_order[order];
-        patt_break := NULL;
+        patt_break := BYTE_NULL;
         For temp2 := 0 to $3f do
           For temp3 := 1 to 9 do
             begin
@@ -3987,7 +4266,7 @@ begin { import_hsc_patterns }
                          If NOT accurate_conv then
                            begin
                              chunk.instr_def := voice[temp3];
-                             chunk.note := NULL;
+                             chunk.note := BYTE_NULL;
                            end;
                        end;
               end;
@@ -4060,6 +4339,15 @@ var
   temp,temp2,temp3: Longint;
 
 begin
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+  _debug_str_ := 'ILOADERS.INC:hsc_file_loader';
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
+{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  If (Lower(ExtOnly(songdata_source)) <> 'hsc') then}
+{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>    begin}
+{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>      load_flag := $7f;}
+{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>      EXIT;}
+{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>    end;}
+
   {$i-}
   Assign(f,songdata_source);
   ResetF(f);
@@ -4067,9 +4355,11 @@ begin
   If (IOresult <> 0) then
     begin
       CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
       Dialog('ERROR READiNG DATA - DiSK ERROR?$'+
              'LOADiNG STOPPED$',
              '~O~KAY$',' HSC LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
       EXIT;
     end;
 
@@ -4078,9 +4368,11 @@ begin
   If (temp < SizeOf(hscbuf.instr)+SizeOf(hscbuf.order)) then
     begin
       CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
       Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
              'LOADiNG STOPPED$',
              '~O~KAY$',' HSC LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
       EXIT;
     end;
 
@@ -4142,11 +4434,13 @@ begin
 
   CloseF(f);
   songdata_title := NameOnly(songdata_source);
+{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  load_flag := 9;}
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
   load_flag := 1;
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
 end;
 
 type
-//  pMTK_DATA = ^tMTK_DATA;
   tMTK_DATA = Record
                 sname: String[33];
                 compo: String[33];
@@ -4178,6 +4472,9 @@ var
             data_size: Word;
           end;
 begin
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+  _debug_str_ := 'ILOADERS.INC:mtk_file_loader';
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
   {$i-}
   Assign(f,songdata_source);
   ResetF(f);
@@ -4185,9 +4482,11 @@ begin
   If (IOresult <> 0) then
     begin
       CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
       Dialog('ERROR READiNG DATA - DiSK ERROR?$'+
              'LOADiNG STOPPED$',
              '~O~KAY$',' MTK LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
       EXIT;
     end;
 
@@ -4195,12 +4494,15 @@ begin
   If NOT ((temp = SizeOf(header)) and (header.id_string = id)) then
     begin
       CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
       Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
              'LOADiNG STOPPED$',
              '~O~KAY$',' MTK LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
       EXIT;
     end;
 
+{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  load_flag := $7f;}
   FillChar(buffer,SizeOf(buffer),0);
   BlockReadF(f,buffer,SizeOf(buffer),temp);
 
@@ -4209,9 +4511,11 @@ begin
   If (crc <> header.crc_16bit) then
     begin
       CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
       Dialog('CRC FAiLED - FiLE CORRUPTED$'+
              'LOADiNG STOPPED$',
              '~O~KAY$',' MTK LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
       EXIT;
     end;
 
@@ -4220,9 +4524,11 @@ begin
   If NOT (temp2 = header.data_size) then
     begin
       CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
       Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
              'LOADiNG STOPPED$',
              '~O~KAY$',' MTK LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
       EXIT;
     end;
 
@@ -4277,7 +4583,10 @@ begin
 
   CloseF(f);
   songdata_title := NameOnly(songdata_source);
+{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  load_flag := 10;}
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
   load_flag := 1;
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
 end;
 
 procedure rad_file_loader;
@@ -4309,7 +4618,7 @@ begin
     chunk.instr_def := (byte2 SHR 4)+(byte1 SHR 7) SHL 4;
 
   If (byte1 AND $0f in [1..12]) then chunk.note := 12*((byte1 SHR 4) AND 7)+(byte1 AND $0f)+1
-  else If (byte1 AND $0f = $0f) then chunk.note := NULL;
+  else If (byte1 AND $0f = $0f) then chunk.note := BYTE_NULL;
 
   Case byte2 AND $0f of
   { PORTAMENTO (FREQUENCY SLIDE) UP }
@@ -4402,13 +4711,14 @@ begin
 // specific corrections for RAd-Tracker event
   If (chunk.effect_def in [ef_TonePortamento,
                            ef_TPortamVolSlide]) and
-     (chunk.note = NULL) then chunk.note := 0;
+     (chunk.note = BYTE_NULL) then chunk.note := 0;
   If (chunk.effect_def in [ef_TonePortamento,
                            ef_TPortamVolSlide]) then chunk.instr_def := 0;
   If (chunk.note = 0) then chunk.instr_def := 0;
   put_chunk(pattern,line,channel+1,chunk);
 end;
 
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
 procedure list_rad_description(length: Word);
 
 var
@@ -4438,7 +4748,7 @@ begin
     If (truncate_string(desc[temp]) <> '') then Inc(temp2);
   If (temp2 = 0) then EXIT;
 
-  Move(v_ofs^,backup.screen,SizeOf(backup.screen));
+  Move(screen_ptr^,backup.screen,SizeOf(backup.screen));
   backup.cursor := GetCursor;
   backup.oldx   := WhereX;
   backup.oldy   := WhereY;
@@ -4448,10 +4758,10 @@ begin
                  dialog_background+dialog_title,
                  double);
   For temp := 1 to 22 do
-    ShowStr(v_ofs^,xstart+1,ystart+temp,FilterStr2(desc[temp],_valid_characters,'_'),
+    ShowStr(screen_ptr^,xstart+1,ystart+temp,FilterStr2(desc[temp],_valid_characters,'_'),
             dialog_background+dialog_context_dis);
 
-  ShowCStr(v_ofs^,xstart+36,ystart+23,' ~C~ONTiNUE ',
+  ShowCStr(screen_ptr^,xstart+36,ystart+23,' ~C~ONTiNUE ',
            dialog_sel_btn_bck+dialog_sel_btn,
            dialog_sel_btn_bck+dialog_sel_short);
 
@@ -4466,8 +4776,12 @@ begin
   move2screen;
   no_status_refresh := TRUE;
 end;
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
 
-begin { rad_file_loader }
+begin
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+  _debug_str_ := 'ILOADERS.INC:rad_file_loader';
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
   {$i-}
   Assign(f,songdata_source);
   ResetF(f);
@@ -4475,9 +4789,11 @@ begin { rad_file_loader }
   If (IOresult <> 0) then
     begin
       CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
       Dialog('ERROR READiNG DATA - DiSK ERROR?$'+
              'LOADiNG STOPPED$',
              '~O~KAY$',' RAD LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
       EXIT;
     end;
 
@@ -4485,20 +4801,25 @@ begin { rad_file_loader }
   If NOT ((temp = SizeOf(header)) and (header.ident = id)) then
     begin
       CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
       Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
              'LOADiNG STOPPED$',
              '~O~KAY$',' RAD LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
       EXIT;
     end;
 
+{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  load_flag := $7f;}
   FillChar(buffer,SizeOf(buffer),0);
   BlockReadF(f,buffer,SizeOf(buffer),temp);
   If (IOresult <> 0) then
     begin
       CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
       Dialog('ERROR READiNG DATA - DiSK ERROR?$'+
              'LOADiNG STOPPED$',
              '~O~KAY$',' RAD LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
       EXIT;
     end;
 
@@ -4511,9 +4832,11 @@ begin { rad_file_loader }
       If (temp2 >= temp) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' RAD LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -4523,9 +4846,11 @@ begin { rad_file_loader }
       Move(buffer[temp2+1],buffer,temp);
     end;
 
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
   If mod_description and (temp2 <> 0) and NOT quick_cmd and
      NOT shift_pressed then
     list_rad_description(temp2+1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
 
   init_songdata;
   load_flag := 0;
@@ -4605,7 +4930,10 @@ begin { rad_file_loader }
 
   CloseF(f);
   songdata_title := NameOnly(songdata_source);
+{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  load_flag := 11;}
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
   load_flag := 1;
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
 end;
 
 const
@@ -4644,8 +4972,8 @@ var
 
 begin
   FillChar(prev_cache,SizeOf(prev_cache),0);
-  FillChar(patloop_cache,SizeOf(patloop_cache),NULL);
-  patt_break := NULL;
+  FillChar(patloop_cache,SizeOf(patloop_cache),BYTE_NULL);
+  patt_break := BYTE_NULL;
 
   For temp2 := 0 to $3f do
     For temp3 := 1 to 20 do
@@ -4679,7 +5007,7 @@ begin
         If (chunk.effect_def = ef_Extended) and
            (chunk.effect DIV 16 = ef_ex_PatternLoop) and
            (chunk.effect MOD 16 <> 0) then
-          If NOT (patloop_cache[temp3] in [0,NULL]) and (temp2 <> 0) then
+          If NOT (patloop_cache[temp3] in [0,BYTE_NULL]) and (temp2 <> 0) then
             begin
               If (prev_cache[temp3].effect_def = 0) and
                  (prev_cache[temp3].effect = 0) then
@@ -4897,7 +5225,7 @@ begin { fix_s3m_commands }
   FillChar(misc_cache,SizeOf(misc_cache),0);
 
   patts := '';
-  order := 0; patt := NULL;
+  order := 0; patt := BYTE_NULL;
 
   Repeat
     If (songdata.pattern_order[order] >= $80) then Inc(order)
@@ -5032,13 +5360,13 @@ begin
   chunk.instr_def := ins;
 
   Case note of
-    254: chunk.note := NULL;
+    254: chunk.note := BYTE_NULL;
     255: chunk.note := 0;
     else If (note AND $0f in [0..11]) then
            chunk.note := 12*((note SHR 4) AND 7)+(note AND $0f)+1
   end;
 
-  If (vol <> NULL) then
+  If (vol <> BYTE_NULL) then
     begin
       chunk.effect_def2 := ef_SetInsVolume;
       chunk.effect2 := max(vol,63);
@@ -5373,7 +5701,10 @@ begin
 end;
 *)
 
-begin { s3m_file_loader }
+begin
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+  _debug_str_ := 'ILOADERS.INC:s3m_file_loader';
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
   {$i-}
   Assign(f,songdata_source);
   ResetF(f);
@@ -5381,9 +5712,11 @@ begin { s3m_file_loader }
   If (IOresult <> 0) then
     begin
       CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
       Dialog('ERROR READiNG DATA - DiSK ERROR?$'+
              'LOADiNG STOPPED$',
              '~O~KAY$',' S3M LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
       EXIT;
     end;
 
@@ -5391,18 +5724,23 @@ begin { s3m_file_loader }
   If NOT ((temp = SizeOf(header)) and (header.id = id_mod)) then
     begin
       CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
       Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
              'LOADiNG STOPPED$',
              '~O~KAY$',' S3M LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
       EXIT;
     end;
 
+{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  load_flag := $7f;}
   If (header.byte1a <> $1a) or (header.ftype <> $10) then
     begin
       CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
       Dialog('UNKNOWN FiLE FORMAT TYPE$'+
              'LOADiNG STOPPED$',
              '~O~KAY$',' S3M LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
       EXIT;
     end;
 
@@ -5410,9 +5748,11 @@ begin { s3m_file_loader }
   If (IOresult <> 0) or (temp <> header.ordnum) then
     begin
       CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
       Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
              'LOADiNG STOPPED$',
              '~O~KAY$',' S3M LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
       EXIT;
     end;
 
@@ -5420,9 +5760,11 @@ begin { s3m_file_loader }
   If (IOresult <> 0) or (temp <> header.insnum*2) then
     begin
       CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
       Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
              'LOADiNG STOPPED$',
              '~O~KAY$',' S3M LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
       EXIT;
     end;
 
@@ -5430,9 +5772,11 @@ begin { s3m_file_loader }
   If (IOresult <> 0) or (temp <> header.patnum*2) then
     begin
       CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
       Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
              'LOADiNG STOPPED$',
              '~O~KAY$',' S3M LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
       EXIT;
     end;
 
@@ -5454,9 +5798,11 @@ begin { s3m_file_loader }
   For temp := 32 downto 1 do
     If (header.chan_set[temp] <> 255) then BREAK;
 
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
   For temp2 := 1 to max(temp,18) do
     If (header.chan_set[temp2] OR $80 = header.chan_set[temp2]) then
       channel_flag[temp2] := FALSE;
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
 
   songdata.patt_len := 64;
   If adjust_tracks then songdata.nm_tracks := max(temp,18)
@@ -5476,9 +5822,11 @@ begin { s3m_file_loader }
       If (IOresult <> 0) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' S3M LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -5486,9 +5834,11 @@ begin { s3m_file_loader }
       If (IOresult <> 0) or (temp2 <> SizeOf(insdata)) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' S3M LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -5506,9 +5856,11 @@ begin { s3m_file_loader }
           If (insdata.id <> id_ins_adl) and (insdata.id <> id_ins_smp) then
             begin
               CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
               Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                      'LOADiNG STOPPED$',
                      '~O~KAY$',' S3M LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
               EXIT;
             end;
 
@@ -5527,9 +5879,11 @@ begin { s3m_file_loader }
       If (IOresult <> 0) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' S3M LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -5537,9 +5891,11 @@ begin { s3m_file_loader }
       If (temp2 <> SizeOf(patlen)) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' S3M LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -5553,9 +5909,9 @@ begin { s3m_file_loader }
       Repeat
         If (buffer[index] <> 0) then
           begin
-            note := NULL;
+            note := BYTE_NULL;
             ins  := 0;
-            vol  := NULL;
+            vol  := BYTE_NULL;
             cmd  := 0;
             info := 0;
             temp := buffer[index];
@@ -5599,7 +5955,10 @@ begin { s3m_file_loader }
   fix_s3m_commands(header.patnum);
   CloseF(f);
   songdata_title := NameOnly(songdata_source);
+{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  load_flag := 12;}
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
   load_flag := 1;
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
 end;
 
 procedure fix_fmk_commands(patterns: Byte);
@@ -5631,7 +5990,7 @@ var
 
 begin
   FillChar(prev_cache,SizeOf(prev_cache),0);
-  patt_break := NULL;
+  patt_break := BYTE_NULL;
 
   For temp2 := 0 to $3f do
     For temp3 := 1 to 20 do
@@ -5845,7 +6204,7 @@ begin { fix_fmk_commands }
   FillChar(forcevol_cache,SizeOf(forcevol_cache),0);
 
   patts := '';
-  order := 0; patt := NULL;
+  order := 0; patt := BYTE_NULL;
 
   Repeat
     If (songdata.pattern_order[order] >= $80) then Inc(order)
@@ -5936,6 +6295,7 @@ var
   patlen,index: Word;
   dscbuf: array[0..PRED(20*24)] of Char;
 
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
 procedure list_fmk_description(rows: Byte);
 
 var
@@ -5963,7 +6323,7 @@ begin
     If (truncate_string(desc[temp]) <> '') then Inc(temp2);
   If (temp2 = 0) then EXIT;
 
-  Move(v_ofs^,backup.screen,SizeOf(backup.screen));
+  Move(screen_ptr^,backup.screen,SizeOf(backup.screen));
   backup.cursor := GetCursor;
   backup.oldx   := WhereX;
   backup.oldy   := WhereY;
@@ -5973,10 +6333,10 @@ begin
                  dialog_background+dialog_title,
                  double);
   For temp := 1 to rows do
-    ShowStr(v_ofs^,xstart+1,ystart+temp,FilterStr2(desc[temp],_valid_characters,'_'),
+    ShowStr(screen_ptr^,xstart+1,ystart+temp,FilterStr2(desc[temp],_valid_characters,'_'),
             dialog_background+dialog_context_dis);
 
-  ShowCStr(v_ofs^,xstart+6,ystart+25,' ~C~ONTiNUE ',
+  ShowCStr(screen_ptr^,xstart+6,ystart+25,' ~C~ONTiNUE ',
            dialog_sel_btn_bck+dialog_sel_btn,
            dialog_sel_btn_bck+dialog_sel_short);
 
@@ -5991,6 +6351,7 @@ begin
   move2screen;
   no_status_refresh := TRUE;
 end;
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
 
 procedure import_fmk_event(pattern,line,channel,note,ins,vol,cmd,info: Byte);
 
@@ -6008,13 +6369,13 @@ begin
   If (ins in [1..99]) then chunk.instr_def := ins;
 
   Case note of
-    254: chunk.note := NULL;
+    254: chunk.note := BYTE_NULL;
     255: chunk.note := 0;
     else If (note AND $0f in [1..12]) then
            chunk.note := 12*(note SHR 4)+(note AND $0f)
   end;
 
-  If (vol <> NULL) then
+  If (vol <> BYTE_NULL) then
     begin
       chunk.effect_def2 := ef_ForceInsVolume;
       chunk.effect2 := 63-max(vol,63)
@@ -6281,7 +6642,10 @@ begin
   put_chunk(pattern,line,channel,chunk);
 end;
 
-begin { fmk_file_loader }
+begin
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+  _debug_str_ := 'ILOADERS.INC:fmk_file_loader';
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
   {$i-}
   Assign(f,songdata_source);
   ResetF(f);
@@ -6289,9 +6653,11 @@ begin { fmk_file_loader }
   If (IOresult <> 0) then
     begin
       CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
       Dialog('ERROR READiNG DATA - DiSK ERROR?$'+
              'LOADiNG STOPPED$',
              '~O~KAY$',' FMK LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
       EXIT;
     end;
 
@@ -6299,18 +6665,23 @@ begin { fmk_file_loader }
   If NOT ((temp = SizeOf(header)) and (header.id = id)) then
     begin
       CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
       Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
              'LOADiNG STOPPED$',
              '~O~KAY$',' FMK LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
       EXIT;
     end;
 
+{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  load_flag := $7f;}
   If (header.bytef4 <> $f4) or NOT (header.ftype in [1,2]) then
     begin
       CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
       Dialog('UNKNOWN FiLE FORMAT TYPE$'+
              'LOADiNG STOPPED$',
              '~O~KAY$',' FMK LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
       EXIT;
     end;
 
@@ -6320,9 +6691,11 @@ begin { fmk_file_loader }
       If (IOresult <> 0) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' FMK LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
     end;
@@ -6333,9 +6706,11 @@ begin { fmk_file_loader }
       If (IOresult <> 0) or (temp <> header.ordnum) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' FMK LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
     end;
@@ -6344,9 +6719,11 @@ begin { fmk_file_loader }
   If (IOresult <> 0) or (temp <> SizeOf(paraptr_msg)) then
     begin
       CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
       Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
              'LOADiNG STOPPED$',
              '~O~KAY$',' FMK LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
       EXIT;
     end;
 
@@ -6357,9 +6734,11 @@ begin { fmk_file_loader }
       If (IOresult <> 0) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' FMK LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -6367,9 +6746,11 @@ begin { fmk_file_loader }
       If (IOresult <> 0) or (temp <> SizeOf(desc_rows)) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' FMK LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -6379,25 +6760,31 @@ begin { fmk_file_loader }
           If (IOresult <> 0) or (temp <> desc_rows*20) then
             begin
               CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
               Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                      'LOADiNG STOPPED$',
                      '~O~KAY$',' FMK LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
               EXIT;
             end;
         end;
 
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
      If mod_description and (desc_rows <> 0) and NOT quick_cmd and
         NOT shift_pressed then
        list_fmk_description(desc_rows);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
     end;
 
   SeekF(f,fpos_bak);
   If (IOresult <> 0) then
     begin
       CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
       Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
              'LOADiNG STOPPED$',
              '~O~KAY$',' FMK LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
       EXIT;
     end;
 
@@ -6407,9 +6794,11 @@ begin { fmk_file_loader }
       If (IOresult <> 0) or (temp <> header.insnum*2) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' FMK LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
     end;
@@ -6420,9 +6809,11 @@ begin { fmk_file_loader }
       If (IOresult <> 0) or (temp <> header.patnum*4) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' FMK LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
     end;
@@ -6505,9 +6896,11 @@ begin { fmk_file_loader }
       If (IOresult <> 0) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' FMK LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -6515,9 +6908,11 @@ begin { fmk_file_loader }
       If (IOresult <> 0) or (temp2 <> SizeOf(insdata)) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' FMK LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -6539,9 +6934,11 @@ begin { fmk_file_loader }
       If (IOresult <> 0) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' FMK LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -6550,9 +6947,11 @@ begin { fmk_file_loader }
       If (temp2 <> SizeOf(patlen)) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' FMK LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -6566,9 +6965,9 @@ begin { fmk_file_loader }
       Repeat
         If (buffer[index] <> 0) then
           begin
-            note := NULL;
+            note := BYTE_NULL;
             ins  := 0;
-            vol  := NULL;
+            vol  := BYTE_NULL;
             cmd  := 0;
             info := 0;
             temp := buffer[index];
@@ -6611,7 +7010,10 @@ begin { fmk_file_loader }
   fix_fmk_commands(header.patnum);
   CloseF(f);
   songdata_title := NameOnly(songdata_source);
+{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  load_flag := 13;}
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
   load_flag := 1;
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
 end;
 
 procedure import_sat_instrument(inst: Byte; var data);
@@ -6671,8 +7073,7 @@ procedure import_sa2_effect(effect,def1,def2: Byte;
 procedure sat_file_loader;
 
 type
-//  pHEADER = ^tHEADER; { version 1 }
-  tHEADER = Record
+  tHEADER = Record { version 1 }
               ident: array[1..4]   of Char; { ident_string }
               vernm: Byte;                  { version_number (1) }
               instt: array[0..$1e] of       { 31_instruments }
@@ -6685,8 +7086,7 @@ type
               calls: Word;                  { calls_per_second }
             end;
 type
-//  pHEADR2 = ^tHEADR2; { version 6 }
-  tHEADR2 = Record
+  tHEADR2 = Record { version 6 }
               ident: array[1..4]   of Char; { ident_string }
               vernm: Byte;                  { version_number (1) }
               instt: array[0..$1e] of       { 31_instruments }
@@ -6725,7 +7125,7 @@ begin
   If (chunk.effect_def = ef_Extended) and
      (chunk.effect = ef_ex_ExtendedCmd*16) and (chunk.note = 0) then
     begin
-      chunk.note := NULL;
+      chunk.note := BYTE_NULL;
       chunk.effect_def := 0;
       chunk.effect := 0;
     end;
@@ -6749,7 +7149,10 @@ begin
   Inc(absolute);
 end;
 
-begin { sat_file_loader }
+begin
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+  _debug_str_ := 'ILOADERS.INC:sat_file_loader';
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
   {$i-}
   Assign(f,songdata_source);
   ResetF(f);
@@ -6757,9 +7160,11 @@ begin { sat_file_loader }
   If (IOresult <> 0) then
     begin
       CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
       Dialog('ERROR READiNG DATA - DiSK ERROR?$'+
              'LOADiNG STOPPED$',
              '~O~KAY$',' SAT LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
       EXIT;
     end;
 
@@ -6767,21 +7172,26 @@ begin { sat_file_loader }
   If NOT ((temp = SizeOf(header)) and (header.ident = id)) then
     begin
       CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
       Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
              'LOADiNG STOPPED$',
              '~O~KAY$',' SAT LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
       EXIT;
     end;
 
   If NOT (header.vernm in [1,5,6]) then
     begin
       CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
       Dialog('UNKNOWN FiLE FORMAT VERSiON$'+
              'LOADiNG STOPPED$',
              '~O~KAY$',' SAT LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
       EXIT;
     end;
 
+{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  load_flag := $7f;}
   SATver := header.vernm;
   If (SATver in [5,6]) then
     begin
@@ -6789,9 +7199,11 @@ begin { sat_file_loader }
       If (IOresult <> 0) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' SAT LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
 
@@ -6799,9 +7211,11 @@ begin { sat_file_loader }
       If (temp <> SizeOf(headr2)) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' SAT LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
     end;
@@ -6812,13 +7226,15 @@ begin { sat_file_loader }
   If (IOresult <> 0) then
     begin
       CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
       Dialog('ERROR READiNG DATA - DiSK ERROR?$'+
              'LOADiNG STOPPED$',
              '~O~KAY$',' SAT LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
       EXIT;
     end;
 
-  tmp2 := $0ffff;
+  tmp2 := WORD_NULL;
   If (temp = SizeOf(buffer)-5) then
     begin
       FillChar(buf2,SizeOf(buf2),0);
@@ -6826,14 +7242,16 @@ begin { sat_file_loader }
       If (IOresult <> 0) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - DiSK ERROR?$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' SAT LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
     end;
 
-  tmp3 := $0ffff;
+  tmp3 := WORD_NULL;
   If (tmp2 = SizeOf(buf2)-5) then
     begin
       FillChar(buf3,SizeOf(buf3),0);
@@ -6841,9 +7259,11 @@ begin { sat_file_loader }
       If (IOresult <> 0) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - DiSK ERROR?$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' SAT LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
     end;
@@ -6934,7 +7354,10 @@ begin { sat_file_loader }
 
   CloseF(f);
   songdata_title := NameOnly(songdata_source);
+{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  load_flag := 14;}
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
   load_flag := 1;
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
 end;
 
 function _sal(op1,op2: Word): Byte; assembler;
@@ -7084,7 +7507,6 @@ end;
 procedure sa2_file_loader;
 
 type
-//  pHEADER = ^tHEADER;
   tHEADER = Record
               ident: array[1..4]   of Char; { These bytes mark a song }
               vernm: Byte;                  { Version number (9) }
@@ -7126,7 +7548,7 @@ begin
   If (chunk.effect_def = ef_Extended) and
      (chunk.effect = ef_ex_ExtendedCmd*16) and (chunk.note = 0) then
     begin
-      chunk.note := NULL;
+      chunk.note := BYTE_NULL;
       chunk.effect_def := 0;
       chunk.effect := 0;
     end;
@@ -7135,6 +7557,9 @@ begin
 end;
 
 begin { sa2_file_loader }
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+  _debug_str_ := 'ILOADERS.INC:sa2_file_loader';
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
   {$i-}
   Assign(f,songdata_source);
   ResetF(f);
@@ -7142,9 +7567,11 @@ begin { sa2_file_loader }
   If (IOresult <> 0) then
     begin
       CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
       Dialog('ERROR READiNG DATA - DiSK ERROR?$'+
              'LOADiNG STOPPED$',
              '~O~KAY$',' SA2 LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
       EXIT;
     end;
 
@@ -7152,30 +7579,37 @@ begin { sa2_file_loader }
   If NOT ((temp = SizeOf(header)) and (header.ident = id)) then
     begin
       CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
       Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
              'LOADiNG STOPPED$',
              '~O~KAY$',' SA2 LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
       EXIT;
     end;
 
   If NOT (header.vernm in [8,9]) then
     begin
       CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
       Dialog('UNKNOWN FiLE FORMAT VERSiON$'+
              'LOADiNG STOPPED$',
              '~O~KAY$',' SA2 LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
       EXIT;
     end;
 
+{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  load_flag := $7f;}
   If (header.vernm = 8) then
     begin
       SeekF(f,FilePos(f)-2);
       If (IOresult <> 0) then
         begin
           CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
           Dialog('ERROR READiNG DATA - DiSK ERROR?$'+
                  'LOADiNG STOPPED$',
                  '~O~KAY$',' SA2 LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
           EXIT;
         end;
     end;
@@ -7185,9 +7619,11 @@ begin { sa2_file_loader }
   If (IOresult <> 0) then
     begin
       CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
       Dialog('ERROR READiNG DATA - DiSK ERROR?$'+
              'LOADiNG STOPPED$',
              '~O~KAY$',' SA2 LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
       EXIT;
     end;
 
@@ -7255,9 +7691,13 @@ begin { sa2_file_loader }
 
   CloseF(f);
   songdata_title := NameOnly(songdata_source);
+{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  load_flag := 15;}
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
   load_flag := 1;
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
 end;
 
+{@ADT2PLAY_COMPILER_DIRECTIVE:EOF}
 procedure a2i_file_loader;
 
 type
@@ -7286,6 +7726,7 @@ var
   temp_str: String;
 
 begin
+  _debug_str_ := 'ILOADERS.INC:a2i_file_loader';
   {$i-}
   Assign(f,instdata_source);
   ResetF(f);
@@ -7331,7 +7772,7 @@ begin
           EXIT;
         end;
 
-      crc := WORD(NOT 0);
+      crc := WORD_NULL;
       crc := Update16(header.b0len,1,crc);
       crc := Update16(buf1,header.b0len,crc);
 
@@ -7377,7 +7818,7 @@ begin
           EXIT;
         end;
 
-      crc := WORD(NOT 0);
+      crc := WORD_NULL;
       crc := Update16(header.b0len,1,crc);
       crc := Update16(buf1,header.b0len,crc);
 
@@ -7433,7 +7874,7 @@ begin
           EXIT;
         end;
 
-      crc := WORD(NOT 0);
+      crc := WORD_NULL;
       crc := Update16(header2.b0len,1,crc);
       crc := Update16(buf1,header2.b0len,crc);
 
@@ -7482,6 +7923,7 @@ var
   temp_str: String;
 
 begin
+  _debug_str_ := 'ILOADERS.INC:a2f_file_loader';
   {$i-}
   Assign(f,instdata_source);
   ResetF(f);
@@ -7526,7 +7968,7 @@ begin
           EXIT;
         end;
 
-      crc := NOT 0;
+      crc := DWORD_NULL;
       crc := Update32(header.b0len,1,crc);
       crc := Update32(buf1,header.b0len,crc);
 
@@ -7590,6 +8032,7 @@ const
                  SizeOf(buffer.idata)+
                  SizeOf(buffer.resrv);
 begin
+  _debug_str_ := 'ILOADERS.INC:cif_file_loader';
   {$i-}
   Assign(f,instdata_source);
   ResetF(f);
@@ -7635,6 +8078,7 @@ var
   temp_str: String;
 
 begin
+  _debug_str_ := 'ILOADERS.INC:fin_file_loader';
   {$i-}
   Assign(f,instdata_source);
   ResetF(f);
@@ -7701,6 +8145,7 @@ begin
 end;
 
 begin { ins_file_loader }
+  _debug_str_ := 'ILOADERS.INC:ins_file_loader';
   {$i-}
   Assign(f,instdata_source);
   ResetF(f);
@@ -7775,6 +8220,7 @@ var
   temp_str: String;
 
 begin
+  _debug_str_ := 'ILOADERS.INC:sbi_file_loader';
   {$i-}
   Assign(f,instdata_source);
   ResetF(f);
@@ -7884,6 +8330,7 @@ var
   temp_str: String;
 
 begin
+  _debug_str_ := 'ILOADERS.INC:sgi_file_loader';
   {$i-}
   Assign(f,instdata_source);
   ResetF(f);
@@ -7916,24 +8363,6 @@ begin
   load_flag := 1;
 end;
 
-function nul_data(var data; size: Word): Boolean; assembler;
-asm
-        push    ecx
-        push    esi
-        xor     ecx,ecx
-        mov     esi,[data]
-        mov     cx,[size]
-@@1:    lodsb
-        cmp     al,0
-        jnz     @@2
-        loop    @@1
-        mov     al,TRUE
-        jmp     @@3
-@@2:    mov     al,FALSE
-@@3:    pop     esi
-        pop     ecx
-end;
-
 var
   xstart,ystart: Byte;
   window_xsize,window_ysize: Byte;
@@ -7958,9 +8387,10 @@ var
   result: Byte;
 
 begin
+  _debug_str_ := 'ILOADERS.INC:count_instruments';
   result := 255;
   While (result > 0) and
-        nul_data(temp_songdata.instr_data[result],INSTRUMENT_SIZE) do
+        Empty(temp_songdata.instr_data[result],INSTRUMENT_SIZE) do
     Dec(result);
   count_instruments := result;
 end;
@@ -7972,10 +8402,10 @@ var
 
 begin
   result := 255;
-  While (result > 0) and nul_data(temp_songdata.macro_table[result].arpeggio,
-                                  SizeOf(tARPEGGIO_TABLE))
-                     and nul_data(temp_songdata.macro_table[result].vibrato,
-                                  SizeOf(tVIBRATO_TABLE)) do
+  While (result > 0) and Empty(temp_songdata.macro_table[result].arpeggio,
+                               SizeOf(tARPEGGIO_TABLE))
+                     and Empty(temp_songdata.macro_table[result].vibrato,
+                               SizeOf(tVIBRATO_TABLE)) do
     Dec(result);
   count_macros := result;
 end;
@@ -7987,14 +8417,15 @@ var
   free_flag: Boolean;
 
 begin
+  _debug_str_ := 'ILOADERS.INC:get_free_arpeggio_table_idx';
   result := 0;
   free_flag := FALSE;
 
   // first try to find empty space or same macro for overwriting
   Repeat
     Inc(result);
-    If nul_data(songdata.macro_table[result].arpeggio,
-                SizeOf(tARPEGGIO_TABLE)) or
+    If Empty(songdata.macro_table[result].arpeggio,
+             SizeOf(tARPEGGIO_TABLE)) or
        Compare(songdata.macro_table[result].arpeggio,data,
                SizeOf(tARPEGGIO_TABLE)) then
       free_flag := TRUE;
@@ -8005,7 +8436,7 @@ begin
     Repeat
       If (temp_songdata.macro_table[result].arpeggio.length = 0) then
         free_flag := TRUE
-      else Dec(result); 
+      else Dec(result);
     until free_flag or (result = 0);
 
   get_free_arpeggio_table_idx := result;
@@ -8018,14 +8449,15 @@ var
   free_flag: Boolean;
 
 begin
+  _debug_str_ := 'ILOADERS.INC:get_free_vibrato_table_idx';
   result := 0;
   free_flag := FALSE;
 
   // first try to find empty space or same macro for overwriting
   Repeat
     Inc(result);
-    If nul_data(songdata.macro_table[result].vibrato,
-                SizeOf(tViBRATO_TABLE)) or
+    If Empty(songdata.macro_table[result].vibrato,
+             SizeOf(tViBRATO_TABLE)) or
        Compare(songdata.macro_table[result].vibrato,data,
                SizeOf(tVIBRATO_TABLE)) then
       free_flag := TRUE;
@@ -8036,10 +8468,39 @@ begin
     Repeat
       If (temp_songdata.macro_table[result].vibrato.length = 0) then
         free_flag := TRUE
-      else Dec(result); 
+      else Dec(result);
     until free_flag or (result = 0);
 
   get_free_vibrato_table_idx := result;
+end;
+
+function _gfx_bar_str(value: Byte; neg: Boolean): String;
+
+var
+  result: String;
+
+begin
+  result := '';
+  If NOT neg then
+    Repeat
+      If (value > 15) then
+        begin
+          result := result+#219;
+          Dec(value,15);
+        end;
+      If (value <= 15) and (value <> 0) then
+        result := result+CHR(127+value)
+    until (value <= 15)
+  else Repeat
+         If (value > 15) then
+           begin
+             result := #219+result;
+             Dec(value,15);
+           end;
+         If (value <= 15) and (value <> 0) then
+           result := CHR(158-value)+result;
+       until (value <= 15);
+  _gfx_bar_str := flipstr(result);
 end;
 
 procedure a2b_file_loader(bankSelector: Boolean; loadBankPossible: Boolean);
@@ -8079,6 +8540,7 @@ var
   old_keys: array[1..3] of Word;
 
 begin
+  _debug_str_ := 'ILOADERS.INC:a2b_file_loader';
   {$i-}
   Assign(f,instdata_source);
   ResetF(f);
@@ -8126,7 +8588,7 @@ begin
           EXIT;
         end;
 
-      crc := NOT 0;
+      crc := DWORD_NULL;
       crc := Update32(header.b0len,2,crc);
       crc := Update32(buffer,header.b0len,crc);
 
@@ -8164,7 +8626,7 @@ begin
           EXIT;
         end;
 
-      crc := NOT 0;
+      crc := DWORD_NULL;
       crc := Update32(header.b0len,2,crc);
       crc := Update32(buffer,header.b0len,crc);
 
@@ -8210,7 +8672,7 @@ begin
           EXIT;
         end;
 
-      crc := NOT 0;
+      crc := DWORD_NULL;
       crc := Update32(header2.b0len,2,crc);
       crc := Update32(buffer,header2.b0len,crc);
 
@@ -8323,13 +8785,13 @@ begin
 
   keyboard_reset_buffer;
   If NOT _force_program_quit then
-    If (sdl_screen_mode = 0) then
-      index := Menu(a2b_queue,01,01,get_bank_position(instdata_source,nm_valid+3),
+    If (program_screen_mode = 0) then
+      index := Menu(a2b_queue,01,01,min(1,get_bank_position(instdata_source,nm_valid)),
                     74,20,nm_valid+3,' '+iCASE(NameOnly(instdata_source))+' ')
-    else index := Menu(a2b_queue_more,01,01,get_bank_position(instdata_source,nm_valid+3),
+    else index := Menu(a2b_queue_more,01,01,min(1,get_bank_position(instdata_source,nm_valid)),
                        104,30,nm_valid+3,' '+iCASE(NameOnly(instdata_source))+' ');
 
-  add_bank_position(instdata_source,nm_valid+3,index+3);
+  add_bank_position(instdata_source,nm_valid,index+3);
   Move(old_keys,mn_setting.terminate_keys,SizeOf(old_keys));
   mn_environment.ext_proc := old_external_proc;
   mn_setting.topic_len := old_topic_len;
@@ -8352,7 +8814,7 @@ begin
                                          Copy(temp_songdata.instr_names[idx],10,32);
         end;
       load_flag := 1;
-      load_flag_alt := NULL;
+      load_flag_alt := BYTE_NULL;
     end;
   keyboard_reset_buffer;
 end;
@@ -8449,54 +8911,21 @@ begin
   vibrato_def_attr := attr+attr2 SHL 8;
 end;
 
-function _gfx_bar_str(value: Byte; neg: Boolean): String;
-
-var
-  result: String;
-
 begin
-  result := '';
-  If NOT neg then
-    Repeat
-      If (value > 15) then
-        begin
-          result := result+#219;
-          Dec(value,15);
-        end;
-      If (value <= 15) and (value <> 0) then
-        result := result+CHR(127+value)
-    until (value <= 15)
-  else Repeat
-         If (value > 15) then
-           begin
-             result := #219+result;
-             Dec(value,15);
-           end;
-         If (value <= 15) and (value <> 0) then
-           result := CHR(158-value)+result;
-       until (value <= 15);
-  _gfx_bar_str := flipstr(result);
-end;
-
-begin
+  _debug_str_ := 'ILOADERS.INC:_macro_preview_refresh';
   // arpeggio preview
-  ShowStr(mn_environment.v_dest^,xstart_arp+15,ystart_arp,
+  ShowStr(centered_frame_vdest^,xstart_arp+15,ystart_arp,
           'ý',
           mn_setting.topic_attr);
-  ShowStr(mn_environment.v_dest^,xstart_arp+15,ystart_arp+7,
+  ShowStr(centered_frame_vdest^,xstart_arp+15,ystart_arp+7,
           'ü',
           mn_setting.topic_attr);
-  ShowVStr(mn_environment.v_dest^,xstart_arp,ystart_arp+1,
+  ShowVStr(centered_frame_vdest^,xstart_arp,ystart_arp+1,
            'ณณณณณ',
            macro_background+macro_text);
-  ShowVStr(mn_environment.v_dest^,xstart_arp+30,ystart_arp+1,
+  ShowVStr(centered_frame_vdest^,xstart_arp+30,ystart_arp+1,
            'ณณณณณ',
            macro_background+macro_text);
-
-  For temp := 1 to 29 do
-    ShowVStr(mn_environment.v_dest^,xstart_arp+temp,ystart_arp+1,
-             ExpStrL('',6,' '),
-             macro_background+macro_text);
 
   max_value := 0;
   For temp := 1 to 255 do
@@ -8507,48 +8936,43 @@ begin
         max_value := Abs(temp_songdata.macro_table[arpeggio_table_idx].
                          arpeggio.data[temp]);
 
-  ShowStr(mn_environment.v_dest^,xstart_arp+31,ystart_arp+1,
+  ShowStr(centered_frame_vdest^,xstart_arp+31,ystart_arp+1,
           ExpStrR(Num2Str(max_value,10),3,' '),
           macro_background+macro_topic);
-  ShowStr(mn_environment.v_dest^,xstart_arp+31,ystart_arp+2,
+  ShowStr(centered_frame_vdest^,xstart_arp+31,ystart_arp+2,
           '+',
           macro_background+macro_topic);
-                     
+
   d_factor := 90/min(max_value,1);
   For temp := -14 to 14 do
     If (arpeggio_table_pos+temp >= 1) and (arpeggio_table_pos+temp <= 255) then
       If (temp_songdata.macro_table[arpeggio_table_idx].
           arpeggio.data[arpeggio_table_pos+temp] < $80) then
-        ShowVStr(mn_environment.v_dest^,xstart_arp+15+temp,ystart_arp+1,
+        ShowVStr(centered_frame_vdest^,xstart_arp+15+temp,ystart_arp+1,
                  ExpStrL(_gfx_bar_str(Round(temp_songdata.macro_table[arpeggio_table_idx].
                                             arpeggio.data[arpeggio_table_pos+temp]*d_factor),FALSE),6,' '),
                  LO(arpeggio_def_attr(arpeggio_table_pos+temp)))
-      else ShowVStr(mn_environment.v_dest^,xstart_arp+15+temp,ystart_arp+1,
+      else ShowVStr(centered_frame_vdest^,xstart_arp+15+temp,ystart_arp+1,
                     ExpStrL(FilterStr(note_layout[temp_songdata.macro_table[arpeggio_table_idx].
-                                                  arpeggio.data[arpeggio_table_pos+temp]-$80],'-','n'),6,' '),
+                                                  arpeggio.data[arpeggio_table_pos+temp]-$80],'-','๑'),6,' '),
                     LO(arpeggio_def_attr(arpeggio_table_pos+temp)))
-    else ShowVStr(mn_environment.v_dest^,xstart_arp+15+temp,ystart_arp+1,
+    else ShowVStr(centered_frame_vdest^,xstart_arp+15+temp,ystart_arp+1,
                   ExpStrL('',6,' '),
                   macro_background+macro_text);
 
   // vibrato preview
-  ShowStr(mn_environment.v_dest^,xstart_vib+15,ystart_vib,
+  ShowStr(centered_frame_vdest^,xstart_vib+15,ystart_vib,
           'ý',
           mn_setting.topic_attr);
-  ShowStr(mn_environment.v_dest^,xstart_vib+15,ystart_vib+7,
+  ShowStr(centered_frame_vdest^,xstart_vib+15,ystart_vib+7,
           'ü',
           mn_setting.topic_attr);
-  ShowVStr(mn_environment.v_dest^,xstart_vib,ystart_vib+1,
+  ShowVStr(centered_frame_vdest^,xstart_vib,ystart_vib+1,
            'ณณณณณ',
            macro_background+macro_text);
-  ShowVStr(mn_environment.v_dest^,xstart_vib+30,ystart_vib+1,
+  ShowVStr(centered_frame_vdest^,xstart_vib+30,ystart_vib+1,
            'ณณณณณ',
            macro_background+macro_text);
-
-  For temp := 1 to 29 do
-    ShowVStr(mn_environment.v_dest^,xstart_vib+temp,ystart_vib+1,
-             ExpStrL('',6,' '),
-             macro_background+macro_text);
 
   max_value := 0;
   For temp := 1 to 255 do
@@ -8557,16 +8981,16 @@ begin
       max_value := Abs(temp_songdata.macro_table[vibrato_table_idx].
                        vibrato.data[temp]);
 
-  ShowStr(mn_environment.v_dest^,xstart_vib+31,ystart_vib+1,
+  ShowStr(centered_frame_vdest^,xstart_vib+31,ystart_vib+1,
           ExpStrR(Num2Str(max_value,10),3,' '),
           macro_background+macro_topic);
-  ShowStr(mn_environment.v_dest^,xstart_vib+31,ystart_vib+2,
+  ShowStr(centered_frame_vdest^,xstart_vib+31,ystart_vib+2,
           '+',
           macro_background+macro_topic);
-  ShowStr(mn_environment.v_dest^,xstart_vib+31,ystart_vib+5,
+  ShowStr(centered_frame_vdest^,xstart_vib+31,ystart_vib+5,
           '-',
           macro_background+macro_topic);
-  ShowStr(mn_environment.v_dest^,xstart_vib+31,ystart_vib+6,
+  ShowStr(centered_frame_vdest^,xstart_vib+31,ystart_vib+6,
           ExpStrR(Num2Str(max_value,10),3,' '),
           macro_background+macro_topic);
 
@@ -8575,16 +8999,16 @@ begin
     If (vibrato_table_pos+temp >= 1) and (vibrato_table_pos+temp <= 255) then
       If (Round(temp_songdata.macro_table[vibrato_table_idx].
                 vibrato.data[vibrato_table_pos+temp]*d_factor) >= 0) then
-        ShowVStr(mn_environment.v_dest^,xstart_vib+15+temp,ystart_vib+1,
-                 ExpStrL(_gfx_bar_str(Round(temp_songdata.macro_table[vibrato_table_idx].
-                                            vibrato.data[vibrato_table_pos+temp]*d_factor),FALSE),3,' '),
+        ShowVStr(centered_frame_vdest^,xstart_vib+15+temp,ystart_vib+1,
+                 ExpStrR(ExpStrL(_gfx_bar_str(Round(temp_songdata.macro_table[vibrato_table_idx].
+                                                    vibrato.data[vibrato_table_pos+temp]*d_factor),FALSE),3,' '),6,' '),
                  LO(vibrato_def_attr(vibrato_table_pos+temp)))
-      else ShowVStr(mn_environment.v_dest^,xstart_vib+15+temp,ystart_vib+4,
-                    ExpStrR(_gfx_bar_str(Round(Abs(temp_songdata.macro_table[vibrato_table_idx].
-                                                   vibrato.data[vibrato_table_pos+temp])*d_factor),TRUE),3,' '),
+      else ShowVStr(centered_frame_vdest^,xstart_vib+15+temp,ystart_vib+1,
+                    ExpStrL(ExpStrR(_gfx_bar_str(Round(Abs(temp_songdata.macro_table[vibrato_table_idx].
+                                                           vibrato.data[vibrato_table_pos+temp])*d_factor),TRUE),3,' '),6,' '),
                     LO(vibrato_def_attr(vibrato_table_pos+temp)))
-    else ShowVStr(mn_environment.v_dest^,xstart_vib+15+temp,ystart_vib+1,
-                  ExpStrL('',3,' '),
+    else ShowVStr(centered_frame_vdest^,xstart_vib+15+temp,ystart_vib+1,
+                  ExpStrR('',6,' '),
                   macro_background+macro_text);
 end;
 
@@ -8595,12 +9019,13 @@ var
   temps: String;
 
 begin
+  _debug_str_ := 'ILOADERS.INC:a2w_macro_lister_external_proc';
   temps := Copy(mn_environment.curr_item,2,2);
   idx := Str2num(temps,16);
   If (idx = 0) then idx := 1;
 
-  VScrollBar(mn_environment.v_dest^,scrollbar_xstart,scrollbar_ystart,
-             scrollbar_size,macro_table_size,idx,$0ffff,
+  VScrollBar(centered_frame_vdest^,scrollbar_xstart,scrollbar_ystart,
+             scrollbar_size,macro_table_size,idx,WORD_NULL,
              mn_setting.menu_attr,mn_setting.menu_attr);
 
   arpeggio_table_idx := idx;
@@ -8612,7 +9037,7 @@ begin
                  arp_tab_selected := NOT arp_tab_selected;
                If ctrl_pressed then
                  vib_tab_selected := NOT vib_tab_selected;
-             end;    
+             end;
     kLEFT,
     kShLEFT: If shift_pressed then
                If (arpeggio_table_pos > 1) then
@@ -8691,6 +9116,7 @@ begin
                  If (songdata.macro_speedup > 1) then
                    Dec(songdata.macro_speedup);
                  macro_speedup := songdata.macro_speedup;
+                 keyboard_reset_buffer;
                end
              else If (_4op_to_test = 0) then
                     If (current_inst > 1) and update_current_inst then
@@ -8698,6 +9124,7 @@ begin
                         Dec(current_inst);
                         instrum_page := current_inst;
                         STATUS_LINE_refresh;
+                        keyboard_reset_buffer;
                       end;
 
     kCtRbr:  If shift_pressed then
@@ -8706,6 +9133,7 @@ begin
                  If (calc_max_speedup(tempo) < songdata.macro_speedup) then
                    songdata.macro_speedup := calc_max_speedup(tempo);
                  macro_speedup := songdata.macro_speedup;
+                 keyboard_reset_buffer;
                end
              else If (_4op_to_test = 0) then
                     If (current_inst < 255) and update_current_inst then
@@ -8713,68 +9141,598 @@ begin
                         Inc(current_inst);
                         instrum_page := current_inst;
                         STATUS_LINE_refresh;
+                        keyboard_reset_buffer;
                       end;
    end;
 
   If arp_tab_selected then
     attr := dialog_hi_text SHL 4+dialog_background SHR 4
   else attr := dialog_background+dialog_hi_text;
-  ShowStr(mn_environment.v_dest^,xstart_arp-1,ystart_arp+8,'['+#251+']',attr);
+  ShowStr(centered_frame_vdest^,xstart_arp-1,ystart_arp+8,'['+#251+']',attr);
 
   If vib_tab_selected then
     attr := dialog_hi_text SHL 4+dialog_background SHR 4
   else attr := dialog_background+dialog_hi_text;
-  ShowStr(mn_environment.v_dest^,xstart_vib-1,ystart_vib+8,'['+#251+']',attr);
-               
+  ShowStr(centered_frame_vdest^,xstart_vib-1,ystart_vib+8,'['+#251+']',attr);
+
   If (arpeggio_table_pos > 15) then
-    ShowStr(mn_environment.v_dest^,xstart_arp+6,ystart_arp+8,'',
+    ShowStr(centered_frame_vdest^,xstart_arp+6,ystart_arp+8,'',
             dialog_background+dialog_text)
-  else ShowStr(mn_environment.v_dest^,xstart_arp+6,ystart_arp+8,'',
+  else ShowStr(centered_frame_vdest^,xstart_arp+6,ystart_arp+8,'',
                dialog_background+dialog_hid);
 
   If (arpeggio_table_pos < temp_songdata.macro_table[idx].arpeggio.length-15+1) then
-    ShowStr(mn_environment.v_dest^,xstart_arp+25,ystart_arp+8,'',
+    ShowStr(centered_frame_vdest^,xstart_arp+25,ystart_arp+8,'',
             dialog_background+dialog_text)
-  else ShowStr(mn_environment.v_dest^,xstart_arp+25,ystart_arp+8,'',
+  else ShowStr(centered_frame_vdest^,xstart_arp+25,ystart_arp+8,'',
                dialog_background+dialog_hid);
 
   If (vibrato_table_pos > 15) then
-    ShowStr(mn_environment.v_dest^,xstart_vib+6,ystart_vib+8,'',
+    ShowStr(centered_frame_vdest^,xstart_vib+6,ystart_vib+8,'',
             dialog_background+dialog_text)
-  else ShowStr(mn_environment.v_dest^,xstart_vib+6,ystart_vib+8,'',
+  else ShowStr(centered_frame_vdest^,xstart_vib+6,ystart_vib+8,'',
                dialog_background+dialog_hid);
 
   If (vibrato_table_pos < temp_songdata.macro_table[idx].vibrato.length-15+1) then
-    ShowStr(mn_environment.v_dest^,xstart_vib+24,ystart_vib+8,'',
+    ShowStr(centered_frame_vdest^,xstart_vib+24,ystart_vib+8,'',
             dialog_background+dialog_text)
-  else ShowStr(mn_environment.v_dest^,xstart_vib+24,ystart_vib+8,'',
+  else ShowStr(centered_frame_vdest^,xstart_vib+24,ystart_vib+8,'',
                dialog_background+dialog_hid);
 
-  ShowCStr(mn_environment.v_dest^,xstart_arp+10,ystart_vib+8,
+  ShowCStr(centered_frame_vdest^,xstart_arp+10,ystart_vib+8,
            'ARPEGGiO (~'+byte2hex(arpeggio_table_pos)+'~)',
            dialog_background+dialog_text,
            dialog_background+dialog_hi_text);
-  ShowCStr(mn_environment.v_dest^,xstart_vib+10,ystart_vib+8,
+  ShowCStr(centered_frame_vdest^,xstart_vib+10,ystart_vib+8,
            'ViBRATO (~'+byte2hex(vibrato_table_pos)+'~)',
            dialog_background+dialog_text,
            dialog_background+dialog_hi_text);
 
-  temps := ExpStrL(context_str2+context_str+' [SPEED:'+Num2str(tempo*songdata.macro_speedup,10)+#3+'] ',40,'อ');
-  ShowCStr(mn_environment.v_dest^,xstart+window_xsize-CStrLen(temps),ystart+window_ysize,
-           temps,
-           mn_setting.contxt_attr,
-           mn_setting.contxt2_attr);
+  temps := '`'+ExpStrL('`'+context_str2+context_str+' [SPEED:'+Num2str(tempo*songdata.macro_speedup,10)+#3+'] ',40,'อ');
+  ShowC3Str(centered_frame_vdest^,xstart+window_xsize-C3StrLen(temps),ystart+window_ysize,
+            temps,
+            mn_setting.contxt_attr,
+            mn_setting.contxt2_attr,
+            mn_setting.menu_attr);
 
   If (a2w_institle_pos <> 0) then
-    ShowStr(mn_environment.v_dest^,mn_environment.xpos+a2w_institle_pos,mn_environment.ypos,
+    ShowStr(centered_frame_vdest^,mn_environment.xpos+a2w_institle_pos,mn_environment.ypos,
             byte2hex(current_inst),
             mn_setting.title_attr);
 
   arpvib_arpeggio_table := arpeggio_table_idx;
   arpvib_vibrato_table := vibrato_table_idx;
-       
+
   _macro_preview_refresh;
   a2w_macro_lister_external_proc_callback;
+end;
+
+const
+  _panning: array[0..2] of Char = '๑<>';
+  _hex: array[0..15] of Char = '0123456789ABCDEF';
+  _fmreg_add_prev_size: Byte = 0;
+
+var
+  fmreg_cursor_pos: Byte;
+  fmreg_left_margin: Byte;
+  fmreg_hpos: Byte;
+  fmreg_vpos: Byte;
+  fmreg_instr: Byte;
+  fmreg_page: Byte;
+  fmreg_str: String;
+  fmreg_scrlbar_size: Byte;
+  fmreg_scrlbar_items: Byte;
+
+function min0(number: Integer; flag: Integer): Integer;
+begin
+  If (number > 0) then min0 := number
+  else min0 := flag;
+end;
+
+function fmreg_def_attr(page: Byte): Word;
+
+var
+  attr,
+  attr2: Byte;
+
+begin
+  If (page <= temp_songdata.instr_macros[fmreg_instr].length) then
+    If (page >= temp_songdata.instr_macros[fmreg_instr].loop_begin) and
+       (page <= temp_songdata.instr_macros[fmreg_instr].loop_begin+
+                PRED(temp_songdata.instr_macros[fmreg_instr].loop_length)) and
+       (temp_songdata.instr_macros[fmreg_instr].loop_begin > 0) and
+       (temp_songdata.instr_macros[fmreg_instr].loop_length > 0) then
+      begin
+        attr := macro_background+macro_text_loop;
+        attr2 := macro_current_bckg+macro_current_loop;
+      end
+    else If (page >= temp_songdata.instr_macros[fmreg_instr].keyoff_pos) and
+            (temp_songdata.instr_macros[fmreg_instr].keyoff_pos > 0) then
+           begin
+             attr := macro_background+macro_text_keyoff;
+             attr2 := macro_current_bckg+macro_current_koff;
+           end
+         else
+           begin
+             attr := macro_background+macro_text;
+             attr2 := macro_current_bckg+macro_current;
+           end
+  else
+    begin
+      attr := macro_background+macro_text_dis;
+      attr2 := macro_current_bckg+macro_current_dis;
+    end;
+
+  fmreg_def_attr := attr+attr2 SHL 8;
+end;
+
+function _fmreg_str(page: Byte): String;
+
+var
+  fmreg_str: String;
+
+begin
+  With temp_songdata.instr_macros[fmreg_instr].data[page].fm_data do
+    begin
+      fmreg_str := _hex[ATTCK_DEC_modulator SHR 4]+' '+
+                   _hex[ATTCK_DEC_modulator AND $0f]+' '+
+                   _hex[SUSTN_REL_modulator SHR 4]+' '+
+                   _hex[SUSTN_REL_modulator AND $0f]+' '+
+                   _hex[WAVEFORM_modulator AND 7]+' '+
+                   byte2hex(KSL_VOLUM_modulator AND $3f)+' '+
+                   _hex[KSL_VOLUM_modulator SHR 6]+' '+
+                   _hex[AM_VIB_EG_modulator AND $0f]+' ';
+
+      If (AM_VIB_EG_modulator SHR 7 = 0) then fmreg_str := fmreg_str+'๚'
+      else fmreg_str := fmreg_str+'T';
+
+      If (AM_VIB_EG_modulator SHR 6 AND 1 = 0) then fmreg_str := fmreg_str+'๚'
+      else fmreg_str := fmreg_str+'V';
+
+      If (AM_VIB_EG_modulator SHR 4 AND 1 = 0) then fmreg_str := fmreg_str+'๚'
+      else fmreg_str := fmreg_str+'K';
+
+      If (AM_VIB_EG_modulator SHR 5 AND 1 = 0) then fmreg_str := fmreg_str+'๚ '
+      else fmreg_str := fmreg_str+'S ';
+
+      fmreg_str := fmreg_str+
+                   _hex[ATTCK_DEC_carrier SHR 4]+' '+
+                   _hex[ATTCK_DEC_carrier AND $0f]+' '+
+                   _hex[SUSTN_REL_carrier SHR 4]+' '+
+                   _hex[SUSTN_REL_carrier AND $0f]+' '+
+                   _hex[WAVEFORM_carrier AND 7]+' '+
+                   byte2hex(KSL_VOLUM_carrier AND $3f)+' '+
+                   _hex[KSL_VOLUM_carrier SHR 6]+' '+
+                   _hex[AM_VIB_EG_carrier AND $0f]+' ';
+
+      If (AM_VIB_EG_carrier SHR 7 = 0) then fmreg_str := fmreg_str+'๚'
+      else fmreg_str := fmreg_str+'T';
+
+      If (AM_VIB_EG_carrier SHR 6 AND 1 = 0) then fmreg_str := fmreg_str+'๚'
+      else fmreg_str := fmreg_str+'V';
+
+      If (AM_VIB_EG_carrier SHR 4 AND 1 = 0) then fmreg_str := fmreg_str+'๚'
+      else fmreg_str := fmreg_str+'K';
+
+      If (AM_VIB_EG_carrier SHR 5 AND 1 = 0) then fmreg_str := fmreg_str+'๚ '
+      else fmreg_str := fmreg_str+'S ';
+
+      fmreg_str := fmreg_str+_hex[FEEDBACK_FM AND 1]+' ';
+      fmreg_str := fmreg_str+_hex[FEEDBACK_FM SHR 1 AND 7]+' ';
+    end;
+
+  With temp_songdata.instr_macros[fmreg_instr].data[page] do
+    begin
+      If (freq_slide < 0) then fmreg_str := fmreg_str+'-'+ExpStrL(Num2str(Abs(freq_slide),16),3,'0')+' '
+      else fmreg_str := fmreg_str+'+'+ExpStrL(Num2str(Abs(freq_slide),16),3,'0')+' ';
+
+      fmreg_str := fmreg_str+
+                   _panning[panning]+' '+
+                   byte2hex(duration);
+    end;
+
+  _fmreg_str := fmreg_str;
+end;
+
+function _dis_fmreg_col(fmreg_col: Byte): Boolean;
+
+var
+  result: Boolean;
+
+begin
+  result := FALSE;
+  Case fmreg_col of
+    1,2,3,4,
+    5: If temp_songdata.dis_fmreg_col[fmreg_instr][fmreg_col-1] then
+         result := TRUE;
+    6,
+    7: If temp_songdata.dis_fmreg_col[fmreg_instr][5] then
+         result := TRUE;
+
+    8,9,10,11,12,13,
+    14,15,16,17,
+    18: If temp_songdata.dis_fmreg_col[fmreg_instr][fmreg_col-2] then
+          result := TRUE;
+    19,
+    20: If temp_songdata.dis_fmreg_col[fmreg_instr][17] then
+          result := TRUE;
+
+    21,22,23,24,
+    25,26,27,
+    28: If temp_songdata.dis_fmreg_col[fmreg_instr][fmreg_col-3] then
+          result := TRUE;
+
+    29,30,31,
+    32: If temp_songdata.dis_fmreg_col[fmreg_instr][26] then
+          result := TRUE;
+
+    33: If temp_songdata.dis_fmreg_col[fmreg_instr][27] then
+          result := TRUE;
+  end;
+
+  If (fmreg_col in [14..28]) and
+     (temp_songdata.instr_data[current_inst].perc_voice in [2..5]) then
+    result := TRUE;
+
+    _dis_fmreg_col := result;
+end;
+
+function _str1(def_chr: Char): String;
+
+const
+  _on_off: array[BOOLEAN] of Char = ('อ','þ');
+
+var
+  temp: Byte;
+  temp_str: String;
+
+begin
+  temp_str := '';
+  _on_off[FALSE] := def_chr;
+
+  For temp := 0 to 4 do
+    temp_str := temp_str+
+                _on_off[temp_songdata.dis_fmreg_col[fmreg_instr][temp]]+def_chr;
+
+  temp_str := temp_str+
+              _on_off[temp_songdata.dis_fmreg_col[fmreg_instr][5]]+
+              _on_off[temp_songdata.dis_fmreg_col[fmreg_instr][5]]+def_chr;
+
+  temp_str := temp_str+
+              _on_off[temp_songdata.dis_fmreg_col[fmreg_instr][6]]+
+              def_chr+
+              _on_off[temp_songdata.dis_fmreg_col[fmreg_instr][7]]+def_chr;
+
+  temp_str := temp_str+
+              _on_off[temp_songdata.dis_fmreg_col[fmreg_instr][8]]+
+              _on_off[temp_songdata.dis_fmreg_col[fmreg_instr][9]]+
+              _on_off[temp_songdata.dis_fmreg_col[fmreg_instr][10]]+
+              _on_off[temp_songdata.dis_fmreg_col[fmreg_instr][11]]+def_chr;
+
+  For temp := 12 to 16 do
+    temp_str := temp_str+
+                _on_off[temp_songdata.dis_fmreg_col[fmreg_instr][temp]]+def_chr;
+
+  temp_str := temp_str+
+              _on_off[temp_songdata.dis_fmreg_col[fmreg_instr][17]]+
+              _on_off[temp_songdata.dis_fmreg_col[fmreg_instr][17]]+def_chr;
+
+  temp_str := temp_str+
+              _on_off[temp_songdata.dis_fmreg_col[fmreg_instr][18]]+def_chr+
+              _on_off[temp_songdata.dis_fmreg_col[fmreg_instr][19]]+def_chr;
+
+  temp_str := temp_str+
+              _on_off[temp_songdata.dis_fmreg_col[fmreg_instr][20]]+
+              _on_off[temp_songdata.dis_fmreg_col[fmreg_instr][21]]+
+              _on_off[temp_songdata.dis_fmreg_col[fmreg_instr][22]]+
+              _on_off[temp_songdata.dis_fmreg_col[fmreg_instr][23]]+def_chr;
+
+  For temp := 24 to 25 do
+    temp_str := temp_str+
+                _on_off[temp_songdata.dis_fmreg_col[fmreg_instr][temp]]+def_chr;
+
+  temp_str := temp_str+
+              _on_off[temp_songdata.dis_fmreg_col[fmreg_instr][26]]+
+              _on_off[temp_songdata.dis_fmreg_col[fmreg_instr][26]]+
+              _on_off[temp_songdata.dis_fmreg_col[fmreg_instr][26]]+
+              _on_off[temp_songdata.dis_fmreg_col[fmreg_instr][26]]+def_chr;
+
+  temp_str := temp_str+
+              _on_off[temp_songdata.dis_fmreg_col[fmreg_instr][27]];
+
+  _str1 := temp_str;
+end;
+
+function _str2(str: String; len: Byte): String; assembler;
+asm
+        push    ebx
+        push    ecx
+        push    edx
+        push    esi
+        push    edi
+        mov     esi,[str]
+        mov     edi,@result
+        movzx   ebx,len
+        xor     edx,edx
+        push    edi
+        lodsb
+        inc     edi
+        xor     ecx,ecx
+        mov     ecx,ebx
+        jecxz   @@3
+        movzx   ecx,al
+        jecxz   @@3
+@@1:    cmp     edx,ebx
+        jae     @@3
+        lodsb
+        stosb
+        cmp     al,'`'
+        jz      @@2
+        inc     edx
+@@2:    loop    @@1
+@@3:    pop     edi
+        mov     eax,esi
+        sub     eax,[str]
+        dec     eax
+        stosb
+        pop     edi
+        pop     esi
+        pop     edx
+        pop     ecx
+        pop     ebx
+end;
+
+procedure fmreg_page_refresh(xpos,ypos: Byte; page: Word);
+
+var
+  attr: Byte;
+  temps,fmreg_str2: String;
+  fmreg_col,index,
+  index2: Byte;
+  dummy_str: String;
+
+begin
+  _debug_str_ := 'ILOADERS.INC:fmreg_page_refresh';
+  attr := LO(fmreg_def_attr(page AND $0fff));
+  fmreg_str := _fmreg_str(page AND $0fff);
+  fmreg_str2 := fmreg_str;
+
+  index := 0;
+  index2 := 0;
+
+  For fmreg_col := 1 to 35-1 do
+    If _dis_fmreg_col(fmreg_col) then
+      begin
+        Insert('`',fmreg_str2,pos5[fmreg_col]+index);
+        Insert('`',fmreg_str2,pos5[fmreg_col]+index+2);
+        If (pos5[fmreg_col] < fmreg_left_margin) then Inc(index2,2);
+        Inc(index,2);
+      end;
+
+  temps := Copy(fmreg_str2,fmreg_left_margin+index2,
+                Length(fmreg_str2)-fmreg_left_margin-index2+1);
+
+  If (temp_songdata.instr_macros[fmreg_instr].data[page AND $0ff].fm_data.
+      FEEDBACK_FM OR $80 <> temp_songdata.instr_macros[fmreg_instr].data[page AND $0ff].fm_data.
+                            FEEDBACK_FM) then
+    dummy_str := '`'+#$0d+'`'
+  else dummy_str := #$0d;
+
+  ShowC3Str(centered_frame_vdest^,xpos+3,ypos,
+            'ณ~'+dummy_str+'~๖~'+
+            _str2(temps,31+window_xsize-82-_fmreg_add_prev_size)+'~',
+            macro_background+macro_text,
+            attr,
+            macro_background+macro_text_dis)
+end;
+
+procedure _scroll_cur_left;
+begin
+  _debug_str_ := 'ILOADERS.INC:_scroll_cur_left';
+  Repeat
+    If (fmreg_cursor_pos > 1) then Dec(fmreg_cursor_pos)
+    else Dec(fmreg_left_margin);
+  until (fmreg_str[PRED(fmreg_left_margin+fmreg_cursor_pos-1)] = ' ') or
+        (fmreg_left_margin+fmreg_cursor_pos-1 = 1);
+  fmreg_cursor_pos := pos5[fmreg_hpos]-fmreg_left_margin+1;
+end;
+
+procedure _scroll_cur_right;
+begin
+  _debug_str_ := 'ILOADERS.INC:_scroll_cur_right';
+  Repeat
+    If (fmreg_cursor_pos < 31+window_xsize-82-_fmreg_add_prev_size) then Inc(fmreg_cursor_pos)
+    else Inc(fmreg_left_margin);
+  until (fmreg_str[SUCC(fmreg_left_margin+fmreg_cursor_pos-1)] = ' ') or
+        (fmreg_left_margin+fmreg_cursor_pos-1 = 57);
+  fmreg_cursor_pos := pos5[fmreg_hpos]-fmreg_left_margin+1;
+end;
+
+procedure _dec_fmreg_hpos;
+
+var
+  old_hpos_idx: Byte;
+  new_hpos_idx: Byte;
+
+begin
+  _debug_str_ := 'ILOADERS.INC:_dec_fmreg_hpos';
+  old_hpos_idx := pos5vw[fmreg_hpos];
+  Repeat
+    Dec(fmreg_hpos);
+    new_hpos_idx := pos5vw[fmreg_hpos];
+    _scroll_cur_left;
+  until (fmreg_hpos = 1) or (old_hpos_idx <> new_hpos_idx);
+  If (fmreg_hpos > 1) then
+    While (pos5vw[PRED(fmreg_hpos)] = pos5vw[fmreg_hpos]) do
+      begin
+        Dec(fmreg_hpos);
+        _scroll_cur_left;
+      end;
+end;
+
+procedure _inc_fmreg_hpos;
+
+var
+  old_hpos_idx: Byte;
+  new_hpos_idx: Byte;
+
+begin
+  _debug_str_ := 'ILOADERS.INC:_inc_fmreg_hpos';
+  old_hpos_idx := pos5vw[fmreg_hpos];
+  Repeat
+    Inc(fmreg_hpos);
+    new_hpos_idx := pos5vw[fmreg_hpos];
+    _scroll_cur_right;
+  until (fmreg_hpos = 35-1) or (old_hpos_idx <> new_hpos_idx);
+end;
+
+function _fmreg_param(page,fmreg_hpos: Byte): Integer;
+
+var
+  result: Integer;
+  fmreg_str: String;
+
+begin
+  fmreg_str := _fmreg_str(page);
+  Case fmreg_hpos of
+    {%n}
+    1,2,3,4,5,8,9,14,15,16,17,
+    18,21,22,27,28: result := Str2num(fmreg_str[pos5[fmreg_hpos]],16);
+
+    {%nn}
+    6,7:   result := Str2num(Copy(fmreg_str,pos5[6],2),16);
+    19,20: result := Str2num(Copy(fmreg_str,pos5[19],2),16);
+    34,35: result := Str2num(Copy(fmreg_str,pos5[34],2),16);
+
+    {sw}
+    10,11,12,13,23,24,
+    25,26: If (fmreg_str[pos5[fmreg_hpos]] = '๛') then result := 1
+              else result := 0;
+
+    {fsl}
+    29,30,31,32: begin
+                   result := Str2num(Copy(fmreg_str,pos5[30],3),16);
+                   If (fmreg_str[pos5[29]] = '-') then result := -result;
+                 end;
+    {pan}
+    33: Case SYSTEM.Pos(fmreg_str[pos5[33]],_panning) of
+          1: result := 0;
+          2: result := -1;
+          3: result := 1;
+        end;
+  end;
+  _fmreg_param := result;
+end;
+
+procedure _fmreg_macro_preview_refresh(xstart,ystart: Byte; page: Byte);
+
+var
+  temp,max_value: Integer;
+  d_factor: Real;
+
+begin
+  _debug_str_ := 'ILOADERS.INC:_fmreg_macro_preview_refresh';
+  ShowStr(centered_frame_vdest^,xstart+10+(_fmreg_add_prev_size DIV 2),ystart,
+          'ý',
+          mn_setting.topic_attr);
+  ShowStr(centered_frame_vdest^,xstart+10+(_fmreg_add_prev_size DIV 2),ystart+7,
+          'ü',
+          mn_setting.topic_attr);
+
+  If NOT (fmreg_hpos in [29..33]) then
+    begin
+      ShowVStr(centered_frame_vdest^,xstart,ystart+1,
+               'ณณณณณ',
+               macro_background+macro_text);
+      ShowVStr(centered_frame_vdest^,xstart+20+_fmreg_add_prev_size,ystart+1,
+               'ณณณณณ',
+               macro_background+macro_text);
+    end
+  else begin
+         ShowVStr(centered_frame_vdest^,xstart,ystart+1,
+                  'ณณณณณ',
+                  macro_background+macro_text);
+         ShowVStr(centered_frame_vdest^,xstart+20+_fmreg_add_prev_size,ystart+1,
+                  'ณณณณณ',
+                  macro_background+macro_text);
+       end;
+
+  max_value := 0;
+  For temp := 1 to 255 do
+    If (Abs(_fmreg_param(temp,fmreg_hpos)) > max_value) then
+      max_value := Abs(_fmreg_param(temp,fmreg_hpos));
+
+  If NOT (fmreg_hpos in [29..33]) then
+    begin
+      ShowStr(centered_frame_vdest^,xstart+20+_fmreg_add_prev_size+1,ystart+1,
+              ExpStrR(ExpStrL(Num2Str(max_value,16),2,'0'),3,' '),
+              macro_background+macro_topic);
+      ShowStr(centered_frame_vdest^,xstart+20+_fmreg_add_prev_size+1,ystart+2,
+              '+',
+              macro_background+macro_topic);
+      ShowStr(centered_frame_vdest^,xstart+20+_fmreg_add_prev_size+1,ystart+5,
+              ' ',
+              macro_background+macro_topic);
+      ShowStr(centered_frame_vdest^,xstart+20+_fmreg_add_prev_size+1,ystart+6,
+              ExpStrR('',3,' '),
+              macro_background+macro_topic);
+    end
+  else
+    begin
+      ShowStr(centered_frame_vdest^,xstart+20+_fmreg_add_prev_size+1,ystart+1,
+              ExpStrR(ExpStrL(Num2Str(max_value,16),2,'0'),3,' '),
+              macro_background+macro_topic);
+      ShowStr(centered_frame_vdest^,xstart+20+_fmreg_add_prev_size+1,ystart+2,
+              '+',
+              macro_background+macro_topic);
+      ShowStr(centered_frame_vdest^,xstart+20+_fmreg_add_prev_size+1,ystart+5,
+              '-',
+              macro_background+macro_topic);
+      ShowStr(centered_frame_vdest^,xstart+20+_fmreg_add_prev_size+1,ystart+6,
+              ExpStrR(ExpStrL(Num2Str(max_value,16),2,'0'),3,' '),
+              macro_background+macro_topic);
+    end;
+
+  If NOT (fmreg_hpos in [29..33]) then
+    d_factor := 90/min(max_value,1)
+  else d_factor := 45/min(max_value,1);
+
+  If NOT (fmreg_hpos in [29..33]) then
+    For temp := -9-(_fmreg_add_prev_size DIV 2) to 9+(_fmreg_add_prev_size DIV 2) do
+      If (page+temp >= 1) and (page+temp <= 255) then
+        If NOT _dis_fmreg_col(fmreg_hpos) then
+          ShowVStr(centered_frame_vdest^,xstart+10+temp+(_fmreg_add_prev_size DIV 2),ystart+1,
+                   ExpStrL(_gfx_bar_str(Round(_fmreg_param(page+temp,fmreg_hpos)*d_factor),FALSE),6,' '),
+                   LO(fmreg_def_attr(page+temp)))
+        else
+          ShowVStr(centered_frame_vdest^,xstart+10+temp+(_fmreg_add_prev_size DIV 2),ystart+1,
+                   ExpStrL(_gfx_bar_str(Round(_fmreg_param(page+temp,fmreg_hpos)*d_factor),FALSE),6,' '),
+                   macro_background+macro_text_dis)
+      else ShowVStr(centered_frame_vdest^,xstart+10+temp+(_fmreg_add_prev_size DIV 2),ystart+1,
+                    ExpStrL('',6,' '),
+                    macro_background+macro_text)
+  else For temp := -9-(_fmreg_add_prev_size DIV 2) to 9+(_fmreg_add_prev_size DIV 2) do
+         If (page+temp >= 1) and (page+temp <= 255) then
+           If (Round(_fmreg_param(page+temp,fmreg_hpos)*d_factor) >= 0) then
+             If NOT _dis_fmreg_col(fmreg_hpos) then
+               ShowVStr(centered_frame_vdest^,xstart+10+temp+(_fmreg_add_prev_size DIV 2),ystart+1,
+                        ExpStrR(ExpStrL(_gfx_bar_str(Round(_fmreg_param(page+temp,fmreg_hpos)*d_factor),FALSE),3,' '),6,' '),
+                        LO(fmreg_def_attr(page+temp)))
+             else
+               ShowVStr(centered_frame_vdest^,xstart+10+temp+(_fmreg_add_prev_size DIV 2),ystart+1,
+                        ExpStrR(ExpStrL(_gfx_bar_str(Round(_fmreg_param(page+temp,fmreg_hpos)*d_factor),FALSE),3,' '),6,' '),
+                        macro_background+macro_text_dis)
+           else If NOT _dis_fmreg_col(fmreg_hpos) then
+                  ShowVStr(centered_frame_vdest^,xstart+10+temp+(_fmreg_add_prev_size DIV 2),ystart+1,
+                           ExpStrL(ExpStrR(_gfx_bar_str(Round(Abs(_fmreg_param(page+temp,fmreg_hpos))*d_factor),TRUE),3,' '),6,' '),
+                           LO(fmreg_def_attr(page+temp)))
+                else
+                  ShowVStr(centered_frame_vdest^,xstart+10+temp+(_fmreg_add_prev_size DIV 2),ystart+1,
+                           ExpStrL(ExpStrR(_gfx_bar_str(Round(Abs(_fmreg_param(page+temp,fmreg_hpos))*d_factor),TRUE),3,' '),6,' '),
+                           macro_background+macro_text_dis)
+         else ShowVStr(centered_frame_vdest^,xstart+10+temp+(_fmreg_add_prev_size DIV 2),ystart+1,
+                       ExpStrL('',6,' '),
+                       macro_background+macro_text);
 end;
 
 procedure a2w_lister_external_proc;
@@ -8784,12 +9742,78 @@ var
   temps: String;
 
 begin
+  _debug_str_ := 'ILOADERS.INC:a2w_lister_external_proc';
   Case mn_environment.keystroke of
+    kUP:     If shift_pressed then
+               If (fmreg_vpos > 1) then Dec(fmreg_vpos)
+               else If (fmreg_page > 1) then Dec(fmreg_page);
+
+    kDOWN:   If shift_pressed then
+               If (fmreg_vpos < 6) then Inc(fmreg_vpos)
+               else If (fmreg_page < 255-6+1) then Inc(fmreg_page);
+
+    kPgUP:   If shift_pressed then
+               If (fmreg_page > 6) then Dec(fmreg_page,6)
+               else If (fmreg_page > 1) then fmreg_page := 1
+                    else fmreg_vpos := 1;
+
+    kPgDOWN: If shift_pressed then
+               If (fmreg_page+6 < 255-6+1) then Inc(fmreg_page,6)
+               else If (fmreg_page < 255-6+1) then fmreg_page := 255-6+1
+                    else fmreg_vpos := 6;
+
+    kHOME:   If shift_pressed then
+               begin
+                 fmreg_page := 1;
+                 fmreg_vpos := 1;
+               end;
+
+    kEND:    If shift_pressed then
+               begin
+                 fmreg_page := 255-6+1;
+                 fmreg_vpos := 6;
+               end;
+
+    kCtHOME: begin
+               fmreg_hpos := 1;
+               fmreg_cursor_pos := 1;
+               fmreg_left_margin := 1;
+             end;
+
+    kCtEND:  begin
+               fmreg_hpos := 35-1;
+               fmreg_cursor_pos := max(pos5[fmreg_hpos],31+window_xsize-82-_fmreg_add_prev_size);
+               fmreg_left_margin := min(pos5[35]-(31+window_xsize-82-_fmreg_add_prev_size),1);
+               _dec_fmreg_hpos;
+               _inc_fmreg_hpos;
+             end;
+
+    kLEFT:   If shift_pressed then
+               If (fmreg_hpos > 1) then _dec_fmreg_hpos
+               else If cycle_pattern then
+                      begin
+                        fmreg_hpos := 35-1;
+                        fmreg_cursor_pos := max(pos5[fmreg_hpos],31+window_xsize-82-_fmreg_add_prev_size);
+                        fmreg_left_margin := min(pos5[35]-(31+window_xsize-82-_fmreg_add_prev_size),1);
+                        _dec_fmreg_hpos;
+                        _inc_fmreg_hpos;
+                      end;
+
+    kRIGHT:  If shift_pressed then
+               If (fmreg_hpos < 35-1) then _inc_fmreg_hpos
+                else If cycle_pattern then
+                       begin
+                         fmreg_hpos := 1;
+                         fmreg_cursor_pos := 1;
+                         fmreg_left_margin := 1;
+                       end;
+
     kCtLbr:  If shift_pressed then
                begin
                  If (songdata.macro_speedup > 1) then
                    Dec(songdata.macro_speedup);
                  macro_speedup := songdata.macro_speedup;
+                 keyboard_reset_buffer;
                end
              else If (_4op_to_test = 0) then
                     If (current_inst > 1) and update_current_inst then
@@ -8797,6 +9821,7 @@ begin
                         Dec(current_inst);
                         instrum_page := current_inst;
                         STATUS_LINE_refresh;
+                        keyboard_reset_buffer;
                       end;
 
     kCtRbr:  If shift_pressed then
@@ -8805,6 +9830,7 @@ begin
                  If (calc_max_speedup(tempo) < songdata.macro_speedup) then
                    songdata.macro_speedup := calc_max_speedup(tempo);
                  macro_speedup := songdata.macro_speedup;
+                 keyboard_reset_buffer;
                end
              else If (_4op_to_test = 0) then
                     If (current_inst < 255) and update_current_inst then
@@ -8812,31 +9838,99 @@ begin
                         Inc(current_inst);
                         instrum_page := current_inst;
                         STATUS_LINE_refresh;
+                        keyboard_reset_buffer;
                       end;
    end;
 
+  fmreg_instr := Str2num(Copy(mn_environment.curr_item,7,2),16);
   If update_current_inst then
     begin
-      idx := Str2num(Copy(mn_environment.curr_item,7,2),16);
-      If (idx <> 0) then
-	   begin
-	     current_inst := idx;
-		 instrum_page := idx;
-	   end;	 
+      current_inst := fmreg_instr;
+      instrum_page := fmreg_instr;
       STATUS_LINE_refresh;
     end;
 
   If (a2w_institle_pos <> 0) then
-    ShowStr(mn_environment.v_dest^,mn_environment.xpos+a2w_institle_pos,mn_environment.ypos,
+    ShowStr(centered_frame_vdest^,mn_environment.xpos+a2w_institle_pos,mn_environment.ypos,
             byte2hex(current_inst),
             mn_setting.title_attr);
-  
-  temps := ExpStrL(context_str2+context_str+' [SPEED:'+Num2str(tempo*songdata.macro_speedup,10)+#3+'] ',40,'อ');
-  ShowCStr(mn_environment.v_dest^,xstart+window_xsize-CStrLen(temps),ystart+window_ysize,
-           temps,
-           mn_setting.contxt_attr,
-           mn_setting.contxt2_attr);
-       
+
+  temps := '`'+ExpStrL('`'+context_str2+context_str+' [SPEED:'+Num2str(tempo*songdata.macro_speedup,10)+#3+'] ',40,'อ');
+  ShowC3Str(centered_frame_vdest^,xstart+window_xsize-C3StrLen(temps),ystart+window_ysize,
+            temps,
+            mn_setting.contxt_attr,
+            mn_setting.contxt2_attr,
+            mn_setting.menu_attr);
+
+  ShowCStr(centered_frame_vdest^,xstart+2,ystart+window_ysize-10+2,
+           'LENGTH:    ~'+
+           byte2hex(temp_songdata.instr_macros[fmreg_instr].length)+' ~',
+           macro_background+macro_topic,
+           macro_background+macro_text);
+
+  ShowCStr(centered_frame_vdest^,xstart+2,ystart+window_ysize-10+3,
+           'LOOP BEG.: ~'+
+           byte2hex(temp_songdata.instr_macros[fmreg_instr].loop_begin)+' ~',
+           macro_background+macro_topic,
+           macro_background+macro_text);
+
+  ShowCStr(centered_frame_vdest^,xstart+2,ystart+window_ysize-10+4,
+           'LOOP LEN.: ~'+
+           byte2hex(temp_songdata.instr_macros[fmreg_instr].loop_length)+' ~',
+           macro_background+macro_topic,
+           macro_background+macro_text);
+
+  ShowCStr(centered_frame_vdest^,xstart+2,ystart+window_ysize-10+5,
+           'KEY-OFF:   ~'+
+           byte2hex(temp_songdata.instr_macros[fmreg_instr].keyoff_pos)+' ~',
+           macro_background+macro_topic,
+           macro_background+macro_text);
+
+  ShowCStr(centered_frame_vdest^,xstart+2,ystart+window_ysize-10+6,
+           'ARP.TABLE: ~'+
+           byte2hex(temp_songdata.instr_macros[fmreg_instr].arpeggio_table)+' ~',
+           macro_background+macro_topic,
+           macro_background+macro_text);
+
+  ShowCStr(centered_frame_vdest^,xstart+2,ystart+window_ysize-10+7,
+           'ViB.TABLE: ~'+
+           byte2hex(temp_songdata.instr_macros[fmreg_instr].vibrato_table)+' ~',
+           macro_background+macro_topic,
+           macro_background+macro_text);
+
+  VScrollBar(centered_frame_vdest^,xstart+window_xsize,ystart+3,
+             fmreg_scrlbar_size,fmreg_scrlbar_items,mn_environment.curr_pos,WORD_NULL,
+             mn_setting.menu_attr,mn_setting.menu_attr);
+  VScrollBar(centered_frame_vdest^,xstart+window_xsize,ystart+window_ysize-10+1,
+             8,255-6,fmreg_page,WORD_NULL,
+             mn_setting.menu_attr,mn_setting.menu_attr);
+
+  _fmreg_macro_preview_refresh(xstart+17,ystart+window_ysize-10+1,fmreg_page+fmreg_vpos-1);
+  ShowCStr(centered_frame_vdest^,xstart+49+_fmreg_add_prev_size,ystart+window_ysize-10+1,
+           ExpStrL('',fmreg_cursor_pos,'อ')+'~'+#31+'~'+
+           ExpStrL('',window_xsize-49-_fmreg_add_prev_size-fmreg_cursor_pos-1,'อ'),
+           mn_setting.topic_attr,
+           macro_background+macro_hi_text);
+  ShowCStr(centered_frame_vdest^,xstart+49+_fmreg_add_prev_size,ystart+window_ysize-2,
+           ExpStrL('',fmreg_cursor_pos,'อ')+'~'+#30+'~'+
+           ExpStrL('',window_xsize-49-_fmreg_add_prev_size-fmreg_cursor_pos-1,'อ'),
+           mn_setting.topic_attr,
+           macro_background+macro_hi_text);
+  ShowStr(centered_frame_vdest^,xstart+2,ystart+window_ysize-1,
+          ExpStrR(macro_table_hint_str[20+fmreg_hpos],window_xsize-2,' '),
+          macro_background+macro_hint);
+
+  For idx := 1 to 6 do
+    begin
+      If (idx = fmreg_vpos) then
+        ShowStr(centered_frame_vdest^,xstart+43+_fmreg_add_prev_size,ystart+window_ysize-10+1+idx,
+                #16+byte2hex(fmreg_page+idx-1)+#17,
+                macro_background+macro_hi_text)
+      else ShowStr(centered_frame_vdest^,xstart+43+_fmreg_add_prev_size,ystart+window_ysize-10+1+idx,
+                   ' '+byte2hex(fmreg_page+idx-1)+' ',
+                   macro_background+macro_topic);
+      fmreg_page_refresh(xstart+44+_fmreg_add_prev_size,ystart+window_ysize-10+1+idx,fmreg_page+idx-1);
+    end;
   a2w_lister_external_proc_callback;
 end;
 
@@ -8874,7 +9968,7 @@ var
   backup: tBACKUP;
   arpvib_arpeggio_table_bak: Byte;
   arpvib_vibrato_table_bak: Byte;
-  
+
   // backup of Menu settings / variables
   old_external_proc: procedure;
   old_topic_len: Byte;
@@ -8895,12 +9989,13 @@ var
 label _jmp1,_jmp1e,_jmp2,_jmp2e,_end;
 
 begin
+  _debug_str_ := 'ILOADERS.INC:a2w_file_loader';
   songdata_bak := songdata;
   arpvib_arpeggio_table_bak := arpvib_arpeggio_table;
   arpvib_vibrato_table_bak := arpvib_vibrato_table;
   temp_songdata := songdata_bak;
   update_current_inst := updateCurInstr;
-  
+
   If NOT loadFromFile and bankSelector and
      NOT loadBankPossible then
     begin
@@ -8919,9 +10014,9 @@ begin
       If loadMacros then
         GOTO _jmp1 // Arpeggio/Vibrato Macro Browser
       else GOTO _jmp2; // Instrument Macro Browser
-    end  
+    end
   else a2w_instdata_source := instdata_source;
-  
+
   {$i-}
   Assign(f,a2w_instdata_source);
   ResetF(f);
@@ -8969,7 +10064,7 @@ begin
           EXIT;
         end;
 
-      crc := NOT 0;
+      crc := DWORD_NULL;
       BlockReadF(f,buffer,header2.b0len,temp);
       If NOT (temp = header2.b0len) then
         begin
@@ -9049,7 +10144,7 @@ begin
 
   If (header.ffver = 2) then
     begin
-      crc := NOT 0;
+      crc := DWORD_NULL;
       BlockReadF(f,buffer,header.b0len,temp);
       If NOT (temp = header.b0len) then
         begin
@@ -9146,14 +10241,14 @@ begin
           EXIT;
         end;
 
-      APACK_decompress(buffer,temp_songdata.dis_fmreg_col);      
+      APACK_decompress(buffer,temp_songdata.dis_fmreg_col);
     end;
 
   CloseF(f);
   If loadMacros then
     begin
 _jmp1:
-      Move(v_ofs^,backup.screen,SizeOf(backup.screen));
+      Move(screen_ptr^,backup.screen,SizeOf(backup.screen));
       backup.cursor := GetCursor;
       backup.oldx   := WhereX;
       backup.oldy   := WhereY;
@@ -9168,18 +10263,18 @@ _jmp1:
           vib_tab_selected := TRUE;
           GOTO _jmp1e;
         end;
-      
+
       window_xsize := 73;
-      If (sdl_screen_mode = 0) then window_ysize := max(nm_valid+5,15)+10
+      If (program_screen_mode = 0) then window_ysize := max(nm_valid+5,15)+10
       else window_ysize := max(nm_valid+5,20)+10;
-      If (a2w_instdata_source <> '') then temp_str := ' '+iCASE(NameOnly(a2w_instdata_source))+'  A/V MACROS '
+      If (a2w_instdata_source <> '') theN temp_str := ' '+iCASE(NameOnly(a2w_instdata_source))+'  A/V MACROS '
       else temp_str := ' ARPEGGiO/ViBRATO MACRO BROWSER ';
 
       If update_current_inst then temp_str := temp_str + '(iNS_  ) '
       else temp_str := temp_str + '[iNS_  ] ';
       a2w_institle_pos := (window_xsize DIV 2)+(Length(temp_str) DIV 2)-3;
 
-      Move(v_ofs^,vscreen,SizeOf(vscreen));
+      Move(screen_ptr^,vscreen,SizeOf(vscreen));
       centered_frame_vdest := Addr(vscreen);
       centered_frame(xstart,ystart,window_xsize,window_ysize,
                      temp_str,
@@ -9202,12 +10297,13 @@ _jmp1:
       scrollbar_xstart := xstart+window_xsize;
       scrollbar_ystart := ystart+1;
       scrollbar_size := window_ysize-10+1;
-      macro_table_size := nm_valid;             
+      macro_table_size := nm_valid;
 
-      arpeggio_table_pos := get_bank_position(a2w_instdata_source+'?macro?arp_pos',nm_valid+5);
-      If (arpeggio_table_pos = 0) then arpeggio_table_pos := 1;
-      vibrato_table_pos := get_bank_position(a2w_instdata_source+'?macro?vib_pos',nm_valid+5);
-      If (vibrato_table_pos = 0) then vibrato_table_pos := 1;
+      If (a2w_instdata_source <> '') then temp_str := a2w_instdata_source
+      else temp_str := '?internal_instrument_data';
+
+      arpeggio_table_pos := min(1,get_bank_position(temp_str+'?macro_av?arp_pos',nm_valid));
+      vibrato_table_pos := min(1,get_bank_position(temp_str+'?macro_av?vib_pos',nm_valid));
 
       a2w_queue_m[1] := 'ฤฤฤฤาฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤาฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ';
       a2w_queue_m[2] := '    บ     ~ARPEGGiO MACRO TABLE~     บ        ~ViBRATO MACRO TABLE~';
@@ -9218,7 +10314,7 @@ _jmp1:
       For idx := 1 to nm_valid do
         begin
           a2w_queue_m[5+idx] := ' ~'+byte2hex(idx)+'~ บ';
-          If nul_data(temp_songdata.macro_table[idx].arpeggio,SizeOf(tARPEGGIO_TABLE)) then
+          If Empty(temp_songdata.macro_table[idx].arpeggio,SizeOf(tARPEGGIO_TABLE)) then
             a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' ๚๚  ณ'+
                                                      ' ๚๚  ณ'+
                                                      ' ๚๚  ณ'+
@@ -9244,7 +10340,7 @@ _jmp1:
                 else a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' ๙๙   บ';
               end;
 
-          If nul_data(temp_songdata.macro_table[idx].vibrato,SizeOf(tViBRATO_TABLE)) then
+          If Empty(temp_songdata.macro_table[idx].vibrato,SizeOf(tViBRATO_TABLE)) then
             a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' ๚๚  ณ'+
                                                      ' ๚๚  ณ'+
                                                      ' ๚๚  ณ'+
@@ -9280,7 +10376,7 @@ _jmp1:
       old_topic_len := mn_setting.topic_len;
       old_cycle_moves := mn_setting.cycle_moves;
       old_topic_mask_chr := mn_setting.topic_mask_chr;
-      old_frame_enabled := mn_setting.shadow_enabled;
+      old_frame_enabled := mn_setting.frame_enabled;
       old_shadow_enabled := mn_setting.shadow_enabled;
       old_winshade := mn_environment.winshade;
       old_center_box := mn_setting.center_box;
@@ -9290,7 +10386,7 @@ _jmp1:
       mn_setting.terminate_keys[4] := 0; // TAB possible only in FM-Register bank browser
       If NOT loadBankPossible then
         mn_setting.terminate_keys[5] := 0; // ^ENTER possible only in Arpeggio/Vibrato Macro Editor
-      
+
       mn_environment.ext_proc := a2w_macro_lister_external_proc;
       mn_setting.topic_len := 5;
       mn_setting.cycle_moves := FALSE;
@@ -9300,16 +10396,19 @@ _jmp1:
       mn_environment.winshade := FALSE;
       mn_setting.center_box := FALSE;
       mn_setting.show_scrollbar := FALSE;
-
       mn_environment.unpolite := FALSE;
       mn_environment.preview := TRUE;
       mn_environment.v_dest := Addr(vscreen);
 
-      If (sdl_screen_mode = 0) then
+      If (a2w_instdata_source <> '') then temp_str := a2w_instdata_source
+      else temp_str := '?internal_instrument_data';
+
+      If (program_screen_mode = 0) then
         Menu(a2w_queue_m,xstart,ystart,
-             get_bank_position(a2w_instdata_source+'?macro',nm_valid+5),
+             min(1,get_bank_position(temp_str+'?macro_av?pos',nm_valid)),
              72,max(nm_valid+5,15),nm_valid+5,'')
-      else Menu(a2w_queue_m,xstart,ystart,get_bank_position(a2w_instdata_source+'?macro',nm_valid+5),
+      else Menu(a2w_queue_m,xstart,ystart,
+                    min(1,get_bank_position(temp_str+'?macro_av?pos',nm_valid)),
                 72,max(nm_valid+5,20),nm_valid+5,'');
 
       move_to_screen_data := Addr(vscreen);
@@ -9321,22 +10420,23 @@ _jmp1:
 
       mn_environment.unpolite := FALSE;
       mn_environment.preview := FALSE;
-      mn_environment.v_dest := v_ofs;
-               
+      mn_environment.v_dest := screen_ptr;
+      centered_frame_vdest := mn_environment.v_dest;
+
       keyboard_reset_buffer;
       If NOT _force_program_quit then
-        If (sdl_screen_mode = 0) then
+        If (program_screen_mode = 0) then
           index := Menu(a2w_queue_m,xstart,ystart,
-                        get_bank_position(a2w_instdata_source+'?macro',nm_valid+5),
+                        min(1,get_bank_position(temp_str+'?macro_av?pos',nm_valid)),
                         72,max(nm_valid+5,15),nm_valid+5,'')
         else index := Menu(a2w_queue_m,xstart,ystart,
-                           get_bank_position(a2w_instdata_source+'?macro',nm_valid+5),
+                           min(1,get_bank_position(temp_str+'?macro_av?pos',nm_valid)),
                            72,max(nm_valid+5,20),nm_valid+5,'');
 
-      add_bank_position(a2w_instdata_source+'?macro',nm_valid+5,index+5);
-      add_bank_position(a2w_instdata_source+'?macro?arp_pos',nm_valid+5,arpeggio_table_pos);
-      add_bank_position(a2w_instdata_source+'?macro?vib_pos',nm_valid+5,vibrato_table_pos);
-      
+      add_bank_position(temp_str+'?macro_av?pos',nm_valid,index+5);
+      add_bank_position(temp_str+'?macro_av?arp_pos',nm_valid,arpeggio_table_pos);
+      add_bank_position(temp_str+'?macro_av?vib_pos',nm_valid,vibrato_table_pos);
+
       Move(old_keys,mn_setting.terminate_keys,SizeOf(old_keys));
       mn_environment.ext_proc := old_external_proc;
       mn_setting.topic_len := old_topic_len;
@@ -9355,7 +10455,6 @@ _jmp1:
       move_to_screen_area[4] := ystart+window_ysize+1;
       move2screen;
 
-      centered_frame_vdest := v_ofs;
       If (mn_environment.keystroke = kF1) then
         begin
           HELP('macro_browser_av');
@@ -9365,10 +10464,10 @@ _jmp1:
       If NOT loadMacros and (mn_environment.keystroke = kESC) then
         begin
           songdata := songdata_bak;
-          load_flag := NULL;
-          load_flag_alt := NULL;
+          load_flag := BYTE_NULL;
+          load_flag_alt := BYTE_NULL;
           GOTO _jmp2;
-        end;  
+        end;
 _jmp1e:
       If (mn_environment.keystroke = kENTER) or
          (loadBankPossible and (mn_environment.keystroke = kCtENTR)) then
@@ -9407,22 +10506,22 @@ _jmp1e:
                         begin
                           songdata.macro_table[idx1].arpeggio := temp_songdata.macro_table[index].arpeggio;
                           songdata.instr_macros[current_inst].arpeggio_table := idx1;
-                        end;  
+                        end;
                       If (idx2 > 0) then
                         begin
                           songdata.macro_table[idx2].vibrato := temp_songdata.macro_table[index].vibrato;
                           songdata.instr_macros[current_inst].vibrato_table := idx2;
-                        end;  
+                        end;
                     end
                   else begin
                          Dialog('RELATED '+temp_str+' DATA~ WAS NOT LOADED!$'+
                                 'FREE SOME SPACE iN MACRO TABLES AND ~REPEAT THiS ACTiON~$',
                                 '~O~K$',' A2W LOADER ',1);
                          GOTO _end;
-                       end;  
+                       end;
                 end;
               load_flag := 1;
-              load_flag_alt := NULL;
+              load_flag_alt := BYTE_NULL;
             end
           else
             begin
@@ -9456,15 +10555,20 @@ _jmp1e:
                                FillChar(songdata.macro_table[idx].vibrato,SizeOf(songdata.macro_table[idx].vibrato),0);
                              end;
                       load_flag := 1;
-                      load_flag_alt := NULL;
+                      load_flag_alt := BYTE_NULL;
                     end;
-                end;      
+                end;
             end;
         end;
     end
   else
     begin
-_jmp2:       
+_jmp2:
+      Move(screen_ptr^,backup.screen,SizeOf(backup.screen));
+      backup.cursor := GetCursor;
+      backup.oldx   := WhereX;
+      backup.oldy   := WhereY;
+
       a2w_queue[1]       := ' iNSTRUMENT                                 iNSTRUMENT                  ';
       a2w_queue[2]       := ' NAME    DESCRiPTiON                        VOiCE     MACROS            ';
       a2w_queue[3]       := 'ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ';
@@ -9474,7 +10578,7 @@ _jmp2:
       a2w_queue_more2[1] := ' iNSTRUMENT                                                               PANNiNG            iNSTRUMENT                  ';
       a2w_queue_more2[2] := ' NAME    DESCRiPTiON                        ฺ20ฟ ฺ40ฟ ฺ60ฟ ฺ80ฟ ฺE0ฟ C0   ฉ    ช   F.TUNE   VOiCE     MACROS            ';
       a2w_queue_more2[3] := 'อออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ';
-      
+
       nm_valid := count_instruments;
       If (nm_valid = 0) then nm_valid := 1;
 
@@ -9564,67 +10668,153 @@ _jmp2:
           a2w_queue_more2[3+idx] := a2w_queue_more2[3+idx]+'  '+ExpStrR(temp_str,18,' ');
         end;
 
+      If (a2w_instdata_source <> '') then temp_str := a2w_instdata_source
+      else temp_str := '?internal_instrument_data';
+
+      idx := min(1,get_bank_position(temp_str+'?macro?pos',nm_valid));
+      fmreg_page := min(1,get_bank_position(temp_str+'?macro?fmreg_page',nm_valid));
+      fmreg_hpos := min(1,get_bank_position(temp_str+'?macro?fmreg_hpos',nm_valid));
+      fmreg_vpos := min(1,get_bank_position(temp_str+'?macro?fmreg_vpos',nm_valid));
+      fmreg_left_margin := min(1,get_bank_position(temp_str+'?macro?fmreg_left_margin',nm_valid));
+      fmreg_cursor_pos := min(1,get_bank_position(temp_str+'?macro?fmreg_cursor_pos',nm_valid));
+
+      If (a2w_instdata_source <> '') then temp_str := ' '+iCASE(NameOnly(a2w_instdata_source))+' '
+      else begin
+             If updateCurInstr then add_bank_position('?internal_instrument_data?pos',255,current_inst);
+             temp_str := ' iNSTRUMENT MACRO BROWSER ';
+           end;
+
+      Case program_screen_mode of
+        0,
+        3: begin
+             window_xsize := 73;
+             window_ysize := max(nm_valid+3,15)+10;
+           end;
+        1: begin
+             window_xsize := 103;
+             window_ysize := max(nm_valid+3,20)+10;
+           end;
+        2: begin
+             window_xsize := 122;
+             window_ysize := max(nm_valid+3,20)+10;
+           end;
+      end;
+
+      xstart := ((work_MaxCol-window_xsize) DIV 2);
+      ystart := ((work_MaxLn-window_ysize) DIV 2)+1;
+      fmreg_scrlbar_items := nm_valid;
+      fmreg_scrlbar_size := window_ysize-10-2;
+      If NOT (program_screen_mode = 0) then _fmreg_add_prev_size := 10
+      else _fmreg_add_prev_size := 0;
+
+      If update_current_inst then
+        begin
+          temp_str := temp_str + '(iNS_  ) ';
+          idx := current_inst;
+        end
+      else temp_str := temp_str + '[iNS_  ] ';
+      a2w_institle_pos := (window_xsize DIV 2)+(Length(temp_str) DIV 2)-3;
+
+      Move(screen_ptr^,vscreen,SizeOf(vscreen));
+      centered_frame_vdest := Addr(vscreen);
+      centered_frame(xstart,ystart,window_xsize,window_ysize,
+                     temp_str,
+                     dialog_background+dialog_border,
+                     dialog_background+dialog_title,double);
+
+      ShowStr(centered_frame_vdest^,xstart+1,ystart+window_ysize-10+1,
+              ExpStrR('',window_xsize-1,'อ'),
+              mn_setting.topic_attr);
+      ShowStr(centered_frame_vdest^,xstart+1,ystart+window_ysize-2,
+              ExpStrR('',window_xsize-1,'อ'),
+              mn_setting.topic_attr);
+      ShowVStr(centered_frame_vdest^,xstart+42+_fmreg_add_prev_size,ystart+window_ysize-10+1,
+               'หบบบบบบส',
+               mn_setting.topic_attr);
+
       Move(mn_setting.terminate_keys,old_keys,SizeOf(old_keys));
       old_external_proc := mn_environment.ext_proc;
       old_topic_len := mn_setting.topic_len;
       old_cycle_moves := mn_setting.cycle_moves;
+      old_topic_mask_chr := mn_setting.topic_mask_chr;
+      old_frame_enabled := mn_setting.frame_enabled;
+      old_shadow_enabled := mn_setting.shadow_enabled;
+      old_winshade := mn_environment.winshade;
+      old_center_box := mn_setting.center_box;
+      old_show_scrollbar := mn_setting.show_scrollbar;
 
       Move(new_keys,mn_setting.terminate_keys,SizeOf(new_keys));
       If NOT loadBankPossible then
         mn_setting.terminate_keys[5] := 0; // ^ENTER possible only in Instrument Control
-	
+
       mn_environment.ext_proc := a2w_lister_external_proc;
       mn_setting.topic_len := 3;
       mn_setting.cycle_moves := FALSE;
+      mn_setting.frame_enabled := FALSE;
+      mn_setting.shadow_enabled := FALSE;
+      mn_environment.winshade := FALSE;
+      mn_setting.center_box := FALSE;
+      mn_setting.show_scrollbar := FALSE;
+      mn_environment.unpolite := FALSE;
+      mn_environment.preview := TRUE;
+      mn_environment.v_dest := Addr(vscreen);
 
-      If (a2w_instdata_source <> '') then
-        idx := get_bank_position(a2w_instdata_source,nm_valid+3)
-      else idx := get_bank_position('?internal_instrument_data',nm_valid+3);
+      If NOT _force_program_quit then
+        If (program_screen_mode = 0) then
+          index := Menu(a2w_queue,xstart,ystart,idx+3,72,max(nm_valid+3,15),nm_valid+3,temp_str)
+        else If (program_screen_mode = 1) then
+               index := Menu(a2w_queue_more,xstart,ystart,idx+3,102,max(nm_valid+3,20),nm_valid+3,temp_str)
+             else index := Menu(a2w_queue_more2,xstart,ystart,idx+3,121,max(nm_valid+3,20),nm_valid+3,temp_str);
 
-      If (a2w_instdata_source <> '') then temp_str := ' '+iCASE(NameOnly(a2w_instdata_source))+' '
-      else begin
-             If updateCurInstr then add_bank_position('?internal_instrument_data',255+3,current_inst);
-             temp_str := ' iNSTRUMENT MACRO BROWSER ';
-           end;
-      
-      Case sdl_screen_mode of
-        0: begin
-             window_xsize := 73;
-             window_ysize := max(nm_valid+3,20);
-           end;
-        1: begin
-             window_xsize := 103;
-             window_ysize := max(nm_valid+3,30);
-           end;
-        2: begin
-             window_xsize := 122;
-             window_ysize := max(nm_valid+3,30);
-           end;
-      end;
-      xstart := ((work_MaxCol-window_xsize) DIV 2);
-      ystart := ((work_MaxLn-window_ysize) DIV 2)+1;
+      move_to_screen_data := Addr(vscreen);
+      move_to_screen_area[1] := xstart;
+      move_to_screen_area[2] := ystart;
+      move_to_screen_area[3] := xstart+window_xsize+2+1;
+      move_to_screen_area[4] := ystart+window_ysize+1;
+      move2screen_alt;
 
-      If update_current_inst then temp_str := temp_str + '(iNS_  ) '
-      else temp_str := temp_str + '[iNS_  ] ';
-      a2w_institle_pos := (window_xsize DIV 2)+(Length(temp_str) DIV 2)-3;
+      mn_environment.unpolite := FALSE;
+      mn_environment.preview := FALSE;
+      mn_environment.v_dest := screen_ptr;
+      centered_frame_vdest := mn_environment.v_dest;
 
       keyboard_reset_buffer;
       If NOT _force_program_quit then
-        If (sdl_screen_mode = 0) then
-          index := Menu(a2w_queue,01,01,idx+3,72,20,nm_valid+3,temp_str)
-        else If (sdl_screen_mode = 1) then
-               index := Menu(a2w_queue_more,01,01,idx+3,102,30,nm_valid+3,temp_str)
-             else index := Menu(a2w_queue_more2,01,01,idx+3,121,30,nm_valid+3,temp_str);
+        If (program_screen_mode = 0) then
+          index := Menu(a2w_queue,xstart,ystart,idx+3,72,max(nm_valid+3,15),nm_valid+3,temp_str)
+        else If (program_screen_mode = 1) then
+               index := Menu(a2w_queue_more,xstart,ystart,idx+3,102,max(nm_valid+3,20),nm_valid+3,temp_str)
+             else index := Menu(a2w_queue_more2,xstart,ystart,idx+3,121,max(nm_valid+3,20),nm_valid+3,temp_str);
 
-      If (a2w_instdata_source <> '') then
-        add_bank_position(a2w_instdata_source,nm_valid+3,index)
-      else add_bank_position('?internal_instrument_data',255+3,index);
-      
+      If (a2w_instdata_source <> '') then temp_str := a2w_instdata_source
+      else temp_str := '?internal_instrument_data';
+
+      add_bank_position(temp_str+'?macro?pos',nm_valid,index);
+      add_bank_position(temp_str+'?macro?fmreg_page',nm_valid,fmreg_page);
+      add_bank_position(temp_str+'?macro?fmreg_hpos',nm_valid,fmreg_hpos);
+      add_bank_position(temp_str+'?macro?fmreg_vpos',nm_valid,fmreg_vpos);
+      add_bank_position(temp_str+'?macro?fmreg_left_margin',nm_valid,fmreg_left_margin);
+      add_bank_position(temp_str+'?macro?fmreg_cursor_pos',nm_valid,fmreg_cursor_pos);
+
       Move(old_keys,mn_setting.terminate_keys,SizeOf(old_keys));
       mn_environment.ext_proc := old_external_proc;
       mn_setting.topic_len := old_topic_len;
       mn_setting.cycle_moves := old_cycle_moves;
+      mn_setting.topic_mask_chr := old_topic_mask_chr;
+      mn_setting.frame_enabled := old_frame_enabled;
+      mn_setting.shadow_enabled := old_shadow_enabled;
+      mn_environment.winshade := old_winshade;
+      mn_setting.center_box := old_center_box;
+      mn_setting.show_scrollbar := old_show_scrollbar;
 
+      move_to_screen_data := Addr(backup.screen);
+      move_to_screen_area[1] := xstart;
+      move_to_screen_area[2] := ystart;
+      move_to_screen_area[3] := xstart+window_xsize+2+1;
+      move_to_screen_area[4] := ystart+window_ysize+1;
+      move2screen;
+
+      centered_frame_vdest := screen_ptr;
       If (mn_environment.keystroke = kESC) then
         GOTO _end;
 
@@ -9645,9 +10835,9 @@ _jmp2:
         begin
           HELP('macro_browser');
           If NOT _force_program_quit then GOTO _jmp2;
-        end;  
-_jmp2e:      
-      If (mn_environment.keystroke = kENTER) or          
+        end;
+_jmp2e:
+      If (mn_environment.keystroke = kENTER) or
          (loadBankPossible and (mn_environment.keystroke = kCtENTR)) then
         begin
           If (mn_environment.keystroke = kENTER) then
@@ -9680,7 +10870,7 @@ _jmp2e:
                       songdata.macro_table[idx1].arpeggio :=
                       temp_songdata.macro_table[songdata.instr_macros[current_inst].arpeggio_table].arpeggio;
                       songdata.instr_macros[current_inst].arpeggio_table := idx1;
-                    end;  
+                    end;
                   If (idx2 > 0) then
                     begin
                       songdata.macro_table[idx2].vibrato :=
@@ -9692,7 +10882,7 @@ _jmp2e:
                           'FREE SOME SPACE iN MACRO TABLES AND ~REPEAT THiS ACTiON~$',
                           '~O~K$',' A2W LOADER ',1);
               load_flag := 1;
-              load_flag_alt := NULL;
+              load_flag_alt := BYTE_NULL;
             end
           else
             begin
@@ -9738,13 +10928,13 @@ _jmp2e:
                             songdata.macro_table[idx1].arpeggio :=
                             temp_songdata.macro_table[songdata.instr_macros[idx].arpeggio_table].arpeggio;
                             songdata.instr_macros[idx].arpeggio_table := idx1;
-                          end;  
+                          end;
                         If (idx2 > 0) then
                           begin
                             songdata.macro_table[idx2].vibrato :=
                             temp_songdata.macro_table[songdata.instr_macros[idx].vibrato_table].vibrato;
                             songdata.instr_macros[idx].vibrato_table := idx2;
-                          end;  
+                          end;
                       end
                     else begin
                            FillChar(songdata.instr_data[idx],SizeOf(songdata.instr_data[idx]),0);
@@ -9753,20 +10943,20 @@ _jmp2e:
                            songdata.instr_names[idx] := Copy(songdata.instr_names[current_inst],1,9);
                          end;
 
-                  If (temp_str <> '') then                 
+                  If (temp_str <> '') then
                     Dialog('RELATED '+temp_str+' DATA~ WAS NOT LOADED!$'+
                            'FREE SOME SPACE iN MACRO TABLES AND ~REPEAT THiS ACTiON~$',
                            '~O~K$',' A2W LOADER ',1);
                   load_flag := 1;
-                  load_flag_alt := NULL;
+                  load_flag_alt := BYTE_NULL;
                 end;
-            end;            
+            end;
         end;
       end;
 _end:
   arpvib_arpeggio_table := arpvib_arpeggio_table_bak;
   arpvib_vibrato_table := arpvib_vibrato_table_bak;
-  keyboard_reset_buffer;
+  // keyboard_reset_buffer;
 end;
 
 procedure bnk_file_loader;
@@ -9787,6 +10977,7 @@ var
 
 procedure _restore;
 begin
+  _debug_str_ := 'ILOADERS.INC:bnk_file_loader:_restore';
   move_to_screen_data := Addr(backup.screen);
   move_to_screen_area[1] := xstart;
   move_to_screen_area[2] := ystart;
@@ -9796,6 +10987,7 @@ begin
 end;
 
 begin { bnk_file_loader }
+  _debug_str_ := 'ILOADERS.INC:bnk_file_loader';
   {$i-}
   Assign(f,instdata_source);
   ResetF(f);
@@ -9838,7 +11030,7 @@ begin { bnk_file_loader }
       EXIT;
     end;
 
-  Move(v_ofs^,backup.screen,SizeOf(backup.screen));
+  Move(screen_ptr^,backup.screen,SizeOf(backup.screen));
   backup.cursor := GetCursor;
   backup.oldx   := WhereX;
   backup.oldy   := WhereY;
@@ -9847,29 +11039,28 @@ begin { bnk_file_loader }
   centered_frame(xstart,ystart,43,3,' '+iCASE(NameOnly(instdata_source))+' ',
                  dialog_background+dialog_border,
                  dialog_background+dialog_title,double);
-  ShowStr(v_ofs^,xstart+43-Length(dl_environment.context),ystart+3,
-                 dl_environment.context,
-                 dialog_background+dialog_border);
+  ShowStr(screen_ptr^,xstart+43-Length(dl_environment.context),ystart+3,
+          dl_environment.context,
+          dialog_background+dialog_border);
   dl_environment.context := '';
 
   bnk_queue[1] := ' iNSTRUMENT                                  MELODiC/                   ';
   bnk_queue[2] := ' NAME         ฺ20ฟ ฺ40ฟ ฺ60ฟ ฺ80ฟ ฺE0ฟ C0    PERCUSSiON (VOiCE)         ';
   bnk_queue[3] := 'ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ';
 
-  progress_old_value := NULL;
+  progress_old_value := BYTE_NULL;
   progress_step := 40/max(header.total_entries,MAX_TIMBRES);
   progress_xstart := xstart+2;
   progress_ystart := ystart+2;
 
-  ShowCStr(v_ofs^,xstart+2,ystart+1,
-    'LOADiNG CONTENTS [RECORD ~'+
-    ExpStrL(Num2str(0,10),5,'0')+'~ OF ~'+
-    ExpStrL(Num2str(max(header.total_entries,MAX_TIMBRES),10),5,'0')+'~]',
-    dialog_background+dialog_text,
-    dialog_background+dialog_hi_text);
+  ShowCStr(screen_ptr^,xstart+2,ystart+1,
+           'LOADiNG CONTENTS [RECORD ~'+
+           ExpStrL(Num2str(0,10),5,'0')+'~ OF ~'+
+           ExpStrL(Num2str(max(header.total_entries,MAX_TIMBRES),10),5,'0')+'~]',
+           dialog_background+dialog_text,
+           dialog_background+dialog_hi_text);
 
   show_progress(0);
-
   nm_valid := 0;
   bnk_skip := 0;
 
@@ -9885,12 +11076,12 @@ begin { bnk_file_loader }
             end;
         end;
 
-      ShowCStr(v_ofs^,xstart+2+25,ystart+1,
-        '~'+
-        ExpStrL(Num2str(index,10),5,'0')+'~ OF ~'+
-        ExpStrL(Num2str(max(header.total_entries,MAX_TIMBRES),10),5,'0')+'~]',
-        dialog_background+dialog_text,
-        dialog_background+dialog_hi_text);
+      ShowCStr(screen_ptr^,xstart+2+25,ystart+1,
+               '~'+
+               ExpStrL(Num2str(index,10),5,'0')+'~ OF ~'+
+               ExpStrL(Num2str(max(header.total_entries,MAX_TIMBRES),10),5,'0')+'~]',
+               dialog_background+dialog_text,
+               dialog_background+dialog_hi_text);
       show_progress(index);
 
       SeekF(f,header.name_offset+PRED(index)*SizeOf(name_record));
@@ -10020,10 +11211,10 @@ begin { bnk_file_loader }
 
   keyboard_reset_buffer;
   If NOT _force_program_quit then
-    index := Menu(bnk_queue,01,01,get_bank_position(instdata_source,nm_valid+3),
+    index := Menu(bnk_queue,01,01,min(1,get_bank_position(instdata_source,nm_valid)),
                   72,20,nm_valid+3,' '+iCASE(NameOnly(instdata_source))+' ');
 
-  add_bank_position(instdata_source,nm_valid+3,index+3);
+  add_bank_position(instdata_source,nm_valid,index+3);
   mn_environment.ext_proc := old_external_proc;
   mn_setting.topic_len := old_topic_len;
   mn_setting.cycle_moves := old_cycle_moves;
@@ -10031,9 +11222,9 @@ begin { bnk_file_loader }
   If (mn_environment.keystroke = kENTER) then
     begin
       load_flag := 1;
-      load_flag_alt := NULL;
+      load_flag_alt := BYTE_NULL;
       bnk_file_loader_alt(bnk_skip+index);
-      If (load_flag_alt <> NULL) then
+      If (load_flag_alt <> BYTE_NULL) then
         begin
           songdata.instr_data[current_inst] := temp_instrument;
           songdata.instr_names[current_inst] :=
@@ -10063,6 +11254,7 @@ var
 
 procedure _restore;
 begin
+  _debug_str_ := 'ILOADERS.INC:fib_file_loader:_restore';
   move_to_screen_data := Addr(backup.screen);
   move_to_screen_area[1] := xstart;
   move_to_screen_area[2] := ystart;
@@ -10072,6 +11264,7 @@ begin
 end;
 
 begin { fib_file_loader }
+  _debug_str_ := 'ILOADERS.INC:fib_file_loader';
   {$i-}
   Assign(f,instdata_source);
   ResetF(f);
@@ -10096,7 +11289,7 @@ begin { fib_file_loader }
       EXIT;
     end;
 
-  Move(v_ofs^,backup.screen,SizeOf(backup.screen));
+  Move(screen_ptr^,backup.screen,SizeOf(backup.screen));
   backup.cursor := GetCursor;
   backup.oldx   := WhereX;
   backup.oldy   := WhereY;
@@ -10105,29 +11298,28 @@ begin { fib_file_loader }
   centered_frame(xstart,ystart,43,3,' '+iCASE(NameOnly(instdata_source))+' ',
                  dialog_background+dialog_border,
                  dialog_background+dialog_title,double);
-  ShowStr(v_ofs^,xstart+43-Length(dl_environment.context),ystart+3,
-                 dl_environment.context,
-                 dialog_background+dialog_border);
+  ShowStr(screen_ptr^,xstart+43-Length(dl_environment.context),ystart+3,
+          dl_environment.context,
+          dialog_background+dialog_border);
   dl_environment.context := '';
 
   bnk_queue[1] := ' DOS       iNSTRUMENT                                                   ';
   bnk_queue[2] := ' NAME      NAME                          ฺ20ฟ ฺ40ฟ ฺ60ฟ ฺ80ฟ ฺE0ฟ C0    ';
   bnk_queue[3] := 'ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ';
 
-  progress_old_value := NULL;
+  progress_old_value := BYTE_NULL;
   progress_step := 40/max(header.nmins,MAX_TIMBRES);
   progress_xstart := xstart+2;
   progress_ystart := ystart+2;
 
-  ShowCStr(v_ofs^,xstart+2,ystart+1,
-    'LOADiNG CONTENTS [RECORD ~'+
-    ExpStrL(Num2str(0,10),5,'0')+'~ OF ~'+
-    ExpStrL(Num2str(max(header.nmins,MAX_TIMBRES),10),5,'0')+'~]',
-    dialog_background+dialog_text,
-    dialog_background+dialog_hi_text);
+  ShowCStr(screen_ptr^,xstart+2,ystart+1,
+           'LOADiNG CONTENTS [RECORD ~'+
+           ExpStrL(Num2str(0,10),5,'0')+'~ OF ~'+
+           ExpStrL(Num2str(max(header.nmins,MAX_TIMBRES),10),5,'0')+'~]',
+           dialog_background+dialog_text,
+           dialog_background+dialog_hi_text);
 
   show_progress(0);
-
   nm_valid := 0;
   bnk_skip := 0;
 
@@ -10143,12 +11335,12 @@ begin { fib_file_loader }
             end;
         end;
 
-      ShowCStr(v_ofs^,xstart+2+25,ystart+1,
-        '~'+
-        ExpStrL(Num2str(index,10),5,'0')+'~ OF ~'+
-        ExpStrL(Num2str(max(header.nmins,MAX_TIMBRES),10),5,'0')+'~]',
-        dialog_background+dialog_text,
-        dialog_background+dialog_hi_text);
+      ShowCStr(screen_ptr^,xstart+2+25,ystart+1,
+               '~'+
+               ExpStrL(Num2str(index,10),5,'0')+'~ OF ~'+
+               ExpStrL(Num2str(max(header.nmins,MAX_TIMBRES),10),5,'0')+'~]',
+               dialog_background+dialog_text,
+               dialog_background+dialog_hi_text);
       show_progress(index);
 
       BlockReadF(f,instrument_data,SizeOf(instrument_data),temp);
@@ -10234,7 +11426,6 @@ begin { fib_file_loader }
     end;
 
   CloseF(f);
-
   _restore;
 
   If (nm_valid = 0) then EXIT;
@@ -10254,12 +11445,11 @@ begin { fib_file_loader }
   mn_setting.cycle_moves := FALSE;
 
   keyboard_reset_buffer;
-
   If NOT _force_program_quit then
-    index := Menu(bnk_queue,01,01,get_bank_position(instdata_source,nm_valid+3),
+    index := Menu(bnk_queue,01,01,min(1,get_bank_position(instdata_source,nm_valid)),
                   72,20,nm_valid+3,' '+iCASE(NameOnly(instdata_source))+' ');
 
-  add_bank_position(instdata_source,nm_valid+3,index+3);
+  add_bank_position(instdata_source,nm_valid,index+3);
   mn_environment.ext_proc := old_external_proc;
   mn_setting.topic_len := old_topic_len;
   mn_setting.cycle_moves := old_cycle_moves;
@@ -10267,9 +11457,9 @@ begin { fib_file_loader }
   If (mn_environment.keystroke = kENTER) then
     begin
       load_flag := 1;
-      load_flag_alt := NULL;
+      load_flag_alt := BYTE_NULL;
       fib_file_loader_alt(index+bnk_skip);
-      If (load_flag_alt <> NULL) then
+      If (load_flag_alt <> BYTE_NULL) then
         begin
           songdata.instr_data[current_inst] := temp_instrument;
           If (CutStr(Copy(bnk_queue[3+index],16,27)) <> '') then
@@ -10307,6 +11497,7 @@ var
 
 procedure _restore;
 begin
+  _debug_str_ := 'ILOADERS.INC:ibk_file_loader:_restore';
   move_to_screen_data := Addr(backup.screen);
   move_to_screen_area[1] := xstart;
   move_to_screen_area[2] := ystart;
@@ -10316,6 +11507,7 @@ begin
 end;
 
 begin { ibk_file_loader }
+  _debug_str_ := 'ILOADERS.INC:ibk_file_loader';
   {$i-}
   Assign(f,instdata_source);
   ResetF(f);
@@ -10340,7 +11532,7 @@ begin { ibk_file_loader }
       EXIT;
     end;
 
-  Move(v_ofs^,backup.screen,SizeOf(backup.screen));
+  Move(screen_ptr^,backup.screen,SizeOf(backup.screen));
   backup.cursor := GetCursor;
   backup.oldx   := WhereX;
   backup.oldy   := WhereY;
@@ -10349,29 +11541,28 @@ begin { ibk_file_loader }
   centered_frame(xstart,ystart,43,3,' '+iCASE(NameOnly(instdata_source))+' ',
                  dialog_background+dialog_border,
                  dialog_background+dialog_title,double);
-  ShowStr(v_ofs^,xstart+43-Length(dl_environment.context),ystart+3,
-                 dl_environment.context,
-                 dialog_background+dialog_border);
+  ShowStr(screen_ptr^,xstart+43-Length(dl_environment.context),ystart+3,
+          dl_environment.context,
+          dialog_background+dialog_border);
   dl_environment.context := '';
 
   ibk_queue[1] := ' iNSTRUMENT                                 ';
   ibk_queue[2] := ' NAME         ฺ20ฟ ฺ40ฟ ฺ60ฟ ฺ80ฟ ฺE0ฟ C0   ';
   ibk_queue[3] := 'ออออออออออออออออออออออออออออออออออออออออออออ';
 
-  progress_old_value := NULL;
+  progress_old_value := BYTE_NULL;
   progress_step := 40/128;
   progress_xstart := xstart+2;
   progress_ystart := ystart+2;
 
-  ShowCStr(v_ofs^,xstart+2,ystart+1,
-    'LOADiNG CONTENTS [RECORD ~'+
-    ExpStrL(Num2str(0,10),5,'0')+'~ OF ~'+
-    ExpStrL(Num2str(128,10),5,'0')+'~]',
-    dialog_background+dialog_text,
-    dialog_background+dialog_hi_text);
+  ShowCStr(screen_ptr^,xstart+2,ystart+1,
+           'LOADiNG CONTENTS [RECORD ~'+
+           ExpStrL(Num2str(0,10),5,'0')+'~ OF ~'+
+           ExpStrL(Num2str(128,10),5,'0')+'~]',
+           dialog_background+dialog_text,
+           dialog_background+dialog_hi_text);
 
   show_progress(0);
-
   nm_valid := 0;
   ibk_skip := 0;
 
@@ -10387,12 +11578,12 @@ begin { ibk_file_loader }
             end;
         end;
 
-      ShowCStr(v_ofs^,xstart+2+25,ystart+1,
-        '~'+
-        ExpStrL(Num2str(index,10),5,'0')+'~ OF ~'+
-        ExpStrL(Num2str(128,10),5,'0')+'~]',
-        dialog_background+dialog_text,
-        dialog_background+dialog_hi_text);
+      ShowCStr(screen_ptr^,xstart+2+25,ystart+1,
+               '~'+
+               ExpStrL(Num2str(index,10),5,'0')+'~ OF ~'+
+               ExpStrL(Num2str(128,10),5,'0')+'~]',
+               dialog_background+dialog_text,
+               dialog_background+dialog_hi_text);
       show_progress(index);
 
       SeekF(f,$004+PRED(index)*SizeOf(instrument_data));
@@ -10506,12 +11697,11 @@ begin { ibk_file_loader }
   mn_setting.cycle_moves := FALSE;
 
   keyboard_reset_buffer;
-
   If NOT _force_program_quit then
-    index := Menu(ibk_queue,01,01,get_bank_position(instdata_source,nm_valid+3),
+    index := Menu(ibk_queue,01,01,min(1,get_bank_position(instdata_source,nm_valid)),
                   45,20,nm_valid+3,' '+iCASE(NameOnly(instdata_source))+' ');
 
-  add_bank_position(instdata_source,nm_valid+3,index+3);
+  add_bank_position(instdata_source,nm_valid,index+3);
   mn_environment.ext_proc := old_external_proc;
   mn_setting.topic_len := old_topic_len;
   mn_setting.cycle_moves := old_cycle_moves;
@@ -10519,9 +11709,9 @@ begin { ibk_file_loader }
   If (mn_environment.keystroke = kENTER) then
     begin
       load_flag := 1;
-      load_flag_alt := NULL;
+      load_flag_alt := BYTE_NULL;
       ibk_file_loader_alt(index+ibk_skip);
-      If (load_flag_alt <> NULL) then
+      If (load_flag_alt <> BYTE_NULL) then
         begin
           songdata.instr_data[current_inst] := temp_instrument;
           songdata.instr_names[current_inst] :=
