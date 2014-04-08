@@ -7,8 +7,8 @@ const
   vib_tab_selected: Boolean = FALSE;
 
 var
-  ptr_arpeggio_table,
-  ptr_vibrato_table: ^Byte;
+  ptr_arpeggio_table: Byte;
+  ptr_vibrato_table: Byte;
     
 procedure a2m_file_loader;
 procedure a2t_file_loader;
@@ -45,7 +45,8 @@ implementation
 
 uses
   DOS,
-  AdT2sys,AdT2vscr,AdT2opl3,AdT2keyb,AdT2unit,AdT2extn,AdT2text,AdT2apak,AdT2ext2,
+  AdT2sys,AdT2vscr,AdT2opl3,AdT2keyb,AdT2unit,
+  AdT2extn,AdT2text,AdT2apak,AdT2ext2,
   StringIO,DialogIO,ParserIO,DepackIO,TxtScrIO;
 
 const
@@ -73,7 +74,8 @@ begin
   bank_name := CutStr(Upper(bank_name));
   For idx := 1 to bank_position_list_size do
     If (bank_position_list[idx].bank_name = bank_name) and
-       (bank_position_list[idx].bank_size = bank_size) then
+       ((bank_position_list[idx].bank_size = bank_size) or
+        (bank_size = -1)) then
       begin
         result := bank_position_list[idx].bank_position;
         BREAK;
@@ -92,7 +94,8 @@ begin
   bank_name := CutStr(Upper(bank_name));
   For idx := 1 to bank_position_list_size do
     If (bank_position_list[idx].bank_name = bank_name) and
-       (bank_position_list[idx].bank_size = bank_size) then
+       ((bank_position_list[idx].bank_size = bank_size) or
+        (bank_size = -1)) then
       begin
         found_flag := TRUE;
         BREAK;

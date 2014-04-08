@@ -1,11 +1,8 @@
-{
-        Hardware-specific text mode functions
-}
 unit TxtScrIO;
 {$PACKRECORDS 1}
 interface
 
-const                          { sdl_screen_mode = 0/1/2}
+const                          { program_screen_mode = 0/1/2}
   SCREEN_RES_x: Word = 720;    { 720 / 960 / 1440 }
   SCREEN_RES_y: Word = 480;    { 480 / 800 / 960 }
   MAX_COLUMNS: Byte = 90;      { 90 / 120 / 180 }
@@ -17,24 +14,32 @@ const                          { sdl_screen_mode = 0/1/2}
   INSCTRL_yshift: Byte = 0;    { 0 / 6  / 12 }
   PATTORD_xshift: Byte = 0;    { 0 / 1 / 0 }
 
-var
-  MaxLn,MaxCol,
-  work_maxln,work_maxcol: Byte;
-  v_ofs: Pointer;
+const
+  screen_ptr: Pointer = POINTER($0b8000);
+  program_screen_mode: Byte = 0;
 
-procedure TxtScrIO_Init;
+const  
+  MaxLn: Byte = 0;
+  MaxCol: Byte = 0;
+  hard_maxcol: Byte = 0;
+  hard_maxln: Byte = 0;
+  work_maxcol: Byte = 0;
+  work_maxln: Byte = 0;
+  scr_font_width: Byte = 0;
+  scr_font_height: Byte = 0;
 
-function  WhereX: Byte;
-function  WhereY: Byte;
+function WhereX: Byte;
+function WhereY: Byte;
 procedure GotoXY(x,y: Byte);
-
-function  GetCursor: Longint;
+function GetCursor: Longint;
 procedure SetCursor(cursor: Longint);
 procedure ThinCursor;
 procedure WideCursor;
 procedure HideCursor;
-function  GetCursorShape: Word;
+function GetCursorShape: Word;
 procedure SetCursorShape(shape: Word);
+
+procedure TxtScrIO_Init;
 
 implementation
 
@@ -65,7 +70,7 @@ end;
 procedure SetCursor(cursor: Longint);
 begin
   virtual_cur_pos := cursor SHR 16;
-  SetCursorShape(cursor AND $0ffff);
+  SetCursorShape(cursor AND WORD_NULL);
 end;
 
 procedure ThinCursor;
@@ -95,12 +100,12 @@ end;
 
 procedure TxtScrIO_Init;
 begin
-  TxtScrIO.v_ofs := Addr(AdT2vscr.vscreen);
-  AdT2vscr.virtual_screen := Addr(AdT2vscr.vscreen);
-  DialogIO.mn_environment.v_dest := Addr(AdT2vscr.vscreen);
-  AdT2unit.centered_frame_vdest := Addr(AdT2vscr.vscreen);
-  
-  Case sdl_screen_mode of
+  screen_ptr := Addr(AdT2vscr.vscreen);
+  virtual_screen := screen_ptr;
+  mn_environment.v_dest := screen_ptr;
+  centered_frame_vdest := screen_ptr;
+
+  Case program_screen_mode of
     // classic view
     0: begin
          SCREEN_RES_X := 720;
@@ -163,11 +168,11 @@ begin
   If (command_typing = 0) then PATEDIT_lastpos := 4*MAX_TRACKS
   else PATEDIT_lastpos := 10*MAX_TRACKS;
  
-  patt_win[1] := patt_win_tracks[sdl_screen_mode][1];
-  patt_win[2] := patt_win_tracks[sdl_screen_mode][2];
-  patt_win[3] := patt_win_tracks[sdl_screen_mode][3];
-  patt_win[4] := patt_win_tracks[sdl_screen_mode][4];
-  patt_win[5] := patt_win_tracks[sdl_screen_mode][5];
+  patt_win[1] := patt_win_tracks[program_screen_mode][1];
+  patt_win[2] := patt_win_tracks[program_screen_mode][2];
+  patt_win[3] := patt_win_tracks[program_screen_mode][3];
+  patt_win[4] := patt_win_tracks[program_screen_mode][4];
+  patt_win[5] := patt_win_tracks[program_screen_mode][5];
 end;
 
 end.

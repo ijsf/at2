@@ -1,6 +1,3 @@
-{
-    Wrapper for video mode routines (text and graphics)
-}
 unit AdT2vid;
 {$PACKRECORDS 1}
 interface
@@ -17,7 +14,7 @@ implementation
 uses
   CRT,
   SDL,SDL_Video,SDL_Timer,SDL__rwops,
-  AdT2vscr,AdT2unit,AdT2ext2,DialogIO,TxtScrIO;
+  AdT2vscr,AdT2unit,AdT2ext2,DialogIO,TxtScrIO,StringIO;
 
 {$i adt2icon.inc}
 var
@@ -50,13 +47,9 @@ const
    actual_frame_end: Longint = 0;
 
 begin
-  If (tracing = TRUE) then trace_update_proc;
-  If (Addr(mn_environment.ext_proc_rt) <> NIL) then mn_environment.ext_proc_rt
-  else update_without_trace;
-
-  emulate_screen_all;
-  If _update_sdl_screen then
-    SDL_Flip(screen);
+  realtime_gfx_poll_proc;
+  emulate_screen_proc;
+  If _update_sdl_screen then SDL_Flip(screen);
 
   If _emulate_screen_without_delay then _emulate_screen_without_delay := FALSE
   else begin // keep framerate
@@ -74,6 +67,7 @@ procedure vid_SetVideoMode(do_delay: Boolean);
 var
   icon: pSDL_Surface;
   rwop: pSDL_RWops;
+  win_title: String;
 
 begin
   FB_xres := SCREEN_RES_x;
@@ -95,7 +89,8 @@ begin
   rwop := SDL_RWFromMem(adt2_icon_bitmap,SizeOf(adt2_icon_bitmap));
   icon := SDL_LoadBMP_RW(rwop,TRUE);
   SDL_WM_SetIcon(icon,NIL);
-  SDL_WM_SetCaption('/|DLiB TR/|CK3R ][ SDL',NIL);
+  win_title := '/|DLiB TR/|CK3R ][ SDL (Press CTRL+TAB if window is not responding)'+#0;
+  SDL_WM_SetCaption(Addr(win_title[1]),NIL);
 end;
 
 procedure vid_FadeOut;
@@ -128,7 +123,7 @@ begin
   If emergency then
     begin        
       For idx := 0 to 15 do
-        rgb_color_alt[idx].r := $0ff-rgb_color[idx].r;
+        rgb_color_alt[idx].r := 255-rgb_color[idx].r;
     end
   else Move(rgb_color,rgb_color_alt,SizeOf(rgb_color));
   SDL_SetPalette(screen,SDL_PHYSPAL,SDL_ColorArray(Addr(rgb_color_alt)^),0,16);

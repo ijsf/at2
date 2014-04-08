@@ -3,8 +3,7 @@ unit MenuLib2;
 interface
 
 uses
-  DOS,
-  Adt2vscr,AdT2unit,AdT2keyb,AdT2ext2,
+  AdT2sys,Adt2vscr,AdT2unit,AdT2keyb,AdT2ext2,
   DialogIO,StringIO,TxtScrIO;
 
 const
@@ -139,8 +138,7 @@ asm
 @@2:    xor     eax,eax
         jecxz   @@3
         mov     al,1
-@@3:
-        pop     esi
+@@3:    pop     esi
         pop     ecx
 end;
 
@@ -162,6 +160,8 @@ var
   temp: String;
 
 begin
+  If _debug_ then
+    _debug_str_ := 'MenuLib2.PAS:pstr';
   Move(POINTER(Ptr(0,Ofs(mnu_data^)+(item-1)*(mnu_len+1)))^,temp,mnu_len+1);
   If NOT solid then pstr := ExpStrR(temp,mnu_len-2,' ')
   else pstr := ExpStrR(temp,mnu_len,' ');
@@ -173,6 +173,8 @@ var
   temp: String;
 
 begin
+  If _debug_ then
+    _debug_str_ := 'MenuLib2.PAS:pdes';
   If mn_environment.descr <> NIL then
     Move(POINTER(Ptr(0,Ofs(mn_environment.descr^)+
       (item-1)*(mn_environment.descr_len+1)))^,temp,mn_environment.descr_len+1)
@@ -189,6 +191,8 @@ var
   highlighted: Boolean;
 
 begin
+  If _debug_ then
+    _debug_str_ := 'MenuLib2.PAS:refresh:ShowCStr_clone';
   If NOT (MenuLib2_mn_setting.fixed_len <> 0) then
     begin
       ShowCStr(dest,x,y,str,atr1,atr2);
@@ -216,6 +220,8 @@ begin
 end;
 
 begin
+  If _debug_ then
+    _debug_str_ := 'MenuLib2.PAS:refresh';
   If (page = opage) and (k = opos) and NOT MenuLib2_mn_environment.do_refresh then EXIT
   else begin
          opage := page;
@@ -299,6 +305,7 @@ var
   temp: String;
 
 begin
+  _debug_str_ := 'MenuLib2.PAS:MenuLib2_Menu:edit_contents';
   is_setting.append_enabled := TRUE;
   is_setting.character_set  := [#$20..#$ff];
   is_environment.locate_pos := 1;
@@ -330,9 +337,8 @@ begin
            MenuLib2_mn_setting.text2_attr,MenuLib2_mn_setting.short2_attr);
 end;
 
-label _end;
-
 begin { MenuLib2_Menu }
+  _debug_str_ := 'MenuLib2.PAS:MenuLib2_Menu';
   If count = 0 then begin MenuLib2_Menu := 0; EXIT; end;
   max := Length(title);
   mnu_data := Addr(data); mnu_count := count; mnu_len := len;
@@ -346,7 +352,7 @@ begin { MenuLib2_Menu }
     end;
 
   If (count < 1) then EXIT;
-  vscrollbar_pos := $0ff;
+  vscrollbar_pos := BYTE_NULL;
 
   If NOT MenuLib2_mn_environment.preview then HideCursor;
   temp := 0;
@@ -407,29 +413,24 @@ begin { MenuLib2_Menu }
       last  := count; While NOT mbuf[last].use do Dec(last);
 
       If (spos < first) or (spos > last) then spos := first;
-      k := 1; page := 1; opage := $0ffff; opos := $0ffff;
+      k := 1; page := 1; opage := WORD_NULL; opos := WORD_NULL;
       While (k+page-1 < spos) do AddPos(k);
     end;
 
+  MenuLib2_mn_environment.curr_pos := k+page-1;
+  MenuLib2_mn_environment.keystroke := WORD_NULL;
+  If (Addr(MenuLib2_mn_environment.ext_proc) <> NIL) then MenuLib2_mn_environment.ext_proc;
+    
   qflg := FALSE;
   If MenuLib2_mn_environment.preview then
     begin
-      MenuLib2_mn_environment.preview := FALSE;
+      MenuLib2_mn_environment.preview  := FALSE;
       MenuLib2_mn_environment.unpolite := TRUE;
       refresh;
     end
   else
     Repeat
-      If keypressed then key := getkey else begin
-        If tracing then trace_update_proc
-            else If (play_status = isPlaying) then
-                   begin
-                     PATTERN_ORDER_page_refresh(pattord_page);
-                     PATTERN_page_refresh(pattern_page);
-                   end;
-        GOTO _end;
-      end;
-
+      key := getkey;
       If LookUpKey(key,MenuLib2_mn_setting.terminate_keys,50) then
         If NOT ((key = MenuLib2_mn_setting.terminate_keys[2]) and
                  MenuLib2_mn_setting.edit_contents) then qflg := TRUE
@@ -446,24 +447,24 @@ begin { MenuLib2_Menu }
                                k := len2; page := count-len2+1;
                                If NOT mbuf[k+page-1].use then SubPos(k);
                              end;
-             
+
                    $50: If (page+k-1 < last) or
                            NOT MenuLib2_mn_setting.cycle_moves then AddPos(k)
                         else begin
                                k := 1; page := 1;
                                If NOT mbuf[k+page-1].use then AddPos(k);
                              end;
-             
+
                    $47: begin
                           k := 1; page := 1;
                           If NOT mbuf[k+page-1].use then AddPos(k);
                         end;
-             
+
                    $4f: begin
                           k := len2; page := count-len2+1;
                           If NOT mbuf[k+page-1].use then SubPos(k);
                         end;
-             
+
                    $49: For temp := 1 to len2-1 do SubPos(k);
                    $51: For temp := 1 to len2-1 do AddPos(k);
                  end;
@@ -484,13 +485,10 @@ begin { MenuLib2_Menu }
 
       MenuLib2_mn_environment.curr_pos := k+page-1;
       refresh;
- 
       MenuLib2_mn_environment.keystroke := key;
-      If Addr(MenuLib2_mn_environment.ext_proc) <> NIL then MenuLib2_mn_environment.ext_proc;
-      
-      keyboard_reset_buffer;
-_end:
+      If (Addr(MenuLib2_mn_environment.ext_proc) <> NIL) then MenuLib2_mn_environment.ext_proc;
       emulate_screen;
+      // keyboard_reset_buffer;
     until qflg or _force_program_quit;
 
   If MenuLib2_mn_environment.winshade and NOT MenuLib2_mn_environment.unpolite then
@@ -533,8 +531,8 @@ begin
     MenuLib2_mn_setting.terminate_keys[6] := kCtrlO;
     MenuLib2_mn_setting.terminate_keys[7] := kF1;
     MenuLib2_mn_setting.terminate_keys[8] := kShTAB;
-    
-    MenuLib2_mn_environment.v_dest     := v_ofs;
+
+    MenuLib2_mn_environment.v_dest     := screen_ptr;
     MenuLib2_mn_environment.keystroke  := $0000;
     MenuLib2_mn_environment.context    := '';
     MenuLib2_mn_environment.unpolite   := FALSE;

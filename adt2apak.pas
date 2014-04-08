@@ -8,7 +8,7 @@ function APACK_decompress(var input,output): Longint;
 implementation
 
 uses
-  AdT2extn,AdT2unit;
+  AdT2sys,AdT2extn,AdT2unit;
 
 const
   AP_PACK_CONTINUE = 1;
@@ -26,15 +26,16 @@ function aP_depack(var input, output): Longint; stdcall; external name '_aP_depa
 
 function callback(param1,param2: Longint): Longint; cdecl;
 begin
-	asm pushad end;
-	show_progress(param1);
-	asm popad end;
-	callback := AP_PACK_CONTINUE;
+  asm pushad end;
+  show_progress(param1);
+  asm popad end;
+  callback := AP_PACK_CONTINUE;
 end;
 
 function APACK_compress(var input,output; size: Longint): Longint;
 begin
-  progress_old_value := NULL;
+  _debug_str_ := 'ADT2APAK.PAS:APACK_compress';
+  progress_old_value := BYTE_NULL;
   progress_step := 40/size;
   FillChar(workmem, SizeOf(workmem), 0);
   APACK_compress := aP_pack(input, output, size, workmem, @callback);
@@ -42,7 +43,8 @@ end;
 
 function APACK_decompress(var input,output): Longint;
 begin
-	APACK_decompress := aP_depack(input, output);
+  _debug_str_ := 'ADT2APAK.PAS:APACK_decompress';
+  APACK_decompress := aP_depack(input, output);
 end;
 
 end.

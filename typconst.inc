@@ -1,3 +1,9 @@
+const
+  NULL = $0ffffffff;
+  BYTE_NULL = BYTE(NULL);
+  WORD_NULL = WORD(NULL);
+  DWORD_NULL = LONGINT(NULL);
+
 type
   tFM_INST_DATA = Record
                     AM_VIB_EG_modulator,
@@ -215,7 +221,6 @@ const
   INSTRUMENT_SIZE = SizeOf(tADTRACK2_INS);
   CHUNK_SIZE = SizeOf(tCHUNK);
   PATTERN_SIZE = 20*256*CHUNK_SIZE;
-  NULL = $0ff;
 
 const
   status_layout: array[tPLAY_STATUS] of String[10] = ('PLAYiNG   ',
@@ -489,6 +494,11 @@ const
                                 +36,+38,+40,+41,+42,+43,+45,+47,
                                 +49,+50,+51,+52,+54,+56,+57);
 
+  pos5vw: array[1..35] of Byte = (+1,+3,+5,+7,+9,+11,+11,+14,+16,+18,
+                                  +19,+20,+21,+23,+25,+27,+29,+31,+33,+33,
+                                  +36,+38,+40,+41,+42,+43,+45,+47,
+                                  +49,+49,+49,+49,+54,+56,+56);
+
   pos6: array[1..11] of Byte = (+1,+2,+3,+5,+6,+8,+9,+10,+12,+13,+14);
 
 const
@@ -567,6 +577,7 @@ const
 
 const
   _valid_characters: Set of Char = [#0,#32..#127,#176..#223,#254,#255];
+  _valid_characters_fname: Set of Char = [#0,#32..#127,#255];
 
 const
   _panning: array[0..2] of Byte = ($30,$10,$20);
@@ -583,13 +594,13 @@ type
   tTRACK_ADDR = array[1..20] of Word;
 
 const                    { 01 - 02 - 03 - 04 - 05 - 06 - 07 - 08 - 09 - 10 - 11 - 12 - 13 - 14 - 15 - 16 - 17 - 18 - 19 - 20 }
-  _chmm_n: tTRACK_ADDR = ($003,$000,$004,$001,$005,$002,$006,$007,$008,$103,$100,$104,$101,$105,$102,$106,$107,$108,NULL,NULL);
-  _chmm_m: tTRACK_ADDR = ($008,$000,$009,$001,$00a,$002,$010,$011,$012,$108,$100,$109,$101,$10a,$102,$110,$111,$112,NULL,NULL);
-  _chmm_c: tTRACK_ADDR = ($00b,$003,$00c,$004,$00d,$005,$013,$014,$015,$10b,$103,$10c,$104,$10d,$105,$113,$114,$115,NULL,NULL);
+  _chmm_n: tTRACK_ADDR = ($003,$000,$004,$001,$005,$002,$006,$007,$008,$103,$100,$104,$101,$105,$102,$106,$107,$108,BYTE_NULL,BYTE_NULL);
+  _chmm_m: tTRACK_ADDR = ($008,$000,$009,$001,$00a,$002,$010,$011,$012,$108,$100,$109,$101,$10a,$102,$110,$111,$112,BYTE_NULL,BYTE_NULL);
+  _chmm_c: tTRACK_ADDR = ($00b,$003,$00c,$004,$00d,$005,$013,$014,$015,$10b,$103,$10c,$104,$10d,$105,$113,$114,$115,BYTE_NULL,BYTE_NULL);
                          {                                                                            BD   SD   TT   TC   HH }
   _chpm_n: tTRACK_ADDR = ($003,$000,$004,$001,$005,$002,$106,$107,$108,$103,$100,$104,$101,$105,$102,$006,$007,$008,$008,$007);
   _chpm_m: tTRACK_ADDR = ($008,$000,$009,$001,$00a,$002,$110,$111,$112,$108,$100,$109,$101,$10a,$102,$010,$014,$012,$015,$011);
-  _chpm_c: tTRACK_ADDR = ($00b,$003,$00c,$004,$00d,$005,$113,$114,$115,$10b,$103,$10c,$104,$10d,$105,$013,NULL,NULL,NULL,NULL);
+  _chpm_c: tTRACK_ADDR = ($00b,$003,$00c,$004,$00d,$005,$113,$114,$115,$10b,$103,$10c,$104,$10d,$105,$013,BYTE_NULL,BYTE_NULL,BYTE_NULL,BYTE_NULL);
 
 var
   _chan_n: tTRACK_ADDR;
@@ -992,3 +1003,62 @@ const
     3,3,3,3,3,3,3,3,3,3,3,
     4,4,4,4,4,4,4,
     5,5,5,5);
+
+const
+  macro_table_hint_str: array[1..20+35] of String[77] = (
+    'Length of FM-register definition macro-table {1-FF} (0 means no macros)',
+    'Loop cycle starting position {1-FF} (0 means no loop)',
+    'Length of loop cycle {1-FF} (0 means no loop)',
+    'Key-Off jump position {1-FF} (0 means no jump)',
+    'Arpeggio table number {1-FF} (0 means no arpeggio)',
+    'Vibrato table number {1-FF} (0 means no vibrato)',
+    '',
+    'Length of arpeggio macro-table {1-FF} (0 means no macros)',
+    'Speed of arpeggio in macro-table {1-FF} (0 means no arpeggio)',
+    'Loop cycle starting position {1-FF} (0 means no loop)',
+    'Length of loop cycle {1-FF} (0 means no loop)',
+    'Key-Off jump position {1-FF} (0 means no jump)',
+    'Number of half-tones to add [1-96] or fixed-note [C,C-,C#,C1,C-1,C#1,...]',
+    'Length of vibrato macro-table {1-FF} (0 means no macros)',
+    'Speed of vibrato in macro-table {1-FF} (0 means no vibrato)',
+    'Delay before starting vibrato in macro-table {1-FF} (0 means no delay)',
+    'Loop cycle starting position {1-FF} (0 means no loop)',
+    'Length of loop cycle {1-FF} (0 means no loop)',
+    'Key-Off jump position {1-FF} (0 means no jump)',
+    'Frequency to add {1..7F} or subtract {-7F..-1}',
+
+    'Attack rate [modulator] {0-F}',
+    'Decay rate [modulator] {0-F}',
+    'Sustain level [modulator] {0-F}',
+    'Release rate [modulator] {0-F}',
+    'Waveform type [modulator] {0-7}',
+    'Output level [modulator] {0-3F}',
+    'Output level [modulator] {0-3F}',
+    'Key scaling level [modulator] {0-3}',
+    'Multiplier [modulator] {0-F}',
+    'Amplitude modulation (tremolo) [modulator] {on/off}',
+    'Vibrato [modulator] {on/off}',
+    'Key scale rate [modulator] {on/off}',
+    'Sustain (EG type) [modulator] {on/off}',
+    'Attack rate [carrier] {0-F}',
+    'Decay rate [carrier] {0-F}',
+    'Sustain level [carrier] {0-F}',
+    'Release rate [carrier] {0-F}',
+    'Waveform type [carrier] {0-7}',
+    'Output level [carrier] {0-3F}',
+    'Output level [carrier] {0-3F}',
+    'Key scaling level [carrier] {0-3}',
+    'Multiplier [carrier] {0-F}',
+    'Amplitude modulation (tremolo) [carrier] {on/off}',
+    'Vibrato [carrier] {on/off}',
+    'Key scale rate [carrier] {on/off}',
+    'Sustain (EG type) [carrier] {on/off}',
+    'Connection type {0-1} (0=FM,1=AM)',
+    'Feedback {0-7}',
+    'Frequency slide {-FFF..+FFF}',
+    'Frequency slide {-FFF..+FFF}',
+    'Frequency slide {-FFF..+FFF}',
+    'Frequency slide {-FFF..+FFF}',
+    'Panning {Left/Center/Right}',
+    'Duration {1-FF} (0 means skip)',
+    'Duration {1-FF} (0 means skip)');

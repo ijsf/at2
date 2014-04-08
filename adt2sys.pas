@@ -1,12 +1,10 @@
-{
-    Wrapper for all sorts of system init/deinit and debug
-}
 unit AdT2sys;
 
 interface
 
 const
-  __debug__: Boolean = FALSE;
+  _debug_: Boolean = FALSE;
+  _debug_str_: String = '';
 
 procedure sys_init;
 procedure sys_deinit;
@@ -38,8 +36,6 @@ procedure sys_deinit;
 begin
   AdT2vid.vid_Deinit;
 end;
- 
-{ common code}
 
 procedure ResetF_RW(var f: File);
 
@@ -47,6 +43,7 @@ var
   fattr: Word;
 
 begin
+  _debug_str_:= 'ADT2SYS.PAS:ResetF_RW';
   GetFAttr(f,fattr);
   If (fattr AND ReadOnly = ReadOnly) then
     SetFAttr(f,fattr AND NOT ReadOnly);
@@ -63,6 +60,7 @@ var
   fattr: Word;
 
 begin
+  _debug_str_:= 'ADT2SYS.PAS:ResetF';
   GetFAttr(f,fattr);
   If (fattr AND ReadOnly = ReadOnly) then
     FileMode := 0;
@@ -77,6 +75,7 @@ var
   fattr: Word;
 
   begin
+  _debug_str_:= 'ADT2SYS.PAS:RewriteF';
   GetFAttr(f,fattr);
   If (fattr AND ReadOnly = ReadOnly) then
     SetFAttr(f,fattr AND NOT ReadOnly);
@@ -87,6 +86,7 @@ end;
 
 procedure BlockReadF(var f: File; var data; size: Longint; var bytes_read: Longint);
 begin
+  _debug_str_:= 'ADT2SYS.PAS:BlockReadF';
   {$i-}
   BlockRead(f,data,size,bytes_read);
   {$i+}
@@ -96,6 +96,7 @@ end;
 
 procedure BlockWriteF(var f: File; var data; size: Longint; var bytes_written: Longint);
 begin
+  _debug_str_:= 'ADT2SYS.PAS:BlockWriteF';
   {$i-}
   BlockWrite(f,data,size,bytes_written);
   {$i+}
@@ -105,6 +106,7 @@ end;
 
 procedure SeekF(var f: File; fpos: Longint);
 begin
+  _debug_str_:= 'ADT2SYS.PAS:SeekF';
   {$i-}
   Seek(f,fpos);
   {$i+}
@@ -112,6 +114,7 @@ end;
 
 procedure EraseF(var f: File);
 begin
+  _debug_str_:= 'ADT2SYS.PAS:EraseF';
   {$i-}
   Erase(f);
   {$i+}
@@ -120,6 +123,7 @@ end;
 
 procedure CloseF(var f: File);
 begin
+  _debug_str_:= 'ADT2SYS.PAS:CloseF';
   {$i-}
   Close(f);
   {$i+}

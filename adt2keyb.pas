@@ -9,11 +9,11 @@ procedure keyboard_done;
 procedure keyboard_toggle_sleep;
 procedure screen_saver;
 procedure keyboard_reset_buffer;
+procedure wait_until_key_released;
 
 function keypressed: Boolean;
 function getkey: Word;
 function scankey(scancode: Byte): Boolean;
-procedure keyboard_wait_until_key_released;
 procedure keyboard_poll_input;
 
 function CapsLock: Boolean;
@@ -27,10 +27,10 @@ function ctrl_pressed: Boolean;
 implementation
 
 uses
-  SDL_Types,SDL_Timer,SDL_Events,SDL_Keyboard,
   DOS,
+  SDL_Types,SDL_Timer,SDL_Events,SDL_Keyboard,
   AdT2vscr,AdT2unit,AdT2ext2,AdT2sys,
-  DialogIO,TxtScrIO;
+  DialogIO,TxtScrIO,ParserIO;
 
 const
   _numlock:    Boolean = FALSE;
@@ -102,7 +102,7 @@ var
   i,j: Integer;
 
 begin
-  Repeat emulate_screen until keypressed;  
+  Repeat emulate_screen until keypressed;
   Repeat
     If (SDL_PollEvent(@event) <> 0) then
       begin
@@ -127,8 +127,8 @@ begin
                     If (keydown[SC_LALT] = TRUE) or (keydown[SC_RALT] = TRUE) then
                       begin
                         // impossible combination
-                        If (symtab[j*10+4] = $0ffff) then CONTINUE;
-                        If (symtab[j*10+4] > $0ff) then
+                        If (symtab[j*10+4] = WORD_NULL) then CONTINUE;
+                        If (symtab[j*10+4] > BYTE_NULL) then
                           begin
                             getkey := symtab[j*10+4];
                             EXIT;
@@ -140,8 +140,8 @@ begin
                     If (keydown[SC_LCTRL] = TRUE) or (keydown[SC_RCTRL] = TRUE) then
                       begin
                         // impossible combination
-                        If (symtab[j*10+3] = $0ffff) then CONTINUE;
-                        If (symtab[j*10+3] > $0ff) then
+                        If (symtab[j*10+3] = WORD_NULL) then CONTINUE;
+                        If (symtab[j*10+3] > BYTE_NULL) then
                           begin
                             getkey := symtab[j*10+3];
                             EXIT;
@@ -156,8 +156,8 @@ begin
                         If (_capslock = TRUE) then i := 7 // caps lock
                         else If (_numlock = TRUE) then i := 8; // num lock
                         // impossible combination
-                        If (symtab[j*10+i] = $0ffff) then CONTINUE;
-                        If (symtab[j*10+i] > $0ff) then getkey := symtab[j*10+i]
+                        If (symtab[j*10+i] = WORD_NULL) then CONTINUE;
+                        If (symtab[j*10+i] > BYTE_NULL) then getkey := symtab[j*10+i]
                         else getkey := (symtab[j*10] SHL 8) OR symtab[j*10+i];
                         EXIT;
                       end;
@@ -166,8 +166,8 @@ begin
                     If (_capslock = TRUE) then i := 6 // caps lock
                     else If (_numlock = TRUE) then i := 5; // num lock
                     // impossible combination
-                    If (symtab[j*10+i] = $0ffff) then CONTINUE;
-                    If (symtab[j*10+i] > $0ff) then getkey := symtab[j*10+i]
+                    If (symtab[j*10+i] = WORD_NULL) then CONTINUE;
+                    If (symtab[j*10+i] > BYTE_NULL) then getkey := symtab[j*10+i]
                     else getkey := (symtab[j*10] SHL 8) OR symtab[j*10+i]; // (scancode << 8) + ASCII
                     EXIT;
                   end;
@@ -175,10 +175,6 @@ begin
           end;
       end;
   until FALSE;    
-end;
-
-procedure keyboard_wait_until_key_released;
-begin
 end;
 
 function scankey(scancode: Byte): Boolean;
@@ -189,6 +185,7 @@ end;
 
 procedure keyboard_toggle_sleep;
 begin
+  // only relevant in DOS version
 end;
 
 procedure keyboard_init;
@@ -199,10 +196,12 @@ end;
 
 procedure keyboard_done;
 begin
+  // only relevant in DOS version
 end;
 
 procedure screen_saver;
 begin
+  // only relevant in DOS version
 end;
 
 procedure keyboard_reset_buffer;
@@ -213,6 +212,20 @@ var
 begin
   // flush all unused events
   While (SDL_PollEvent(@event) <> 0) do ;
+end;
+
+procedure wait_until_key_released;
+
+var
+  event: SDL_Event;
+
+begin
+  _debug_str_ := 'ADT2KEYB.PAS:wait_until_key_released';
+  Repeat
+    emulate_screen;
+    keyboard_poll_input;
+  until Empty(keydown,SizeOf(keydown));
+  keyboard_reset_buffer;
 end;
 
 function CapsLock: Boolean;

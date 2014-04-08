@@ -4,7 +4,7 @@ interface
 
 uses
   DOS,Windows,
-  Adt2vscr,AdT2unit,AdT2keyb,AdT2ext2,
+  AdT2sys,AdT2vscr,AdT2unit,AdT2keyb,AdT2ext2,
   StringIO,ParserIO,TxtScrIO;
 
 type
@@ -86,6 +86,7 @@ type
                         descr:       Pointer;
                         is_editing:  Boolean;
                         xpos,ypos:   Byte;
+                        xsize,ysize: Byte;
                         desc_pos:    Byte;
                       end;
 
@@ -155,7 +156,7 @@ const
      reverse_use:    FALSE;
      show_scrollbar: TRUE;
      topic_len:      0;
-     fixed_len:      0;     
+     fixed_len:      0;
      terminate_keys: ($011b,$1c0d,$0000,$0000,$0000,
                       $0000,$0000,$0000,$0000,$0000,
                       $0000,$0000,$0000,$0000,$0000,
@@ -229,7 +230,7 @@ asm
         push    esi
         push    edi
         mov     esi,[queue]
-        mov     edi,@result { [@result]}
+        mov     edi,@result
         xor     ecx,ecx
         mov     cx,order
         dec     ecx
@@ -322,10 +323,10 @@ procedure ShowItem;
 begin
   If k = 0 then EXIT;
   If k <> l then
-    ShowCStr(v_ofs^,dbuf[l].pos,ystart+num+1,dbuf[l].str,
+    ShowCStr(screen_ptr^,dbuf[l].pos,ystart+num+1,dbuf[l].str,
              dl_setting.keys_attr,dl_setting.short_attr);
 
-    ShowCStr(v_ofs^,dbuf[k].pos,ystart+num+1,dbuf[k].str,
+    ShowCStr(screen_ptr^,dbuf[k].pos,ystart+num+1,dbuf[k].str,
              dl_setting.keys2_attr,dl_setting.short2_attr);
   l := k;
 end;
@@ -354,12 +355,13 @@ begin
   CurrentKey := temp;
 end;
 
-begin { Dialog }
+begin
+  _debug_str_ := 'DIALOGIO.PAS:Dialog';
   pos := 1;
   max := Length(title);
   num := 0;
 
-  Move(v_ofs^,backup.screen,SizeOf(backup.screen));
+  Move(screen_ptr^,backup.screen,SizeOf(backup.screen));
   backup.cursor := GetCursor;
   backup.oldx   := WhereX;
   backup.oldy   := WhereY;
@@ -441,7 +443,7 @@ begin { Dialog }
 
   old_fr_shadow_enabled := fr_setting.shadow_enabled;
   fr_setting.shadow_enabled := dl_setting.shadow_enabled;
-  Frame(v_ofs^,xstart,ystart,xstart+max+3,ystart+num+2,
+  Frame(screen_ptr^,xstart,ystart,xstart+max+3,ystart+num+2,
         dl_setting.box_attr,title,dl_setting.title_attr,
         dl_setting.frame_type);
   fr_setting.shadow_enabled := old_fr_shadow_enabled;
@@ -449,7 +451,7 @@ begin { Dialog }
   pos := 1;
   contxt := DietStr(dl_environment.context,max+
     (Length(dl_environment.context)-CStrLen(dl_environment.context)));
-  ShowCStr(v_ofs^,xstart+max+3-CStrLen(contxt),ystart+num+2,
+  ShowCStr(screen_ptr^,xstart+max+3-CStrLen(contxt),ystart+num+2,
            contxt,dl_setting.contxt_attr,dl_setting.contxt2_attr);
 
   For i := 1 to num do
@@ -457,11 +459,11 @@ begin { Dialog }
       str := ReadChunk(text,pos);
       Inc(pos,Length(str)+1);
       If dl_setting.center_text then
-        ShowCStr(v_ofs^,xstart+2,ystart+i,
+        ShowCStr(screen_ptr^,xstart+2,ystart+i,
                  ExpStrL(str,Length(str)+(max-CStrLen(str)) DIV 2,' '),
                  dl_setting.text_attr,dl_setting.text2_attr)
       else
-        ShowCStr(v_ofs^,xstart+2,ystart+i,
+        ShowCStr(screen_ptr^,xstart+2,ystart+i,
                  str,dl_setting.text_attr,dl_setting.text2_attr);
     end;
 
@@ -480,11 +482,11 @@ begin { Dialog }
         begin
           Inc(dbuf[i].pos,xstart+(max-mx2) DIV 2+1);
           If dbuf[i].use then
-            ShowCStr(v_ofs^,dbuf[i].pos,ystart+num+1,
-                dbuf[i].str,dl_setting.keys_attr,dl_setting.short_attr)
+            ShowCStr(screen_ptr^,dbuf[i].pos,ystart+num+1,
+                     dbuf[i].str,dl_setting.keys_attr,dl_setting.short_attr)
           else
-            ShowCStr(v_ofs^,dbuf[i].pos,ystart+num+1,
-                dbuf[i].str,dl_setting.disbld_attr,dl_setting.disbld_attr);
+            ShowCStr(screen_ptr^,dbuf[i].pos,ystart+num+1,
+                     dbuf[i].str,dl_setting.disbld_attr,dl_setting.disbld_attr);
         end;
 
       If spos < 1 then spos := 1;
@@ -519,7 +521,7 @@ begin { Dialog }
                                  k := nm2;
                                  If NOT dbuf[k].use then SubPos(k);
                                end;
-               
+
                      $4d: If (k < nm2) or
                              NOT dl_setting.cycle_moves then
                             begin
@@ -535,18 +537,18 @@ begin { Dialog }
                                  k := 1;
                                  If NOT dbuf[k].use then AddPos(k);
                                end;
-               
+
                      $47: begin
                             k := 1;
                             If NOT dbuf[k].use then AddPos(k);
                           end;
-               
+
                      $4f: begin
                             k := nm2;
                             If NOT dbuf[k].use then SubPos(k);
                           end;
                    end;
-          
+
             $20..$0ff:
               begin
                 RetKey(LO(key),m);
@@ -572,7 +574,7 @@ begin { Dialog }
       move_to_screen_routine;
     end
   else
-    Move(backup.screen,v_ofs^,SizeOf(backup.screen));
+    Move(backup.screen,screen_ptr^,SizeOf(backup.screen));
 end;
 
 var
@@ -589,7 +591,11 @@ var
   temp: String;
 
 begin
-  Move(POINTER(Ptr(0,Ofs(mnu_data^)+(item-1)*(mnu_len+1)))^,temp,mnu_len+1);
+  If _debug_ then
+    _debug_str_ := 'DIALOGIO.PAS:pstr';
+  If (item <= mnu_count) then
+    Move(POINTER(Ptr(0,Ofs(mnu_data^)+(item-1)*(mnu_len+1)))^,temp,mnu_len+1)
+  else temp := '';
   If NOT solid then pstr := ExpStrR(temp,mnu_len-2,' ')
   else pstr := ExpStrR(temp,mnu_len,' ');
 end;
@@ -601,9 +607,11 @@ var
   temp,result: String;
 
 begin
-  Move(POINTER(Ptr(0,Ofs(mnu_data^)+(item-1)*(mnu_len+1)))^,temp,mnu_len+1);
+  If (item <= mnu_count) then
+    Move(POINTER(Ptr(0,Ofs(mnu_data^)+(item-1)*(mnu_len+1)))^,temp,mnu_len+1)
+  else temp := '';
   If NOT solid then temp := ExpStrR(temp,mnu_len-2,' ')
-  else temp := ExpStrR(temp,mnu_len,' ');  
+  else temp := ExpStrR(temp,mnu_len,' ');
   If (mn_setting.fixed_len <> 0) then result := temp
   else begin
          result := '';
@@ -611,7 +619,7 @@ begin
          If (temp[idx] in mn_setting.topic_mask_chr) then
            result := result+'`'+temp[idx]+'`'
          else result := result+temp[idx];
-       end; 
+       end;
   pstr2 := result;
 end;
 
@@ -621,7 +629,9 @@ var
   temp: String;
 
 begin
-  If mn_environment.descr <> NIL then
+  If _debug_ then
+    _debug_str_ := 'DIALOGIO.PAS:pdes';
+  If (mn_environment.descr <> NIL) and (item <= mnu_count) then
     Move(POINTER(Ptr(0,Ofs(mn_environment.descr^)+
       (item-1)*(mn_environment.descr_len+1)))^,temp,mn_environment.descr_len+1)
   else temp := '';
@@ -638,6 +648,8 @@ var
   highlighted: Boolean;
 
 begin
+  If _debug_ then
+    _debug_str_ := 'DIALOGIO.PAS:refresh:ShowCStr_clone';
   If NOT (mn_setting.fixed_len <> 0) then
     begin
       ShowC3Str(dest,x,y,str,atr1,atr2,atr1 AND $0f0+mn_setting.topic_attr AND $0f);
@@ -669,6 +681,8 @@ begin
 end;
 
 begin { refresh }
+  If _debug_ then
+    _debug_str_ := 'DIALOGIO.PAS:refresh';
   If (page = opage) and (k = opos) and NOT mn_environment.do_refresh then EXIT
   else begin
          opage := page;
@@ -767,6 +781,7 @@ var
   temp: String;
 
 begin
+  _debug_str_ := 'DIALOGIO.PAS:Menu:edit_contents';
   is_setting.append_enabled := TRUE;
   is_setting.character_set  := [#$20..#$7d,#$7f..#$ff];
   is_environment.locate_pos := 1;
@@ -800,6 +815,7 @@ begin
 end;
 
 begin { Menu }
+  _debug_str_ := 'DIALOGIO.PAS:Menu';
   If count = 0 then begin Menu := 0; EXIT; end;
   max := Length(title);
   mnu_data := Addr(data); mnu_count := count; mnu_len := len;
@@ -813,7 +829,7 @@ begin { Menu }
     end;
 
   If (count < 1) then EXIT;
-  vscrollbar_pos := $0ffff;
+  vscrollbar_pos := WORD_NULL;
 
   If NOT mn_environment.preview then HideCursor;
   temp := 0;
@@ -847,6 +863,8 @@ begin { Menu }
   len2b := len2;
   mn_environment.xpos := x;
   mn_environment.ypos := y;
+  mn_environment.xsize := max+1;
+  mn_environment.ysize := len2+1;
   mn_environment.desc_pos := y+len2+1;
 
   If NOT mn_environment.unpolite then
@@ -864,15 +882,23 @@ begin { Menu }
 
       contxt := DietStr(mn_environment.context,max+
         (Length(mn_environment.context)-CStrLen(mn_environment.context)));
-      ShowCStr(mn_environment.v_dest^,x+max+1-CStrLen(contxt),y+len2+1,
-               contxt,mn_setting.contxt_attr,mn_setting.contxt2_attr);
+      If mn_setting.frame_enabled then
+        ShowC3Str(mn_environment.v_dest^,x+1,y+len2+1,
+                  '`'+ExpStrL('',max-CStrLen(contxt),
+                              mn_setting.frame_type[2])+'`'+
+                  contxt,
+                  mn_setting.contxt_attr,
+                  mn_setting.contxt2_attr,
+                  mn_setting.menu_attr);
+
       temp2 := len2;
+      mnu_len2 := len2;
+
       If len2 > count then len2 := count;
       If len2 < 1 then len2 := 1;
       If spos < 1 then spos := 1;
       If spos > count then spos := count;
 
-      mnu_len2 := len2;
       mn_environment.refresh := refresh;
 
       first := 1; While NOT mbuf[first].use do Inc(first);
@@ -880,7 +906,7 @@ begin { Menu }
 
       If (first <= mn_setting.topic_len) then first := SUCC(mn_setting.topic_len);
       If (spos < first) or (spos > last) then spos := first;
-      k := 1; page := 1; opage := $0ffff; opos := $0ffff;
+      k := 1; page := 1; opage := WORD_NULL; opos := WORD_NULL;
       While (k+page-1 < spos) do AddPos(k);
     end;
 
@@ -910,6 +936,11 @@ begin { Menu }
     refresh;
 
   mn_environment.curr_page := page;
+  mn_environment.curr_pos := k+page-1;
+  mn_environment.curr_item := CutStr(pstr(k+page-1));
+  mn_environment.keystroke := WORD_NULL;
+  If (Addr(mn_environment.ext_proc) <> NIL) then mn_environment.ext_proc;
+  
   qflg := FALSE;
   If mn_environment.preview then
     begin
@@ -918,13 +949,7 @@ begin { Menu }
     end
   else
     begin
-      mn_environment.curr_page := page;
-      mn_environment.curr_pos := k+page-1;
-      mn_environment.curr_item := CutStr(pstr(k+page-1));
-      mn_environment.keystroke := $0ffff;
-      If Addr(mn_environment.ext_proc) <> NIL then mn_environment.ext_proc;
-
-      Repeat        
+      Repeat
         mn_environment.keystroke := key;
         key := getkey;
         If NOT qflg then
@@ -938,28 +963,28 @@ begin { Menu }
                                  k := len2; page := count-len2+1;
                                  If NOT mbuf[k+page-1].use then SubPos(k);
                                end;
-               
+
                      $50: If (page+k-1 < last) or
                              NOT mn_setting.cycle_moves then AddPos(k)
                           else begin
                                  k := 1; page := 1;
                                  If NOT mbuf[k+page-1].use then AddPos(k);
                                end;
-               
+
                      $47: begin
                             k := 1; page := 1;
                             If NOT mbuf[k+page-1].use then AddPos(k);
                           end;
-               
+
                      $4f: begin
                             k := len2; page := count-len2+1;
                             If NOT mbuf[k+page-1].use then SubPos(k);
                           end;
-               
+
                      $49: For temp := 1 to len2-1 do SubPos(k);
                      $51: For temp := 1 to len2-1 do AddPos(k);
                    end;
-      
+
             $20..$0ff:
               begin
                 RetKey(LO(key),m);
@@ -983,12 +1008,10 @@ begin { Menu }
         mn_environment.curr_pos := k+page-1;
         mn_environment.curr_item := CutStr(pstr(k+page-1));
         refresh;
-
         mn_environment.keystroke := key;
-        If Addr(mn_environment.ext_proc) <> NIL then mn_environment.ext_proc;
-
-        keyboard_reset_buffer;
+        If (Addr(mn_environment.ext_proc) <> NIL) then mn_environment.ext_proc;
         emulate_screen;
+        // keyboard_reset_buffer;
       until qflg or _force_program_quit;
     end;
 
@@ -1012,6 +1035,7 @@ end;
 
 const
   MAX_FILES = 4096;
+  UPDIR_STR = 'updir';
 
 type
   tSEARCH = Record
@@ -1041,29 +1065,24 @@ var
   descr: tDSCDAT;
   masks: array[1..20] of String;
   fstream: tSTREAM;
+  drive_list: array[0..128] of Char;
 
 function LookUpMask(filename: String): Boolean;
 
 var
+  temp: Byte;
   okay: Boolean;
-  i: longint;
 
 begin
   okay := FALSE;
-  For i := 1 to count do
-    begin
-      // UpCase fixes matching on Windows
-      If SameName(UpCase(masks[i]),UpCase(filename)) then
-        begin
-          okay := TRUE;
-          BREAK;
-        end;
-    end;
+  For temp := 1 to count do
+    If SameName(Upper(masks[temp]),Upper(filename)) then
+      begin
+        okay := TRUE;
+        BREAK;
+      end;
   LookUpMask := okay;
 end;
-
-var
-  vDrives: array[0..128] of Char;
 
 function valid_drive(drive: Char; var info: String): Boolean;
 
@@ -1075,7 +1094,7 @@ begin
   info := '';
   idx := 0;
   For idx := 0 to 128 do
-    If (vDrives[idx] = drive) then
+    If (drive_list[idx] = drive) then
       begin
         info := 'DRiVE';
         BREAK;
@@ -1100,70 +1119,98 @@ var
   result: tCOMPARE_STR_RESULT;
 
 begin
+  If (str1 = UPDIR_STR) then result := isLess
+  else If (str2 = UPDIR_STR) then result := isMore
+       else result := isEqual;
+
+  If (result <> isEqual) then
+    begin
+      CompareStr := result;
+      EXIT;
+    end;
+
+  str1 := Upper(FilterStr2(str1,_valid_characters_fname,'_'));
+  str2 := Upper(FilterStr2(str2,_valid_characters_fname,'_'));
+
   If (Length(str1) > Length(str2)) then len := Length(str1)
   else len := Length(str2);
 
-  result := isEqual;
   For idx := 1 to len do
-    If (FilterStr2(str1[idx],_valid_characters,'_') > FilterStr2(str2[idx],_valid_characters,'_')) then
+    If (str1[idx] > str2[idx]) then
       begin
         result := isMore;
         BREAK;
-      end;
+      end
+    else If (str1[idx] < str2[idx]) then
+           begin
+             result := isLess;
+             BREAK;
+           end;
 
-  If (result = isEqual) and (Length(str2) > Length(str1)) then
-    result := isLess;
+  If (result = isEqual) then
+    If (Length(str1) < Length(str2)) then
+      result := isLess
+    else If (Length(str1) > Length(str2)) then
+           result := isMore;
 
   CompareStr := result;
 end;
 
-procedure StreamSort(first,last: Word);
+procedure QuickSort(l,r: Word);
 
 var
-  idx1,idx2: Word;
-  temp: tSEARCH;
+  i,j: Word;
+  cmp: String;
+  tmp: tSEARCH;
 
 begin
-  If (first >= last) then EXIT;
+  If (l >= r) then EXIT;
+  cmp := stream.stuff[(l+r) DIV 2].name;
+  i := l;
+  j := r;
 
-  For idx2 := first to last do
-    For idx1 := first to last-1 do
-      If (CompareStr(stream.stuff[idx1].name,
-                     stream.stuff[idx1+1].name) = isLess) then
-        begin
-          temp := stream.stuff[idx1];
-          stream.stuff[idx1] := stream.stuff[idx1+1];
-          stream.stuff[idx1+1] := temp;
-        end;
+  Repeat
+    While (i < r) and
+          (CompareStr(stream.stuff[i].name,cmp) = isLess) do
+      Inc(i);
+
+    While (j > l) and
+          (CompareStr(stream.stuff[j].name,cmp) = isMore) do
+      Dec(j);
+
+    If (i <= j) then
+      begin
+        tmp := stream.stuff[i];
+        stream.stuff[i] := stream.stuff[j];
+        stream.stuff[j] := tmp;
+        Inc(i);
+        Dec(j);
+      end;
+  until (i > j);
+
+  If (l < j) then QuickSort(l,j);
+  If (i < r) then QuickSort(i,r);
 end;
 
-begin { make_stream }
-  GetLogicalDriveStrings(SizeOf(vDrives),vDrives);
-  If (stream.drive_count = 0) then
-    begin
-      count1 := 0;
-      For drive := 'A' to 'Z' do
-        If valid_drive(drive,stream.stuff[SUCC(count1)].info) then
-          begin
-            Inc(count1);
-            stream.stuff[count1].name := drive;
-            stream.stuff[count1].attr := volumeid;
-            stream.stuff[count1].size := 0;
-          end;
+begin
+  _debug_str_ := 'DIALOGIO.PAS:make_stream';
+  GetLogicalDriveStrings(SizeOf(drive_list),drive_list);
+  count1 := 0;
+  For drive := 'A' to 'Z' do
+    If valid_drive(drive,stream.stuff[SUCC(count1)].info) then
+      begin
+        Inc(count1);
+        stream.stuff[count1].name := drive;
+        stream.stuff[count1].attr := volumeid;
+        stream.stuff[count1].size := 0;
+      end;
 
-      Inc(count1);
-      stream.stuff[count1].name := '~'+#$ff+'~';
-      stream.stuff[count1].attr := volumeid;
-      stream.drive_count := count1;
-    end
-  else
-    begin
-      count1 := stream.drive_count;
-      stream.stuff[count1].name := '~'+#$ff+'~';
-      stream.stuff[count1].attr := volumeid;
-    end;
+  Inc(count1);
+  stream.stuff[count1].name := '~'+#$ff+'~';
+  stream.stuff[count1].attr := volumeid;
 
   count2 := 0;
+  stream.drive_count := count1;
   FindFirst(path+'*.*',anyfile-volumeid,search);
   While (DOSerror = 0) and (count1 < MAX_FILES) do
     begin
@@ -1176,7 +1223,7 @@ begin { make_stream }
               NOT ((search.name = '..') and (Length(path) = 3)) then
              begin
                If (search.name <> '..') then search.name := search.name
-               else search.name := 'updir';
+               else search.name := UPDIR_STR;
                Inc(count1);
                stream.stuff[count1].name := search.name;
                stream.stuff[count1].attr := search.attr;
@@ -1186,9 +1233,9 @@ begin { make_stream }
 
   If (Length(path) > 3) and (count1 = stream.drive_count) then
     begin
-       Inc(count1);
-       stream.stuff[count1].name := 'updir';
-       stream.stuff[count1].attr := search.attr;
+      Inc(count1);
+      stream.stuff[count1].name := UPDIR_STR;
+      stream.stuff[count1].attr := search.attr;
     end;
 
   FindFirst(path+'*.*',anyfile-volumeid-directory,search);
@@ -1205,8 +1252,8 @@ begin { make_stream }
       FindNext(search);
     end;
 
-  StreamSort(stream.drive_count+1,count1);
-  StreamSort(count1+1,count1+count2);
+  QuickSort(stream.drive_count+1,count1);
+  QuickSort(count1+1,count1+count2);
   stream.count := count1+count2;
   stream.match_count := count2;
 end;
@@ -1230,6 +1277,9 @@ var
   temp6,temp7: String;
   temp8: Longint;
   lastp: Longint;
+  idx: Byte;
+  backup: tBACKUP;
+  _preview_step: Boolean;
 
 function path_filter(path: String): String;
 begin
@@ -1238,15 +1288,13 @@ begin
   path_filter := Upper(path);
 end;
 
-var
-  idx: Integer;
-
-begin { Fselect }
+begin
+  _debug_str_ := 'DIALOGIO.PAS:Fselect';
   idx := 1;
   count := 0;
 
   Repeat // split mask string into masks and fill masks[1..20] array
-    temp6 := Upper(ReadChunk(mask, idx)); // read first part: *.a2m etc
+    temp6 := Upper(ReadChunk(mask,idx)); // read first part: *.a2m etc
     Inc(idx ,Length(temp6)+1); // advance
     If NOT (temp6 = '') then
       begin
@@ -1288,6 +1336,13 @@ begin { Fselect }
 
   mn_environment.descr_len := 20;
   mn_environment.descr := Addr(descr);
+  mn_environment.winshade := FALSE;
+
+  _preview_step := TRUE;
+  Move(screen_ptr^,backup.screen,SizeOf(backup.screen));
+  backup.cursor := GetCursor;
+  backup.oldx   := WhereX;
+  backup.oldy   := WhereY;
 
   Repeat
     path[SUCC(ORD(UpCase(temp3[1]))-ORD('A'))] := path_filter(temp3);
@@ -1295,36 +1350,36 @@ begin { Fselect }
 
     For temp2 := 1 to fstream.count do
       If (fstream.stuff[temp2].attr AND directory <> 0) then
-        If (fstream.stuff[temp2].name = 'updir') then
-                  begin
-                    menudat[temp2] := ' '+ExpStrR('..',24,' ')+' ';
+        If (fstream.stuff[temp2].name = UPDIR_STR) then
+          begin
+            menudat[temp2] := ' '+ExpStrR('..',24,' ')+' ';
             descr[temp2] := ExpStrL('[UP-DiR]',mn_environment.descr_len-1,' ');
             fstream.stuff[temp2].name := '..';
-                  end
-                else
+          end
+        else
           begin
-                    temp1 := 24+(mn_environment.descr_len-1-10);
-                        temp7 := iCASE(DietStr(FilterStr2(fstream.stuff[temp2].name,_valid_characters,'_'),temp1));
-                        If (Length(temp7) < 24) then
-                          begin
-                            menudat[temp2] := ' '+ExpStrR(temp7,24,' ')+' ';
-                            descr[temp2] := ExpStrR('',mn_environment.descr_len-1-10,' ');
-                          end
-                        else
+            temp1 := 24+(mn_environment.descr_len-1-10);
+            temp7 := iCASE(DietStr(FilterStr2(fstream.stuff[temp2].name,_valid_characters_fname,'_'),temp1));
+            If (Length(temp7) < 24) then
+              begin
+                menudat[temp2] := ' '+ExpStrR(temp7,24,' ')+' ';
+                descr[temp2] := ExpStrR('',mn_environment.descr_len-1-10,' ');
+              end
+            else
               begin
                 menudat[temp2] := ' '+iCASE(ExpStrR(Copy(temp7,1,24),24,' '));
-                            descr[temp2] := ExpStrR(Copy(temp7,25,Length(temp7)-23),mn_environment.descr_len-1-10,' ');
+                descr[temp2] := ExpStrR(Copy(temp7,25,Length(temp7)-23),mn_environment.descr_len-1-10,' ');
               end;
-                        descr[temp2] := descr[temp2]+ExpStrL('[DiR]',10,' ');
+            descr[temp2] := descr[temp2]+ExpStrL('[DiR]',10,' ');
           end
       else
         menudat[temp2] := ' '+ExpStrR(DietStr(BaseNameOnly(
-                                FilterStr2(fstream.stuff[temp2].name,_valid_characters,'_')),23),23,' ')+' ';
+                                FilterStr2(fstream.stuff[temp2].name,_valid_characters_fname,'_')),23),23,' ')+' ';
 
     For temp2 := 1 to fstream.count do
       If (fstream.stuff[temp2].attr = volumeid) then
         begin
-                  If (fstream.stuff[temp2].name = '~'+#$ff+'~') then descr[temp2] := ''
+          If (fstream.stuff[temp2].name = '~'+#$ff+'~') then descr[temp2] := ''
           else descr[temp2] := '[~'+fstream.stuff[temp2].info+'~]';
         end
       else If NOT (fstream.stuff[temp2].attr AND directory <> 0) then
@@ -1336,10 +1391,10 @@ begin { Fselect }
                    descr[temp2] := temp7[Length(temp7)-temp8+1]+descr[temp2]
                  else
                    descr[temp2] := ','+temp7[Length(temp7)-temp8+1]+descr[temp2];
-                           descr[temp2] := ExpStrR(Copy(ExtOnly(
-                                    fstream.stuff[temp2].name),1,3),3,' ')+' '+
-                                                           ExpStrL(DietStr(descr[temp2],mn_environment.descr_len-1-4),
-                                                                   mn_environment.descr_len-1-4,' ');
+               descr[temp2] := ExpStrR(Copy(ExtOnly(
+                                 fstream.stuff[temp2].name),1,3),3,' ')+' '+
+                                 ExpStrL(DietStr(descr[temp2],mn_environment.descr_len-1-4),
+                                         mn_environment.descr_len-1-4,' ');
              end;
 
     For temp2 := 1 to fstream.count do
@@ -1369,15 +1424,19 @@ begin { Fselect }
     old_fselect_external_proc := mn_environment.ext_proc;
     mn_environment.ext_proc := new_fselect_external_proc;
 
-    If (sdl_screen_mode = 0) then
+    mn_setting.frame_enabled := _preview_step;
+    mn_setting.shadow_enabled := _preview_step;
+
+    If (program_screen_mode = 0) then
       temp2 := Menu(menudat,01,01,lastp,
                     1+23+1,work_MaxLn-5,fstream.count,' '+
-                    iCASE(DietStr(path_filter(temp3),40))+' ')
+                    iCASE(DietStr(FilterStr2(path_filter(temp3),_valid_characters_fname,'_'),40))+' ')
     else
       temp2 := Menu(menudat,01,01,lastp,
                     1+23+1,work_MaxLn-15,fstream.count,' '+
-                    iCASE(DietStr(path_filter(temp3),40))+' ');
+                    iCASE(DietStr(FilterStr2(path_filter(temp3),_valid_characters_fname,'_'),40))+' ');
 
+    _preview_step := FALSE;
     mn_environment.ext_proc := old_fselect_external_proc;
     mn_setting.reverse_use := FALSE;
     mn_environment.context := '';
@@ -1388,7 +1447,7 @@ begin { Fselect }
        (fstream.stuff[temp2].attr AND directory <> 0) then
       begin
         fs_environment.last_file := 'FNAME:EXT';
-        mn_environment.keystroke := $0ffff;
+        mn_environment.keystroke := WORD_NULL;
         If (fstream.stuff[temp2].name = '..') then
           begin
             Delete(temp3,Length(temp3),1);
@@ -1412,7 +1471,7 @@ begin { Fselect }
             (fstream.stuff[temp2].attr AND volumeid <> 0) then
            begin
              fs_environment.last_file := 'FNAME:EXT';
-             mn_environment.keystroke := $0ffff;
+             mn_environment.keystroke := WORD_NULL;
              {$i-}
              ChDir(path[SUCC(ORD(UpCase(fstream.stuff[temp2].name[1]))-ORD('A'))]);
              {$i+}
@@ -1454,11 +1513,20 @@ begin { Fselect }
   until (mn_environment.keystroke = $1c0d) or
         (mn_environment.keystroke = $011b);
 
-  Fselect := temp3+fstream.stuff[temp2].name;
-
   mn_environment.descr_len := 0;
   mn_environment.descr := NIL;
+  mn_environment.winshade := TRUE;
+  mn_setting.frame_enabled := TRUE;
+  mn_setting.shadow_enabled := TRUE;
 
+  move_to_screen_data := Addr(backup.screen);
+  move_to_screen_area[1] := mn_environment.xpos;
+  move_to_screen_area[2] := mn_environment.ypos;
+  move_to_screen_area[3] := mn_environment.xpos+mn_environment.xsize+2+1;
+  move_to_screen_area[4] := mn_environment.ypos+mn_environment.ysize+1;
+  move2screen;
+
+  Fselect := temp3+fstream.stuff[temp2].name;
   fs_environment.last_dir := path[SUCC(ORD(UpCase(temp3[1]))-ORD('A'))];
   {$i-}
   ChDir(temp6);
@@ -1491,6 +1559,7 @@ var
   temp: Word;
 
 begin
+  _debug_str_ := 'DIALOGIO.PAS:HScrollBar';
   If (size > work_MaxCol-x) then size := work_MaxCol-x;
   If (size < 5) then size := 5;
 
@@ -1518,7 +1587,9 @@ function VScrollBar(var dest; x,y: Byte; size: Byte; len1,len2,pos: Word;
                    atr1,atr2: Byte): Word;
 var
   temp: Word;
+
 begin
+  _debug_str_ := 'DIALOGIO.PAS:VScrollBar';
   If (size > work_MaxLn-y) then size := work_MaxLn-y;
   If (size < 5) then size := 5;
 
@@ -1576,7 +1647,7 @@ begin
   mn_setting.hi_topic_attr   := menu_background+menu_hi_topic;
   mn_setting.topic_mask_chr  := [];
 
-  mn_environment.v_dest      := v_ofs;
+  mn_environment.v_dest      := screen_ptr;
   dl_environment.keystroke   := $0000;
   mn_environment.keystroke   := $0000;
   dl_environment.context     := '';
@@ -1598,6 +1669,8 @@ begin
   fs_environment.last_dir    := '';
   mn_environment.xpos        := 0;
   mn_environment.xpos        := 0;
+  mn_environment.xsize       := 0;
+  mn_environment.ysize       := 0;
   mn_environment.desc_pos    := 0;
 
   For index := 1 to 26 do

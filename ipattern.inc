@@ -52,6 +52,8 @@ end;
 
 procedure STATUS_LINE_refresh;
 begin
+  If _debug_ then
+    _debug_str_ := 'IPATTERN.INC:STATUS_LINE_refresh';
   If (_4op_to_test <> 0) then
     show_cstr(40,MAX_PATTERN_ROWS+12,'~[~'+byte2hex(HI(_4op_to_test))+'~+~'+byte2hex(LO(_4op_to_test))+'~]~',
               main_background+main_hi_stat_line,
@@ -146,6 +148,7 @@ begin
 end;
 
 begin
+  _debug_str_ := 'IPATTERN.INC:PATTERN_page_refresh';
   For temp := SUCC(songdata.nm_tracks) to MAX_TRACKS do
     begin
       show_str(08+(temp-1)*15,10,'ออออออออออออออ',
@@ -222,7 +225,7 @@ begin
     begin
       If tracing and (play_status <> isStopped) then
         begin
-          If (temp1 <> MAX_PATTERN_ROWS DIV 2) then _row_bckg := NULL
+          If (temp1 <> MAX_PATTERN_ROWS DIV 2) then _row_bckg := BYTE_NULL
           else begin
                  _row_bckg  := pattern_row_bckg_p;
                  _row_bckg2 := pattern_bckg;
@@ -232,7 +235,7 @@ begin
       else If NOT ((pattern_patt = current_pattern) and
                    (page+temp1-PRED(MAX_PATTERN_ROWS DIV 2)-1 = current_line) and
                    (play_status <> isStopped)) then
-             _row_bckg := NULL
+             _row_bckg := BYTE_NULL
            else begin
                   _row_bckg  := pattern_row_bckg_p;
                   _row_bckg2 := pattern_bckg;
@@ -245,7 +248,7 @@ begin
             begin
               If (temp1 <> MAX_PATTERN_ROWS DIV 2) then
                 begin
-                  If (_row_bckg = NULL) then
+                  If (_row_bckg = BYTE_NULL) then
                     begin
                       _row_bckg  := pattern_bckg;
                       _row_bckg2 := pattern_bckg;
@@ -261,7 +264,7 @@ begin
                 end
               else
                 begin
-                  If (_row_bckg = NULL) then
+                  If (_row_bckg = BYTE_NULL) then
                     begin
                       _row_bckg  := pattern_bckg;
                       _row_bckg2 := pattern_bckg;
@@ -277,7 +280,7 @@ begin
                 end;
             end
           else begin
-                 If (_row_bckg = NULL) then
+                 If (_row_bckg = BYTE_NULL) then
                    begin
                      _row_bckg  := pattern_row_bckg;
                      _row_bckg2 := pattern_bckg;
@@ -302,7 +305,7 @@ begin
                 If NOT marking or (marking and NOT discard_block and
                                    _no_block_tracing) then
                   begin
-                    If (_row_bckg = NULL) then
+                    If (_row_bckg = BYTE_NULL) then
                       begin
                         _row_bckg  := pattern_row_bckg;
                         _row_bckg2 := pattern_bckg;
@@ -319,7 +322,7 @@ begin
                 else
                   If (temp1 <> MAX_PATTERN_ROWS DIV 2) then
                     begin
-                      If (_row_bckg = NULL) then
+                      If (_row_bckg = BYTE_NULL) then
                         begin
                           _row_bckg  := pattern_bckg;
                           _row_bckg2 := pattern_bckg;
@@ -335,7 +338,7 @@ begin
                     end
                   else
                     begin
-                      If (_row_bckg = NULL) then
+                      If (_row_bckg = BYTE_NULL) then
                         begin
                           _row_bckg  := pattern_bckg;
                           _row_bckg2 := pattern_bckg;
@@ -353,7 +356,7 @@ begin
             else
               If (temp1 <> MAX_PATTERN_ROWS DIV 2) then
                 begin
-                  If (_row_bckg = NULL) then
+                  If (_row_bckg = BYTE_NULL) then
                     begin
                       _row_bckg  := pattern_bckg;
                       _row_bckg2 := pattern_bckg;
@@ -369,7 +372,7 @@ begin
                 end
               else
                 begin
-                  If (_row_bckg = NULL) then
+                  If (_row_bckg = BYTE_NULL) then
                     begin
                       _row_bckg  := pattern_bckg;
                       _row_bckg2 := pattern_bckg;
@@ -385,7 +388,7 @@ begin
                 end
           else
             begin
-              If (_row_bckg = NULL) then
+              If (_row_bckg = BYTE_NULL) then
                 begin
                   _row_bckg  := pattern_row_bckg_m;
                   _row_bckg2 := pattern_bckg;
@@ -540,7 +543,7 @@ begin
                    1..
                    fixed_note_flag+
                    12*8+1: show_str(08+pos3[(temp2-PRED(chan_pos))*4-3],10+temp1,note_layout[chunk.note-fixed_note_flag]+' ',HI(attr));
-                   NULL:      show_str(08+pos3[(temp2-PRED(chan_pos))*4-3],10+temp1,'þþþ ',HI(attr));
+                   BYTE_NULL:      show_str(08+pos3[(temp2-PRED(chan_pos))*4-3],10+temp1,'þþþ ',HI(attr));
                  end;
 
               1: Case chunk.note of
@@ -550,7 +553,7 @@ begin
                    1..
                    fixed_note_flag+
                    12*8+1: show_str(08+pos3[(temp2-PRED(chan_pos))*4-3],10+temp1,note_layout[chunk.note-fixed_note_flag]+' ',HI(attr));
-                   NULL:   show_str(08+pos3[(temp2-PRED(chan_pos))*4-3],10+temp1,'อออ ',HI(attr));
+                   BYTE_NULL:   show_str(08+pos3[(temp2-PRED(chan_pos))*4-3],10+temp1,'อออ ',HI(attr));
                  end;
 
               2: Case chunk.note of
@@ -560,7 +563,7 @@ begin
                    1..
                    fixed_note_flag+
                    12*8+1: show_str(08+pos3[(temp2-PRED(chan_pos))*4-3],10+temp1,note_layout[chunk.note-fixed_note_flag]+' ',HI(attr));
-                   NULL:      show_str(08+pos3[(temp2-PRED(chan_pos))*4-3],10+temp1,'^^๚ ',HI(attr));
+                   BYTE_NULL:      show_str(08+pos3[(temp2-PRED(chan_pos))*4-3],10+temp1,'^^๚ ',HI(attr));
                  end;
             end;
 
@@ -660,9 +663,9 @@ begin
              15: temps := '~๔~'+ExpStrR(Num2str(temp1,10),2,' ')+'~ ~';
            end;
 
-	  If opl3_channel_recording_mode and opl3_record_channel[temp1] then
+      If opl3_channel_recording_mode and opl3_record_channel[temp1] then
         chan_attr := chanrec_indicator_attr[_generic_blink_event_flag]
-	  else chan_attr := pattern_bckg+pattern_border;
+      else chan_attr := pattern_bckg+pattern_border;
 
       show_cstr(08+(temp1-PRED(chan_pos)-1)*15,09,temps,
                 chan_attr,
@@ -685,19 +688,19 @@ begin
                                    scrollbar_bckg+scrollbar_text,
                                    scrollbar_bckg+scrollbar_2nd_mark)
       else
-        scroll_pos4 := vscroll_bar(MAX_COLUMNS-1,08,MAX_PATTERN_ROWS+4,1,1,$0ff,
+        scroll_pos4 := vscroll_bar(MAX_COLUMNS-1,08,MAX_PATTERN_ROWS+4,1,1,BYTE_NULL,
                                    scrollbar_bckg+scrollbar_text,
                                    scrollbar_bckg+scrollbar_mark);
     end
   else
     begin
-      scroll_pos2 := vscroll_bar(MAX_COLUMNS-2,08,MAX_PATTERN_ROWS+4,1,1,$0ff,
+      scroll_pos2 := vscroll_bar(MAX_COLUMNS-2,08,MAX_PATTERN_ROWS+4,1,1,BYTE_NULL,
                                  scrollbar_bckg+scrollbar_text,
                                  scrollbar_bckg+scrollbar_mark);
-      scroll_pos3 := hscroll_bar(MAX_COLUMNS-17,MAX_PATTERN_ROWS+12,16,1,1,$0ff,
+      scroll_pos3 := hscroll_bar(MAX_COLUMNS-17,MAX_PATTERN_ROWS+12,16,1,1,BYTE_NULL,
                                  scrollbar_bckg+scrollbar_text,
                                  scrollbar_bckg+scrollbar_mark);
-      scroll_pos4 := vscroll_bar(MAX_COLUMNS-1,08,MAX_PATTERN_ROWS+4,1,1,$0ff,
+      scroll_pos4 := vscroll_bar(MAX_COLUMNS-1,08,MAX_PATTERN_ROWS+4,1,1,BYTE_NULL,
                                  scrollbar_bckg+scrollbar_text,
                                  scrollbar_bckg+scrollbar_mark);
     end;
@@ -711,6 +714,7 @@ var
 
 procedure PATTERN_position_preview(pattern,line,channel,mode: Byte);
 begin
+  _debug_str_ := 'IPATTERN.INC:PATTERN_position_preview';
   If (mode = 0) then
     begin
       old_pattern_patt := pattern_patt;
@@ -740,7 +744,7 @@ begin
            PATTERN_ORDER_page_refresh(pattord_page);
            PATTERN_page_refresh(pattern_page);
          end
-       else If (mode = NULL) then
+       else If (mode = BYTE_NULL) then
               begin
                 pattern_patt := old_pattern_patt;
                 pattern_page := old_pattern_page;
@@ -761,6 +765,7 @@ var
 
 procedure update_trace;
 begin
+  _debug_str_ := 'IPATTERN.INC:update_trace';
   space_pressed := scankey($39); { SPACE }
   If (play_status = isPlaying) then
     If (last_order <> current_order) or
@@ -791,6 +796,8 @@ end;
 
 procedure update_without_trace;
 begin
+  If _debug_ then
+    _debug_str_ := 'IPATTERN.INC:update_without_trace';
   If (play_status = isPlaying) then
     If (last_order <> current_order) or
        (last_pattern <> current_pattern) or
@@ -829,10 +836,11 @@ end;
 label _end;
 
 begin
+  _debug_str_ := 'IPATTERN.INC:PATTERN_trace';
   If (play_status = isStopped) then EXIT;
-  last_order := NULL;
-  last_pattern := NULL;
-  last_line := NULL;
+  last_order := BYTE_NULL;
+  last_pattern := BYTE_NULL;
+  last_line := BYTE_NULL;
 
   HideCursor;
   old_pattord_page := pattord_page;
@@ -871,19 +879,23 @@ begin
               end;
 
     Case fkey2 of
-      kCtLbr: If (_4op_to_test = 0) then
-                If (current_inst > 1) then
-                  begin
-                    Dec(current_inst);
-                    instrum_page := current_inst;
-                  end;
+      kCtLbr: If NOT shift_pressed then
+                If (_4op_to_test = 0) then
+                  If (current_inst > 1) then
+                    begin
+                      Dec(current_inst);
+                      instrum_page := current_inst;
+                      keyboard_reset_buffer;
+                    end;
 
-      kCtRbr: If (_4op_to_test = 0) then
-                If (current_inst < 255) then
-                  begin
-                    Inc(current_inst);
-                    instrum_page := current_inst;
-                  end;
+      kCtRbr: If NOT shift_pressed then
+                If (_4op_to_test = 0) then
+                  If (current_inst < 255) then
+                    begin
+                      Inc(current_inst);
+                      instrum_page := current_inst;
+                      keyboard_reset_buffer;
+                    end;
 
       kNPastr: If NOT (opl3_channel_recording_mode and (play_status <> isStopped)) then
                  begin
@@ -1223,7 +1235,7 @@ begin
                    debugging := FALSE;
                    stop_playing;
                    nope := TRUE;
-                   FillData(ai_table,SizeOf(ai_table),0);
+                   FillChar(ai_table,SizeOf(ai_table),0);
                  end;
       kF8,
       kAltF8,
@@ -1252,7 +1264,6 @@ begin
                                   no_sync_playing := TRUE;
                               end;
                  end;
-
       kF9,
       kAltF9,
       kShF9:   If play_single_patt and (play_status = isPaused) then
@@ -1283,6 +1294,7 @@ begin
     end;
 _end:
     emulate_screen;
+    // keyboard_reset_buffer;
   until (nope or (play_status = isStopped)) or _force_program_quit;
 
   PATTERN_trace := fkey2;
@@ -1323,6 +1335,8 @@ var
   result: Boolean;
 
 begin
+  If _debug_ then
+    _debug_str_ := 'IPATTERN.INC:PATTERN_edit:correct_range';
   result := FALSE;
   Case fxdef of
     ef_Arpeggio,
@@ -1447,6 +1461,7 @@ var
   chunk: tCHUNK;
 
 begin
+  _debug_str_ := 'IPATTERN.INC:PATTERN_edit:copy_object';
   If clipboard.object_type in [
        objPatternDef,objPatternTable,
        objInstrument,objInstrumentBank,
@@ -1515,6 +1530,7 @@ var
   chunk: tCHUNK;
 
 begin
+  _debug_str_ := 'IPATTERN.INC:PATTERN_edit:paste_object';
   Case clipboard.object_type of
     objNote:
       begin
@@ -1645,6 +1661,7 @@ var
   chunk: tCHUNK;
 
 begin
+  _debug_str_ := 'IPATTERN.INC:PATTERN_edit:paste_object_alt';
   Case clipboard.object_type of
     objNote:
       begin
@@ -1709,7 +1726,8 @@ begin FX := PRED(Pos(UpCase(chr),fx_digits)); end;
 label _end;
 
 begin
-  fkey_X := WORD(NOT 0);
+  _debug_str_ := 'IPATTERN.INC:PATTERN_edit';
+  fkey_X := WORD_NULL;
   Repeat
     If (page > PRED(songdata.patt_len)) then
       page := PRED(songdata.patt_len);
@@ -1797,7 +1815,7 @@ begin
     else GotoXY(08+pos3[hpos],11+PRED(MAX_PATTERN_ROWS DIV 2));
     
     If tracing then fkey := PATTERN_trace
-	else ThinCursor;
+    else ThinCursor;
 
     nope := FALSE;
     If (scankey(SC_LCTRL) or scankey(SC_RCTRL)) { CTRL } and
@@ -1850,13 +1868,15 @@ begin
 
                          (fkey = kCtENTR)))
     then begin
-           If marking and NOT (((fkey = kENTER) and shift_pressed) or (fkey = kF1)) then
+           If marking and
+              NOT (((fkey = kENTER) and shift_pressed) or
+                  (fkey = kF1)) then
              begin
                old_block_chan_pos := chan_pos;
                old_block_patt_hpos := hpos;
                old_block_patt_page := page;
                marking := FALSE;
-               fkey := $0ffff;
+               fkey := WORD_NULL;
                PATTERN_ORDER_page_refresh(pattord_page);
                PATTERN_page_refresh(page);
                If (command_typing <> 0) then GotoXY(08+pos4[hpos],11+PRED(MAX_PATTERN_ROWS DIV 2))
@@ -1872,7 +1892,7 @@ begin
              old_hpos := hpos;
              old_page := page;
              marking := TRUE;
-             fkey := $0ffff;
+             fkey := WORD_NULL;
              block_xstart := count_channel(hpos);
              block_ystart := page;
            end;
@@ -1880,20 +1900,24 @@ begin
 
     Case fkey of
       kCHlbrk,
-      kCtLbr: If (_4op_to_test = 0) then
-                If (current_inst > 1) then
-                  begin
-                    Dec(current_inst);
-                    instrum_page := current_inst;
-                  end;
+      kCtLbr: If NOT shift_pressed then
+                If (_4op_to_test = 0) then
+                  If (current_inst > 1) then
+                    begin
+                      Dec(current_inst);
+                      instrum_page := current_inst;
+                      keyboard_reset_buffer;
+                    end;
 
       kCHrbrk,
-      kCtRbr: If (_4op_to_test = 0) then
-                If (current_inst < 255) then
-                  begin
-                    Inc(current_inst);
-                    instrum_page := current_inst;
-                  end;
+      kCtRbr: If NOT shift_pressed then
+                If (_4op_to_test = 0) then
+                  If (current_inst < 255) then
+                    begin
+                      Inc(current_inst);
+                      instrum_page := current_inst;
+                      keyboard_reset_buffer;
+                    end;
 
       kLEFT:   If marking then
                  begin
@@ -2166,7 +2190,7 @@ begin
       kSPACE:  If shift_pressed then
                  begin
                    midiboard := NOT midiboard;
-                   fkey := $0ffff;
+                   fkey := WORD_NULL;
                  end
                else
                  If NOT midiboard then
@@ -2313,7 +2337,7 @@ begin
 
       kCtrlK:  begin
                  get_chunk(pattern,pattern_page,count_channel(hpos),chunk);
-                 chunk.note := NULL;
+                 chunk.note := BYTE_NULL;
                  put_chunk(pattern,pattern_page,count_channel(hpos),chunk);
                  If page < PRED(songdata.patt_len) then Inc(page)
                  else If cycle_pattern then page := 0;                 
@@ -2481,7 +2505,7 @@ begin
       kCtrlV:  If scankey($0f) { TAB } then
                  begin
                    temp := PATTERN_LIST_alt(pattern_list__page);
-                   If (temp <> NULL) then
+                   If (temp <> BYTE_NULL) then
                      If (_patts_marked <> 0) then
                        begin
                          For temp := 0 to PRED(max_patterns) do
@@ -2589,7 +2613,7 @@ begin
                        clipboard.object_type := objMarkedBlock
                      else If (tCOPY_OBJECT(temp1) <> objMarkedBlock) then
                             clipboard.object_type := tCOPY_OBJECT(temp1)
-                          else GOTO _end;//CONTINUE;
+                          else GOTO _end; //CONTINUE;
 
                      old_block_chan_pos := chan_pos;
                      old_block_patt_hpos := hpos;
@@ -2667,7 +2691,6 @@ begin
                           calibrate_player(calc_following_order(0),0,FALSE,FALSE);
                    no_status_refresh := FALSE;
                  end;
-
 
       kF1:     begin
                  If marking then temps := 'block_operations'
@@ -2798,7 +2821,7 @@ begin
                      end;
                  end
                else If NOT play_single_patt and
-                       (calc_pattern_pos(pattern) <> NULL) then
+                       (calc_pattern_pos(pattern) <> BYTE_NULL) then
                       begin
                         fade_out_playback(FALSE);
                         calibrate_player(calc_pattern_pos(pattern),pattern_page,TRUE,TRUE);
@@ -2817,7 +2840,7 @@ begin
                               end;
                           end;
                       end
-                    else If (calc_pattern_pos(pattern) = NULL) then
+                    else If (calc_pattern_pos(pattern) = BYTE_NULL) then
                            begin
                              fade_out_playback(FALSE);
                              play_single_patt := TRUE;
@@ -2865,7 +2888,7 @@ begin
                  begin
                    fade_out_playback(FALSE);
                    stop_playing;
-                   FillData(ai_table,SizeOf(ai_table),0);
+                   FillChar(ai_table,SizeOf(ai_table),0);
                  end;
       kF8,
       kAltF8,
@@ -2905,7 +2928,7 @@ begin
                                   end;
                               end;
 
-                   isStopped: If (calc_pattern_pos(pattern) <> NULL) then
+                   isStopped: If (calc_pattern_pos(pattern) <> BYTE_NULL) then
                                 begin
                                   debugging := FALSE;
                                   If (NOT nosync_by_default and (fkey = kAltF8)) or
@@ -2981,7 +3004,7 @@ begin
                                   end;
                               end;
 
-                   isStopped: If (calc_pattern_pos(pattern) <> NULL) then
+                   isStopped: If (calc_pattern_pos(pattern) <> BYTE_NULL) then
                                 begin
                                   debugging := FALSE;
                                   calibrate_player(calc_pattern_pos(pattern),pattern_page,TRUE,FALSE);
@@ -3054,7 +3077,7 @@ begin
                                   end;
                               end;
 
-                   isStopped: If (calc_pattern_pos(pattern) <> NULL) then
+                   isStopped: If (calc_pattern_pos(pattern) <> BYTE_NULL) then
                                 begin
                                   debugging := FALSE;
                                   If (NOT nosync_by_default and (fkey = kAltF9)) or
@@ -3130,7 +3153,7 @@ begin
                                   end;
                               end;
 
-                   isStopped: If (calc_pattern_pos(pattern) <> NULL) then
+                   isStopped: If (calc_pattern_pos(pattern) <> BYTE_NULL) then
                                 begin
                                   debugging := FALSE;
                                   calibrate_player(calc_pattern_pos(pattern),pattern_page,TRUE,FALSE);
@@ -3164,9 +3187,12 @@ begin
                                   end;
                               end;
                  end;
-
       kF10,
-      kESC:    begin QUIT_request; If (fkey = kESC) then nope := TRUE; end;
+      kESC:    begin
+                 QUIT_request;
+                 If (fkey = kESC) then nope := TRUE;
+               end;
+
       kENTER:  If NOT shift_pressed then nope := TRUE
                else If marking then
                       For temp2 := block_x0 to block_x1 do
@@ -3192,7 +3218,9 @@ begin
       else nope := TRUE;
     end;
 
-    If (nope or (fkey = kSPACE) or (fkey = kWeird)) and midiboard then
+    If (nope or (fkey = kSPACE) or
+                (fkey = kWeird)) and
+       midiboard then
       begin
         nope := FALSE;
         flag := FALSE;
@@ -3212,10 +3240,12 @@ begin
                 end;
 
         fkey_X := fkey;
-        If ((fkey = kSPACE) or (((fkey = kWeird) or (flag AND (count_pos(hpos) = 0))) and
-                               NOT ((fkey = kWeird) and (count_pos(hpos) >= 2)) and
-                               NOT (is_4op_chan(count_channel(hpos)) and
-                                   (count_channel(hpos) in [1,3,5,10,12,14])))) then
+        If ((fkey = kSPACE) or
+            (((fkey = kWeird) or
+              (flag AND (count_pos(hpos) = 0))) and
+               NOT ((fkey = kWeird) and (count_pos(hpos) >= 2)) and
+                    NOT (is_4op_chan(count_channel(hpos)) and
+                        (count_channel(hpos) in [1,3,5,10,12,14])))) then
           begin
             If (fkey = kSPACE) or (fkey = kWeird) or
                (temp1+12*(current_octave-1) in [1..12*8+1]) then
@@ -3247,14 +3277,14 @@ begin
                         else chunk.instr_def := 0;
                       end
                     else begin
-                           chunk.note := NULL;
+                           chunk.note := BYTE_NULL;
                            chunk.instr_def := 0;
                          end;
                     put_chunk(pattern,page,count_channel(hpos),chunk);
                     fkey := kSPACE;
                   end;
 
-                If (songdata.pattern_order[pattern] <> NULL) and
+                If (songdata.pattern_order[pattern] <> BYTE_NULL) and
                    NOT ((play_status <> isStopped) and (fkey_X = kSPACE)) then
                   begin
                     status_backup.replay_forbidden := replay_forbidden;
@@ -3311,7 +3341,7 @@ begin
                     play_status := isStopped;
                     PATTERN_ORDER_page_refresh(pattord_page);
                     PATTERN_page_refresh(page);
-                    keyboard_wait_until_key_released;
+                    If (fkey_X <> kSPACE) then wait_until_key_released;
 
                     If (status_backup.play_status <> isStopped) then
                       begin
@@ -3401,10 +3431,10 @@ begin
              debugging := FALSE;
            end;
 
-    If nope and NOT midiboard and (count_pos(hpos) = 0) and
-       NOT (is_4op_chan(count_channel(hpos)) and
-           (count_channel(hpos) in [1,3,5,10,12,14])) and
-       (UpCase(CHAR(LO(fkey))) in ['A',UpCase(b_note),'C'..'G']) then
+     If nope and NOT midiboard and (count_pos(hpos) = 0) and
+        NOT (is_4op_chan(count_channel(hpos)) and
+            (count_channel(hpos) in [1,3,5,10,12,14])) and
+        (UpCase(CHAR(LO(fkey))) in ['A',UpCase(b_note),'C'..'G']) then
       begin
         nope := FALSE;
         is_setting.append_enabled := FALSE;
@@ -3415,7 +3445,8 @@ begin
         is_setting.terminate_keys[3] := kTAB;
 
         Repeat
-          tstr := InputStr(tstr,08+pos3[1+(count_channel(hpos)-PRED(chan_pos)-1)*4],11+PRED(MAX_PATTERN_ROWS DIV 2),3,3,
+               tstr := InputStr(tstr,08+pos3[1+(count_channel(hpos)-PRED(chan_pos)-1)*4],
+                                11+PRED(MAX_PATTERN_ROWS DIV 2),3,3,
                            pattern_input_bckg+pattern_input,
                            pattern_input_warn+pattern_input);
           is_setting.append_enabled := TRUE;
@@ -3501,7 +3532,7 @@ begin
                        else begin
                               current_inst := chunk.instr_def;
                               instrum_page := current_inst;
-                              reset_4op_to_test(1,NULL);
+                              reset_4op_to_test(1,BYTE_NULL);
                             end;
                    end;
           If nope and linefeed and
@@ -3603,7 +3634,8 @@ begin
 
       If NOT marking and nope then
         If (command_typing <> 0) and
-           ((count_pos(hpos) > 0) and (UpCase(CHAR(LO(fkey))) in ['0'..'9','A'..'Z','&','%','!','@','=','#','$','~','^'])) then
+           ((count_pos(hpos) > 0) and
+            (UpCase(CHAR(LO(fkey))) in ['0'..'9','A'..'Z','&','%','!','@','=','#','$','~','^'])) then
           begin
             Case count_pos(hpos) of
               1: If NOT (UpCase(CHAR(LO(fkey))) in ['1'..'9']) or
@@ -3644,12 +3676,11 @@ begin
                               else begin
                                      current_inst := chunk.instr_def;
                                      instrum_page := current_inst;
-                                     reset_4op_to_test(1,NULL);
+                                     reset_4op_to_test(1,BYTE_NULL);
                                    end;
                           end
                         else nope := FALSE;
                       end;
-
               4,5,
               6: begin
                    nope := TRUE;
@@ -3720,10 +3751,10 @@ begin
                    end;
           end;
 
-    fkey_X := WORD(NOT 0);
-    keyboard_reset_buffer;
+    fkey_X := WORD_NULL;
 _end:
     emulate_screen;
+    // keyboard_reset_buffer;
   until (nope and ((fkey = kENTER) or (fkey = kESC) or (fkey = kF10))) or _force_program_quit;
 
   PATTERN_ORDER_page_refresh(pattord_page);

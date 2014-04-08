@@ -1,6 +1,3 @@
-{
-    Functions for operating with normal strings
-}
 unit StringIO;
 {$PACKRECORDS 1}
 interface
@@ -8,6 +5,8 @@ interface
 type
   characters = Set of Char;
 
+function byte2hex(value: Byte): String;
+function byte2dec(value: Byte): String;
 function Capitalize(str: String): String;
 function Upper(str: String): String;
 function Lower(str: String): String;
@@ -68,15 +67,86 @@ function PathOnly(path: String): String;
 function NameOnly(path: String): String;
 function BaseNameOnly(path: String): String;
 function ExtOnly(path: String): String;
-function byte2hex(value: Byte): String;
-function byte2dec(value: Byte): String;
 
 implementation
 
 uses
   DOS,
-  AdT2keyb,Adt2vscr,AdT2unit,
+  AdT2sys,AdT2keyb,Adt2vscr,AdT2unit,
   TxtScrIO;
+
+function byte2hex(value: Byte): String; assembler;
+
+const
+  data: array[0..15] of char = '0123456789ABCDEF';
+
+asm
+        push    ecx
+        push    esi
+        push    edi
+        mov     edi,@result
+        lea     ebx,[data]
+        mov     al,2
+        stosb
+        mov     al,value
+        xor     ah,ah
+        mov     cl,16
+        div     cl
+        xlat
+        stosb
+        mov     al,ah
+        xlat
+        stosb
+        pop     edi
+        pop     esi
+        pop     ecx
+end;
+
+function byte2dec(value: Byte): String; assembler;
+
+const
+  data: array[0..9] of char = '0123456789';
+
+asm
+        push    ebx
+        push    ecx
+        push    edx
+        push    esi
+        push    edi
+        mov     edi,@result
+        lea     ebx,[data]
+        mov     al,value
+        xor     ah,ah
+        mov     cl,100
+        div     cl
+        mov     ch,ah
+        xchg    ah,al
+        or      ah,ah
+        jz      @@1
+        mov     al,3
+        stosb
+        xchg    ah,al
+        xlat
+        stosb
+        mov     al,ch
+        jmp     @@2
+@@1:    mov     al,2
+        stosb
+        mov     al,value
+@@2:    xor     ah,ah
+        mov     cl,10
+        div     cl
+        xlat
+        stosb
+        mov     al,ah
+        xlat
+        stosb
+        pop     edi
+        pop     esi
+        pop     edx
+        pop     ecx
+        pop     ebx
+end;
 
 function Capitalize(str: String): String; assembler;
 asm
@@ -84,7 +154,7 @@ asm
         push    esi
         push    edi
         mov     esi,[str]
-        mov     edi,@result { [@result] }
+        mov     edi,@result
         mov     al,[esi]
         inc     esi
         mov     [edi],al
@@ -525,6 +595,7 @@ end;
 label _end;
 
 begin { InputStr }
+  _debug_str_ := 'STRINGIO.PAS:InputStr';
   s := Copy(s,1,ln);
   If (is_environment.locate_pos > ln1) then
     is_environment.locate_pos := ln1;
@@ -543,8 +614,8 @@ begin { InputStr }
   s1 := s;
   If (BYTE(s1[0]) > ln1) then s1[0] := CHR(ln1);
 
-  ShowStr(v_ofs^,xint,y,ExpStrR('',ln1,' '),atr1);
-  ShowStr(v_ofs^,xint,y,FilterStr2(s1,is_setting.char_filter,'_'),atr2);
+  ShowStr(screen_ptr^,xint,y,ExpStrR('',ln1,' '),atr1);
+  ShowStr(screen_ptr^,xint,y,FilterStr2(s1,is_setting.char_filter,'_'),atr2);
   for1st := TRUE;
 
   Repeat
@@ -557,31 +628,31 @@ begin { InputStr }
 
     If appn and for1st then
       begin
-        ShowStr(v_ofs^,xint,y,ExpStrR(FilterStr2(s1,is_setting.char_filter,'_'),ln1,' '),atr1);
+        ShowStr(screen_ptr^,xint,y,ExpStrR(FilterStr2(s1,is_setting.char_filter,'_'),ln1,' '),atr1);
         for1st := FALSE;
       end;
 
     If (s2 <> s1) then
-      ShowStr(v_ofs^,xint,y,ExpStrR(FilterStr2(s1,is_setting.char_filter,'_'),ln1,' '),atr1);
+      ShowStr(screen_ptr^,xint,y,ExpStrR(FilterStr2(s1,is_setting.char_filter,'_'),ln1,' '),atr1);
 
     If (ln1 < ln) then
       If (cloc-xloc > 0) and (Length(s) > 0) then
-        ShowStr(v_ofs^,xint,y,'',(attr AND $0f0)+$0f)
+        ShowStr(screen_ptr^,xint,y,'',(attr AND $0f0)+$0f)
       else If (cloc-xloc = 0) and (Length(s) <> 0) then
-             ShowStr(v_ofs^,xint,y,s[1],attr)
+             ShowStr(screen_ptr^,xint,y,s[1],attr)
            else
-             ShowStr(v_ofs^,xint,y,' ',atr1);
+             ShowStr(screen_ptr^,xint,y,' ',atr1);
 
     If (ln1 < ln) then
       If (cloc-xloc+ln1 < Length(s)) then
-        ShowStr(v_ofs^,xint+ln1-1,y,'',(attr AND $0f0)+$0f)
+        ShowStr(screen_ptr^,xint+ln1-1,y,'',(attr AND $0f0)+$0f)
       else If (cloc-xloc+ln1 = Length(s)) then
-             ShowStr(v_ofs^,xint+ln1-1,y,FilterStr2(s[Length(s)],is_setting.char_filter,'_'),attr)
+             ShowStr(screen_ptr^,xint+ln1-1,y,FilterStr2(s[Length(s)],is_setting.char_filter,'_'),attr)
            else
-             ShowStr(v_ofs^,xint+ln1-1,y,' ',atr1);
+             ShowStr(screen_ptr^,xint+ln1-1,y,' ',atr1);
 
     GotoXY(x+xloc,y);
-    if keypressed then key := getkey else GOTO _end;
+    If keypressed then key := getkey else GOTO _end;
     If LookupKey(key,is_setting.terminate_keys,50) then qflg := TRUE;
 
     If NOT qflg then
@@ -723,9 +794,9 @@ begin { InputStr }
       end;
 _end:
     emulate_screen;
+    // keyboard_reset_buffer;
   until qflg;
 
-//  SetCursor(cur);
   If (cloc = 0) then is_environment.locate_pos := 1
   else is_environment.locate_pos := cloc;
   is_environment.keystroke := key;
@@ -743,7 +814,7 @@ asm
         push    edx
         push    esi
         push    edi
-        mov     [LastW], 0 { FPC doesn't clean this up }
+        mov     [LastW],0 { FPC doesn't clean this up }
         xor     eax,eax
         xor     ecx,ecx
         xor     ebx,ebx
@@ -854,7 +925,7 @@ asm
         mov     ax,LastW
         sub     ax,cx
         add     cx,ax
-        movsx   eax,ax { AAARGHHHH! I hunted for this 2 days! why it works with TMT? dunno... }
+        movsx   eax,ax
         sub     esi,eax
         dec     esi
         jmp     @@1
@@ -894,79 +965,6 @@ begin
   FSplit(path,dir,name,ext);
   Delete(ext,1,1);
   ExtOnly := ext;
-end;
-
-function byte2hex(value: Byte): String; assembler;
-
-const
-  data: array[0..15] of char = '0123456789ABCDEF';
-
-  asm
-        push    ecx
-        push    esi
-        push    edi
-        mov     edi,@result
-        lea     ebx,[data]
-        mov     al,2
-        stosb
-        mov     al,value
-        xor     ah,ah
-        mov     cl,16
-        div     cl
-        xlat
-        stosb
-        mov     al,ah
-        xlat
-        stosb
-        pop     edi
-        pop     esi
-        pop     ecx
-end;
-
-function byte2dec(value: Byte): String; assembler;
-
-const
-  data: array[0..9] of char = '0123456789';
-
-asm
-        push    ebx
-        push    ecx
-        push    edx
-        push    esi
-        push    edi
-        mov     edi,@result
-        lea     ebx,[data]
-        mov     al,value
-        xor     ah,ah
-        mov     cl,100
-        div     cl
-        mov     ch,ah
-        xchg    ah,al
-        or      ah,ah
-        jz      @@1
-        mov     al,3
-        stosb
-        xchg    ah,al
-        xlat
-        stosb
-        mov     al,ch
-        jmp     @@2
-@@1:    mov     al,2
-        stosb
-        mov     al,value
-@@2:    xor     ah,ah
-        mov     cl,10
-        div     cl
-        xlat
-        stosb
-        mov     al,ah
-        xlat
-        stosb
-        pop     edi
-        pop     esi
-        pop     edx
-        pop     ecx
-        pop     ebx
 end;
 
 begin

@@ -3,10 +3,17 @@ unit AdT2unit;
 interface
 
 const
-  MAX_SDL_IRQ_FREQ = 1000;
+  MAX_IRQ_FREQ = 1000;
 
 const
+  slide_ticks: Longint = 0;
+  reset_slide_ticks: Boolean = FALSE;
+  blink_ticks: Longint = 0;
+  blink_flag: Boolean = FALSE;
+  
+const
   _force_program_quit: Boolean = FALSE;
+  _realtime_gfx_no_update: Boolean = FALSE;
   _emulate_screen_without_delay: Boolean = FALSE;
   _update_sdl_screen: Boolean = FALSE;
   _generic_blink_event_flag: Boolean = FALSE;
@@ -14,7 +21,7 @@ const
   _name_scrl_shift: Byte = 0;
   _name_scrl_pending_frames: Longint = 0;
   _cursor_blink_pending_frames: Longint = 0;
-  
+
 {$i typconst.inc}
 const
   IRQ_freq:          Longint   = 50;
@@ -28,9 +35,9 @@ const
   pattern_break:     Boolean   = FALSE;
   pattern_delay:     Boolean   = FALSE;
   next_line:         Byte      = 0;
-  start_order:       Byte      = NULL;
-  start_pattern:     Byte      = NULL;
-  start_line:        Byte      = NULL;
+  start_order:       Byte      = BYTE_NULL;
+  start_pattern:     Byte      = BYTE_NULL;
+  start_line:        Byte      = BYTE_NULL;
   replay_forbidden:  Boolean   = TRUE;
   single_play:       Boolean   = FALSE;
   calibrating:       Boolean   = FALSE;
@@ -50,7 +57,7 @@ const
   seconds_counter: Longint = 0;
   hundereds_counter: Longint = 0;
   really_no_status_refresh: Boolean = FALSE;
- 
+
 const
   keyoff_flag        = $080;
   fixed_note_flag    = $090;
@@ -170,8 +177,8 @@ var
   backup: tBACKUP;
 
 var
-  song_timer,timer_temp: Word;
-  song_timer_tenths: Word;
+  song_timer,timer_temp: Longint;
+  song_timer_tenths: Longint;
   ticks,tick0,tickD,tickXF: Longint;
   time_playing: Real;
 
@@ -204,11 +211,8 @@ function concw(Lo,Hi: Byte): Word;
 function ins_parameter(ins,param: Byte): Byte;
 function scale_volume(volume,scale_factor: Byte): Byte;
 function _macro_speedup: Word;
-
 procedure calibrate_player(order,line: Byte; status_filter: Boolean;
                            line_dependent: Boolean);
-procedure FillData(var data; size: Longint; filler: Byte);
-
 procedure update_timer(Hz: Longint);
 procedure key_off(chan: Byte);
 procedure release_sustaining_sound(chan: Byte);
@@ -219,6 +223,7 @@ procedure update_carrier_adsrw(chan: Byte);
 procedure update_fmpar(chan: Byte);
 procedure reset_chan_data(chan: Byte);
 procedure poll_proc;
+procedure macro_poll_proc;
 procedure init_buffers;
 procedure init_player;
 procedure reset_player;
@@ -230,12 +235,7 @@ procedure set_global_volume;
 procedure set_ins_data(ins,chan: Byte);
 procedure init_timer_proc;
 procedure done_timer_proc;
-procedure status_refresh;
-procedure decay_bars_refresh;
-
-procedure synchronize;
-
-procedure move2screen;
+procedure realtime_gfx_poll_proc;
 
 function  hscroll_bar(x,y: Byte; size: Byte; len1,len2,pos: Word;
                       atr1,atr2: Byte): Byte;
@@ -245,10 +245,11 @@ function  vscroll_bar(x,y: Byte; size: Byte; len1,len2,pos: Word;
 procedure centered_frame(var xstart,ystart: Byte; hsize,vsize: Byte;
                              name: String; atr1,atr2: Byte; border: String);
 
-
 procedure get_chunk(pattern,line,channel: Byte; var chunk: tCHUNK);
 procedure put_chunk(pattern,line,channel: Byte; chunk: tCHUNK);
 
+function  get_chanpos(var data; channels,scancode: Byte): Byte;
+function  get_chanpos2(var data; channels,scancode: Byte): Byte;
 function  count_channel(hpos: Byte): Byte;
 function  count_pos(hpos: Byte): Byte;
 function  calc_max_speedup(tempo: Byte): Word;
@@ -264,8 +265,8 @@ procedure init_songdata;
 procedure update_instr_data(ins: Byte);
 procedure load_instrument(var data; chan: Byte);
 
-function  min(value: Word; minimum: Word): Word;
-function  max(value: Word; maximum: Word): Word;
+function  min(value: Longint; minimum: Longint): Longint;
+function  max(value: Longint; maximum: Longint): Longint;
 
 const
   block_xstart: Byte = 1;
@@ -284,10 +285,9 @@ const
   slide_pos: Byte = 0;
   do_slide: Boolean = FALSE;
 
-var
-    ticklooper,macro_ticklooper: Longint;
-
-procedure macro_poll_proc;
+const
+  ticklooper: Longint = 0;
+  macro_ticklooper: Longint = 0;
 
 implementation
 
@@ -298,32 +298,17 @@ uses
 
 {$i realtime.inc}
 
-function nul_data(var data; size: Word): Boolean; assembler;
-asm
-        push    ecx
-        push    esi
-        xor     ecx,ecx
-        mov     esi,[data]
-        mov     cx,[size]
-@@1:    lodsb
-        cmp     al,0
-        jnz     @@2
-        loop    @@1
-        mov     al,TRUE
-        jmp     @@3
-@@2:    mov     al,FALSE
-@@3:    pop     esi
-        pop     ecx
-end;
-
 const
   FreqStart = $156;
   FreqEnd   = $2ae;
   FreqRange = FreqEnd-FreqStart;
 
 function nFreq(note: Byte): Word; assembler;
+
 const
-    Fnum: array[0..11] of Word = ($157,$16b,$181,$198,$1b0,$1ca,$1e5,$202,$220,$241,$263,$287);
+  Fnum: array[0..11] of Word = (
+    $157,$16b,$181,$198,$1b0,$1ca,$1e5,$202,$220,$241,$263,$287);
+
 asm
         push    ebx
         push    ecx
@@ -438,6 +423,12 @@ end; *)
 
 function calc_vibrato_shift(depth,position: Byte;
                              var direction: Byte): Word; assembler;
+
+const
+  vibr: array[0..31] of Byte = (
+    0,24,49,74,97,120,141,161,180,197,212,224,235,244,250,253,255,
+    253,250,244,235,224,212,197,180,161,141,120,97,74,49,24);
+
 asm
         push    ebx
         push    ecx
@@ -449,7 +440,7 @@ asm
         xor     bh,bh
         mov     dh,bl
         and     bx,1fh
-        mov     dl,byte ptr [@vibr+ebx]
+        mov     dl,byte ptr [vibr+ebx]
         mul     dl
         rol     ax,1
         xchg    ah,al
@@ -461,12 +452,7 @@ asm
         jne     @@1
         mov     cl,0
         mov     [ebx],cl
-        jmp     @@1
-
-@vibr:  db 0,24,49,74,97,120,141,161,180,197,212,224,235,244,250,253,255
-        db 253,250,244,235,224,212,197,180,161,141,120,97,74,49,24
-@@1:
-        pop     edx
+@@1:    pop     edx
         pop     ecx
         pop     ebx
 end;
@@ -571,30 +557,23 @@ asm
         add     esi,ecx
         mov     ecx,CHUNK_SIZE
         rep     movsb
-@@2:
-        pop     edi
+@@2:    pop     edi
         pop     esi
         pop     edx
         pop     ecx
         pop     ebx
 end;
 
-function min(value: Word; minimum: Word): Word; assembler;
-asm
-        mov     ax,[value]
-        cmp     ax,[minimum]
-        jae     @@1
-        mov     ax,[minimum]
-@@1:
+function min(value: Longint; minimum: Longint): Longint;
+begin
+  If (value > minimum) then min := value
+  else min := minimum;
 end;
 
-function max(value: Word; maximum: Word): Word; assembler;
-asm
-        mov     ax,[value]
-        cmp     ax,[maximum]
-        jbe     @@1
-        mov     ax,[maximum]
-@@1:
+function max(value: Longint; maximum: Longint): Longint;
+begin
+  If (value < maximum) then max := value
+  else max := maximum;
 end;
 
 function concw(lo,hi: Byte): Word; assembler;
@@ -621,9 +600,9 @@ begin
   If (Hz = 0) then begin TimerSetup(18); EXIT end
   else tempo := Hz;
   If (tempo = 18) and timer_fix then IRQ_freq := TRUNC((tempo+0.2)*20)
-  else IRQ_freq := 250;  
+  else IRQ_freq := 250;
   While (IRQ_freq MOD (tempo*_macro_speedup) <> 0) do Inc(IRQ_freq);
-  If (IRQ_freq > MAX_SDL_IRQ_FREQ) then IRQ_freq := MAX_SDL_IRQ_FREQ;
+  If (IRQ_freq > MAX_IRQ_FREQ) then IRQ_freq := MAX_IRQ_FREQ;
   TimerSetup(IRQ_freq);
 end;
 
@@ -640,16 +619,16 @@ begin
   opl3out(_instr[02]+_chan_m[chan],63);
   opl3out(_instr[03]+_chan_c[chan],63);
 
-  FillData(fmpar_table[chan].adsrw_car,
+  FillChar(fmpar_table[chan].adsrw_car,
            SizeOf(fmpar_table[chan].adsrw_car),0);
-  FillData(fmpar_table[chan].adsrw_mod,
+  FillChar(fmpar_table[chan].adsrw_mod,
            SizeOf(fmpar_table[chan].adsrw_mod),0);
 
   opl3out($0b0+_chan_n[chan],0);
-  opl3out(_instr[04]+_chan_m[chan],NULL);
-  opl3out(_instr[05]+_chan_c[chan],NULL);
-  opl3out(_instr[06]+_chan_m[chan],NULL);
-  opl3out(_instr[07]+_chan_c[chan],NULL);
+  opl3out(_instr[04]+_chan_m[chan],BYTE_NULL);
+  opl3out(_instr[05]+_chan_c[chan],BYTE_NULL);
+  opl3out(_instr[06]+_chan_m[chan],BYTE_NULL);
+  opl3out(_instr[07]+_chan_c[chan],BYTE_NULL);
 
   key_off(chan);
   event_table[chan].instr_def := 0;
@@ -668,7 +647,7 @@ var
   temp: Byte;
 
 begin
-  If (modulator <> NULL) then
+  If (modulator <> BYTE_NULL) then
     begin
       temp := modulator;
       If volume_scaling then
@@ -689,7 +668,7 @@ begin
       else modulator_vol[chan] := 63-modulator;
     end;
 
-  If (carrier <> NULL) then
+  If (carrier <> BYTE_NULL) then
     begin
       temp := carrier;
       If volume_scaling then
@@ -841,10 +820,10 @@ begin
   opl3out(_instr[03]+_chan_c[chan],63);
 
   opl3out($0b0+_chan_n[chan],0);
-  opl3out(_instr[04]+_chan_m[chan],NULL);
-  opl3out(_instr[05]+_chan_c[chan],NULL);
-  opl3out(_instr[06]+_chan_m[chan],NULL);
-  opl3out(_instr[07]+_chan_c[chan],NULL);
+  opl3out(_instr[04]+_chan_m[chan],BYTE_NULL);
+  opl3out(_instr[05]+_chan_c[chan],BYTE_NULL);
+  opl3out(_instr[06]+_chan_m[chan],BYTE_NULL);
+  opl3out(_instr[07]+_chan_c[chan],BYTE_NULL);
 
   key_off(chan);
   update_fmpar(chan);
@@ -861,10 +840,10 @@ begin
   opl3out(_instr[03]+_chan_c[chan],63);
 
   opl3out($0b0+_chan_n[chan],0);
-  opl3out(_instr[04]+_chan_m[chan],NULL);
-  opl3out(_instr[05]+_chan_c[chan],NULL);
-  opl3out(_instr[06]+_chan_m[chan],NULL);
-  opl3out(_instr[07]+_chan_c[chan],NULL);
+  opl3out(_instr[04]+_chan_m[chan],BYTE_NULL);
+  opl3out(_instr[05]+_chan_c[chan],BYTE_NULL);
+  opl3out(_instr[06]+_chan_m[chan],BYTE_NULL);
+  opl3out(_instr[07]+_chan_c[chan],BYTE_NULL);
 
   key_off(chan);
   update_fmpar(chan);
@@ -1133,7 +1112,7 @@ begin
   result := TRUE;
   For chan := 1 to PRED(current_chan) do
     If (loop_table[chan][current_line] <> 0) and
-       (loop_table[chan][current_line] <> NULL) then
+       (loop_table[chan][current_line] <> BYTE_NULL) then
       begin
         result := FALSE;
         BREAK;
@@ -1163,7 +1142,7 @@ begin
       effect_table2[chan] := effect_table2[chan] AND $0ff00;
       ftune_table[chan] := 0;
 
-      If (event.note = NULL) then
+      If (event.note = BYTE_NULL) then
         event.note := event_table[chan].note OR keyoff_flag
       else If (event.note in [fixed_note_flag+1..fixed_note_flag+12*8+1]) then
              event.note := event.note-fixed_note_flag;
@@ -1186,8 +1165,8 @@ begin
         end;
 
       If (event.instr_def <> 0) then
-        If NOT nul_data(songdata.instr_data[event.instr_def],
-                        INSTRUMENT_SIZE) then
+        If NOT Empty(songdata.instr_data[event.instr_def],
+                     INSTRUMENT_SIZE) then
           set_ins_data(event.instr_def,chan)
         else begin
                release_sustaining_sound(chan);
@@ -1196,23 +1175,23 @@ begin
 
       If NOT (event.effect_def in [ef_Vibrato,ef_ExtraFineVibrato,
                                    ef_VibratoVolSlide,ef_VibratoVSlideFine]) then
-        FillData(vibr_table[chan],SizeOf(vibr_table[chan]),0);
+        FillChar(vibr_table[chan],SizeOf(vibr_table[chan]),0);
 
       If NOT (event.effect_def2 in [ef_Vibrato,ef_ExtraFineVibrato,
                                     ef_VibratoVolSlide,ef_VibratoVSlideFine]) then
-        FillData(vibr_table2[chan],SizeOf(vibr_table2[chan]),0);
+        FillChar(vibr_table2[chan],SizeOf(vibr_table2[chan]),0);
 
       If NOT (event.effect_def in [ef_RetrigNote,ef_MultiRetrigNote]) then
-        FillData(retrig_table[chan],SizeOf(retrig_table[chan]),0);
+        FillChar(retrig_table[chan],SizeOf(retrig_table[chan]),0);
 
       If NOT (event.effect_def2 in [ef_RetrigNote,ef_MultiRetrigNote]) then
-        FillData(retrig_table2[chan],SizeOf(retrig_table2[chan]),0);
+        FillChar(retrig_table2[chan],SizeOf(retrig_table2[chan]),0);
 
       If NOT (event.effect_def in [ef_Tremolo,ef_ExtraFineTremolo]) then
-        FillData(trem_table[chan],SizeOf(trem_table[chan]),0);
+        FillChar(trem_table[chan],SizeOf(trem_table[chan]),0);
 
       If NOT (event.effect_def2 in [ef_Tremolo,ef_ExtraFineTremolo]) then
-        FillData(trem_table2[chan],SizeOf(trem_table2[chan]),0);
+        FillChar(trem_table2[chan],SizeOf(trem_table2[chan]),0);
 
       eLo  := LO(last_effect[chan]);
       eHi  := HI(last_effect[chan]);
@@ -1254,8 +1233,8 @@ begin
       If NOT (pattern_break and (next_line AND $0f0 = pattern_loop_flag)) and
              (current_order <> last_order) then
         begin
-          FillData(loopbck_table,SizeOf(loopbck_table),NULL);
-          FillData(loop_table,SizeOf(loop_table),NULL);
+          FillChar(loopbck_table,SizeOf(loopbck_table),BYTE_NULL);
+          FillChar(loop_table,SizeOf(loop_table),BYTE_NULL);
           last_order := current_order;
         end;
 
@@ -1423,21 +1402,21 @@ begin
           end;
 
         ef_SetCarrierVol:
-          set_ins_volume(NULL,63-event.effect,chan);
+          set_ins_volume(BYTE_NULL,63-event.effect,chan);
 
         ef_SetModulatorVol:
-          set_ins_volume(63-event.effect,NULL,chan);
+          set_ins_volume(63-event.effect,BYTE_NULL,chan);
 
         ef_SetInsVolume:
           If percussion_mode and (chan in [17..20]) then
-            set_ins_volume(63-event.effect,NULL,chan)
+            set_ins_volume(63-event.effect,BYTE_NULL,chan)
           else If (ins_parameter(voice_table[chan],10) AND 1 = 0) then
-                 set_ins_volume(NULL,63-event.effect,chan)
+                 set_ins_volume(BYTE_NULL,63-event.effect,chan)
                else set_ins_volume(63-event.effect,63-event.effect,chan);
 
         ef_ForceInsVolume:
           If percussion_mode and (chan in [17..20]) then
-            set_ins_volume(63-event.effect,NULL,chan)
+            set_ins_volume(63-event.effect,BYTE_NULL,chan)
           else set_ins_volume(scale_volume(ins_parameter(voice_table[chan],2) AND $3f,63-event.effect),63-event.effect,chan);
 
         ef_PositionJump:
@@ -1607,9 +1586,9 @@ begin
             ef_ex_PatternLoopRec:
               If (event.effect MOD 16 = 0) then
                 loopbck_table[chan] := current_line
-              else If (loopbck_table[chan] <> NULL) then
+              else If (loopbck_table[chan] <> BYTE_NULL) then
                      begin
-                       If (loop_table[chan][current_line] = NULL) then
+                       If (loop_table[chan][current_line] = BYTE_NULL) then
                          loop_table[chan][current_line] := event.effect MOD 16;
                        If (loop_table[chan][current_line] <> 0) then
                          begin
@@ -1617,7 +1596,7 @@ begin
                            next_line := pattern_loop_flag+chan;
                          end
                        else If (event.effect DIV 16 = ef_ex_PatternLoopRec) then
-                              loop_table[chan][current_line] := NULL;
+                              loop_table[chan][current_line] := BYTE_NULL;
                      end;
 
             ef_ex_MacroKOffLoop:
@@ -1962,21 +1941,21 @@ begin
           end;
 
         ef_SetCarrierVol:
-          set_ins_volume(NULL,63-event.effect2,chan);
+          set_ins_volume(BYTE_NULL,63-event.effect2,chan);
 
         ef_SetModulatorVol:
-          set_ins_volume(63-event.effect2,NULL,chan);
+          set_ins_volume(63-event.effect2,BYTE_NULL,chan);
 
         ef_SetInsVolume:
           If percussion_mode and (chan in [17..20]) then
-            set_ins_volume(63-event.effect2,NULL,chan)
+            set_ins_volume(63-event.effect2,BYTE_NULL,chan)
           else If (ins_parameter(voice_table[chan],10) AND 1 = 0) then
-                 set_ins_volume(NULL,63-event.effect2,chan)
+                 set_ins_volume(BYTE_NULL,63-event.effect2,chan)
                else set_ins_volume(63-event.effect2,63-event.effect2,chan);
 
         ef_ForceInsVolume:
           If percussion_mode and (chan in [17..20]) then
-            set_ins_volume(63-event.effect2,NULL,chan)
+            set_ins_volume(63-event.effect2,BYTE_NULL,chan)
           else set_ins_volume(scale_volume(ins_parameter(voice_table[chan],2) AND $3f,63-event.effect2),63-event.effect2,chan);
 
         ef_PositionJump:
@@ -2146,9 +2125,9 @@ begin
             ef_ex_PatternLoopRec:
               If (event.effect2 MOD 16 = 0) then
                 loopbck_table[chan] := current_line
-              else If (loopbck_table[chan] <> NULL) then
+              else If (loopbck_table[chan] <> BYTE_NULL) then
                      begin
-                       If (loop_table[chan][current_line] = NULL) then
+                       If (loop_table[chan][current_line] = BYTE_NULL) then
                          loop_table[chan][current_line] := event.effect2 MOD 16;
                        If (loop_table[chan][current_line] <> 0) then
                          begin
@@ -2156,7 +2135,7 @@ begin
                            next_line := pattern_loop_flag+chan;
                          end
                        else If (event.effect2 DIV 16 = ef_ex_PatternLoopRec) then
-                              loop_table[chan][current_line] := NULL;
+                              loop_table[chan][current_line] := BYTE_NULL;
                      end;
 
             ef_ex_MacroKOffLoop:
@@ -2553,7 +2532,7 @@ begin
   vHi := HI(temp);
   If (vHi-slide >= limit1) then temp := concw(vLo,vHi-slide)
   else temp := concw(vLo,limit1);
-  set_ins_volume(NULL,HI(temp),chan);
+  set_ins_volume(BYTE_NULL,HI(temp),chan);
   volume_table[chan] := temp;
 end;
 
@@ -2563,7 +2542,7 @@ begin
   vHi := HI(temp);
   If (vLo-slide >= limit2) then temp := concw(vLo-slide,vHi)
   else temp := concw(limit2,vHi);
-  set_ins_volume(LO(temp),NULL,chan);
+  set_ins_volume(LO(temp),BYTE_NULL,chan);
   volume_table[chan] := temp;
 end;
 
@@ -2603,7 +2582,7 @@ begin
   vHi := HI(temp);
   If (vHi+slide <= 63) then temp := concw(vLo,vHi+slide)
   else temp := concw(vLo,63);
-  set_ins_volume(NULL,HI(temp),chan);
+  set_ins_volume(BYTE_NULL,HI(temp),chan);
   volume_table[chan] := temp;
 end;
 
@@ -2613,7 +2592,7 @@ begin
   vHi := HI(temp);
   If (vLo+slide <= 63) then temp := concw(vLo+slide,vHi)
   else temp := concw(63,vHi);
-  set_ins_volume(LO(temp),NULL,chan);
+  set_ins_volume(LO(temp),BYTE_NULL,chan);
   volume_table[chan] := temp;
 end;
 
@@ -2643,9 +2622,9 @@ end;
 
 procedure global_volume_slide(up_speed,down_speed: Byte);
 begin
-  If (up_speed <> NULL) then
+  If (up_speed <> BYTE_NULL) then
     global_volume := max(global_volume+up_speed,63);
-  If (down_speed <> NULL) then
+  If (down_speed <> BYTE_NULL) then
     If (global_volume >= down_speed) then Dec(global_volume,down_speed)
     else global_volume := 0;
   set_global_volume;
@@ -2918,7 +2897,7 @@ begin
         ef_extended2+ef_fix2+ef_ex2_NoteDelay:
           If (notedel_table[chan] = 0) then
             begin
-              notedel_table[chan] := NULL;
+              notedel_table[chan] := BYTE_NULL;
               output_note(event_table[chan].note,
                           event_table[chan].instr_def,chan,TRUE);
             end
@@ -2927,16 +2906,16 @@ begin
         ef_extended2+ef_fix2+ef_ex2_NoteCut:
           If (notecut_table[chan] = 0) then
             begin
-              notecut_table[chan] := NULL;
+              notecut_table[chan] := BYTE_NULL;
               key_off(chan);
             end
           else Dec(notecut_table[chan]);
 
         ef_extended2+ef_fix2+ef_ex2_GlVolSlideUp:
-          global_volume_slide(eHi,NULL);
+          global_volume_slide(eHi,BYTE_NULL);
 
         ef_extended2+ef_fix2+ef_ex2_GlVolSlideDn:
-          global_volume_slide(NULL,eHi);
+          global_volume_slide(BYTE_NULL,eHi);
       end;
 
       Case eLo2 of
@@ -3082,7 +3061,7 @@ begin
         ef_extended2+ef_fix2+ef_ex2_NoteDelay:
           If (notedel_table[chan] = 0) then
             begin
-              notedel_table[chan] := NULL;
+              notedel_table[chan] := BYTE_NULL;
               output_note(event_table[chan].note,
                           event_table[chan].instr_def,chan,TRUE);
             end
@@ -3091,16 +3070,16 @@ begin
         ef_extended2+ef_fix2+ef_ex2_NoteCut:
           If (notecut_table[chan] = 0) then
             begin
-              notecut_table[chan] := NULL;
+              notecut_table[chan] := BYTE_NULL;
               key_off(chan);
             end
           else Dec(notecut_table[chan]);
 
         ef_extended2+ef_fix2+ef_ex2_GlVolSlideUp:
-          global_volume_slide(eHi2,NULL);
+          global_volume_slide(eHi2,BYTE_NULL);
 
         ef_extended2+ef_fix2+ef_ex2_GlVolSlideDn:
-          global_volume_slide(NULL,eHi2);
+          global_volume_slide(BYTE_NULL,eHi2);
       end;
     end;
 end;
@@ -3177,10 +3156,10 @@ begin
       volume_slide(chan,eHi DIV 16,eHi MOD 16);
 
     ef_extended2+ef_fix2+ef_ex2_GlVolSlideUpF:
-      global_volume_slide(eHi,NULL);
+      global_volume_slide(eHi,BYTE_NULL);
 
     ef_extended2+ef_fix2+ef_ex2_GlVolSlideDnF:
-      global_volume_slide(NULL,eHi);
+      global_volume_slide(BYTE_NULL,eHi);
   end;
 
   Case eLo2 of
@@ -3243,10 +3222,10 @@ begin
       volume_slide(chan,eHi2 DIV 16,eHi2 MOD 16);
 
     ef_extended2+ef_fix2+ef_ex2_GlVolSlideUpF:
-      global_volume_slide(eHi2,NULL);
+      global_volume_slide(eHi2,BYTE_NULL);
 
     ef_extended2+ef_fix2+ef_ex2_GlVolSlideDnF:
-      global_volume_slide(NULL,eHi2);
+      global_volume_slide(BYTE_NULL,eHi2);
   end;
 end;
 
@@ -3266,10 +3245,10 @@ begin
 
       Case eLo of
         ef_extended2+ef_fix2+ef_ex2_GlVolSldUpXF:
-          global_volume_slide(eHi,NULL);
+          global_volume_slide(eHi,BYTE_NULL);
 
         ef_extended2+ef_fix2+ef_ex2_GlVolSldDnXF:
-          global_volume_slide(NULL,eHi);
+          global_volume_slide(BYTE_NULL,eHi);
 
         ef_extended2+ef_fix2+ef_ex2_VolSlideUpXF:
           volume_slide(chan,eHi,0);
@@ -3297,10 +3276,10 @@ begin
 
       Case eLo2 of
         ef_extended2+ef_fix2+ef_ex2_GlVolSldUpXF:
-          global_volume_slide(eHi2,NULL);
+          global_volume_slide(eHi2,BYTE_NULL);
 
         ef_extended2+ef_fix2+ef_ex2_GlVolSldDnXF:
-          global_volume_slide(NULL,eHi2);
+          global_volume_slide(BYTE_NULL,eHi2);
 
         ef_extended2+ef_fix2+ef_ex2_VolSlideUpXF:
           volume_slide(chan,eHi2,0);
@@ -3384,8 +3363,8 @@ begin
              If NOT (pattern_break and (next_line AND $0f0 = pattern_loop_flag)) and
                 repeat_pattern then
                begin
-                 FillData(loopbck_table,SizeOf(loopbck_table),NULL);
-                 FillData(loop_table,SizeOf(loop_table),NULL);
+                 FillChar(loopbck_table,SizeOf(loopbck_table),BYTE_NULL);
+                 FillChar(loop_table,SizeOf(loop_table),BYTE_NULL);
                  current_line := 0;
                  pattern_break := FALSE;
                end
@@ -3393,8 +3372,8 @@ begin
                     If NOT (pattern_break and (next_line AND $0f0 = pattern_loop_flag)) and
                            (current_order < $7f) then
                       begin
-                        FillData(loopbck_table,SizeOf(loopbck_table),NULL);
-                        FillData(loop_table,SizeOf(loop_table),NULL);
+                        FillChar(loopbck_table,SizeOf(loopbck_table),BYTE_NULL);
+                        FillChar(loop_table,SizeOf(loop_table),BYTE_NULL);
                         Inc(current_order);
                       end;
 
@@ -3446,7 +3425,12 @@ procedure poll_proc;
 var
   temp: Byte;
 
+var
+  _debug_str_bak_: String;
+
 begin
+  _debug_str_bak_ := _debug_str_;
+  _debug_str_ := 'ADT2UNIT.PAS:_poll_proc';
   If (NOT pattern_delay and (ticks-tick0+1 >= speed)) or
      fast_forward or rewind or single_play then
     begin
@@ -3511,6 +3495,7 @@ begin
       update_extra_fine_effects;
       Dec(tickXF,4);
     end;
+  _debug_str_ := _debug_str_bak_;
 end;
 
 procedure macro_poll_proc;
@@ -3523,7 +3508,12 @@ var
   chan: Byte;
   finished_flag: Word;
 
+var
+  _debug_str_bak_: String;
+
 begin
+  _debug_str_bak_ := _debug_str_;
+  _debug_str_ := 'ADT2UNIT.PAS:macro_poll_proc';
   For chan := 1 to 20 do
     begin
       If NOT keyoff_loop[chan] then finished_flag := FINISHED
@@ -3640,10 +3630,10 @@ begin
 
                                If NOT songdata.dis_fmreg_col[fmreg_table][5] then
                                  set_ins_volume(63-fm_data.KSL_VOLUM_modulator AND $3f,
-                                                NULL,chan);
+                                                BYTE_NULL,chan);
 
                                If NOT songdata.dis_fmreg_col[fmreg_table][17] then
-                                 set_ins_volume(NULL,
+                                 set_ins_volume(BYTE_NULL,
                                                 63-fm_data.KSL_VOLUM_carrier AND $3f,chan);
 
                                update_modulator_adsrw(chan);
@@ -3742,6 +3732,7 @@ begin
               else Inc(vib_count);
         end;
     end;
+  _debug_str_ := _debug_str_bak_;
 end;
 
 procedure set_global_volume;
@@ -3754,25 +3745,18 @@ begin
     If NOT ((carrier_vol[chan] = 0) and
             (modulator_vol[chan] = 0)) then
       If (ins_parameter(voice_table[chan],10) AND 1 = 0) then
-        set_ins_volume(NULL,HI(volume_table[chan]),chan)
+        set_ins_volume(BYTE_NULL,HI(volume_table[chan]),chan)
       else set_ins_volume(LO(volume_table[chan]),HI(volume_table[chan]),chan);
 end;
 
-var
-  hw_ticks: Real;
-  dummy_ticks: Longint;
-
 procedure synchronize_screen;
 begin
-  If (sdl_screen_mode <> 0) then EXIT;
+  _debug_str_ := 'ADT2UNIT.PAS:synchronize_screen';
+  If (program_screen_mode <> 0) then EXIT;
   If (screen_scroll_offset > 16*MaxLn-16*hard_maxln) then
     screen_scroll_offset := 16*MaxLn-16*hard_maxln;
-  If (sdl_screen_mode = 0) then
-    virtual_screen__first_row := screen_scroll_offset*FB_xres
+  virtual_screen__first_row := screen_scroll_offset*FB_xres
 end;
-
-const
-  dummy_flag: Boolean = FALSE;
 
 function _macro_speedup: Word; assembler;
 asm
@@ -3783,8 +3767,15 @@ asm
 @@1:
 end;
 
-procedure newint08;
-begin 
+procedure timer_poll_proc;
+
+var
+  _debug_str_bak_: String;
+
+begin
+  _debug_str_bak_ := _debug_str_;
+  _debug_str_ := 'ADT2UNIT.PAS:timer_poll_proc';
+
   If (current_order = 0) and (current_line = 0) and
      (tick0 = ticks) then
     begin
@@ -3793,42 +3784,23 @@ begin
       song_timer_tenths := 0;
     end;
 
-  hw_ticks := hw_ticks+1;
-  If (Random(2222) = 1111) then do_slide := TRUE;
-  If (hw_ticks > 2) and do_slide then
-    begin
-      slide_show;
-      hw_ticks := 0;
-    end;
+  If (Random(2222) = 1111) then
+    do_slide := TRUE;
 
-  If dummy_flag then
-    begin
-      If debugging and (play_status = isStopped) then status_layout[isStopped][9] := #9
-      else status_layout[isStopped][9] := ' ';
-      If NOT debugging then status_layout[isPlaying][9] := ''
-      else status_layout[isPlaying][9] := #9;
-      status_layout[isPaused][8] := #8;
-      If (@macro_preview_indic_proc <> NIL) then
-        macro_preview_indic_proc(1);
-      _generic_blink_event_flag := FALSE;
-    end
-  else
-    begin
-      status_layout[isPlaying][9] := ' ';
-      status_layout[isPaused] [8] := ' ';
-      status_layout[isStopped][9] := ' ';
-      If (@macro_preview_indic_proc <> NIL) then
-        macro_preview_indic_proc(2);
-      _generic_blink_event_flag := TRUE;
-    end;
+  If NOT reset_slide_ticks then Inc(slide_ticks)
+  else begin
+         slide_ticks := 0;
+         reset_slide_ticks := FALSE;
+       end;
 
-  Inc(dummy_ticks);
+  Inc(blink_ticks);
   If ((fast_forward or rewind or (space_pressed and debugging) or
        (@macro_preview_indic_proc <> NIL)) and
-      (dummy_ticks > 50)) or (dummy_ticks > 50) then
+      (blink_ticks > 50)) or (blink_ticks > 50) then
     begin
-      dummy_flag := NOT dummy_flag;
-      dummy_ticks := 0;
+      _generic_blink_event_flag := NOT _generic_blink_event_flag;
+      blink_flag := NOT blink_flag;
+      blink_ticks := 0;
     end;
 
   If (play_status = isPlaying) and
@@ -3863,27 +3835,22 @@ begin
       keyboard_reset_buffer;
     end;
 
-  decay_bars_refresh;       
-  If opl3_channel_recording_mode then update_recorded_channels;
-  If do_synchronize then synchronize_screen;
-  If (_name_scrl_pending_frames > 0) then Dec(_name_scrl_pending_frames);
-  Inc(_cursor_blink_pending_frames);
-  status_refresh;
+  _debug_str_ := _debug_str_bak_;
 end;
 
 procedure init_timer_proc;
 begin
+  _debug_str_ := 'ADT2UNIT.PAS:init_timer_proc';
   Randomize;
-  hw_ticks := 0;
-  dummy_ticks := 0;
   If timer_initialized then EXIT;
   timer_initialized := TRUE;
-  TimerInstallHandler(@newint08);
+  TimerInstallHandler(@timer_poll_proc);
   TimerSetup(50);
 end;
 
 procedure done_timer_proc;
 begin
+  _debug_str_ := 'ADT2UNIT.PAS:done_timer_proc';
   If NOT timer_initialized then EXIT;
   timer_initialized := FALSE;
   TimerDone;
@@ -3897,7 +3864,8 @@ var
   jump_count,pattern_pos: Byte;
 
 begin
-  pattern_pos := NULL;
+  _debug_str_ := 'ADT2UNIT.PAS:calc_pattern_pos';
+  pattern_pos := BYTE_NULL;
   jump_count := 0;
   index := calc_following_order(0);
   While (index <> -1) and (jump_count < $7f) do
@@ -3935,11 +3903,14 @@ var
   temp: Byte;
 
 begin
+  If _debug_ then
+    _debug_str_ := 'ADT2UNIT.PAS:calibrate_player:update_status';
   temp := songdata.pattern_order[current_order];
   If NOT (temp <= $7f) then temp := 0;
   show_str(17,03,byte2hex(current_order),pattern_bckg+status_dynamic_txt);
   show_str(20,03,byte2hex(temp),pattern_bckg+status_dynamic_txt);
   show_str(17,04,'--',pattern_bckg+status_dynamic_txt);
+  _emulate_screen_without_delay := TRUE;
   emulate_screen;
 end;
 
@@ -3947,7 +3918,8 @@ var
   _pattern_page,_pattord_page,
   _pattord_hpos,_pattord_vpos: Byte;
 
-begin { calibrate_player }
+begin
+  _debug_str_ := 'ADT2UNIT.PAS:calibrate_player';
   If (calc_following_order(0) = -1) then EXIT;
   calibrating := TRUE;
   status_backup.replay_forbidden := replay_forbidden;
@@ -3956,7 +3928,7 @@ begin { calibrate_player }
 
   nul_volume_bars;
   Move(channel_flag,temp_channel_flag,SizeOf(temp_channel_flag));
-  FillData(channel_flag,SizeOf(channel_flag),BYTE(FALSE));
+  FillChar(channel_flag,SizeOf(channel_flag),BYTE(FALSE));
 
   old_debugging := debugging;
   old_repeat_pattern := repeat_pattern;
@@ -3997,6 +3969,7 @@ begin { calibrate_player }
   If NOT no_sync_playing then
     begin
       show_str(13,07,' --:--.- ',status_background+status_border);
+      _emulate_screen_without_delay := TRUE;
       emulate_screen;
     end;
 
@@ -4032,12 +4005,12 @@ begin { calibrate_player }
 
         Inc(ticklooper);
         If (ticklooper >= IRQ_freq DIV tempo) then
-	      ticklooper := 0;
+              ticklooper := 0;
 
         Inc(macro_ticklooper);
         If (macro_ticklooper >= IRQ_freq DIV (tempo*macro_speedup)) then
-	      macro_ticklooper := 0;
-            
+              macro_ticklooper := 0;
+
         If (previous_order <> current_order) then
           begin
             update_status;
@@ -4108,54 +4081,55 @@ var
   temp: Byte;
 
 begin
-  FillData(fmpar_table,SizeOf(fmpar_table),0);
-  FillData(pan_lock,SizeOf(pan_lock),BYTE(panlock));
-  FillData(volume_table,SizeOf(volume_table),63);
-  FillData(vscale_table,SizeOf(vscale_table),0);
-  FillData(modulator_vol,SizeOf(modulator_vol),0);
-  FillData(carrier_vol,SizeOf(carrier_vol),0);
-  FillData(decay_bar,SizeOf(decay_bar),0);
-  FillData(volum_bar,SizeOf(volum_bar),0);
-  FillData(event_table,SizeOf(event_table),0);
-  FillData(freq_table,SizeOf(freq_table),0);
-  FillData(effect_table,SizeOf(effect_table),0);
-  FillData(effect_table2,SizeOf(effect_table2),0);
-  FillData(fslide_table,SizeOf(fslide_table),0);
-  FillData(fslide_table2,SizeOf(fslide_table2),0);
-  FillData(porta_table,SizeOf(porta_table),0);
-  FillData(porta_table2,SizeOf(porta_table2),0);
-  FillData(arpgg_table,SizeOf(arpgg_table),0);
-  FillData(arpgg_table2,SizeOf(arpgg_table2),0);
-  FillData(vibr_table,SizeOf(vibr_table),0);
-  FillData(vibr_table2,SizeOf(vibr_table2),0);
-  FillData(trem_table,SizeOf(trem_table),0);
-  FillData(trem_table2,SizeOf(trem_table2),0);
-  FillData(retrig_table,SizeOf(retrig_table),0);
-  FillData(retrig_table2,SizeOf(retrig_table2),0);
-  FillData(tremor_table,SizeOf(tremor_table),0);
-  FillData(tremor_table2,SizeOf(tremor_table2),0);
-  FillData(last_effect,SizeOf(last_effect),0);
-  FillData(last_effect2,SizeOf(last_effect2),0);
-  FillData(voice_table,SizeOf(voice_table),0);
-  FillData(event_new,SizeOf(event_new),0);
-  FillData(freqtable2,SizeOf(freqtable2),0);
-  FillData(notedel_table,SizeOf(notedel_table),NULL);
-  FillData(notecut_table,SizeOf(notecut_table),NULL);
-  FillData(ftune_table,SizeOf(ftune_table),0);
-  FillData(loopbck_table,SizeOf(loopbck_table),NULL);
-  FillData(loop_table,SizeOf(loop_table),NULL);
-  FillData(reset_chan,SizeOf(reset_chan),BYTE(FALSE));
-  FillData(reset_adsrw,SizeOf(reset_adsrw),BYTE(FALSE));
-  FillData(keyoff_loop,SizeOf(keyoff_loop),BYTE(FALSE));
-  FillData(macro_table,SizeOf(macro_table),0);
+  _debug_str_ := 'ADT2UNIT.PAS:init_buffers';
+  FillChar(fmpar_table,SizeOf(fmpar_table),0);
+  FillChar(pan_lock,SizeOf(pan_lock),BYTE(panlock));
+  FillChar(volume_table,SizeOf(volume_table),63);
+  FillChar(vscale_table,SizeOf(vscale_table),0);
+  FillChar(modulator_vol,SizeOf(modulator_vol),0);
+  FillChar(carrier_vol,SizeOf(carrier_vol),0);
+  FillChar(decay_bar,SizeOf(decay_bar),0);
+  FillChar(volum_bar,SizeOf(volum_bar),0);
+  FillChar(event_table,SizeOf(event_table),0);
+  FillChar(freq_table,SizeOf(freq_table),0);
+  FillChar(effect_table,SizeOf(effect_table),0);
+  FillChar(effect_table2,SizeOf(effect_table2),0);
+  FillChar(fslide_table,SizeOf(fslide_table),0);
+  FillChar(fslide_table2,SizeOf(fslide_table2),0);
+  FillChar(porta_table,SizeOf(porta_table),0);
+  FillChar(porta_table2,SizeOf(porta_table2),0);
+  FillChar(arpgg_table,SizeOf(arpgg_table),0);
+  FillChar(arpgg_table2,SizeOf(arpgg_table2),0);
+  FillChar(vibr_table,SizeOf(vibr_table),0);
+  FillChar(vibr_table2,SizeOf(vibr_table2),0);
+  FillChar(trem_table,SizeOf(trem_table),0);
+  FillChar(trem_table2,SizeOf(trem_table2),0);
+  FillChar(retrig_table,SizeOf(retrig_table),0);
+  FillChar(retrig_table2,SizeOf(retrig_table2),0);
+  FillChar(tremor_table,SizeOf(tremor_table),0);
+  FillChar(tremor_table2,SizeOf(tremor_table2),0);
+  FillChar(last_effect,SizeOf(last_effect),0);
+  FillChar(last_effect2,SizeOf(last_effect2),0);
+  FillChar(voice_table,SizeOf(voice_table),0);
+  FillChar(event_new,SizeOf(event_new),0);
+  FillChar(freqtable2,SizeOf(freqtable2),0);
+  FillChar(notedel_table,SizeOf(notedel_table),BYTE_NULL);
+  FillChar(notecut_table,SizeOf(notecut_table),BYTE_NULL);
+  FillChar(ftune_table,SizeOf(ftune_table),0);
+  FillChar(loopbck_table,SizeOf(loopbck_table),BYTE_NULL);
+  FillChar(loop_table,SizeOf(loop_table),BYTE_NULL);
+  FillChar(reset_chan,SizeOf(reset_chan),BYTE(FALSE));
+  FillChar(reset_adsrw,SizeOf(reset_adsrw),BYTE(FALSE));
+  FillChar(keyoff_loop,SizeOf(keyoff_loop),BYTE(FALSE));
+  FillChar(macro_table,SizeOf(macro_table),0);
 
-  If NOT lockvol then FillData(volume_lock,SizeOf(volume_lock),0)
+  If NOT lockvol then FillChar(volume_lock,SizeOf(volume_lock),0)
   else For temp := 1 to 20 do volume_lock[temp] := BOOLEAN(songdata.lock_flags[temp] SHR 4 AND 1);
 
-  If NOT panlock then FillData(panning_table,SizeOf(panning_table),0)
+  If NOT panlock then FillChar(panning_table,SizeOf(panning_table),0)
   else For temp := 1 to 20 do panning_table[temp] := songdata.lock_flags[temp] AND 3;
 
-  If NOT lockVP then FillData(peak_lock,SizeOf(peak_lock),0)
+  If NOT lockVP then FillChar(peak_lock,SizeOf(peak_lock),0)
   else For temp := 1 to 20 do peak_lock[temp] := BOOLEAN(songdata.lock_flags[temp] SHR 5 AND 1);
 
   For temp := 1 to 20 do
@@ -4167,28 +4141,29 @@ procedure init_player;
 var
   temp: Byte;
 
-begin 
+begin
+  _debug_str_ := 'ADT2UNIT.PAS:init_player';
   opl3_init;
-  FillData(ai_table,SizeOf(ai_table),0);
+  If opl3_channel_recording_mode then renew_wav_files_flag := TRUE;  
+  FillChar(ai_table,SizeOf(ai_table),0);
+  opl2out($01,0);
 
-  opl3out($01,0);
+  For temp := 1 to 20 do opl2out($0b0+_chan_n[temp],0);
+  For temp := $080 to $08d do opl2out(temp,BYTE_NULL);
+  For temp := $090 to $095 do opl2out(temp,BYTE_NULL);
 
-  For temp := 1 to 20 do opl3out($0b0+_chan_n[temp],0);
-  For temp := $080 to $08d do opl3out(temp,NULL);
-  For temp := $090 to $095 do opl3out(temp,NULL);
- 
   misc_register := tremolo_depth SHL 7+
                    vibrato_depth SHL 6+
                    BYTE(percussion_mode) SHL 5;
 
-  opl3out($01,$20);
-  opl3out($08,$40);
+  opl2out($01,$20);
+  opl2out($08,$40);
   opl3exp($0105);
   opl3exp($04+songdata.flag_4op SHL 8);
 
   key_off(17);
   key_off(18);
-  opl3out(_instr[11],misc_register);
+  opl2out(_instr[11],misc_register);
   init_buffers;
 
   current_tremolo_depth := tremolo_depth;
@@ -4210,39 +4185,41 @@ var
   temp: Byte;
 
 begin
+  _debug_str_ := 'ADT2UNIT.PAS:reset_player';
   opl3_init;
-  opl3out($01,0);
+  opl2out($01,0);
 
-  For temp := 1 to 20 do opl3out($0b0+_chan_n[temp],0);
-  For temp := $080 to $08d do opl3out(temp,NULL);
-  For temp := $090 to $095 do opl3out(temp,NULL);
+  For temp := 1 to 20 do opl2out($0b0+_chan_n[temp],0);
+  For temp := $080 to $08d do opl2out(temp,BYTE_NULL);
+  For temp := $090 to $095 do opl2out(temp,BYTE_NULL);
 
   misc_register := tremolo_depth SHL 7+
                    vibrato_depth SHL 6+
                    BYTE(percussion_mode) SHL 5;
 
-  opl3out($01,$20);
-  opl3out($08,$40);
+  opl2out($01,$20);
+  opl2out($08,$40);
   opl3exp($0105);
   opl3exp($04+songdata.flag_4op SHL 8);
 
   key_off(17);
   key_off(18);
-  opl3out(_instr[11],misc_register);
+  opl2out(_instr[11],misc_register);
   For temp := 1 to 20 do reset_chan_data(temp);
 end;
 
 procedure start_playing;
 begin
+  _debug_str_ := 'ADT2UNIT.PAS:start_playing';
   init_player;
-  If (start_pattern = NULL) then current_order := 0
-  else If (start_order = NULL) then
+  If (start_pattern = BYTE_NULL) then current_order := 0
+  else If (start_order = BYTE_NULL) then
          begin
-           If (calc_pattern_pos(start_pattern) <> NULL) then
+           If (calc_pattern_pos(start_pattern) <> BYTE_NULL) then
              current_order := calc_pattern_pos(start_pattern)
            else If NOT play_single_patt then
                   begin
-                    start_pattern := NULL;
+                    start_pattern := BYTE_NULL;
                     current_order := 0;
                     EXIT;
                   end;
@@ -4260,7 +4237,7 @@ begin
     current_pattern := songdata.pattern_order[current_order]
   else current_pattern := start_pattern;
 
-  If (start_line = NULL) then current_line := 0
+  If (start_line = BYTE_NULL) then current_line := 0
   else current_line := start_line;
   pattern_break := FALSE;
   pattern_delay := FALSE;
@@ -4283,7 +4260,7 @@ begin
   macro_speedup := songdata.macro_speedup;
   update_timer(songdata.tempo);
   no_status_refresh := FALSE;
-  really_no_status_refresh := FALSE; 
+  really_no_status_refresh := FALSE;
 end;
 
 procedure stop_playing;
@@ -4292,7 +4269,8 @@ var
   temp: Byte;
 
 begin
-  flush_WAV_data; 
+  _debug_str_ := 'ADT2UNIT.PAS:stop_playing';
+  flush_WAV_data;  
   replay_forbidden := TRUE;
   play_status := isStopped;
   fade_out_volume := 63;
@@ -4306,35 +4284,20 @@ begin
   current_order := 0;
   current_pattern := 0;
   current_line := 0;
-  start_order := NULL;
-  start_pattern := NULL;
-  start_line := NULL;
+  start_order := BYTE_NULL;
+  start_pattern := BYTE_NULL;
+  start_line := BYTE_NULL;
   song_timer := 0;
   timer_temp := 0;
   song_timer_tenths := 0;
   time_playing := 0;
 
   For temp := 1 to 20 do release_sustaining_sound(temp);
-  opl3out(_instr[11],0);
+  opl2out(_instr[11],0);
   init_buffers;
 
   speed := songdata.speed;
   update_timer(songdata.tempo);
-end;
-
-procedure move2screen;
-begin
-  move2screen_alt;
-  reset_critical_area;
-  scroll_pos0 := $0ff;
-  scroll_pos1 := $0ff;
-  scroll_pos2 := $0ff;
-  scroll_pos3 := $0ff;
-  scroll_pos4 := $0ff;
-end;
-
-procedure synchronize;
-begin
 end;
 
 function _partial(max,val: Byte; base: Byte): Byte;
@@ -4361,7 +4324,7 @@ var
   temp: Byte;
 
 begin
-  If (size > MaxCol-x) then size := MaxCol-x;
+  If (size > work_MaxCol-x) then size := work_MaxCol-x;
   If (size < 5) then size := 5;
 
   If (size-2-1 < 10) then temp := _partial(len1,len2,size-2-1)
@@ -4380,7 +4343,7 @@ begin
       If (size-2-1 < 10) then show_str(x+1+temp,y,'²',atr2)
       else show_str(x+1+temp,y,'²²²',atr2);
     end
-  else show_Str(x,y,''+ExpStrL('',size-2,'±')+'',atr1);
+  else show_str(x,y,''+ExpStrL('',size-2,'±')+'',atr1);
   hscroll_bar := pos;
 end;
 
@@ -4390,7 +4353,7 @@ var
   temp: Byte;
 
 begin
-  If (size > MaxLn-y) then size := MaxLn-y;
+  If (size > work_MaxLn-y) then size := work_MaxLn-y;
   If (size < 5) then size := 5;
 
   If (size-2-1 < 10) then temp := _partial(len1,len2,size-2-1)
@@ -4421,50 +4384,6 @@ begin
 
   Frame(centered_frame_vdest^,xstart,ystart,xstart+hsize,ystart+vsize,
                               atr1,name,atr2,border);
-end;
-
-procedure FillData(var data; size: Longint; filler: Byte); assembler;
-asm
-        push    ebx
-        push    ecx
-        push    esi
-        push    edi
-        mov     edi,[data]
-        xor     edx,edx
-        mov     eax,size
-        mov     ecx,4
-        div     ecx
-        mov     ecx,eax
-        jecxz   @@3
-        xor     eax,eax
-        push    ecx
-        push    edx
-        xor     edx,edx
-        mov     ecx,4
-@@1:    dec     ecx
-        push    ecx
-        mov     al,cl
-        mov     ch,8
-        mul     ch
-        mov     cl,al
-        xor     ebx,ebx
-        mov     bl,filler
-        shl     ebx,cl
-        pop     ecx
-        add     edx,ebx
-        jecxz   @@2
-        jmp     @@1
-@@2:    mov     eax,edx
-        pop     edx
-        pop     ecx
-        rep     stosd
-@@3:    mov     ecx,edx
-        mov     al,filler
-        rep     stosb
-        pop     edi
-        pop     esi
-        pop     ecx
-        pop     ebx
 end;
 
 procedure get_chunk(pattern,line,channel: Byte;
@@ -4570,6 +4489,51 @@ asm
         pop     ebx
 end;
 
+function get_chanpos(var data; channels,scancode: Byte): Byte; assembler;
+asm
+        xor     ebx,ebx
+@@1:    mov     edi,[data]
+        add     edi,ebx
+        xor     ecx,ecx
+        mov     cl,channels
+        mov     al,scancode
+        sub     ecx,ebx
+        repnz   scasb
+        jnz     @@2
+        xor     eax,eax
+        mov     al,channels
+        sub     eax,ecx
+        jmp     @@3
+@@2:    xor     eax,eax
+        jmp     @@5
+@@3:    pusha
+        push    eax
+        call    is_4op_chan
+        or      al,al
+        jz      @@4
+        popa
+        inc     ebx
+        jmp     @@1
+@@4:    popa
+@@5:
+end;
+
+function get_chanpos2(var data; channels,scancode: Byte): Byte; assembler;
+asm
+        mov     edi,[data]
+        xor     ecx,ecx
+        mov     cl,channels
+        mov     al,scancode
+        repnz   scasb
+        jnz     @@1
+        xor     eax,eax
+        mov     al,channels
+        sub     eax,ecx
+        jmp     @@2
+@@1:    xor     eax,eax
+@@2:
+end;
+
 function count_channel(hpos: Byte): Byte; assembler;
 asm
         push    ebx
@@ -4617,6 +4581,7 @@ var
   index2: Byte;
 
 begin
+  _debug_str_ := 'ADT2UNIT.PAS:count_order';
   index := 0;
   index2 := 0;
 
@@ -4644,32 +4609,24 @@ var
   temp1: Byte;
 
 begin
+  _debug_str_ := 'ADT2UNIT.PAS:count_patterns';
   patterns := 0;
   For temp1 := 0 to PRED(max_patterns) do
     begin
-      If tracing then trace_update_proc
-      else If (play_status = isPlaying) then
-             begin
-               PATTERN_ORDER_page_refresh(pattord_page);
-               PATTERN_page_refresh(pattern_page);
-             end;
+      realtime_gfx_poll_proc;
       If NOT Empty(pattdata^[temp1 DIV 8][temp1 MOD 8],PATTERN_SIZE) then
         patterns := temp1+1;
-    end;
+    end;    
 end;
 
 procedure count_instruments(var instruments: Byte);
 begin
+  _debug_str_ := 'ADT2UNIT.PAS:count_instruments';
   instruments := 255;
   While (instruments > 0) and
-        nul_data(songdata.instr_data[instruments],INSTRUMENT_SIZE) do
+        Empty(songdata.instr_data[instruments],INSTRUMENT_SIZE) do
     begin
-      If tracing then trace_update_proc
-      else If (play_status = isPlaying) then
-             begin
-               PATTERN_ORDER_page_refresh(pattord_page);
-               PATTERN_page_refresh(pattern_page);
-             end;
+      realtime_gfx_poll_proc;
       Dec(instruments);
     end;
 end;
@@ -4681,13 +4638,14 @@ var
   result: Word;
 
 begin
-  result := MAX_SDL_IRQ_FREQ DIV tempo;
+  _debug_str_ := 'ADT2UNIT.PAS:calc_max_speedup';
+  result := MAX_IRQ_FREQ DIV tempo;
   Repeat
     If (tempo = 18) and timer_fix then temp := TRUNC((tempo+0.2)*20)
     else temp := 250;
     While (temp MOD (tempo*result) <> 0) do Inc(temp);
-    If (temp <= MAX_SDL_IRQ_FREQ) then Inc(result);
-  until NOT (temp <= MAX_SDL_IRQ_FREQ);
+    If (temp <= MAX_IRQ_FREQ) then Inc(result);
+  until NOT (temp <= MAX_IRQ_FREQ);
   calc_max_speedup := PRED(result);
 end;
 
@@ -4697,6 +4655,7 @@ var
   temp: Byte;
 
 begin
+  _debug_str_ := 'ADT2UNIT.PAS:init_songdata';
   If (play_status <> isStopped) then
     begin
       fade_out_playback(FALSE);
@@ -4704,9 +4663,9 @@ begin
     end
   else init_buffers;
 
-  FillData(songdata,SizeOf(songdata),0);
-  FillData(songdata.pattern_order,SizeOf(songdata.pattern_order),$080);
-  FillData(pattdata^,PATTERN_SIZE*max_patterns,0);
+  FillChar(songdata,SizeOf(songdata),0);
+  FillChar(songdata.pattern_order,SizeOf(songdata.pattern_order),$080);
+  FillChar(pattdata^,PATTERN_SIZE*max_patterns,0);
 
   songdata.tempo := tempo;
   songdata.speed := speed;
@@ -4929,12 +4888,6 @@ begin
             set_global_volume;
             If fade_screen or (temp MOD 5 = 0) then
               begin
-                If (@trace_update_proc <> NIL) then trace_update_proc
-                else If (play_status = isPlaying) then
-                       begin
-                         PATTERN_ORDER_page_refresh(pattord_page);
-                         PATTERN_page_refresh(pattern_page);
-                       end;
                 _emulate_screen_without_delay := TRUE;
                 emulate_screen;
                 keyboard_reset_buffer;
@@ -4953,6 +4906,49 @@ begin
           vid_FadeOut;
           Delay(1);
         end;
+end;
+
+procedure realtime_gfx_poll_proc;
+begin
+  If _realtime_gfx_no_update then EXIT; 
+  If blink_flag then
+    begin
+      If debugging and (play_status = isStopped) then status_layout[isStopped][9] := #9
+      else status_layout[isStopped][9] := ' ';
+      If NOT debugging then status_layout[isPlaying][9] := ''
+      else status_layout[isPlaying][9] := #9;
+      status_layout[isPaused][8] := #8;
+      If (@macro_preview_indic_proc <> NIL) then
+        macro_preview_indic_proc(1);
+    end
+  else
+    begin
+      status_layout[isPlaying][9] := ' ';
+      status_layout[isPaused] [8] := ' ';
+      status_layout[isStopped][9] := ' ';
+      If (@macro_preview_indic_proc <> NIL) then
+        macro_preview_indic_proc(2);
+    end;
+
+  decay_bars_refresh;
+  If opl3_channel_recording_mode then update_recorded_channels;
+  If do_synchronize then synchronize_screen;
+  If (_name_scrl_pending_frames > 0) then Dec(_name_scrl_pending_frames);
+  Inc(_cursor_blink_pending_frames);
+  status_refresh;
+
+  If tracing and (@trace_update_proc <> NIL) then trace_update_proc
+  else If (play_status = isPlaying) then update_without_trace;
+                    
+  If (@mn_environment.ext_proc_rt <> NIL) then
+    mn_environment.ext_proc_rt;
+    
+  If NOT reset_slide_ticks and
+     (slide_ticks > 2) and do_slide then
+    begin
+      slide_show;
+      reset_slide_ticks := TRUE;
+    end;
 end;
 
 end.

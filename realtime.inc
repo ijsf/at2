@@ -1,3 +1,12 @@
+{
+        function _decay_bar_str(value: Byte): String;
+        procedure show_bar(chan,level,xpos,from_pos,to_pos,attr: Byte);
+        procedure decay_bars_refresh;
+        function _vol_bar_str(value: Byte): String;
+        procedure status_refresh;
+        procedure slide_show;
+}
+
 function _decay_bar_str(value: Byte): String;
 
 var
@@ -34,29 +43,34 @@ procedure decay_bars_refresh;
 
 var
   chan,temp: Byte;
+  speedup_factor,speedown_factor: Real;
 
 begin
+  _debug_str_ := 'REALTIME.INC:decay_bars_refresh';
   show_bar(1,overall_volume,05,1,2,
            analyzer_ovrllvol+analyzer_ovrllvol SHL 4);
   show_bar(1,global_volume,MAX_COLUMNS-7,1,2,
            analyzer_volumelvl+analyzer_volumelvl SHL 4);
+
+  speedup_factor := 2.5;
+  speedown_factor := 2.5;
 
   chan := chan_pos;
   For temp := 1 to MAX_TRACKS do
     begin
       If (decay_bar[chan].dir1 = 1) then
         decay_bar[chan].lvl1 := decay_bar[chan].lvl1+
-                 decay_bar[chan].dir1*(decay_bar_rise*2.5)
+                 decay_bar[chan].dir1*(decay_bar_rise*speedup_factor)
       else
         decay_bar[chan].lvl1 := decay_bar[chan].lvl1+
-                 decay_bar[chan].dir1*(decay_bar_fall*2.5);
+                 decay_bar[chan].dir1*(decay_bar_fall*speedown_factor);
 
       If (decay_bar[chan].dir2 = 1) then
         decay_bar[chan].lvl2 := decay_bar[chan].lvl2+
-                 decay_bar[chan].dir2*(decay_bar_rise*2.5)
+                 decay_bar[chan].dir2*(decay_bar_rise*speedup_factor)
       else
         decay_bar[chan].lvl2 := decay_bar[chan].lvl2+
-                 decay_bar[chan].dir2*(decay_bar_fall*2.5);
+                 decay_bar[chan].dir2*(decay_bar_fall*speedown_factor);
 
       If (decay_bar[chan].lvl1 < 0) then decay_bar[chan].lvl1 := 0;
       If (decay_bar[chan].lvl1 > 63) then decay_bar[chan].lvl1 := 63;
@@ -70,10 +84,10 @@ begin
 
       If (volum_bar[chan].dir = 1) then
         volum_bar[chan].lvl := volum_bar[chan].lvl+
-                 volum_bar[chan].dir*(decay_bar_rise*2.5)
+                 volum_bar[chan].dir*(decay_bar_rise*speedup_factor)
       else
         volum_bar[chan].lvl := volum_bar[chan].lvl+
-                 volum_bar[chan].dir*(decay_bar_fall*2.5);
+                 volum_bar[chan].dir*(decay_bar_fall*speedown_factor);
 
       If (volum_bar[chan].lvl < 0) then volum_bar[chan].lvl := 0;
       If (volum_bar[chan].lvl > 63) then volum_bar[chan].lvl := 63;
@@ -136,10 +150,12 @@ var
   wav_indicator_attr: array[Boolean] of Byte;
 
 begin
+  _debug_str_ := 'REALTIME.INC:status_refresh:1/4';
   If really_no_status_refresh then EXIT;
   show_str(21,06,status_layout[play_status][8]+status_layout[play_status][9],
        status_background+status_play_state);
 
+  _debug_str_ := 'REALTIME.INC:status_refresh:2/4';
   If no_status_refresh then
     begin
       chan := chan_pos;
@@ -154,10 +170,11 @@ begin
       EXIT;
     end;
 
+  _debug_str_ := 'REALTIME.INC:status_refresh:3/4';
   temps := status_layout[play_status];
   show_str(14,06,ExpStrR(temps,10,' '),
        status_background+status_play_state);
-  If NOT (sdl_screen_mode <> 0) and (@mn_environment.ext_proc_rt <> NIL) then
+  If NOT (program_screen_mode <> 0) and (@mn_environment.ext_proc_rt <> NIL) then
     show_str(02,01,' '+ExpStrR(temps,10,' '),
          main_background+main_border)
   else
@@ -165,6 +182,8 @@ begin
          main_background+main_border);
 
   If single_play then EXIT;
+  _debug_str_ := 'REALTIME.INC:status_refresh:4/4';
+
   If play_single_patt then
     show_str(20,03,byte2hex(current_pattern)+'  ',
          pattern_bckg+status_dynamic_txt)
@@ -179,15 +198,20 @@ begin
       else If NOT calibrating then
              show_str(20,03,byte2hex(temp)+'  ',
                   status_background+status_dynamic_txt)
-           else show_str(20,03,byte2hex(temp),status_background+status_dynamic_txt);
+           else show_str(20,03,byte2hex(temp),
+                         status_background+status_dynamic_txt);
     end;
 
   If NOT play_single_patt then
-    show_str(17,03,byte2hex(current_order),status_background+status_dynamic_txt)
-  else show_str(17,03,'--',status_background+status_dynamic_txt);
+    show_str(17,03,byte2hex(current_order),
+             status_background+status_dynamic_txt)
+  else show_str(17,03,'--',
+                status_background+status_dynamic_txt);
 
-  show_str(17,04,byte2hex(current_line),status_background+status_dynamic_txt);
-  show_str(17,05,byte2hex(speed),status_background+status_dynamic_txt);
+  show_str(17,04,byte2hex(current_line),
+           status_background+status_dynamic_txt);
+  show_str(17,05,byte2hex(speed),
+           status_background+status_dynamic_txt);
 
   If (tempo < 100) then
     If (tempo = 18) and timer_fix then
@@ -212,7 +236,7 @@ begin
              status_background+status_text_dis,
              status_background+status_border);
 
-  If NOT (sdl_screen_mode <> 0) and (@mn_environment.ext_proc_rt <> NIL) then
+  If NOT (program_screen_mode <> 0) and (@mn_environment.ext_proc_rt <> NIL) then
     If (play_status <> isStopped) then
       show_cstr(16,01,temps,
            main_background+main_border,
@@ -224,7 +248,7 @@ begin
     show_str(12,01,ExpStrR('',14,'ฤ'),
          main_background+main_border);
 
-  temps := BaseNameOnly(FilterStr2(songdata_title,_valid_characters,'_'));
+  temps := BaseNameOnly(FilterStr2(songdata_title,_valid_characters_fname,'_'));
 
   While (8+_name_scrl_shift > Length(temps)) and (_name_scrl_shift > 0) do
     Dec(_name_scrl_shift);
@@ -256,16 +280,16 @@ begin
     wav_indicator_attr[TRUE] := (main_behavior SHL 4) AND $0f0
   else wav_indicator_attr[TRUE] := main_background+main_behavior;
   
-  If NOT (sdl_screen_mode <> 0) and (@mn_environment.ext_proc_rt <> NIL) then
+  If NOT (program_screen_mode <> 0) and (@mn_environment.ext_proc_rt <> NIL) then
     If (sdl_opl3_emulator <> 0) then
 	  show_str(13,01,'WAV',wav_indicator_attr[_generic_blink_event_flag])
     else show_str(13,01,'ฤฤฤ',main_background+main_border)
   else If (sdl_opl3_emulator = 1) then
          show_str(08,07,'[WAV]',wav_indicator_attr[_generic_blink_event_flag])
        else If NOT module_archived then
-              show_cstr(08,07,'[~'+#29+'~]ออ',
+              show_cstr(08,07,'~['+#29+']~ออ',
                         status_background+status_border,
-                        status_background+status_dynamic_txt)
+                        main_background+main_behavior)
             else show_str(08,07,'อออออ',
                           status_background+status_border);
 
@@ -540,7 +564,7 @@ begin
         end
       else begin
              temp := 0;
-             If NOT ((screen_scroll_offset > 10) or (sdl_screen_mode <> 0)) then
+             If NOT ((screen_scroll_offset > 10) or (program_screen_mode <> 0)) then
                temp := Round(42/63*volum_bar[chan].lvl);
 
              show_str(08+(temp2-1)*15,MAX_PATTERN_ROWS+11,
@@ -553,10 +577,14 @@ end;
 
 procedure slide_show;
 begin
+  _debug_str_ := 'REALTIME.INC:slide_show';
   Case slide_pos of
-    00..17: show_str(01+(MAX_COLUMNS-18) DIV 2,01,adt2_title[slide_pos],main_background+main_title);
-    18..80: show_str(01+(MAX_COLUMNS-18) DIV 2,01,adt2_title[18],main_background+main_title);
-    81..98: show_str(01+(MAX_COLUMNS-18) DIV 2,01,adt2_title[slide_pos-62],main_background+main_title);
+    00..17: show_str(01+(MAX_COLUMNS-18) DIV 2,01,adt2_title[slide_pos],
+                     main_background+main_title);
+    18..80: show_str(01+(MAX_COLUMNS-18) DIV 2,01,adt2_title[18],
+                     main_background+main_title);
+    81..98: show_str(01+(MAX_COLUMNS-18) DIV 2,01,adt2_title[slide_pos-62],
+                     main_background+main_title);
     else ;
   end;
 

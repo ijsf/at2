@@ -273,8 +273,7 @@ asm
         dec     cl
         jnz     @@4
         jmp     @@1
-@@5:
-        pop     edi
+@@5:    pop     edi
         pop     esi
         pop     edx
         pop     ecx
@@ -570,8 +569,7 @@ asm
         shr     ax,1
         stosw
         loop    @@4
-@@5:
-        pop     edi
+@@5:    pop     edi
         pop     esi
         pop     edx
         pop     ecx
@@ -691,8 +689,7 @@ asm
         mov     dx,word ptr dad[edi]
         cmp     dx,ROOT
         jnz     @@2
-@@10:
-        pop     edi
+@@10:   pop     edi
         pop     esi
         pop     edx
         pop     ecx

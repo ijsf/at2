@@ -9,6 +9,7 @@ const
     FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE);
 
 procedure flush_WAV_data;
+procedure opl2out(reg,data: Word);
 procedure opl3out_proc(reg,data: Word);
 procedure opl3exp(data: Word);
 procedure opl3_init;
@@ -157,9 +158,6 @@ begin
     If NOT CreateDir(Copy(sdl_wav_directory,1,Length(sdl_wav_directory)-Length(NameOnly(sdl_wav_directory)))) then
       EXIT;
  
-  If opl3_channel_recording_mode then
-    renew_wav_files_flag := TRUE;
-	
   wav_buffer_len := 0;
   If NOT opl3_channel_recording_mode then
     begin
@@ -308,14 +306,20 @@ begin
     renew_wav_files_flag := FALSE;
 end;
 
-procedure opl3out_proc(reg, data: Word);
+procedure opl2out(reg,data: Word);
+begin
+  // relevant only for DOS version -> option opl_latency=1
+  opl3out_proc(reg,data);
+end;
+
+procedure opl3out_proc(reg,data: Word);
 
 var
   op: Longint;
 
 begin
   op := 0;
-  If (reg > $0ff) then
+  If (reg > 255) then
     begin
       op := 2;
       reg := reg AND $0ff;
