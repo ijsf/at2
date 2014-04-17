@@ -52,8 +52,8 @@ begin
   show_bar(1,global_volume,MAX_COLUMNS-7,1,2,
            analyzer_volumelvl+analyzer_volumelvl SHL 4);
 
-  speedup_factor := 2.5;
-  speedown_factor := 2.5;
+  speedup_factor := 2.5*(100/sdl_frame_rate);
+  speedown_factor := 2.5*(100/sdl_frame_rate);
 
   chan := chan_pos;
   For temp := 1 to MAX_TRACKS do

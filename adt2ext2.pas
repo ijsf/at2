@@ -1288,7 +1288,7 @@ begin { process_config_file }
         check_number('sdl_sample_buffer',10,512,32768,sdl_sample_buffer);
 
       sdl_frame_rate :=
-        check_number('sdl_frame_rate',10,15,200,sdl_frame_rate);
+        check_number('sdl_frame_rate',10,50,200,sdl_frame_rate);
 
       sdl_typematic_rate :=
         check_number('sdl_typematic_rate',10,1,100,sdl_typematic_rate);
