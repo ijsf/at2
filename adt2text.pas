@@ -2,10 +2,10 @@ unit AdT2text;
 interface
 
 const
-{__AT2REV__}at2rev  = '054';
-{__AT2VER__}at2ver  = '2.4.14';
-{__AT2DAT__}at2date = '04-04-2014';
-{__AT2LNK__}at2link = '3:27pm';
+{__AT2REV__}at2rev  = '055';
+{__AT2VER__}at2ver  = '2.4.15';
+{__AT2DAT__}at2date = '04-17-2014';
+{__AT2LNK__}at2link = '12:01pm';
 
 const
   ascii_line_01 = 'Ú-ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ--ùú               úù-¿';
