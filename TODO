@@ -1,11 +1,3 @@
-Todo:
-
-file dialog for linux!
-
-make windows/linux stuff switchable (automatically? preprocessor?)
-
-
-
 Bugs:
 
 DBOBPL_BUFFER_SIZE is hardcoded and might be too small!
