@@ -1282,7 +1282,7 @@ begin { process_config_file }
         check_number('sdl_screen_mode',10,0,2,sdl_screen_mode);
 
       sdl_sample_rate :=
-        check_number('sdl_sample_rate',10,8000,48000,sdl_sample_rate);
+        check_number('sdl_sample_rate',10,4000,192000,sdl_sample_rate);
 
       sdl_sample_buffer :=
         check_number('sdl_sample_buffer',10,512,32768,sdl_sample_buffer);
@@ -1300,19 +1300,19 @@ begin { process_config_file }
          (Length(data) > 18) then
         begin
           temp_str := Copy(data,19,Length(data)-18);
-          If (temp_str[1] = '\') then Delete(temp_str,1,1);
+          If (temp_str[1] = PATHSEP) then Delete(temp_str,1,1);
           If (temp_str <> '') then
             begin
               If (Length(temp_str) > 4) then
                 If NOT (Lower(Copy(temp_str,Length(temp_str)-3,4)) = '.wav') then
-                                   temp_str := temp_str+'\'
+                                   temp_str := temp_str+PATHSEP
                 else opl3_flushmode := TRUE
-               else If (temp_str[Length(temp_str)] <> '\') then
-                      temp_str := temp_str+'\';
+               else If (temp_str[Length(temp_str)] <> PATHSEP) then
+                      temp_str := temp_str+PATHSEP;
              end;
           sdl_wav_directory := temp_str;
           If NOT (Pos(':',sdl_wav_directory) <> 0) then
-            sdl_wav_directory := PathOnly(ParamStr(0))+'\'+sdl_wav_directory;
+            sdl_wav_directory := PathOnly(ParamStr(0))+PATHSEP+sdl_wav_directory;
         end;
 
       If (Copy(data,1,17) = 'a2m_default_path=') and
@@ -1320,8 +1320,8 @@ begin { process_config_file }
         begin
           a2m_default_path := Copy(data,18,Length(data)-17);
           If (a2m_default_path <> '') and
-             (a2m_default_path[Length(a2m_default_path)] <> '\') then
-            a2m_default_path := a2m_default_path+'\';
+             (a2m_default_path[Length(a2m_default_path)] <> PATHSEP) then
+            a2m_default_path := a2m_default_path+PATHSEP;
         end;
 
       If (Copy(data,1,17) = 'a2t_default_path=') and
@@ -1329,8 +1329,8 @@ begin { process_config_file }
         begin
           a2t_default_path := Copy(data,18,Length(data)-17);
           If (a2t_default_path <> '') and
-             (a2t_default_path[Length(a2t_default_path)] <> '\') then
-            a2t_default_path := a2t_default_path+'\';
+             (a2t_default_path[Length(a2t_default_path)] <> PATHSEP) then
+            a2t_default_path := a2t_default_path+PATHSEP;
         end;
 
       If (Copy(data,1,16) = 'a2i_default_path') and
@@ -1338,8 +1338,8 @@ begin { process_config_file }
         begin
           a2i_default_path := Copy(data,18,Length(data)-17);
           If (a2i_default_path <> '') and
-             (a2i_default_path[Length(a2i_default_path)] <> '\') then
-            a2i_default_path := a2i_default_path+'\';
+             (a2i_default_path[Length(a2i_default_path)] <> PATHSEP) then
+            a2i_default_path := a2i_default_path+PATHSEP;
         end;
 
       If (Copy(data,1,16) = 'a2f_default_path') and
@@ -1347,8 +1347,8 @@ begin { process_config_file }
         begin
           a2f_default_path := Copy(data,18,Length(data)-17);
           If (a2f_default_path <> '') and
-             (a2f_default_path[Length(a2f_default_path)] <> '\') then
-            a2f_default_path := a2f_default_path+'\';
+             (a2f_default_path[Length(a2f_default_path)] <> PATHSEP) then
+            a2f_default_path := a2f_default_path+PATHSEP;
         end;
 
       If (Copy(data,1,17) = 'a2p_default_path=') and
@@ -1356,8 +1356,8 @@ begin { process_config_file }
         begin
           a2p_default_path := Copy(data,18,Length(data)-17);
           If (a2p_default_path <> '') and
-             (a2p_default_path[Length(a2p_default_path)] <> '\') then
-            a2p_default_path := a2p_default_path+'\';
+             (a2p_default_path[Length(a2p_default_path)] <> PATHSEP) then
+            a2p_default_path := a2p_default_path+PATHSEP;
         end;
 
       If (Copy(data,1,16) = 'a2b_default_path') and
@@ -1365,8 +1365,8 @@ begin { process_config_file }
         begin
           a2b_default_path := Copy(data,18,Length(data)-17);
           If (a2b_default_path <> '') and
-             (a2b_default_path[Length(a2b_default_path)] <> '\') then
-            a2b_default_path := a2b_default_path+'\';
+             (a2b_default_path[Length(a2b_default_path)] <> PATHSEP) then
+            a2b_default_path := a2b_default_path+PATHSEP;
         end;
 
       If (Copy(data,1,16) = 'a2w_default_path') and
@@ -1374,8 +1374,8 @@ begin { process_config_file }
         begin
           a2w_default_path := Copy(data,18,Length(data)-17);
           If (a2w_default_path <> '') and
-             (a2w_default_path[Length(a2w_default_path)] <> '\') then
-            a2w_default_path := a2w_default_path+'\';
+             (a2w_default_path[Length(a2w_default_path)] <> PATHSEP) then
+            a2w_default_path := a2w_default_path+PATHSEP;
         end;
 
       For temp := 0 to 15 do

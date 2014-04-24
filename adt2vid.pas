@@ -120,6 +120,9 @@ var
   idx: Byte;
   
 begin
+{$IFNDEF WINDOWS}
+EXIT; // this crashes under linux. HACK! TODO!
+{$ENDIF}
   If emergency then
     begin        
       For idx := 0 to 15 do

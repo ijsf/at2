@@ -41,6 +41,8 @@ uses
   SDL_Types,SDL_Audio;
 
 {$L ymf262.o}
+
+{$IFNDEF LINUX}
 { ymf262.c needs some functions from msvcrt.dll which we need to emulate }
 {_CRTIMP double __cdecl pow (double, double);}
 function my_pow(a,b: Double): Double; cdecl; alias: '_pow';
@@ -83,6 +85,7 @@ procedure my_memset(var s; c: Char; len: Longint); cdecl; alias: '_memset';
 begin
   FillChar(s,len,c);
 end;
+{$ENDIF}
 
 const
   OPL3_SAMPLE_BITS = 16;
@@ -489,9 +492,13 @@ begin
       WriteLn('SDL: Audio initialization error');
       HALT(1);
     end;
-    
-  WriteLn('  Sample buffer size: ',sdl_sample_buffer,' bytes');
-  WriteLn('  Sampling rate: ',sdl_sample_rate,' Hz');
+  
+  WriteLn('  Sample buffer size: ',sdl_audio_spec.samples,' samples (requested ',sdl_sample_buffer,')');
+  WriteLn('  Sampling rate: ',sdl_audio_spec.freq,' Hz (requested ',sdl_sample_rate,')');
+
+  sdl_sample_rate := sdl_audio_spec.freq;
+  sdl_sample_buffer := sdl_audio_spec.samples;
+
   SDL_PauseAudio(0);
 end;
 

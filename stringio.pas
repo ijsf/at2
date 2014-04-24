@@ -67,6 +67,7 @@ function PathOnly(path: String): String;
 function NameOnly(path: String): String;
 function BaseNameOnly(path: String): String;
 function ExtOnly(path: String): String;
+function ExtOnlyNoLower(path: String): String;
 
 implementation
 
@@ -962,9 +963,14 @@ end;
 
 function ExtOnly(path: String): String;
 begin
+  ExtOnly := Lower(ExtOnlyNoLower(path));
+end;
+
+function ExtOnlyNoLower(path: String): String;
+begin
   FSplit(path,dir,name,ext);
   Delete(ext,1,1);
-  ExtOnly := ext;
+  ExtOnlyNoLower := ext;
 end;
 
 begin

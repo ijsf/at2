@@ -226,6 +226,16 @@ const
   status_layout: array[tPLAY_STATUS] of String[10] = ('PLAYiNG   ',
                                                       'PAUSED    ',
                                                       'STOPPED   ');
+
+
+{$IFDEF WINDOWS}
+const PATHSEP: Char = '\';
+const WILDCARD_ASTERISK: String = '*.*';
+{$ELSE}
+const PATHSEP: Char = '/';
+const WILDCARD_ASTERISK: String = '*';
+{$ENDIF}
+
 const
   kF1     = $3b00; kLEFT   = $4b00; kENTER  = $1c0d; kAltN   = $3100;
   kF2     = $3c00; kShLEFT = $4b34; kCtENTR = $1c0a; kCtrlE  = $1205;
@@ -736,7 +746,11 @@ const
   a2w_default_path:    String  = '';
   sdl_screen_mode:     Byte = 0;
   sdl_opl3_emulator:   Byte = 0;
+{$IFDEF WINDOWS}
   sdl_wav_directory:   String  = 'wav_files\';
+{$ELSE}
+  sdl_wav_directory:   String  = 'wav_files/';
+{$ENDIF}
   sdl_sample_rate:     Longint = 44100;
   sdl_sample_buffer:   Longint = 2048;
   sdl_frame_rate:      Byte    = 100;

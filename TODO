@@ -1,0 +1,7 @@
+Bugs:
+
+DBOBPL_BUFFER_SIZE is hardcoded and might be too small!
+Better make this dependent form the actual SDL buffer size!
+
+reading one sample at a time seems inefficient. Better read more at once!
+

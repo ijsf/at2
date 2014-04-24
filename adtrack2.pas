@@ -2,7 +2,9 @@ program AdTrack2;
 
 {$APPTYPE GUI}
 {$PACKRECORDS 1}
-{$R adtrack2.res}
+{$IFDEF WINDOWS}
+  {$R adtrack2.res}
+{$ENDIF}
 
 uses
   SDL_Timer,
@@ -122,7 +124,7 @@ begin { MAIN }
   vid_SetVideoMode(FALSE);
   CleanScreen(screen_ptr^);
   vid_SetRGBPalette(Addr(vga_rgb_color)^);
-  temp := screen_scroll_offset DIV 16 + 4;
+  temp := screen_scroll_offset DIV 16 + 3;
 
   C3WriteLn(02+(MAX_COLUMNS-57) DIV 2,temp+00,ascii_line_01,$08,$09,$01);
   C3WriteLn(02+(MAX_COLUMNS-57) DIV 2,temp+01,ascii_line_02,$08,$09,$01);
@@ -146,9 +148,11 @@ begin { MAIN }
   C3WriteLn(02+(MAX_COLUMNS-57) DIV 2,temp+19,ascii_line_20,$08,$09,$01);
   C3WriteLn(02+(MAX_COLUMNS-57) DIV 2,temp+20,ascii_line_21,$08,$09,$01);
   C3WriteLn(02+(MAX_COLUMNS-57) DIV 2,temp+21,ascii_line_22,$08,$09,$01);
-  C3WriteLn(02+(MAX_COLUMNS-57) DIV 2,temp+23,ascii_line_24,$08,$09,$01);
   C3WriteLn(02+(MAX_COLUMNS-57) DIV 2,temp+22,ascii_line_23,$08,$09,$01);
-  Move(vga_font8x16,font8x16,SizeOf(font8x16));
+  C3WriteLn(02+(MAX_COLUMNS-57) DIV 2,temp+23,ascii_line_24,$08,$09,$01);
+  C3WriteLn(02+(MAX_COLUMNS-57) DIV 2,temp+24,ascii_line_25,$08,$09,$01);
+  C3WriteLn(02+(MAX_COLUMNS-57) DIV 2,temp+25,ascii_line_26,$08,$09,$01);
+  virtual_screen_font := Addr(vga_font8x16);
   emulate_screen;
   SDL_Delay(3000);
 

@@ -3,7 +3,10 @@ unit DialogIO;
 interface
 
 uses
-  DOS,Windows,
+  DOS,
+  {$IFDEF WINDOWS}
+  Windows,
+  {$ENDIF}
   AdT2sys,AdT2vscr,AdT2unit,AdT2keyb,AdT2ext2,
   StringIO,ParserIO,TxtScrIO;
 
@@ -187,6 +190,9 @@ function VScrollBar(var dest; x,y: Byte; size: Byte; len1,len2,pos: Word;
                     atr1,atr2: Byte): Word;
 procedure DialogIO_Init;
 
+function Lower_file(s: String) : String;
+function iCASE_file(s: String) : String;
+
 implementation
 
 type
@@ -223,6 +229,28 @@ var
   mbuf:   tMBUFFR;
   contxt: String;
   backup: tBACKUP;
+
+function iCASE_file(s: String) : String;
+
+begin
+{$ifdef UNIX}
+  iCASE_file := s;
+{$else}
+  iCASE_file := iCASE(s);
+{$endif}
+end;
+
+
+function Lower_file(s: String) : String;
+
+begin
+{$ifdef UNIX}
+  Lower_file := s;
+{$else}
+  Lower_file := Lower(s);
+{$endif}
+end;
+
 
 function OutStr(var queue; len: Byte; order: Word): String; assembler;
 asm
@@ -1092,6 +1120,7 @@ var
 begin
   valid_drive := FALSE;
   info := '';
+  {$IFDEF WINDOWS}
   idx := 0;
   For idx := 0 to 128 do
     If (drive_list[idx] = drive) then
@@ -1099,6 +1128,7 @@ begin
         info := 'DRiVE';
         BREAK;
       end;
+  {$ENDIF}
   If (info <> '') then valid_drive := TRUE;
 end;
 
@@ -1136,7 +1166,7 @@ begin
   else len := Length(str2);
 
   For idx := 1 to len do
-    If (str1[idx] > str2[idx]) then
+    If (FilterStr2(str1[idx],_valid_characters,#01) > FilterStr2(str2[idx],_valid_characters,#01)) then
       begin
         result := isMore;
         BREAK;
@@ -1192,9 +1222,11 @@ begin
   If (i < r) then QuickSort(i,r);
 end;
 
-begin
+begin { make_stream }
   _debug_str_ := 'DIALOGIO.PAS:make_stream';
-  GetLogicalDriveStrings(SizeOf(drive_list),drive_list);
+  {$IFDEF WINDOWS}
+  GetLogicalDriveStrings(SizeOf(vDrives),vDrives);
+  {$ENDIF}
   count1 := 0;
   For drive := 'A' to 'Z' do
     If valid_drive(drive,stream.stuff[SUCC(count1)].info) then
@@ -1211,7 +1243,7 @@ begin
 
   count2 := 0;
   stream.drive_count := count1;
-  FindFirst(path+'*.*',anyfile-volumeid,search);
+  FindFirst(path+WILDCARD_ASTERISK,anyfile-volumeid,search);
   While (DOSerror = 0) and (count1 < MAX_FILES) do
     begin
       If (search.attr AND directory <> 0) and (search.name = '.') then
@@ -1238,12 +1270,12 @@ begin
       stream.stuff[count1].attr := search.attr;
     end;
 
-  FindFirst(path+'*.*',anyfile-volumeid-directory,search);
+  FindFirst(path+WILDCARD_ASTERISK,anyfile-volumeid-directory,search);
   While (DOSerror = 0) and (count1+count2 < MAX_FILES) do
     begin
       If LookUpMask(search.name) then
         begin
-          search.name := Lower(search.name);
+          search.name := Lower_file(search.name);
           Inc(count2);
           stream.stuff[count1+count2].name := search.name;
           stream.stuff[count1+count2].attr := search.attr;
@@ -1283,7 +1315,7 @@ var
 
 function path_filter(path: String): String;
 begin
-  If (Length(path) > 3) and (path[Length(path)] = '\') then
+  If (Length(path) > 3) and (path[Length(path)] = PATHSEP) then
     Delete(path,Length(path),1);
   path_filter := Upper(path);
 end;
@@ -1330,7 +1362,7 @@ begin
   GetDir(0,temp3);
   {$i+}
   If (IOresult <> 0) then temp3 := temp6;
-  If (temp3[Length(temp3)] <> '\') then temp3 := temp3+'\';
+  If (temp3[Length(temp3)] <> PATHSEP) then temp3 := temp3+PATHSEP;
   mn_setting.cycle_moves  := FALSE;
   temp4 := '';
 
@@ -1359,7 +1391,7 @@ begin
         else
           begin
             temp1 := 24+(mn_environment.descr_len-1-10);
-            temp7 := iCASE(DietStr(FilterStr2(fstream.stuff[temp2].name,_valid_characters_fname,'_'),temp1));
+            temp7 := iCASE_file(DietStr(FilterStr2(fstream.stuff[temp2].name,_valid_characters_fname,'_'),temp1));
             If (Length(temp7) < 24) then
               begin
                 menudat[temp2] := ' '+ExpStrR(temp7,24,' ')+' ';
@@ -1367,7 +1399,7 @@ begin
               end
             else
               begin
-                menudat[temp2] := ' '+iCASE(ExpStrR(Copy(temp7,1,24),24,' '));
+                menudat[temp2] := ' '+iCASE_file(ExpStrR(Copy(temp7,1,24),24,' '));
                 descr[temp2] := ExpStrR(Copy(temp7,25,Length(temp7)-23),mn_environment.descr_len-1-10,' ');
               end;
             descr[temp2] := descr[temp2]+ExpStrL('[DiR]',10,' ');
@@ -1401,7 +1433,7 @@ begin
       If (SYSTEM.Pos('~',fstream.stuff[temp2].name) <> 0) and
          (fstream.stuff[temp2].name <> '~'+#$ff+'~') then
         While (SYSTEM.Pos('~',menudat[temp2]) <> 0) do
-          menudat[temp2][SYSTEM.Pos('~',menudat[temp2])] := '/';
+          menudat[temp2][SYSTEM.Pos('~',menudat[temp2])] := PATHSEP;
 
     temp5 := fstream.drive_count+1;
     While (temp5 <= fstream.count) and (temp4 <> '') and
@@ -1409,9 +1441,9 @@ begin
     If (temp5 > fstream.count) then temp5 := 1;
 
     For temp2 := 1 to fstream.count do
-      If (Lower(fstream.stuff[temp2].name) = fs_environment.last_file) then
+      If (Lower_file(fstream.stuff[temp2].name) = fs_environment.last_file) then
         begin lastp := temp2; BREAK; end;
-    If (Lower(fstream.stuff[temp2].name) <> fs_environment.last_file) then
+    If (Lower_file(fstream.stuff[temp2].name) <> fs_environment.last_file) then
       lastp := 0;
 
     If (lastp = 0) or
@@ -1452,13 +1484,13 @@ begin
           begin
             Delete(temp3,Length(temp3),1);
             temp4 := NameOnly(temp3);
-            While (temp3[Length(temp3)] <> '\') do
+            While (temp3[Length(temp3)] <> PATHSEP) do
               Delete(temp3,Length(temp3),1);
-            fs_environment.last_file := Lower(temp4);
+            fs_environment.last_file := Lower_file(temp4);
           end
         else
           begin
-            temp3 := temp3+fstream.stuff[temp2].name+'\';
+            temp3 := temp3+fstream.stuff[temp2].name+PATHSEP;
             temp4 := '';
             fs_environment.last_file := temp4;
           end;
@@ -1482,18 +1514,18 @@ begin
                     {$i+}
                     If (IOresult <> 0) then temp3 := temp6;
                   end;
-             If (temp3[Length(temp3)] <> '\') then temp3 := temp3+'\';
+             If (temp3[Length(temp3)] <> PATHSEP) then temp3 := temp3+PATHSEP;
              temp4 := '';
              fs_environment.last_file := temp4;
            end
          else If (mn_environment.keystroke = $0e08) and
-                 (SYSTEM.Pos('\',Copy(temp3,3,Length(temp3)-3)) <> 0) then
+                 (SYSTEM.Pos(PATHSEP,Copy(temp3,3,Length(temp3)-3)) <> 0) then
                 begin
                   Delete(temp3,Length(temp3),1);
                   temp4 := NameOnly(temp3);
-                  While (temp3[Length(temp3)] <> '\') do
+                  While (temp3[Length(temp3)] <> PATHSEP) do
                     Delete(temp3,Length(temp3),1);
-                  fs_environment.last_file := Lower(temp4);
+                  fs_environment.last_file := Lower_file(temp4);
                   {$i-}
                   ChDir(Copy(temp3,1,Length(temp3)-1));
                   {$i+}
@@ -1509,7 +1541,7 @@ begin
                        {$i+}
                        If (IOresult <> 0) then ;
                      end
-                   else fs_environment.last_file := Lower(fstream.stuff[temp2].name);
+                   else fs_environment.last_file := Lower_file(fstream.stuff[temp2].name);
   until (mn_environment.keystroke = $1c0d) or
         (mn_environment.keystroke = $011b);
 
@@ -1674,7 +1706,7 @@ begin
   mn_environment.desc_pos    := 0;
 
   For index := 1 to 26 do
-    path[index] := CHR(ORD('a')+PRED(index))+':\';
+    path[index] := CHR(ORD('a')+PRED(index))+':'+PATHSEP;
 end;
 
 end.
