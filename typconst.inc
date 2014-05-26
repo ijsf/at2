@@ -91,7 +91,6 @@ type
   tDIS_FMREG_COL = array[0..27] of Boolean;
 
 type
-//  pOLD_FIXED_SONGDATA = ^tOLD_FIXED_SONGDATA;
   tOLD_FIXED_SONGDATA = Record
                           songname:      String[42];
                           composer:      String[42];
@@ -103,7 +102,6 @@ type
                           common_flag:   Byte;
                         end;
 type
-//  pFIXED_SONGDATA = ^tFIXED_SONGDATA;
   tFIXED_SONGDATA = Record
                       songname:      String[42];
                       composer:      String[42];
@@ -140,23 +138,18 @@ type
              effect2:     Byte;
            end;
 type
-//  pOLD_VARIABLE_DATA1 = ^tOLD_VARIABLE_DATA1;
   tOLD_VARIABLE_DATA1 = array[0..$0f] of array[0..$3f] of
                         array[1..9]   of tOLD_CHUNK;
 type
-//  pOLD_VARIABLE_DATA2 = ^tOLD_VARIABLE_DATA2;
   tOLD_VARIABLE_DATA2 = array[0..7]   of array[1..18] of
                         array[0..$3f] of tOLD_CHUNK;
 type
-//  pVARIABLE_DATA = ^tVARIABLE_DATA;
   tVARIABLE_DATA = array[0..7]    of array[1..20] of
                    array[0..$0ff] of tCHUNK;
 type
-//  pPATTERN_DATA = ^tPATTERN_DATA;
   tPATTERN_DATA = array[0..15] of tVARIABLE_DATA;
 
 type
-//  pBACKUP = ^tBACKUP;
   tBACKUP = Record
               cursor: Longint;
               oldx:   Byte;
@@ -164,7 +157,6 @@ type
               screen: array[1..180*60*SizeOf(WORD)] of Byte;
             end;
 type
-//  pDUMMY_BUFF = ^tDUMMY_BUFF;
   tDUMMY_BUFF = array[0..PRED(655350)] of Byte;
 
 type
@@ -179,7 +171,6 @@ type
   tMACRO_TABLE_TYPE = (mttFM_reg_table,mttArpeggio_table,mttVibrato_table);
 
 type
-//  pCLIPBOARD = ^tCLIPBOARD;
   tCLIPBOARD = Record
                  object_type:   tCOPY_OBJECT;
                  block_hsize:   Byte;
@@ -226,16 +217,6 @@ const
   status_layout: array[tPLAY_STATUS] of String[10] = ('PLAYiNG   ',
                                                       'PAUSED    ',
                                                       'STOPPED   ');
-
-
-{$IFDEF WINDOWS}
-const PATHSEP: Char = '\';
-const WILDCARD_ASTERISK: String = '*.*';
-{$ELSE}
-const PATHSEP: Char = '/';
-const WILDCARD_ASTERISK: String = '*';
-{$ENDIF}
-
 const
   kF1     = $3b00; kLEFT   = $4b00; kENTER  = $1c0d; kAltN   = $3100;
   kF2     = $3c00; kShLEFT = $4b34; kCtENTR = $1c0a; kCtrlE  = $1205;
@@ -459,7 +440,7 @@ const
     $10,$03,$11,$04,$12,$13,$06,$14,$07,$15,$08,$16,$17,$0a,$18,$0b,$19);
 
 const
-  fx_digits: array[0..44] of Char = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ&%!@=#$~^';
+  fx_digits: array[0..45] of Char = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ&%!@=#$~^`';
   NM_FX_DIGITS = SizeOf(fx_digits);
 
 const
@@ -670,6 +651,7 @@ const
   ef_ExtraFineArpeggio = 42;
   ef_ExtraFineVibrato  = 43;
   ef_ExtraFineTremolo  = 44;
+  ef_SetCustomSpeedTab = 45;
   ef_ex_SetTremDepth   = 0;
   ef_ex_SetVibDepth    = 1;
   ef_ex_SetAttckRateM  = 2;
@@ -746,11 +728,7 @@ const
   a2w_default_path:    String  = '';
   sdl_screen_mode:     Byte = 0;
   sdl_opl3_emulator:   Byte = 0;
-{$IFDEF WINDOWS}
   sdl_wav_directory:   String  = 'wav_files\';
-{$ELSE}
-  sdl_wav_directory:   String  = 'wav_files/';
-{$ENDIF}
   sdl_sample_rate:     Longint = 44100;
   sdl_sample_buffer:   Longint = 2048;
   sdl_frame_rate:      Byte    = 100;

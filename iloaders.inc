@@ -5976,6 +5976,7 @@ var
   xfvolsld_cache,
   slide_cache: array[1..20] of Byte;
   _1st_ins_load: array[1..20] of Boolean;
+  _vibrato_fixed_flag: array[0..$7f] of Boolean;
   prev_cache: array[1..20] of Record
                                 effect_def,
                                 effect,
@@ -5992,6 +5993,31 @@ begin
   FillChar(prev_cache,SizeOf(prev_cache),0);
   patt_break := BYTE_NULL;
 
+  If NOT _vibrato_fixed_flag[patt] then
+    For temp2 := 0 to $3f do
+      begin
+        For temp3 := 1 to 20 do
+          begin
+            get_chunk(patt,temp2,temp3,chunk);
+            If (chunk.effect_def = 0) then
+              begin
+                chunk.effect_def := ef_SetCustomSpeedTab;
+                chunk.effect := 29;
+                put_chunk(patt,temp2,temp3,chunk);
+                _vibrato_fixed_flag[patt] := TRUE;
+              end
+            else If (chunk.effect_def2 = 0) then
+                   begin
+                     chunk.effect_def2 := ef_SetCustomSpeedTab;
+                     chunk.effect2 := 29;
+                     put_chunk(patt,temp2,temp3,chunk);
+                     _vibrato_fixed_flag[patt] := TRUE;
+                   end;
+            If _vibrato_fixed_flag[patt] then BREAK;
+          end;         
+        If _vibrato_fixed_flag[patt] then BREAK;
+      end;         
+  
   For temp2 := 0 to $3f do
     For temp3 := 1 to 20 do
       begin
@@ -6079,7 +6105,7 @@ begin
                      chunk.effect := slide_cache[temp3];
                      put_chunk(patt,temp2,temp3,chunk);
                    end;
-
+                   
             If (chunk.effect_def = ef_Extended2) and
                (chunk.effect DIV 16 in [ef_ex2_FreqSlideDnXF,ef_ex2_FreqSlideUpXF]) then
               If (chunk.effect MOD 16 <> 0) then slide_cache[temp3] := chunk.effect MOD 16
@@ -6197,6 +6223,7 @@ end;
 begin { fix_fmk_commands }
   FillChar(ins_cache,SizeOf(ins_cache),0);
   FillChar(_1st_ins_load,SizeOf(_1st_ins_load),TRUE);
+  FillChar(_vibrato_fixed_flag,SizeOf(_vibrato_fixed_flag),FALSE);
   FillChar(xfvolsld_cache,SizeOf(volsld_cache),0);
   FillChar(volsld_cache,SizeOf(volsld_cache),0);
   FillChar(slide_cache,SizeOf(slide_cache),0);
@@ -6205,12 +6232,12 @@ begin { fix_fmk_commands }
 
   patts := '';
   order := 0; patt := BYTE_NULL;
-
+    
   Repeat
     If (songdata.pattern_order[order] >= $80) then Inc(order)
     else
       begin
-        patt := songdata.pattern_order[order];
+        patt := songdata.pattern_order[order];        
         fix_single_pattern(patt);
         Inc(order);
         patts := patts+CHR(patt);
@@ -6358,12 +6385,6 @@ procedure import_fmk_event(pattern,line,channel,note,ins,vol,cmd,info: Byte);
 var
   chunk: tCHUNK;
 
-function scale_slide(slide: Byte): Byte;
-begin
-  If (slide > 16) then scale_slide := Round(16+slide/8)
-  else scale_slide := Round(slide*(2-slide/16));
-end;
-
 begin
   FillChar(chunk,SizeOf(chunk),0);
   If (ins in [1..99]) then chunk.instr_def := ins;
@@ -6473,18 +6494,10 @@ begin
   { SLIDE DOWN }
     'E': Case info DIV 16 of
          { NORMAL }
-           0..13: begin
+           0..14: begin
                     chunk.effect_def := ef_FSlideDown;
-                    chunk.effect := scale_slide(info);
+                    chunk.effect := info;
                   end;
-
-         { EXTRA FINE }
-           14: begin
-                 chunk.effect_def := ef_FSlideDownFine;
-                 If (info <> 0) then
-                   chunk.effect := min((info AND $0f) DIV 4,1)
-                 else chunk.effect := info;
-               end;
 
          { FINE }
            15: begin
@@ -6496,18 +6509,10 @@ begin
   { SLIDE UP }
     'F': Case info DIV 16 of
          { NORMAL }
-           0..13: begin
+           0..14: begin
                     chunk.effect_def := ef_FSlideUp;
-                    chunk.effect := scale_slide(info);
+                    chunk.effect := info;
                   end;
-
-         { EXTRA FINE }
-           14: begin
-                 chunk.effect_def := ef_FSlideUpFine;
-                 If (info <> 0) then
-                   chunk.effect := min((info AND $0f) DIV 4,1)
-                 else chunk.effect := info;
-               end;
 
          { FINE }
            15: begin
@@ -6519,7 +6524,7 @@ begin
   { TONE PORTAMENTO }
     'G': begin
            chunk.effect_def := ef_TonePortamento;
-           chunk.effect := scale_slide(info);
+           chunk.effect := info;
          end;
 
   { VIBRATO }

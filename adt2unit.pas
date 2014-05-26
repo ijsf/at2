@@ -53,6 +53,14 @@ const
   max_patterns:      Byte      = 128;
 
 const
+  def_vibrato_table: array[0..31] of Byte = (
+    0,24,49,74,97,120,141,161,180,197,212,224,235,244,250,253,255,
+    253,250,244,235,224,212,197,180,161,141,120,97,74,49,24);
+    
+var
+  vibrato_table: array[0..31] of Byte;
+  
+const
   macro_preview_indic_proc: procedure(state: Byte) = NIL;
   seconds_counter: Longint = 0;
   hundereds_counter: Longint = 0;
@@ -400,39 +408,13 @@ asm
         pop     ebx
 end;
 
-(*
-function calc_vibrato_shift(depth,position: Byte;
-                            var direction: Byte): Word;
-
-const
-  vibr: array[0..31] of Byte = (
-    0,24,49,74,97,120,141,161,180,197,212,224,235,244,250,253,255,
-    253,250,244,235,224,212,197,180,161,141,120,97,74,49,24);
-
-var
-  shift: Word;
-
-begin
-  shift := depth*vibr[position AND 31];
-  shift := shift SHL 1+shift SHR 15;
-  shift := HI(shift)+LO(shift) AND 1 SHL 4;
-  shift := shift SHL 1;
-  If (position OR 32 = position) then direction := 1 else direction := 0;
-  calc_vibrato_shift := shift;
-end; *)
-
 function calc_vibrato_shift(depth,position: Byte;
                              var direction: Byte): Word; assembler;
-
-const
-  vibr: array[0..31] of Byte = (
-    0,24,49,74,97,120,141,161,180,197,212,224,235,244,250,253,255,
-    253,250,244,235,224,212,197,180,161,141,120,97,74,49,24);
-
 asm
         push    ebx
         push    ecx
         push    edx
+        push    edi
         xor     ebx,ebx
         mov     al,depth
         xor     ah,ah
@@ -440,7 +422,9 @@ asm
         xor     bh,bh
         mov     dh,bl
         and     bx,1fh
-        mov     dl,byte ptr [vibr+ebx]
+        lea     edi,vibrato_table
+        add     edi,ebx
+        mov     dl,byte ptr [edi]
         mul     dl
         rol     ax,1
         xchg    ah,al
@@ -452,7 +436,8 @@ asm
         jne     @@1
         mov     cl,0
         mov     [ebx],cl
-@@1:    pop     edx
+@@1:    pop     edi
+        pop     edx
         pop     ecx
         pop     ebx
 end;
@@ -1092,6 +1077,26 @@ begin
              init_macro_table(chan,note,ins,freq)
            else macro_table[chan].arpg_note := note;
     end;
+end;
+
+procedure generate_custom_speed_table(strength_val: Byte);
+
+var
+  mulval: Real;
+  idx: Byte;
+
+begin
+  If (strength_val = 0) then
+    Move(def_vibrato_table,vibrato_table,SizeOf(vibrato_table))
+  else
+    begin  
+      mulval := strength_val/16;
+      vibrato_table[0] := 0;
+      For idx := 1 to 16 do
+        vibrato_table[idx] := ROUND(idx*mulval);
+      For idx := 17 to 31 do
+        vibrato_table[idx] := ROUND((32-idx)*mulval);
+    end;    
 end;
 
 procedure update_fine_effects(chan: Byte); forward;
@@ -2390,6 +2395,9 @@ begin
                    macro_table[chan].vib_delay := songdata.macro_table[macro_table[chan].vib_table].vibrato.delay;
                  end;
           end;
+          
+        ef_SetCustomSpeedTab:
+          generate_custom_speed_table(event.effect);
       end;
 
       Case event.effect_def2 of
@@ -2432,6 +2440,9 @@ begin
                    macro_table[chan].vib_delay := songdata.macro_table[macro_table[chan].vib_table].vibrato.delay;
                  end;
           end;
+
+          ef_SetCustomSpeedTab:
+          generate_custom_speed_table(event.effect2);
       end;
 
       update_fine_effects(chan);
@@ -4170,6 +4181,7 @@ begin
   current_vibrato_depth := vibrato_depth;
   global_volume := 63;
   macro_ticklooper := 0;
+  Move(def_vibrato_table,vibrato_table,SizeOf(vibrato_table));
 
   For temp := 1 to 20 do
     begin

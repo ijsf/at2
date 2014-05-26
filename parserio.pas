@@ -3,7 +3,6 @@ unit ParserIO;
 interface
 
 type
-//  pDUMMY_BUFF = ^tDUMMY_BUFF;
   tDUMMY_BUFF = array[0..PRED(655350)] of Byte;
 
 function Scan(var buf; skip,size: Longint; str: String): Longint;

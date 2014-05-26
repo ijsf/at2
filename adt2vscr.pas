@@ -99,7 +99,6 @@ const
   SCREEN_SIZE = 180*60*SizeOf(WORD);
 
 type
-//  pSCREEN = ^tSCREEN;
   tSCREEN = array[0..PRED(SCREEN_SIZE)] of Byte;
 
 var

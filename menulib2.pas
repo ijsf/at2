@@ -81,7 +81,6 @@ procedure MenuLib2_Init;
 implementation
 
 type
-//  pDBUFFR = ^tDBUFFR;
   tDBUFFR = array[1.. 100] of Record
                                 str: String;
                                 pos: Byte;
@@ -89,13 +88,11 @@ type
                                 use: Boolean;
                               end;
 type
-//  pMBUFFR = ^tMBUFFR;
   tMBUFFR = array[1..16384] of Record
                                  key: Char;
                                  use: Boolean;
                                end;
 type
-//  pBACKUP = ^tBACKUP;
   tBACKUP = Record
               cursor: Longint;
               oldx,

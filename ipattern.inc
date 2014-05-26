@@ -1009,7 +1009,7 @@ begin
                          NOT (songdata.pattern_order[temp-1] < $80) do
                      begin
                        Dec(temp);
-                       //keyboard_reset_buffer;
+                       // keyboard_reset_buffer;
                      end;
 
                    If (temp > 0) then
@@ -1032,7 +1032,7 @@ begin
                          (songdata.pattern_order[SUCC(temp)] > $80) do
                      begin
                        Inc(temp);
-                       //keyboard_reset_buffer;
+                       // keyboard_reset_buffer;
                      end;
 
                    If (temp < $7f) then
@@ -1367,7 +1367,8 @@ begin
     ef_ExtraFineVibrato,
     ef_ExtraFineTremolo,
     ef_SwapArpeggio,
-    ef_SwapVibrato:       result := TRUE;
+    ef_SwapVibrato,
+    ef_SetCustomSpeedTab: result := TRUE;
     ef_SetSpeed,
     ef_SetTempo,
     ef_ExtraFineArpeggio,
@@ -3547,11 +3548,11 @@ begin
       end;
 
     If NOT (command_typing <> 0) and nope and (count_pos(hpos) = 2) and
-       (UpCase(CHAR(LO(fkey))) in ['0'..'9','A'..'Z','&','%','!','@','=','#','$','~','^']) then
+       (UpCase(CHAR(LO(fkey))) in ['0'..'9','A'..'Z','&','%','!','@','=','#','$','~','^','`']) then
       begin
         nope := FALSE;
         is_setting.append_enabled := FALSE;
-        is_setting.character_set  := ['0'..'9','a'..'z','A'..'Z','&','%','!','@','=','#','$','~','^'];
+        is_setting.character_set  := ['0'..'9','a'..'z','A'..'Z','&','%','!','@','=','#','$','~','^','`'];
         is_environment.locate_pos := 2;
         tstr := CHAR(LO(fkey));
         is_setting.terminate_keys[3] := kTAB;
@@ -3590,11 +3591,11 @@ begin
       end;
 
     If NOT (command_typing <> 0) and nope and (count_pos(hpos) = 3) and
-       (UpCase(CHAR(LO(fkey))) in ['0'..'9','A'..'Z','&','%','!','@','=','#','$','~','^']) then
+       (UpCase(CHAR(LO(fkey))) in ['0'..'9','A'..'Z','&','%','!','@','=','#','$','~','^','`']) then
       begin
         nope := FALSE;
         is_setting.append_enabled := FALSE;
-        is_setting.character_set  := ['0'..'9','a'..'z','A'..'Z','&','%','!','@','=','#','$','~','^'];
+        is_setting.character_set  := ['0'..'9','a'..'z','A'..'Z','&','%','!','@','=','#','$','~','^','`'];
         is_environment.locate_pos := 2;
         tstr := CHAR(LO(fkey));
         is_setting.terminate_keys[3] := kTAB;
@@ -3635,7 +3636,7 @@ begin
       If NOT marking and nope then
         If (command_typing <> 0) and
            ((count_pos(hpos) > 0) and
-            (UpCase(CHAR(LO(fkey))) in ['0'..'9','A'..'Z','&','%','!','@','=','#','$','~','^'])) then
+            (UpCase(CHAR(LO(fkey))) in ['0'..'9','A'..'Z','&','%','!','@','=','#','$','~','^','`'])) then
           begin
             Case count_pos(hpos) of
               1: If NOT (UpCase(CHAR(LO(fkey))) in ['1'..'9']) or
@@ -3706,7 +3707,8 @@ begin
                    If correct_range(chunk.effect_def,chunk.effect) and
                       NOT (shift_pressed and NOT (FX(CHAR(LO(fkey))) in [ef_Extended2,ef_Extended3,ef_SetGlobalVolume,
                                                                          ef_ExtraFineArpeggio,ef_ExtraFineVibrato,ef_ExtraFineTremolo,
-                                                                         ef_ForceInsVolume,ef_SwapArpeggio,ef_SwapVibrato])) then
+                                                                         ef_ForceInsVolume,ef_SwapArpeggio,ef_SwapVibrato,
+                                                                         ef_SetCustomSpeedTab])) then
                      put_chunk(pattern,page,count_channel(hpos),chunk)
                    else nope := FALSE;
                  end;
@@ -3736,7 +3738,8 @@ begin
                    If correct_range(chunk.effect_def2,chunk.effect2) and
                       NOT (shift_pressed and NOT (FX(CHAR(LO(fkey))) in [ef_Extended2,ef_Extended3,ef_SetGlobalVolume,
                                                                          ef_ExtraFineArpeggio,ef_ExtraFineVibrato,ef_ExtraFineTremolo,
-                                                                         ef_ForceInsVolume,ef_SwapArpeggio,ef_SwapVibrato])) then
+                                                                         ef_ForceInsVolume,ef_SwapArpeggio,ef_SwapVibrato,
+                                                                         ef_SetCustomSpeedTab])) then
                      put_chunk(pattern,page,count_channel(hpos),chunk)
                    else nope := FALSE;
                  end;

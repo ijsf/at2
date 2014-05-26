@@ -4,8 +4,8 @@ interface
 const
 {__AT2REV__}at2rev  = '055';
 {__AT2VER__}at2ver  = '2.4.15';
-{__AT2DAT__}at2date = '04-17-2014';
-{__AT2LNK__}at2link = '12:01pm';
+{__AT2DAT__}at2date = '05-26-2014';
+{__AT2LNK__}at2link = '3:18pm';
 
 const
   ascii_line_01 = 'Ú-ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ--ùú               úù-¿';
@@ -26,14 +26,12 @@ const
   ascii_line_16 = '³ ~subz3ro/Altair~                 ~/´DLiB³R/´CK3R ³³ SDL~ ú';
   ascii_line_17 = '³ `SDL portation support:`          ~³       ³     ÄÄ~      ';
   ascii_line_18 = '³ ~Dmitry Smagin~                             ~'+at2ver+'~      ';
-  ascii_line_19 = '³ `Linux portation and fixes:`';  
-  ascii_line_20 = '³ ~Florian Jung (Windfisch)~';
-  ascii_line_21 = '³ `additional ideas:`                                    ú';
-  ascii_line_22 = '³ ~Malfunction/Altair~                                   ù';
-  ascii_line_23 = '³ `special thanks:`                                      ³';
-  ascii_line_24 = '³ ~encore~                HOMEPAGE  www.adlibtracker.net ³';
-  ascii_line_25 = '³ ~insane/Altair~         EMAiL     subz3ro@hotmail.com  ³';
-  ascii_line_26 = 'À-ÄÄÄÄÄÄÄÄÄÄ--ùú    úù-ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ-Ù';
+  ascii_line_19 = '³ `additional ideas:`                                    ú';
+  ascii_line_20 = '³ ~Malfunction/Altair~                                   ù';
+  ascii_line_21 = '³ `special thanks:`                                      ³';
+  ascii_line_22 = '³ ~encore~                HOMEPAGE  www.adlibtracker.net ³';
+  ascii_line_23 = '³ ~insane/Altair~         EMAiL     subz3ro@hotmail.com  ³';
+  ascii_line_24 = 'À-ÄÄÄÄÄÄÄÄÄÄ--ùú    úù-ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ-Ù';
 
 procedure HELP(topic: String);
 procedure C3WriteLn(posX,PosY: Byte; str: String; atr1,atr2,atr3: Byte);
@@ -46,7 +44,7 @@ uses
     StringIO,DialogIO,TxtScrIO;
 
 const
-  LINES = 969;
+  LINES = 970;
   help_data: array[1..LINES] of String[128] = (
     '@topic:general',
     'ÍËÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍ',
@@ -976,8 +974,10 @@ const
     '    `F`x EXTRA FiNE FSLiDE DOWN     x=speed_of_slide        [1-F]',
     '',
     '`$`xy ÄÄ EXTRA FiNE ARPEGGiO        xy=1st_«tone|2nd_«tone  [1-F]',
-    '@@`~~`xy ÄÄ EXTRA FiNE ViBRATO         xy=speed|depth          [1-F]  ~C~',
+    '@@~xy ÄÄ EXTRA FiNE ViBRATO         xy=speed|depth          [1-F]  ~C~',
     '`^`xy ÄÄ EXTRA FiNE TREMOLO         xy=speed|depth          [1-F]  ~C~',
+    '@@`xx ÄÄ SET CUSTOM SPEED TABLE     xx=strength_value       [1-FF,0=Reset]',
+    '',
     '',
     'Note that effects marked as ~C~ can be continued',
     'in subsequent lines by setting the parameter to value 0.',
@@ -1003,7 +1003,6 @@ const
     'Joergen Ibsen [aPLib 0.26b]',
     'Simple DirectMedia Layer [SDL 1.2]',
     'Daniel F. Moisset [SDL4Freepascal-1.2.0.0]',
-    'Florian Jung (Windfisch) [Linux port]',
     'Jarek Burczynski and MAME Development Team [ymf262.c version 0.2]',
     'Markus Oberhumer, Laszlo Molnar & John Reiser [UPX 3.91w]',
     '',
@@ -1049,16 +1048,18 @@ begin
   If (Copy(str,1,3) = '@@~') then
     begin
       Delete(str,1,3);
-      ShowCStr2(dest,x,y,
+      ShowStr(dest,x,y,'~',atr3);
+      ShowC3Str(dest,x+1,y,
                 ExpStrR(str,74+Length(str)-CStr2Len(str),' '),
-                atr1,atr2);
+                atr1,atr2,atr3);
      end
   else If (Copy(str,1,3) = '@@`') then
          begin
            Delete(str,1,3);
-           ShowCStr(dest,x,y,
+           ShowStr(dest,x,y,'`',atr3);
+           ShowC3Str(dest,x+1,y,
                     ExpStrR(str,74+Length(str)-CStrLen(str),' '),
-                    atr1,atr2);
+                    atr1,atr2,atr3);
          end
        else ShowC3Str(dest,x,y,
                       ExpStrR(str,74+Length(str)-C3StrLen(str),' '),
@@ -1266,7 +1267,7 @@ begin
 
   WriteLn;
   WriteLn('/´DLiB TR/´CK3R ][ SDL (win32)');
-  WriteLn('coded by subz3ro/Altair, SDL portation support by Dmitry Smagin, Linux port by Florian Jung');
+  WriteLn('coded by subz3ro/Altair, SDL portation support by Dmitry Smagin');
   WriteLn('version ',at2ver,' built on ',at2date,' ',at2link);
   WriteLn;
 end;
