@@ -492,7 +492,7 @@ begin
       WriteLn('SDL: Audio initialization error');
       HALT(1);
     end;
-  
+    
   WriteLn('  Sample buffer size: ',sdl_audio_spec.samples,' samples (requested ',sdl_sample_buffer,')');
   WriteLn('  Sampling rate: ',sdl_audio_spec.freq,' Hz (requested ',sdl_sample_rate,')');
 

@@ -7,7 +7,6 @@ procedure vid_Deinit;
 procedure vid_SetVideoMode(do_delay: Boolean);
 procedure vid_SetRGBPalette(var palette);
 procedure vid_FadeOut;
-procedure vid_TriggerEmergencyPalette(emergency: Boolean);
 
 implementation
 
@@ -114,22 +113,5 @@ begin
   SDL_SetPalette(screen,SDL_PHYSPAL,SDL_ColorArray(Addr(rgb_color_alt)^),0,16);
 end;
 
-procedure vid_TriggerEmergencyPalette(emergency: Boolean);
-
-var
-  idx: Byte;
-  
-begin
-{$IFNDEF WINDOWS}
-EXIT; // this crashes under linux. HACK! TODO!
-{$ENDIF}
-  If emergency then
-    begin        
-      For idx := 0 to 15 do
-        rgb_color_alt[idx].r := 255-rgb_color[idx].r;
-    end
-  else Move(rgb_color,rgb_color_alt,SizeOf(rgb_color));
-  SDL_SetPalette(screen,SDL_PHYSPAL,SDL_ColorArray(Addr(rgb_color_alt)^),0,16);
-end;
 
 end.

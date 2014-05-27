@@ -3,7 +3,7 @@ program AdTrack2;
 {$APPTYPE GUI}
 {$PACKRECORDS 1}
 {$IFDEF WINDOWS}
-  {$R adtrack2.res}
+{$R adtrack2.res}
 {$ENDIF}
 
 uses
@@ -152,7 +152,7 @@ begin { MAIN }
   C3WriteLn(02+(MAX_COLUMNS-57) DIV 2,temp+23,ascii_line_24,$08,$09,$01);
   C3WriteLn(02+(MAX_COLUMNS-57) DIV 2,temp+24,ascii_line_25,$08,$09,$01);
   C3WriteLn(02+(MAX_COLUMNS-57) DIV 2,temp+25,ascii_line_26,$08,$09,$01);
-  virtual_screen_font := Addr(vga_font8x16);
+  Move(vga_font8x16,font8x16,SizeOf(font8x16));
   emulate_screen;
   SDL_Delay(3000);
 

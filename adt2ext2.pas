@@ -1282,7 +1282,7 @@ begin { process_config_file }
         check_number('sdl_screen_mode',10,0,2,sdl_screen_mode);
 
       sdl_sample_rate :=
-        check_number('sdl_sample_rate',10,4000,192000,sdl_sample_rate);
+        check_number('sdl_sample_rate',10,8000,48000,sdl_sample_rate);
 
       sdl_sample_buffer :=
         check_number('sdl_sample_buffer',10,512,32768,sdl_sample_buffer);

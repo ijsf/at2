@@ -11275,6 +11275,8 @@ _jmp1:
   limit_exceeded := FALSE;
   HideCursor;
 
+  temp := Lower(temp); { is only used for checking file extension from now on }
+
   If (quick_cmd) and
      NOT ((ExtOnly(temp) = 'a2i') or
           (ExtOnly(temp) = 'a2f') or
@@ -12825,15 +12827,15 @@ begin
   old_instdata_source := instdata_source;
 
   If (songdata_source <> '') then
-    songdata_source := iCASE(PathOnly(songdata_source))+
-                             Lower(BaseNameOnly(songdata_source))+'.'+ext;
+    songdata_source := iCASE_file(PathOnly(songdata_source))+
+                             Lower_file(BaseNameOnly(songdata_source))+'.'+ext;
 
   If (instdata_source <> '') then
-    instdata_source := iCASE(PathOnly(instdata_source))+
-                             Lower(BaseNameOnly(instdata_source))+'.'+ext;
+    instdata_source := iCASE_file(PathOnly(instdata_source))+
+                             Lower_file(BaseNameOnly(instdata_source))+'.'+ext;
 _jmp1:
   If quick_cmd then
-    If ((Lower(ext) = 'a2m') or (Lower(ext) = 'a2t')) and
+    If ((Lower_file(ext) = 'a2m') or (Lower_file(ext) = 'a2t')) and
         (songdata_source <> '') then GOTO _jmp2;
 
   Repeat
@@ -12845,49 +12847,49 @@ _jmp1:
     is_environment.locate_pos    := 1;
     dl_environment.context       := ' TAB Ä DiRLiST ';
 
-    If (Lower(ext) = 'a2i') then
+    If (Lower_file(ext) = 'a2i') then
       begin
         If NOT alt_ins_name then
           begin
             If (a2i_default_path = '') then dl_environment.input_str := instdata_source
-            else dl_environment.input_str := iCASE(a2i_default_path)+NameOnly(instdata_source);
+            else dl_environment.input_str := iCASE_file(a2i_default_path)+NameOnly(instdata_source);
           end
-        else dl_environment.input_str := iCASE(a2i_default_path)+
+        else dl_environment.input_str := iCASE_file(a2i_default_path)+
                'instr'+ExpStrL(Num2str(current_inst,10),3,'0')+'.a2i';
       end;
 
-    If (Lower(ext) = 'a2f') then
+    If (Lower_file(ext) = 'a2f') then
       begin
         If NOT alt_ins_name then
           begin
             If (a2f_default_path = '') then dl_environment.input_str := instdata_source
-            else dl_environment.input_str := iCASE(a2f_default_path)+NameOnly(instdata_source);
+            else dl_environment.input_str := iCASE_file(a2f_default_path)+NameOnly(instdata_source);
           end
-        else dl_environment.input_str := iCASE(a2f_default_path)+
+        else dl_environment.input_str := iCASE_file(a2f_default_path)+
                'instr'+ExpStrL(Num2str(current_inst,10),3,'0')+'.a2f';
       end;
 
-    If (Lower(ext) = 'a2b') then
+    If (Lower_file(ext) = 'a2b') then
       If (a2b_default_path = '') then dl_environment.input_str := instdata_source
-      else dl_environment.input_str := iCASE(a2b_default_path)+NameOnly(instdata_source);
+      else dl_environment.input_str := iCASE_file(a2b_default_path)+NameOnly(instdata_source);
 
-    If (Lower(ext) = 'a2w') then
+    If (Lower_file(ext) = 'a2w') then
       If (a2w_default_path = '') then dl_environment.input_str := instdata_source
-      else dl_environment.input_str := iCASE(a2w_default_path)+NameOnly(instdata_source);
+      else dl_environment.input_str := iCASE_file(a2w_default_path)+NameOnly(instdata_source);
 
-    If (Lower(ext) = 'a2m') then
+    If (Lower_file(ext) = 'a2m') then
       If (a2m_default_path = '') then dl_environment.input_str := songdata_source
-      else dl_environment.input_str := iCASE(a2m_default_path)+NameOnly(songdata_source);
+      else dl_environment.input_str := iCASE_file(a2m_default_path)+NameOnly(songdata_source);
 
-    If (Lower(ext) = 'a2t') then
+    If (Lower_file(ext) = 'a2t') then
       If (a2t_default_path = '') then dl_environment.input_str := songdata_source
-      else dl_environment.input_str := iCASE(a2t_default_path)+NameOnly(songdata_source);
+      else dl_environment.input_str := iCASE_file(a2t_default_path)+NameOnly(songdata_source);
 
-    If (Lower(ext) = 'a2p') then
+    If (Lower_file(ext) = 'a2p') then
       If (a2p_default_path = '') then dl_environment.input_str := songdata_source
-      else dl_environment.input_str := iCASE(a2p_default_path)+NameOnly(songdata_source);
+      else dl_environment.input_str := iCASE_file(a2p_default_path)+NameOnly(songdata_source);
 
-    Dialog('{PATH}[FiLENAME] EXTENSiON iS SET TO "'+iCASE(ext)+'"$',
+    Dialog('{PATH}[FiLENAME] EXTENSiON iS SET TO "'+iCASE_file(ext)+'"$',
            '%string_input%255$50'+
            '$'+Num2str(dialog_input_bckg+dialog_input,16)+
            '$'+Num2str(dialog_def_bckg+dialog_def,16)+
@@ -12909,47 +12911,47 @@ _jmp1:
 
     If (dl_environment.keystroke = kENTER) then
       begin
-        If (Lower(ext) = 'a2m') then
-          songdata_source := iCASE(PathOnly(dl_environment.input_str))+
-                             Lower(BaseNameOnly(dl_environment.input_str))+
+        If (Lower_file(ext) = 'a2m') then
+          songdata_source := iCASE_file(PathOnly(dl_environment.input_str))+
+                             Lower_file(BaseNameOnly(dl_environment.input_str))+
                              '.a2m';
 
-        If (Lower(ext) = 'a2t') then
-          songdata_source := iCASE(PathOnly(dl_environment.input_str))+
-                             Lower(BaseNameOnly(dl_environment.input_str))+
+        If (Lower_file(ext) = 'a2t') then
+          songdata_source := iCASE_file(PathOnly(dl_environment.input_str))+
+                             Lower_file(BaseNameOnly(dl_environment.input_str))+
                              '.a2t';
 
-        If (Lower(ext) = 'a2p') then
-          songdata_source := iCASE(PathOnly(dl_environment.input_str))+
-                             Lower(BaseNameOnly(dl_environment.input_str))+
+        If (Lower_file(ext) = 'a2p') then
+          songdata_source := iCASE_file(PathOnly(dl_environment.input_str))+
+                             Lower_file(BaseNameOnly(dl_environment.input_str))+
                              '.a2p';
 
-        If (Lower(ext) = 'a2i') then
-          instdata_source := iCASE(PathOnly(dl_environment.input_str))+
-                             Lower(BaseNameOnly(dl_environment.input_str))+
+        If (Lower_file(ext) = 'a2i') then
+          instdata_source := iCASE_file(PathOnly(dl_environment.input_str))+
+                             Lower_file(BaseNameOnly(dl_environment.input_str))+
                              '.a2i';
 
-        If (Lower(ext) = 'a2f') then
-          instdata_source := iCASE(PathOnly(dl_environment.input_str))+
-                             Lower(BaseNameOnly(dl_environment.input_str))+
+        If (Lower_file(ext) = 'a2f') then
+          instdata_source := iCASE_file(PathOnly(dl_environment.input_str))+
+                             Lower_file(BaseNameOnly(dl_environment.input_str))+
                              '.a2f';
 
-        If (Lower(ext) = 'a2b') then
-          instdata_source := iCASE(PathOnly(dl_environment.input_str))+
-                             Lower(BaseNameOnly(dl_environment.input_str))+
+        If (Lower_file(ext) = 'a2b') then
+          instdata_source := iCASE_file(PathOnly(dl_environment.input_str))+
+                             Lower_file(BaseNameOnly(dl_environment.input_str))+
                              '.a2b';
 
-        If (Lower(ext) = 'a2w') then
-          instdata_source := iCASE(PathOnly(dl_environment.input_str))+
-                             Lower(BaseNameOnly(dl_environment.input_str))+
+        If (Lower_file(ext) = 'a2w') then
+          instdata_source := iCASE_file(PathOnly(dl_environment.input_str))+
+                             Lower_file(BaseNameOnly(dl_environment.input_str))+
                              '.a2w';
       end;
 
     quit_flag := TRUE;
     If (dl_environment.keystroke = kTAB) then
       begin
-        If (Lower(ext) <> 'a2i') and (Lower(ext) <> 'a2f') and
-           (Lower(ext) <> 'a2b') and (Lower(ext) <> 'a2w') then mpos := 3
+        If (Lower_file(ext) <> 'a2i') and (Lower_file(ext) <> 'a2f') and
+           (Lower_file(ext) <> 'a2b') and (Lower_file(ext) <> 'a2w') then mpos := 3
         else mpos := 4;
 
         fs_environment.last_file := last_file[mpos];
@@ -12962,33 +12964,33 @@ _jmp1:
 
         If (mn_environment.keystroke = kESC) then quit_flag := FALSE
         else begin
-               If (Lower(ext) = 'a2m') then
-                 songdata_source := iCASE(PathOnly(temp_str))+
-                                    Lower(BaseNameOnly(temp_str))+'.a2m';
+               If (Lower_file(ext) = 'a2m') then
+                 songdata_source := iCASE_file(PathOnly(temp_str))+
+                                    Lower_file(BaseNameOnly(temp_str))+'.a2m';
 
-               If (Lower(ext) = 'a2t') then
-                 songdata_source := iCASE(PathOnly(temp_str))+
-                                    Lower(BaseNameOnly(temp_str))+'.a2t';
+               If (Lower_file(ext) = 'a2t') then
+                 songdata_source := iCASE_file(PathOnly(temp_str))+
+                                    Lower_file(BaseNameOnly(temp_str))+'.a2t';
 
-               If (Lower(ext) = 'a2p') then
-                 songdata_source := iCASE(PathOnly(temp_str))+
-                                    Lower(BaseNameOnly(temp_str))+'.a2p';
+               If (Lower_file(ext) = 'a2p') then
+                 songdata_source := iCASE_file(PathOnly(temp_str))+
+                                    Lower_file(BaseNameOnly(temp_str))+'.a2p';
 
-               If (Lower(ext) = 'a2i') then
-                 instdata_source := iCASE(PathOnly(temp_str))+
-                                    Lower(BaseNameOnly(temp_str))+'.a2i';
+               If (Lower_file(ext) = 'a2i') then
+                 instdata_source := iCASE_file(PathOnly(temp_str))+
+                                    Lower_file(BaseNameOnly(temp_str))+'.a2i';
 
-               If (Lower(ext) = 'a2f') then
-                 instdata_source := iCASE(PathOnly(temp_str))+
-                                    Lower(BaseNameOnly(temp_str))+'.a2f';
+               If (Lower_file(ext) = 'a2f') then
+                 instdata_source := iCASE_file(PathOnly(temp_str))+
+                                    Lower_file(BaseNameOnly(temp_str))+'.a2f';
 
-               If (Lower(ext) = 'a2b') then
-                 instdata_source := iCASE(PathOnly(temp_str))+
-                                    Lower(BaseNameOnly(temp_str))+'.a2b';
+               If (Lower_file(ext) = 'a2b') then
+                 instdata_source := iCASE_file(PathOnly(temp_str))+
+                                    Lower_file(BaseNameOnly(temp_str))+'.a2b';
 
-               If (Lower(ext) = 'a2w') then
-                 instdata_source := iCASE(PathOnly(temp_str))+
-                                    Lower(BaseNameOnly(temp_str))+'.a2w';
+               If (Lower_file(ext) = 'a2w') then
+                 instdata_source := iCASE_file(PathOnly(temp_str))+
+                                    Lower_file(BaseNameOnly(temp_str))+'.a2w';
              end;
       end;
   until quit_flag;
@@ -13001,19 +13003,19 @@ _jmp1:
     end;
 
 _jmp2:
- If (Lower(ext) = 'a2i') or (Lower(ext) = 'a2f') or
-    (Lower(ext) = 'a2b') or (Lower(ext) = 'a2w') then
+ If (Lower_file(ext) = 'a2i') or (Lower_file(ext) = 'a2f') or
+    (Lower_file(ext) = 'a2b') or (Lower_file(ext) = 'a2w') then
     temp_str := instdata_source;
-  If (Lower(ext) = 'a2m') or (Lower(ext) = 'a2t') or (Lower(ext) = 'a2p') then
+  If (Lower_file(ext) = 'a2m') or (Lower_file(ext) = 'a2t') or (Lower_file(ext) = 'a2p') then
     temp_str := songdata_source;
 
-  If (Lower(ext) = 'a2m') then temp := _a2m_saver;
-  If (Lower(ext) = 'a2t') then temp := _a2t_saver;
-  If (Lower(ext) = 'a2i') then temp := _a2i_saver;
-  If (Lower(ext) = 'a2f') then temp := _a2f_saver;
-  If (Lower(ext) = 'a2p') then temp := _a2p_saver;
-  If (Lower(ext) = 'a2b') then temp := _a2b_saver;
-  If (Lower(ext) = 'a2w') then temp := _a2w_saver;
+  If (Lower_file(ext) = 'a2m') then temp := _a2m_saver;
+  If (Lower_file(ext) = 'a2t') then temp := _a2t_saver;
+  If (Lower_file(ext) = 'a2i') then temp := _a2i_saver;
+  If (Lower_file(ext) = 'a2f') then temp := _a2f_saver;
+  If (Lower_file(ext) = 'a2p') then temp := _a2p_saver;
+  If (Lower_file(ext) = 'a2b') then temp := _a2b_saver;
+  If (Lower_file(ext) = 'a2w') then temp := _a2w_saver;
 
   If (temp = BYTE_NULL) then GOTO _jmp1;
 end;

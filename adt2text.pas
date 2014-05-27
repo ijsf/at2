@@ -26,12 +26,14 @@ const
   ascii_line_16 = '³ ~subz3ro/Altair~                 ~/´DLiB³R/´CK3R ³³ SDL~ ú';
   ascii_line_17 = '³ `SDL portation support:`          ~³       ³     ÄÄ~      ';
   ascii_line_18 = '³ ~Dmitry Smagin~                             ~'+at2ver+'~      ';
-  ascii_line_19 = '³ `additional ideas:`                                    ú';
-  ascii_line_20 = '³ ~Malfunction/Altair~                                   ù';
-  ascii_line_21 = '³ `special thanks:`                                      ³';
-  ascii_line_22 = '³ ~encore~                HOMEPAGE  www.adlibtracker.net ³';
-  ascii_line_23 = '³ ~insane/Altair~         EMAiL     subz3ro@hotmail.com  ³';
-  ascii_line_24 = 'À-ÄÄÄÄÄÄÄÄÄÄ--ùú    úù-ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ-Ù';
+  ascii_line_19 = '³ `Linux portation:`';  
+  ascii_line_20 = '³ ~Florian Jung (Windfisch)~';
+  ascii_line_21 = '³ `additional ideas:`                                    ú';
+  ascii_line_22 = '³ ~Malfunction/Altair~                                   ù';
+  ascii_line_23 = '³ `special thanks:`                                      ³';
+  ascii_line_24 = '³ ~encore~                HOMEPAGE  www.adlibtracker.net ³';
+  ascii_line_25 = '³ ~insane/Altair~         EMAiL     subz3ro@hotmail.com  ³';
+  ascii_line_26 = 'À-ÄÄÄÄÄÄÄÄÄÄ--ùú    úù-ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ-Ù';
 
 procedure HELP(topic: String);
 procedure C3WriteLn(posX,PosY: Byte; str: String; atr1,atr2,atr3: Byte);
@@ -1266,8 +1268,8 @@ begin
      adt2_title[temp] := RotStrL(' - REViSiON '+at2rev+' - ', '/´DLiB TR/´CK3R ][',temp-18);
 
   WriteLn;
-  WriteLn('/´DLiB TR/´CK3R ][ SDL (win32)');
-  WriteLn('coded by subz3ro/Altair, SDL portation support by Dmitry Smagin');
+  WriteLn('/´DLiB TR/´CK3R ][ SDL');
+  WriteLn('coded by subz3ro/Altair, SDL portation by Dmitry Smagin & Florian Jung');
   WriteLn('version ',at2ver,' built on ',at2date,' ',at2link);
   WriteLn;
 end;
