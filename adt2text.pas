@@ -4,8 +4,8 @@ interface
 const
 {__AT2REV__}at2rev  = '055';
 {__AT2VER__}at2ver  = '2.4.15';
-{__AT2DAT__}at2date = '05-26-2014';
-{__AT2LNK__}at2link = '3:18pm';
+{__AT2DAT__}at2date = '05-28-2014';
+{__AT2LNK__}at2link = '9:12am';
 
 const
   ascii_line_01 = 'Ú-ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ--ùú               úù-¿';
@@ -978,7 +978,7 @@ const
     '`$`xy ÄÄ EXTRA FiNE ARPEGGiO        xy=1st_«tone|2nd_«tone  [1-F]',
     '@@~xy ÄÄ EXTRA FiNE ViBRATO         xy=speed|depth          [1-F]  ~C~',
     '`^`xy ÄÄ EXTRA FiNE TREMOLO         xy=speed|depth          [1-F]  ~C~',
-    '@@`xx ÄÄ SET CUSTOM SPEED TABLE     xx=strength_value       [1-FF,0=Reset]',
+    '@@`xx ÄÄ SET CUSTOM SPEED TABLE     xx=strength_value       [0=Default,1-FF]',
     '',
     '',
     'Note that effects marked as ~C~ can be continued',

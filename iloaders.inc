@@ -5066,8 +5066,7 @@ begin
             If (chunk.effect DIV 16 <> 0) then
               misc_cache[temp3] := chunk.effect AND $0f0+
                                    misc_cache[temp3] AND $0f
-            else If (chunk.effect_def in [temp_ef_Arpeggio,
-                                          ef_Vibrato,
+            else If (chunk.effect_def in [ef_Vibrato,
                                           ef_ExtraFineVibrato,
                                           ef_Tremolo,
                                           ef_Tremor,
@@ -5081,8 +5080,7 @@ begin
             If (chunk.effect MOD 16 <> 0) then
               misc_cache[temp3] := misc_cache[temp3] AND $0f0+
                                    chunk.effect AND $0f
-            else If (chunk.effect_def in [temp_ef_Arpeggio,
-                                          ef_Vibrato,
+            else If (chunk.effect_def in [ef_Vibrato,
                                           ef_ExtraFineVibrato,
                                           ef_Tremolo,
                                           ef_Tremor,
@@ -5210,9 +5208,8 @@ begin
 
         If (chunk.effect_def = temp_ef_Arpeggio) then
           begin
-            chunk2 := chunk;
-            chunk2.effect_def := ef_Arpeggio;
-            put_chunk(patt,temp2,temp3,chunk2);
+            chunk.effect_def := ef_Arpeggio;
+            put_chunk(patt,temp2,temp3,chunk);
           end;
       end;
 end;
@@ -5976,7 +5973,7 @@ var
   xfvolsld_cache,
   slide_cache: array[1..20] of Byte;
   _1st_ins_load: array[1..20] of Boolean;
-  _vibrato_fixed_flag: array[0..$7f] of Boolean;
+  _speed_table_fixed: array[0..$7f] of Boolean;
   prev_cache: array[1..20] of Record
                                 effect_def,
                                 effect,
@@ -5993,7 +5990,7 @@ begin
   FillChar(prev_cache,SizeOf(prev_cache),0);
   patt_break := BYTE_NULL;
 
-  If NOT _vibrato_fixed_flag[patt] then
+  If NOT _speed_table_fixed[patt] then
     For temp2 := 0 to $3f do
       begin
         For temp3 := 1 to 20 do
@@ -6004,18 +6001,18 @@ begin
                 chunk.effect_def := ef_SetCustomSpeedTab;
                 chunk.effect := 29;
                 put_chunk(patt,temp2,temp3,chunk);
-                _vibrato_fixed_flag[patt] := TRUE;
+                _speed_table_fixed[patt] := TRUE;
               end
             else If (chunk.effect_def2 = 0) then
                    begin
                      chunk.effect_def2 := ef_SetCustomSpeedTab;
                      chunk.effect2 := 29;
                      put_chunk(patt,temp2,temp3,chunk);
-                     _vibrato_fixed_flag[patt] := TRUE;
+                     _speed_table_fixed[patt] := TRUE;
                    end;
-            If _vibrato_fixed_flag[patt] then BREAK;
+            If _speed_table_fixed[patt] then BREAK;
           end;         
-        If _vibrato_fixed_flag[patt] then BREAK;
+        If _speed_table_fixed[patt] then BREAK;
       end;         
   
   For temp2 := 0 to $3f do
@@ -6069,8 +6066,7 @@ begin
             If (chunk.effect DIV 16 <> 0) then
               misc_cache[temp3] := chunk.effect AND $0f0+
                                    misc_cache[temp3] AND $0f
-            else If (chunk.effect_def in [temp_ef_Arpeggio,
-                                          ef_Vibrato,
+            else If (chunk.effect_def in [ef_Vibrato,
                                           ef_Tremolo]) then
                    begin
                      chunk.effect := misc_cache[temp3] AND $0f0+
@@ -6081,8 +6077,7 @@ begin
             If (chunk.effect MOD 16 <> 0) then
               misc_cache[temp3] := misc_cache[temp3] AND $0f0+
                                    chunk.effect AND $0f
-            else If (chunk.effect_def in [temp_ef_Arpeggio,
-                                          ef_Vibrato,
+            else If (chunk.effect_def in [ef_Vibrato,
                                           ef_Tremolo]) then
                    begin
                      chunk.effect := chunk.effect AND $0f0+
@@ -6223,7 +6218,7 @@ end;
 begin { fix_fmk_commands }
   FillChar(ins_cache,SizeOf(ins_cache),0);
   FillChar(_1st_ins_load,SizeOf(_1st_ins_load),TRUE);
-  FillChar(_vibrato_fixed_flag,SizeOf(_vibrato_fixed_flag),FALSE);
+  FillChar(_speed_table_fixed,SizeOf(_speed_table_fixed),FALSE);
   FillChar(xfvolsld_cache,SizeOf(volsld_cache),0);
   FillChar(volsld_cache,SizeOf(volsld_cache),0);
   FillChar(slide_cache,SizeOf(slide_cache),0);
@@ -6634,12 +6629,6 @@ begin
            chunk.effect_def := ef_SetCarrierVol;
            chunk.effect := info AND $3f;
          end;
-
-    else If (info <> 0) then
-           begin
-             chunk.effect_def := temp_ef_rep;
-             chunk.effect := info;
-           end;
   end;
 
   If (chunk.effect_def = 0) and (chunk.effect <> 0) then
@@ -6838,7 +6827,8 @@ begin
   songdata.composer := truncate_string(header.composer);
   songdata.common_flag := songdata.common_flag OR 1;
   songdata.common_flag := songdata.common_flag OR 2;
-
+  songdata.common_flag := songdata.common_flag OR $80;
+  
   For temp := 18 downto 1 do
     If NOT (header.trk_set[temp] AND 7 = 7) then BREAK;
 

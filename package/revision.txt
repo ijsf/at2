@@ -9,8 +9,8 @@ For complete AT2 revision history refer to:
 http://www.adlibtracker.net/files/revision.htm
 
 
-04/09/2014 –– 
-RELEASED VERSiON 2.4.15
+* SDL/Win32/Linux version 2.4.15
+  released: --/--/----
 
    . added 'Set Custom Speed Table' effect command (`xx)
    . fixed speed of decay bars for different sdl_frame_rate values;
@@ -18,10 +18,17 @@ RELEASED VERSiON 2.4.15
      due to key processing issues with too low values
    . fixed conversion of FMK files
    . fixed listing of modules with '.' in filename within File Selector
+   . fixed Tone Portamento in KeyOff-ed channel
 
 
-03/14/2014 –– 04/02/2014 * 04/09/2014
-RELEASED VERSiON 2.4.14
+* SDL/Linux version 2.4.14
+  released: 04/24/2014
+
+  . Linux port made from SDL/Win32 2.4.14 sources
+
+
+* SDL/Win32 version 2.4.14
+  released: 04/09/2014
 
    . fixed current instrument control in Macro Browser window
    . fixed macro speed manipulation and Song Variables value update
@@ -36,13 +43,19 @@ RELEASED VERSiON 2.4.14
    . major fixes/cleanups/optimizations of source code
    . updated incomplete key reference information in Help and .mht file
    . fixed waiting for key release when putting notes with MidiBoard
-   * fixed non-blinking track flag and file overwrite bug 
+   . fixed non-blinking track flag and file overwrite bug 
      in ‘per track’ recording mode
-   * reverted back to “FT” as default typing mode
+   . reverted back to “FT” as default typing mode
 
 
-03/11/2014 –– 03/14/2014
-RELEASED VERSiON 2.4.13
+* SDL/Linux version 2.4.13
+  released: 03/17/2014
+
+  . Linux port made from SDL/Win32 2.4.13 sources
+
+
+* SDL/Win32 version 2.4.13
+  released: 03/14/2014
 
    . fixed faulty behavior of save-required notification with A2W files
    . fixed wrong instrument naming when loading complete A2W bank
@@ -53,8 +66,8 @@ RELEASED VERSiON 2.4.13
    . fixed arpeggio/vibrato macro table pointer in Macro Editor window
 
 
-02/21/2014 –– 03/11/2014
-RELEASED VERSiON 2.4.12
+* SDL/Win32 version 2.4.12
+  released: 03/11/2014
 
    . added “per track” mode to WAV recorder (alter key: [Ctrl])  
    . added fully-featured macro browser
@@ -73,8 +86,15 @@ RELEASED VERSiON 2.4.12
    . overall major improvements in macro data exchange and user handling
 
 
-02/12/2014 –– 02/21/2014
-RELEASED VERSiON 2.4.11
+* SDL/Linux version 2.4.11
+  released: 03/04/2014
+
+  . fixed case-sensitiveness problem when saving files
+  . file issue fixed in more places (2.4.11.2)
+
+
+* SDL/Win32 version 2.4.11
+  released: 02/21/2014
 
    . fixed cursor and decay bar speed to match DOS version parameters
    . fixed occasionally appearing interface bug in Pattern Editor window
@@ -92,8 +112,14 @@ RELEASED VERSiON 2.4.11
          for 4-OP channels
 
 
-02/12/2014 –– 02/13/2014
-RELEASED VERSiON 2.4.10
+* SDL/Linux version 2.4.10
+  released: 02/14/2014
+
+   . first Linux port by Florian Jung
+
+
+* SDL/Win32 version 2.4.10
+  released: 02/13/2014
 
    . fixed drive list being not shown in File Selector window
    . removed DBOPL emulation core (no more necessary I think ?)
@@ -102,8 +128,8 @@ RELEASED VERSiON 2.4.10
      for more information about how to setup output files
 
 
-02/06/2014 –– 02/11/2014 * 02/12/2014
-RELEASED VERSiON 2.4.09
+* SDL/Win32 version 2.4.09
+  released: 02/12/2014
 
    . fixed bug in playback calibration (macros were not processed)
    . fixed interface bug with long filenames in Status window
@@ -124,11 +150,11 @@ RELEASED VERSiON 2.4.09
    . changed handling of F2/F3 related actions over instrument data
    . added wide enhanced screen mode (option “sdl_screen_mode=2”);
      extended screen content to 180/60 chars at 1440x960 pixels
-   * fixed cursor position in Pattern Order with wide enhanced screen
+   . fixed cursor position in Pattern Order with wide enhanced screen
 
 
-01/31/2014 –– 02/06/2014
-RELEASED VERSiON 2.4.08
+* SDL/Win32 version 2.4.08
+  released: 02/06/2014
 
    . fixed interface bugs in Transpose and Pattern List window
    . fixed some non-functional keyboard combinations
@@ -153,8 +179,8 @@ RELEASED VERSiON 2.4.08
      (check yourself with setting “sdl_screen_mode=1” :)
 
 
-01/26/2014 –– 01/30/2014 * 01/31/2014
-RELEASED VERSiON 2.4.07
+* SDL/Win32 version 2.4.07
+  released: 01/30/2014
 
    . fixed division by zero bug in playback fade out routine
    . added some modules from OxygenStar, a.o. to Modules directory
@@ -169,8 +195,8 @@ RELEASED VERSiON 2.4.07
          percussion channels except BD (experimental)
 
 
-01/22/2014 -- 01/25/2014 * 01/26/2014
-RELEASED VERSiON 2.4.06
+* SDL/Win32 version 2.4.06
+  released: 01/26/2014
 
    . fixed bug in replay routine (playback never advanced to order #7f)
    . fixed Status window update during playback calibration
@@ -186,13 +212,13 @@ RELEASED VERSiON 2.4.06
      Macro Editor window (new key combo: Ctrl+[])
    . added possibility to change current instrument and octave while
      macro-preview mode is activated
-   * fixed treating of macro speedup (if unsafe, forced to lower value);
+   . fixed treating of macro speedup (if unsafe, forced to lower value);
      SDL seems to have max. usable timer frequency at 650Hz, while DOS
      has been working just fine all the way up to 1000Hz ? 
 
 
-01/20/2014 -- 01/22/2014
-RELEASED VERSiON 2.4.05
+* SDL/Win32 version 2.4.05
+  released: 01/22/2014
 
    . fixed bug in replay routine (frequency data output for 4OP channels)
    . fixed bug with channel calculation in 4OP binding mode
@@ -200,8 +226,8 @@ RELEASED VERSiON 2.4.05
    . fixed first bugfix of KSL in MAME emulator ?
 
 
-01/17/2014 -- 01/20/2014
-RELEASED VERSiON 2.4.04
+* SDL/Win32 version 2.4.04
+  released: 01/20/2014
 
    . fixed drive listing in File Selector (no more ‘insert disk’ messages
      without accesing drive :)
@@ -209,8 +235,8 @@ RELEASED VERSiON 2.4.04
      arcade-like Benjamin Gerardin’s songs sound finally correct :)
 
 
-12/23/2013 -- 01/17/2014
-RELEASED VERSiON 2.4.03
+* SDL/Win32 version 2.4.03
+  released: 01/17/2013
 
    . fixed track binding not being displayed without panning lock on
      in Song Variables window
@@ -233,15 +259,15 @@ RELEASED VERSiON 2.4.03
    . complete conversion and update of program documentation (mht,htm)
 
 
-12/18/2013 -- 12/23/2013
-RELEASED VERSiON 2.4.02
+* SDL/Win32 version 2.4.02
+  released: 12/23/2013
 
    . fixed program freeze with marking block at 4OP channel
    . fixed quick setting of octave and some other keyboard related issues
 
 
-12/18/2013
-RELEASED VERSiON 2.4.01
+* SDL/Win32 version 2.4.01
+  released: 12/18/2013
 
    . code cleanup
    . removed MPU-401 code (not functional within SDL Win32)

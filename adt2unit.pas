@@ -1079,7 +1079,7 @@ begin
     end;
 end;
 
-procedure generate_custom_speed_table(strength_val: Byte);
+procedure generate_custom_vibrato(strength_val: Byte);
 
 var
   mulval: Real;
@@ -1089,14 +1089,14 @@ begin
   If (strength_val = 0) then
     Move(def_vibrato_table,vibrato_table,SizeOf(vibrato_table))
   else
-    begin  
+    begin
       mulval := strength_val/16;
       vibrato_table[0] := 0;
       For idx := 1 to 16 do
         vibrato_table[idx] := ROUND(idx*mulval);
       For idx := 17 to 31 do
         vibrato_table[idx] := ROUND((32-idx)*mulval);
-    end;    
+    end;
 end;
 
 procedure update_fine_effects(chan: Byte); forward;
@@ -2352,8 +2352,16 @@ begin
                      (event.effect2 MOD 16 = ef_ex_cmd_NoRestart)) then
                output_note(event.note,voice_table[chan],chan,TRUE)
              else output_note_NR(event.note,voice_table[chan],chan,TRUE)
-          else If (event.note <> 0) then
-                 event_table[chan].note := event.note;
+          else If (event_table[chan].note = event_table[chan].note OR keyoff_flag) and
+                  ((LO(effect_table[chan]) in [ef_TonePortamento,
+                                               ef_TPortamVolSlide,
+                                               ef_TPortamVSlideFine]) or
+                   (LO(effect_table2[chan]) in [ef_TonePortamento,
+                                                ef_TPortamVolSlide,
+                                                ef_TPortamVSlideFine])) then
+                 output_note(event_table[chan].note AND NOT keyoff_flag,voice_table[chan],chan,FALSE)
+               else If (event.note <> 0) then
+                      event_table[chan].note := event.note;
 
       Case event.effect_def of
         ef_SwapArpeggio:
@@ -2397,7 +2405,7 @@ begin
           end;
           
         ef_SetCustomSpeedTab:
-          generate_custom_speed_table(event.effect);
+          generate_custom_vibrato(event.effect);
       end;
 
       Case event.effect_def2 of
@@ -2441,8 +2449,8 @@ begin
                  end;
           end;
 
-          ef_SetCustomSpeedTab:
-          generate_custom_speed_table(event.effect2);
+        ef_SetCustomSpeedTab:
+          generate_custom_vibrato(event.effect2);
       end;
 
       update_fine_effects(chan);
