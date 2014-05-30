@@ -215,10 +215,6 @@ begin
 end;
 
 procedure wait_until_key_released;
-
-var
-  event: SDL_Event;
-
 begin
   _debug_str_ := 'ADT2KEYB.PAS:wait_until_key_released';
   Repeat

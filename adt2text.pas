@@ -4,8 +4,8 @@ interface
 const
 {__AT2REV__}at2rev  = '055';
 {__AT2VER__}at2ver  = '2.4.15';
-{__AT2DAT__}at2date = '05-28-2014';
-{__AT2LNK__}at2link = '9:12am';
+{__AT2DAT__}at2date = '05-30-2014';
+{__AT2LNK__}at2link = '11:43am';
 
 const
   ascii_line_01 = 'Ú-ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ--ùú               úù-¿';
@@ -30,9 +30,9 @@ const
   ascii_line_20 = '³ ~Florian Jung (Windfisch)~';
   ascii_line_21 = '³ `additional ideas:`                                    ú';
   ascii_line_22 = '³ ~Malfunction/Altair~                                   ù';
-  ascii_line_23 = '³ `special thanks:`                                      ³';
-  ascii_line_24 = '³ ~encore~                HOMEPAGE  www.adlibtracker.net ³';
-  ascii_line_25 = '³ ~insane/Altair~         EMAiL     subz3ro@hotmail.com  ³';
+  ascii_line_23 = '³ `special thanks:`      HOMEPAGE   www.adlibtracker.net ³';
+  ascii_line_24 = '³ ~encore~               EMAiL  subz3ro.alrair@gmail.com ³';
+  ascii_line_25 = '³ ~insane/Altair~                      flo@windfisch.org ³';
   ascii_line_26 = 'À-ÄÄÄÄÄÄÄÄÄÄ--ùú    úù-ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ-Ù';
 
 procedure HELP(topic: String);
@@ -46,7 +46,7 @@ uses
     StringIO,DialogIO,TxtScrIO;
 
 const
-  LINES = 970;
+  LINES = 987;
   help_data: array[1..LINES] of String[128] = (
     '@topic:general',
     'ÍËÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍ',
@@ -479,7 +479,7 @@ const
     '³ it advances song to next highlighted row.                             ³',
     '³ If used with ~Right-Shift~ key, it makes a fixed note.                  ³',
     '³ ~Space~ plays row and advances song by one row.                         ³',
-    '@@`³ ~`~ inserts Key-Off, releases playing note and advances to next row.    ³',
+    '³ ~@@` inserts Key-Off, releases playing note and advances to next row.    ³',
     'ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ',
     '',
     '@topic:instrument_registers',
@@ -651,9 +651,9 @@ const
     'for the modulator slot FM feedback.',
     '',
     'ÚÄÄÄÄÄÄÄÄÄÄÄÄÒÄÄÄÄÄÂÄÄÄÄÄÂÄÄÄÄÄÂÄÄÄÄÄÂÄÄÄÄÄÂÄÄÄÄÄÂÄÄÄÄÄÂÄÄÄÄÄ¿',
-    '³ `Feedback`   º `[0]` ³ `[1]` ³ `[2]` ³ `[3]` ³ `[4]` ³ `[5]` ³ `[6]` ³ `[7]` ³',
+    '³ `FEEDBACK`   º `[0]` ³ `[1]` ³ `[2]` ³ `[3]` ³ `[4]` ³ `[5]` ³ `[6]` ³ `[7]` ³',
     'ÃÄÄÄÄÄÄÄÄÄÄÄÄ×ÄÄÄÄÄÅÄÄÄÄÄÅÄÄÄÄÄÅÄÄÄÄÄÅÄÄÄÄÄÅÄÄÄÄÄÅÄÄÄÄÄÅÄÄÄÄÄ´',
-    '³ `Modulation` º  0  ³/16 ³ /8 ³ /4 ³ /2 ³    ³ 2  ³ 4  ³',
+    '³ `MODULATiON` º  0  ³/16 ³ /8 ³ /4 ³ /2 ³    ³ 2  ³ 4  ³',
     'ÀÄÄÄÄÄÄÄÄÄÄÄÄĞÄÄÄÄÄÁÄÄÄÄÄÁÄÄÄÄÄÁÄÄÄÄÄÁÄÄÄÄÄÁÄÄÄÄÄÁÄÄÄÄÄÁÄÄÄÄÄÙ',
     '',
     'The parameter corresponds either with carrier and modulator, therefore',
@@ -829,7 +829,7 @@ const
     'shown in the following table:',
     '',
     'ÚÄÄÄÄÄÄÄÂÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿',
-    '³ `Mult.` ³  ``  ³ `Harmonic`                           ³',
+    '³ `MULT.` ³  ``  ³ `HARMONiC`                           ³',
     'ÆÍÍÍÍÍÍÍØÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍµ',
     '³  `[0]`  ³ 0.5 ³ 1 octave below                     ³',
     '³  `[1]`  ³  1  ³ at the voice''s specified frequency ³',
@@ -976,9 +976,23 @@ const
     '    `F`x EXTRA FiNE FSLiDE DOWN     x=speed_of_slide        [1-F]',
     '',
     '`$`xy ÄÄ EXTRA FiNE ARPEGGiO        xy=1st_«tone|2nd_«tone  [1-F]',
-    '@@~xy ÄÄ EXTRA FiNE ViBRATO         xy=speed|depth          [1-F]  ~C~',
+    '`@@~xy ÄÄ EXTRA FiNE ViBRATO         xy=speed|depth          [1-F]  ~C~',
     '`^`xy ÄÄ EXTRA FiNE TREMOLO         xy=speed|depth          [1-F]  ~C~',
-    '@@`xx ÄÄ SET CUSTOM SPEED TABLE     xx=strength_value       [0=Default,1-FF]',
+    '`@@`xx ÄÄ SET CUSTOM SPEED TABLE     xx=parameter            [0-FF]',
+    '',
+    '`@@`??  `00`     Reset default speed table',
+    '     `01`-`FF`  Calculate custom speed table with parameters',
+    '            `table size`, `maximum value` and `processing speed factor`',
+    '',
+    '            ÚÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄ¿',
+    '            ³ PARAMETER  ³ `SiZE` ³ `MAX.`   ³ `FACTOR` ³',
+    '            ÆÍÍÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍØÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍµ',
+    '            ³ `[01]`..`[EF]` ³ 32   ³ ~01~..~EF~ ³ '#7'1     ³',
+    '            ³ `[F0]`..`[F3]` ³ ~32~   ³ FF     ³ ~'#7'1~..~'#7'4~ ³',
+    '            ³ `[F4]`..`[F7]` ³ ~64~   ³ FF     ³ ~'#7'1~..~'#7'4~ ³',
+    '            ³ `[F8]`..`[FB]` ³ ~128~  ³ FF     ³ ~'#7'1~..~'#7'4~ ³',
+    '            ³ `[FC]`..`[FF]` ³ ~256~  ³ FF     ³ ~'#7'1~..~'#7'4~ ³',
+    '            ÀÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÙ',
     '',
     '',
     'Note that effects marked as ~C~ can be continued',
@@ -996,8 +1010,11 @@ const
     'http://www.adlibtracker.net',
     '',
     '`Contact information:`',
-    'E-MAiL subz3ro@hotmail.com',
+    'E-MAiL subz3ro.altair@gmail.com',
     'iCQ#   58622796',
+    '',
+    'For Linux specific topics please contact `Florian Jung` directly',
+    'via email address `flo@windfisch.org`.',
     '',
     '`Credits:`',
     'Florian Klaempfl and others [Free Pascal Compiler 2.6.2]',
@@ -1043,25 +1060,33 @@ var
   temps: String;
   page,temp,fkey: Word;
   xstart,ystart,ypos: Byte;
+  mpos: Byte;
+  mchr: Char;
 
 procedure ListCStr(var dest; x,y: Byte;
                              str: String; atr1,atr2,atr3: Byte);
 begin
-  If (Copy(str,1,3) = '@@~') then
+  If (Pos('~@@',str) <> 0) then
     begin
-      Delete(str,1,3);
-      ShowStr(dest,x,y,'~',atr3);
-      ShowC3Str(dest,x+1,y,
-                ExpStrR(str,74+Length(str)-CStr2Len(str),' '),
+      mpos := Pos('~@@',str);
+      mchr := str[mpos+3];
+      Delete(str,mpos,4);
+      Insert(' ',str,mpos);
+      ShowC3Str(dest,x,y,
+                ExpStrR(str,74+Length(str)-C3StrLen(str),' '),
                 atr1,atr2,atr3);
+      ShowStr(dest,x+mpos-1,y,mchr,atr2);
      end
-  else If (Copy(str,1,3) = '@@`') then
+  else If (Pos('`@@',str) <> 0) then
          begin
-           Delete(str,1,3);
-           ShowStr(dest,x,y,'`',atr3);
-           ShowC3Str(dest,x+1,y,
-                    ExpStrR(str,74+Length(str)-CStrLen(str),' '),
-                    atr1,atr2,atr3);
+           mpos := Pos('`@@',str);
+           mchr := str[mpos+3];
+           Delete(str,mpos,4);
+           Insert(' ',str,mpos);
+           ShowC3Str(dest,x,y,
+                     ExpStrR(str,74+Length(str)-C3StrLen(str),' '),
+                     atr1,atr2,atr3);
+           ShowStr(dest,x+mpos-1,y,mchr,atr3);
          end
        else ShowC3Str(dest,x,y,
                       ExpStrR(str,74+Length(str)-C3StrLen(str),' '),

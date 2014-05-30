@@ -5999,14 +5999,14 @@ begin
             If (chunk.effect_def = 0) then
               begin
                 chunk.effect_def := ef_SetCustomSpeedTab;
-                chunk.effect := 29;
+                chunk.effect := $0fa;
                 put_chunk(patt,temp2,temp3,chunk);
                 _speed_table_fixed[patt] := TRUE;
               end
             else If (chunk.effect_def2 = 0) then
                    begin
                      chunk.effect_def2 := ef_SetCustomSpeedTab;
-                     chunk.effect2 := 29;
+                     chunk.effect2 := $0fa;
                      put_chunk(patt,temp2,temp3,chunk);
                      _speed_table_fixed[patt] := TRUE;
                    end;

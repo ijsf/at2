@@ -53,12 +53,30 @@ const
   max_patterns:      Byte      = 128;
 
 const
-  def_vibrato_table: array[0..31] of Byte = (
+  def_vibtrem_speed_factor: Byte = 1;
+  def_vibtrem_table_size: Byte = 32;
+  def_vibtrem_table: array[0..255] of Byte = (
+    0,24,49,74,97,120,141,161,180,197,212,224,235,244,250,253,255,
+    253,250,244,235,224,212,197,180,161,141,120,97,74,49,24,
+    0,24,49,74,97,120,141,161,180,197,212,224,235,244,250,253,255,
+    253,250,244,235,224,212,197,180,161,141,120,97,74,49,24,
+    0,24,49,74,97,120,141,161,180,197,212,224,235,244,250,253,255,
+    253,250,244,235,224,212,197,180,161,141,120,97,74,49,24,
+    0,24,49,74,97,120,141,161,180,197,212,224,235,244,250,253,255,
+    253,250,244,235,224,212,197,180,161,141,120,97,74,49,24,
+    0,24,49,74,97,120,141,161,180,197,212,224,235,244,250,253,255,
+    253,250,244,235,224,212,197,180,161,141,120,97,74,49,24,
+    0,24,49,74,97,120,141,161,180,197,212,224,235,244,250,253,255,
+    253,250,244,235,224,212,197,180,161,141,120,97,74,49,24,
+    0,24,49,74,97,120,141,161,180,197,212,224,235,244,250,253,255,
+    253,250,244,235,224,212,197,180,161,141,120,97,74,49,24,
     0,24,49,74,97,120,141,161,180,197,212,224,235,244,250,253,255,
     253,250,244,235,224,212,197,180,161,141,120,97,74,49,24);
-    
+
 var
-  vibrato_table: array[0..31] of Byte;
+  vibtrem_speed_factor: Byte;
+  vibtrem_table_size: Byte;
+  vibtrem_table: array[0..255] of Byte;
   
 const
   macro_preview_indic_proc: procedure(state: Byte) = NIL;
@@ -121,7 +139,7 @@ var
                                    arpg_note: Byte;
                                    vib_freq: Word;
                                  end;
-
+                                 
   loopbck_table: array[1..20] of Byte;
   loop_table:    array[1..20,0..255] of Byte;
   misc_register: Byte;
@@ -408,8 +426,8 @@ asm
         pop     ebx
 end;
 
-function calc_vibrato_shift(depth,position: Byte;
-                             var direction: Byte): Word; assembler;
+function calc_vibtrem_shift(depth,position: Byte;
+                            var direction: Byte): Word; assembler;
 asm
         push    ebx
         push    ecx
@@ -421,8 +439,10 @@ asm
         mov     bl,position
         xor     bh,bh
         mov     dh,bl
-        and     bx,1fh
-        lea     edi,vibrato_table
+        mov     cl,vibtrem_table_size
+        dec     cl
+        and     bl,cl
+        lea     edi,[vibtrem_table]
         add     edi,ebx
         mov     dl,byte ptr [edi]
         mul     dl
@@ -432,7 +452,8 @@ asm
         mov     ebx,[direction]
         mov     cl,1
         mov     [ebx],cl
-        test    dh,32
+        mov     dl,vibtrem_table_size
+        test    dh,dl
         jne     @@1
         mov     cl,0
         mov     [ebx],cl
@@ -1079,24 +1100,65 @@ begin
     end;
 end;
 
-procedure generate_custom_vibrato(strength_val: Byte);
+procedure generate_custom_vibrato(value: Byte);
+
+const
+  vibtab_size: array[0..15] of Byte = (
+    16,16,16,16,32,32,32,32,64,64,64,64,128,128,128,128);
 
 var
-  mulval: Real;
-  idx: Byte;
+  mul_r: Real;
+  mul_b,div_b: Byte;
+  idx,idx2: Byte;
+
+function min0(value: Longint): Longint;
+begin
+  If (value >= 0) then min0 := value
+  else min0 := 0;
+end;
 
 begin
-  If (strength_val = 0) then
-    Move(def_vibrato_table,vibrato_table,SizeOf(vibrato_table))
-  else
-    begin
-      mulval := strength_val/16;
-      vibrato_table[0] := 0;
-      For idx := 1 to 16 do
-        vibrato_table[idx] := ROUND(idx*mulval);
-      For idx := 17 to 31 do
-        vibrato_table[idx] := ROUND((32-idx)*mulval);
-    end;
+  Case value of
+    // set default speed table
+    0: begin
+         vibtrem_table_size := def_vibtrem_table_size;
+         Move(def_vibtrem_table,vibtrem_table,SizeOf(vibtrem_table));
+       end;
+
+    // set custom speed table (fixed size = 32)
+    1..239:
+       begin
+         vibtrem_table_size := def_vibtrem_table_size;
+         mul_r := value/16;
+         For idx2 := 0 to 7 do
+          begin
+            vibtrem_table[idx2*32] := 0;
+            For idx := 1 to 16 do
+              vibtrem_table[idx2*32+idx] := ROUND(idx*mul_r);
+            For idx := 17 to 31 do
+              vibtrem_table[idx2*32+idx] := ROUND((32-idx)*mul_r);
+          end;
+       end;
+
+    // set custom speed table (speed factor = 1-4)
+    240..255:
+       begin
+         vibtrem_speed_factor := SUCC((value-240) MOD 4);
+         vibtrem_table_size := 2*vibtab_size[value-240];
+         mul_b := 256 DIV (vibtab_size[value-240]);
+         For idx2 := 0 to PRED(128 DIV vibtab_size[value-240]) do
+           begin
+             vibtrem_table[2*vibtab_size[value-240]*idx2] := 0;
+             For idx := 1 to vibtab_size[value-240] do
+               vibtrem_table[2*vibtab_size[value-240]*idx2+idx] :=
+                 min0(idx*mul_b-1);
+             For idx := vibtab_size[value-240]+1 to
+                        2*vibtab_size[value-240]-1 do
+               vibtrem_table[2*vibtab_size[value-240]*idx2+idx] :=
+                 min0((2*vibtab_size[value-240]-idx)*mul_b-1);
+           end;
+       end;
+  end;
 end;
 
 procedure update_fine_effects(chan: Byte); forward;
@@ -2696,8 +2758,8 @@ var
   direction: Byte;
 
 begin
-  Inc(vibr_table[chan].pos,vibr_table[chan].speed);
-  freq := calc_vibrato_shift(vibr_table[chan].depth,
+  Inc(vibr_table[chan].pos,vibr_table[chan].speed*vibtrem_speed_factor);
+  freq := calc_vibtrem_shift(vibr_table[chan].depth,
                              vibr_table[chan].pos,direction);
   old_freq := freq_table[chan];
   If (direction = 0) then portamento_down(chan,freq,nFreq(0))
@@ -2712,8 +2774,8 @@ var
   direction: Byte;
 
 begin
-  Inc(vibr_table2[chan].pos,vibr_table2[chan].speed);
-  freq := calc_vibrato_shift(vibr_table2[chan].depth,
+  Inc(vibr_table2[chan].pos,vibr_table2[chan].speed*vibtrem_speed_factor);
+  freq := calc_vibtrem_shift(vibr_table2[chan].depth,
                              vibr_table2[chan].pos,direction);
   old_freq := freq_table[chan];
   If (direction = 0) then portamento_down(chan,freq,nFreq(0))
@@ -2728,8 +2790,8 @@ var
   direction: Byte;
 
 begin
-  Inc(trem_table[chan].pos,trem_table[chan].speed);
-  vol := calc_vibrato_shift(trem_table[chan].depth,
+  Inc(trem_table[chan].pos,trem_table[chan].speed*vibtrem_speed_factor);
+  vol := calc_vibtrem_shift(trem_table[chan].depth,
                             trem_table[chan].pos,direction);
   old_vol := volume_table[chan];
   If (direction = 0) then slide_volume_down(chan,vol)
@@ -2744,8 +2806,8 @@ var
   direction: Byte;
 
 begin
-  Inc(trem_table2[chan].pos,trem_table2[chan].speed);
-  vol := calc_vibrato_shift(trem_table2[chan].depth,
+  Inc(trem_table2[chan].pos,trem_table2[chan].speed*vibtrem_speed_factor);
+  vol := calc_vibtrem_shift(trem_table2[chan].depth,
                             trem_table2[chan].pos,direction);
   old_vol := volume_table[chan];
   If (direction = 0) then slide_volume_down(chan,vol)
@@ -4189,7 +4251,9 @@ begin
   current_vibrato_depth := vibrato_depth;
   global_volume := 63;
   macro_ticklooper := 0;
-  Move(def_vibrato_table,vibrato_table,SizeOf(vibrato_table));
+  vibtrem_speed_factor := def_vibtrem_speed_factor;
+  vibtrem_table_size := def_vibtrem_table_size;
+  Move(def_vibtrem_table,vibtrem_table,SizeOf(vibtrem_table));
 
   For temp := 1 to 20 do
     begin
