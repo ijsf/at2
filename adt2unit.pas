@@ -359,8 +359,7 @@ asm
 @@1:    mov     ax,7
         shl     ax,10
         add     ax,FreqEnd
-@@2:
-        pop     ecx
+@@2:    pop     ecx
         pop     ebx
 end;
 
@@ -603,6 +602,7 @@ end;
 
 procedure update_timer(Hz: Longint);
 begin
+  _debug_str_ := 'ADT2UNIT.PAS:update_timer';
   If (Hz = 0) then begin TimerSetup(18); EXIT end
   else tempo := Hz;
   If (tempo = 18) and timer_fix then IRQ_freq := TRUNC((tempo+0.2)*20)
@@ -1265,21 +1265,25 @@ begin
       eLo2 := LO(last_effect2[chan]);
       eHi2 := HI(last_effect2[chan]);
 
-      If (arpgg_table[chan].state <> 1) and
-         (event.effect_def <> ef_ExtraFineArpeggio) then
+      If (event.note = 0) or (event.note OR keyoff_flag = event.note) then
         begin
-          arpgg_table[chan].state := 1;
-          change_frequency(chan,nFreq(arpgg_table[chan].note-1)+
-            SHORTINT(ins_parameter(event_table[chan].instr_def,12)));
-        end;
-
-      If (arpgg_table2[chan].state <> 1) and
-         (event.effect_def2 <> ef_ExtraFineArpeggio) then
-        begin
-          arpgg_table2[chan].state := 1;
-          change_frequency(chan,nFreq(arpgg_table2[chan].note-1)+
-            SHORTINT(ins_parameter(event_table[chan].instr_def,12)));
-        end;
+          If NOT (((event.effect_def = ef_Arpeggio) and (event.effect <> 0)) or
+                   (event.effect_def = ef_ExtraFineArpeggio)) and
+                   (arpgg_table[chan].note <> 0) and (arpgg_table[chan].state <> 1) then
+            begin
+              arpgg_table[chan].state := 1;
+              change_frequency(chan,nFreq(arpgg_table[chan].note-1)+
+                SHORTINT(ins_parameter(event_table[chan].instr_def,12)));
+            end
+          else If NOT (((event.effect_def2 = ef_Arpeggio) and (event.effect2 <> 0)) or
+                      (event.effect_def2 = ef_ExtraFineArpeggio)) and
+                      (arpgg_table2[chan].note <> 0) and (arpgg_table2[chan].state <> 1) then
+                 begin
+                   arpgg_table2[chan].state := 1;
+                   change_frequency(chan,nFreq(arpgg_table2[chan].note-1)+
+                     SHORTINT(ins_parameter(event_table[chan].instr_def,12)));
+                 end;
+        end;    
 
       If (tremor_table[chan].pos <> 0) and
          (event.effect_def <> ef_Tremor) then
@@ -1484,7 +1488,9 @@ begin
         ef_ForceInsVolume:
           If percussion_mode and (chan in [17..20]) then
             set_ins_volume(63-event.effect,BYTE_NULL,chan)
-          else set_ins_volume(scale_volume(ins_parameter(voice_table[chan],2) AND $3f,63-event.effect),63-event.effect,chan);
+          else If (ins_parameter(voice_table[chan],10) AND 1 = 0) then
+                 set_ins_volume(scale_volume(ins_parameter(voice_table[chan],2) AND $3f,63-event.effect),63-event.effect,chan)
+               else set_ins_volume(63-event.effect,63-event.effect,chan); 
 
         ef_PositionJump:
           If no_loop(chan,current_line) then
@@ -2023,7 +2029,9 @@ begin
         ef_ForceInsVolume:
           If percussion_mode and (chan in [17..20]) then
             set_ins_volume(63-event.effect2,BYTE_NULL,chan)
-          else set_ins_volume(scale_volume(ins_parameter(voice_table[chan],2) AND $3f,63-event.effect2),63-event.effect2,chan);
+          else If (ins_parameter(voice_table[chan],10) AND 1 = 0) then
+                 set_ins_volume(scale_volume(ins_parameter(voice_table[chan],2) AND $3f,63-event.effect2),63-event.effect2,chan)
+               else set_ins_volume(63-event.effect2,63-event.effect2,chan);
 
         ef_PositionJump:
           If no_loop(chan,current_line) then

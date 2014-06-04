@@ -19,6 +19,9 @@ http://www.adlibtracker.net/files/revision.htm
    . fixed conversion of FMK files
    . fixed listing of modules with '.' in filename within File Selector
    . fixed Tone Portamento in KeyOff-ed channel
+   . fixed processing of Force instrument volume effect
+     for 'AM' connections
+   . fixed bug in processing of Arpeggio effect
 
 
 * SDL/Linux version 2.4.14
