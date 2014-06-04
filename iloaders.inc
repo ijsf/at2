@@ -4954,6 +4954,7 @@ var
   patts: String;
   ins_cache,
   misc_cache,
+  arpg_cache,
   volsld_cache,
   slide_cache,
   note_cache,
@@ -5066,8 +5067,7 @@ begin
             If (chunk.effect DIV 16 <> 0) then
               misc_cache[temp3] := chunk.effect AND $0f0+
                                    misc_cache[temp3] AND $0f
-            else If (chunk.effect_def in [temp_ef_Arpeggio,
-                                          ef_Vibrato,
+            else If (chunk.effect_def in [ef_Vibrato,
                                           ef_ExtraFineVibrato,
                                           ef_Tremolo,
                                           ef_Tremor,
@@ -5081,8 +5081,7 @@ begin
             If (chunk.effect MOD 16 <> 0) then
               misc_cache[temp3] := misc_cache[temp3] AND $0f0+
                                    chunk.effect AND $0f
-            else If (chunk.effect_def in [temp_ef_Arpeggio,
-                                          ef_Vibrato,
+            else If (chunk.effect_def in [ef_Vibrato,
                                           ef_ExtraFineVibrato,
                                           ef_Tremolo,
                                           ef_Tremor,
@@ -5093,6 +5092,13 @@ begin
                      put_chunk(patt,temp2,temp3,chunk);
                    end;
 
+            If (chunk.effect_def = temp_ef_Arpeggio) then
+              If (chunk.effect <> 0) then arpg_cache[temp3] := chunk.effect
+              else begin
+                     chunk.effect := arpg_cache[temp3];
+                     put_chunk(patt,temp2,temp3,chunk);
+                   end;
+                   
             If (chunk.effect_def in [ef_FSlideDown,ef_FSlideDownFine,
                                      ef_FSlideUp,ef_FSlideUpFine,
                                      ef_TonePortamento]) then
@@ -5223,6 +5229,7 @@ begin { fix_s3m_commands }
   FillChar(volsld_cache,SizeOf(volsld_cache),0);
   FillChar(slide_cache,SizeOf(slide_cache),0);
   FillChar(misc_cache,SizeOf(misc_cache),0);
+  FillChar(arpg_cache,SizeOf(arpg_cache),0);
 
   patts := '';
   order := 0; patt := BYTE_NULL;
