@@ -82,10 +82,16 @@ begin
         keypressed := TRUE;    
         EXIT;
       end;
+    If (SDL_PeepEvents(event,1,SDL_PEEKEVENT,SDL_MOUSEEVENTMASK) > 0) then      
+      begin
+        // skip mouse events
+        SDL_PeepEvents(event,1,SDL_GETEVENT,SDL_MOUSEEVENTMASK);
+        CONTINUE;
+      end;
     If (SDL_PeepEvents(event,1,SDL_PEEKEVENT,SDL_KEYDOWNMASK) > 0) then      
       If (event.key.keysym.sym >= SDLK_NUMLOCK) then
         begin
-          // skip modifier key presses!!
+          // skip modifier key presses
           SDL_PeepEvents(event,1,SDL_GETEVENT,SDL_KEYDOWNMASK);
           CONTINUE;
         end

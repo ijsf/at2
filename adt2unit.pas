@@ -1265,25 +1265,22 @@ begin
       eLo2 := LO(last_effect2[chan]);
       eHi2 := HI(last_effect2[chan]);
 
-      If (event.note = 0) or (event.note OR keyoff_flag = event.note) then
+      If NOT (((event.effect_def = ef_Arpeggio) and (event.effect <> 0)) or
+               (event.effect_def = ef_ExtraFineArpeggio)) and
+               (arpgg_table[chan].note <> 0) and (arpgg_table[chan].state <> 1) then
         begin
-          If NOT (((event.effect_def = ef_Arpeggio) and (event.effect <> 0)) or
-                   (event.effect_def = ef_ExtraFineArpeggio)) and
-                   (arpgg_table[chan].note <> 0) and (arpgg_table[chan].state <> 1) then
-            begin
-              arpgg_table[chan].state := 1;
-              change_frequency(chan,nFreq(arpgg_table[chan].note-1)+
-                SHORTINT(ins_parameter(event_table[chan].instr_def,12)));
-            end
-          else If NOT (((event.effect_def2 = ef_Arpeggio) and (event.effect2 <> 0)) or
-                      (event.effect_def2 = ef_ExtraFineArpeggio)) and
-                      (arpgg_table2[chan].note <> 0) and (arpgg_table2[chan].state <> 1) then
-                 begin
-                   arpgg_table2[chan].state := 1;
-                   change_frequency(chan,nFreq(arpgg_table2[chan].note-1)+
-                     SHORTINT(ins_parameter(event_table[chan].instr_def,12)));
-                 end;
-        end;    
+          arpgg_table[chan].state := 1;
+          change_frequency(chan,nFreq(arpgg_table[chan].note-1)+
+            SHORTINT(ins_parameter(event_table[chan].instr_def,12)));
+        end
+      else If NOT (((event.effect_def2 = ef_Arpeggio) and (event.effect2 <> 0)) or
+                  (event.effect_def2 = ef_ExtraFineArpeggio)) and
+                  (arpgg_table2[chan].note <> 0) and (arpgg_table2[chan].state <> 1) then
+             begin
+               arpgg_table2[chan].state := 1;
+               change_frequency(chan,nFreq(arpgg_table2[chan].note-1)+
+                 SHORTINT(ins_parameter(event_table[chan].instr_def,12)));
+             end;
 
       If (tremor_table[chan].pos <> 0) and
          (event.effect_def <> ef_Tremor) then

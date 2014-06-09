@@ -4,8 +4,8 @@ interface
 const
 {__AT2REV__}at2rev  = '055';
 {__AT2VER__}at2ver  = '2.4.15';
-{__AT2DAT__}at2date = '06-04-2014';
-{__AT2LNK__}at2link = '9:51am';
+{__AT2DAT__}at2date = '06-09-2014';
+{__AT2LNK__}at2link = '2:30pm';
 
 const
   ascii_line_01 = 'Ú-ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ--ùú               úù-¿';
@@ -46,7 +46,7 @@ uses
     StringIO,DialogIO,TxtScrIO;
 
 const
-  LINES = 988;
+  LINES = 987;
   help_data: array[1..LINES] of String[128] = (
     '@topic:general',
     'ÍËÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍ',
@@ -1027,10 +1027,9 @@ const
     '',
     '`subz3ro thanks to:`',
     'Slawomir Bubel (Malfunction/Altair), Daniel Illgen (insane/Altair),',
-    'Mikkel Hastrup (encore), Dmitry Smagin, Cecill Etheredge (ijsf),',
-    'Florian Jung (Windfisch), Sven Renner (NeuralNET),',
-    'Tyler Montbriand (Corona688), Artichoke McGreggor (PissMasterPlus),',
-    'and Mr. Maan M. Hamze :-)',
+    'Mikkel Hastrup (encore), Florian Jung (Windfisch), Dmitry Smagin,',
+    'Sven Renner (NeuralNET), Tyler Montbriand (Corona688),',
+    'PissMasterPlus and Maan M. Hamze',
     '',
     '`Greetz fly to the following people:`',
     'Dragan Espenschied (drx/Bodenstandig 2000), Carl Peczynski (OxygenStar),',

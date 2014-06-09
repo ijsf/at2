@@ -88,7 +88,7 @@ begin
   rwop := SDL_RWFromMem(adt2_icon_bitmap,SizeOf(adt2_icon_bitmap));
   icon := SDL_LoadBMP_RW(rwop,TRUE);
   SDL_WM_SetIcon(icon,NIL);
-  win_title := '/|DLiB TR/|CK3R ][ SDL (Press CTRL+TAB if window is not responding)'+#0;
+  win_title := '/|DLiB TR/|CK3R ][ SDL'+#0;
   SDL_WM_SetCaption(Addr(win_title[1]),NIL);
 end;
 

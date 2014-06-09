@@ -6230,6 +6230,17 @@ begin
             chunk2.effect_def := ef_Arpeggio;
             put_chunk(patt,temp2,temp3,chunk2);
           end;
+
+        If (chunk.effect_def in [ef_SetModulatorVol,ef_SetCarrierVol]) and
+           (chunk.effect_def2 = ef_ForceInsVolume) then
+          begin
+            chunk2 := chunk;
+            chunk2.effect_def := chunk.effect_def2;
+            chunk2.effect := chunk.effect2;
+            chunk2.effect_def2 := chunk.effect_def;
+            chunk2.effect2 := chunk.effect;
+            put_chunk(patt,temp2,temp3,chunk2);
+          end;
       end;
 end;
 

@@ -2531,10 +2531,6 @@ _jmp1:
                        dialog_background+dialog_title,
                        double);
 
-  ShowStr(Addr(vscreen)^,INSCTRL_xshift+58,INSCTRL_yshift+26,
-                         ' [SHiFT] TAB Ä MACROS ',
-                          dialog_background+dialog_context);
-
   fr_setting.update_area := FALSE;
   fr_setting.shadow_enabled := FALSE;
   Frame(Addr(vscreen)^,INSCTRL_xshift+09,INSCTRL_yshift+06,
@@ -2550,6 +2546,13 @@ _jmp1:
                        '',
                        instrument_bckg+instrument_title,
                        single);
+
+  ShowStr(Addr(vscreen)^,INSCTRL_xshift+66,INSCTRL_yshift+25,
+                         ' TAB Ä EDITOR ',
+                          dialog_background+dialog_context);
+  ShowStr(Addr(vscreen)^,INSCTRL_xshift+58,INSCTRL_yshift+26,
+                         ' [SHiFT] TAB Ä MACROS ',
+                          dialog_background+dialog_context);
 
   ShowVStr(mn_environment.v_dest^,INSCTRL_xshift+37,INSCTRL_yshift+07,ExpStrL('',18,#28),
            menu_background+instrument_ai_off);
