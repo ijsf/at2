@@ -1530,7 +1530,7 @@ label _jmp1;
 begin { REPLACE }
   _debug_str_ := 'ADT2EXTN.PAS:REPLACE';
   If (replace_selection = 4) and NOT marking then replace_selection := 1;
-  pos := 1;
+  pos := min(get_bank_position('?replace_window?pos',0),1);
   qflag := FALSE;
   _charset[1] := ['A',UpCase(b_note),'C'..'G'];
 
@@ -1841,6 +1841,7 @@ _jmp1:
       emulate_screen;
     until qflag;
 
+  add_bank_position('?replace_window?pos',0,pos);
   HideCursor;
   move_to_screen_data := Addr(backup.screen);
   move_to_screen_area[1] := xstart;
@@ -3217,7 +3218,7 @@ begin { SONG_VARIABLES }
   count_order(temp1);
   count_patterns(temp2);
   count_instruments(temp3);
-  pos := 1;
+  pos := min(get_bank_position('?song_variables_window?pos',0),1);
   If (calc_max_speedup(songdata.tempo) < songdata.macro_speedup) then
     songdata.macro_speedup := calc_max_speedup(songdata.tempo);
 
@@ -4099,6 +4100,7 @@ _end:
       current_vibrato_depth := vibrato_depth;
     end;
 
+  add_bank_position('?song_variables_window?pos',0,pos);
   HideCursor;
   Move(old_keys,is_setting.terminate_keys,SizeOf(old_keys));
   move_to_screen_data := Addr(backup.screen);
@@ -11436,6 +11438,8 @@ begin
           add_bank_position('?internal_instrument_data?macro_av?pos',-1,1);
           add_bank_position('?internal_instrument_data?macro_av?arp_pos',-1,1);
           add_bank_position('?internal_instrument_data?macro_av?vib_pos',-1,1);
+          add_bank_position('?song_variables_window?pos',-1,1);
+          add_bank_position('?replace_window?pos',-1,1);
         end
       else module_archived := FALSE;
     end;
@@ -11766,6 +11770,8 @@ _jmp1:
                add_bank_position('?internal_instrument_data?macro_av?pos',-1,1);
                add_bank_position('?internal_instrument_data?macro_av?arp_pos',-1,1);
                add_bank_position('?internal_instrument_data?macro_av?vib_pos',-1,1);
+               add_bank_position('?song_variables_window?pos',-1,1);
+               add_bank_position('?replace_window?pos',-1,1);
              end
            else begin
                   For index := 1 to 255 do

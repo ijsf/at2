@@ -29,6 +29,7 @@ http://www.adlibtracker.net/files/revision.htm
    . added possibility to control config file options
      with command line (refer to tip #25 in program documentation)
    . fixed handling of ON/OFF flags for 4-OP track pair
+   . added positional memory for Song variables and Replace window
    . majorily improved Debug Info window functionality (hotkey: ^D)
 
 
