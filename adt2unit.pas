@@ -14,6 +14,7 @@ const
 const
   _force_program_quit: Boolean = FALSE;
   _realtime_gfx_no_update: Boolean = FALSE;
+  _no_step_debugging: Boolean = FALSE;
   _emulate_screen_without_delay: Boolean = FALSE;
   _update_sdl_screen: Boolean = FALSE;
   _generic_blink_event_flag: Boolean = FALSE;
@@ -3520,8 +3521,9 @@ begin
   If (NOT pattern_delay and (ticks-tick0+1 >= speed)) or
      fast_forward or rewind or single_play then
     begin
-      If debugging and NOT single_play and NOT space_pressed and
-                       NOT pattern_break then EXIT;
+      If debugging and
+         NOT single_play and NOT pattern_break and
+         (NOT space_pressed or _no_step_debugging) then EXIT;
 
       If NOT single_play and
          NOT play_single_patt then
@@ -3563,7 +3565,7 @@ begin
       update_effects;
       Inc(ticks);
 
-      If NOT (debugging and NOT single_play and NOT space_pressed) then
+      If NOT (debugging and NOT single_play and (NOT space_pressed or _no_step_debugging)) then
         If pattern_delay and (tickD > 1) then Dec(tickD)
         else begin
                If pattern_delay and NOT single_play then
@@ -3890,7 +3892,7 @@ begin
     end;
 
   If (play_status = isPlaying) and
-     NOT (debugging and NOT space_pressed) then
+     NOT (debugging and (NOT space_pressed or _no_step_debugging)) then
     begin
       song_timer_tenths := timer_temp;
       If (song_timer_tenths >= 100) then song_timer_tenths := 0;
@@ -3900,7 +3902,7 @@ begin
              timer_temp := 1;
            end;
     end
-  else If debugging and NOT space_pressed then
+  else If debugging and (NOT space_pressed or _no_step_debugging) then
          If NOT pattern_delay then synchronize_song_timer;
 
   If (song_timer > 3600-1) then

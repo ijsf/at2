@@ -99,6 +99,7 @@ procedure show_progress(value: Longint);
 implementation
 
 uses
+  CRT,
   AdT2sys,AdT2vscr,AdT2opl3,AdT2keyb,
   AdT2unit,AdT2ext2,AdT2ext3,AdT2text,AdT2apak,
   StringIO,DialogIO,ParserIO,TxtScrIO,
@@ -742,22 +743,15 @@ procedure TRANSPOSE;
 var
   patt0,patt1,track0,track1,line0,line1: Byte;
   patterns: Byte;
+  old_text_attr: Byte;
 
 const
   factor: array[1..17] of Byte = (1,12,1,12,1,12,1,12,BYTE_NULL,
                                   1,12,1,12,1,12,1,12);
 begin
   _debug_str_ := 'ADT2EXTN.PAS:TRANSPOSE';
-  mn_setting.title_attr   := dialog_background+dialog_title;
-  mn_setting.menu_attr    := dialog_background+dialog_border;
-  mn_setting.text_attr    := dialog_background+dialog_text;
-  mn_setting.text2_attr   := dialog_sel_btn_bck+dialog_sel_btn;
-  mn_setting.short_attr   := dialog_background+dialog_short;
-  mn_setting.short2_attr  := dialog_sel_btn_bck+dialog_sel_short;
-  mn_setting.disbld_attr  := dialog_background+dialog_button_dis;
-  mn_setting.contxt_attr  := dialog_background+dialog_context;
-  mn_setting.contxt2_attr := dialog_background+dialog_context_dis;
-
+  old_text_attr := mn_setting.text_attr;
+  mn_setting.text_attr := dialog_background+dialog_text;
   mn_setting.cycle_moves := TRUE;
   mn_setting.fixed_len := 14;
   mn_setting.terminate_keys[3] := kTAB;
@@ -868,24 +862,13 @@ begin
       end;
   until (mn_environment.keystroke <> kTAB);
 
-  mn_setting.title_attr    := menu_background+menu_title;
-  mn_setting.menu_attr     := menu_background+menu_border;
-  mn_setting.text_attr     := menu_background+menu_item;
-  mn_setting.text2_attr    := menu_sel_item_bckg+menu_sel_item;
-  mn_setting.short_attr    := menu_background+menu_short;
-  mn_setting.short2_attr   := menu_sel_item_bckg+menu_sel_short;
-  mn_setting.disbld_attr   := menu_background+menu_item_dis;
-  mn_setting.contxt_attr   := menu_background+menu_context;
-  mn_setting.contxt2_attr  := menu_background+menu_context_dis;
-  mn_setting.topic_attr    := menu_background+menu_topic;
-  mn_setting.hi_topic_attr := menu_background+menu_hi_topic;
-
   PATTERN_ORDER_page_refresh(pattord_page);
   PATTERN_page_refresh(pattern_page);
   mn_setting.fixed_len := 0;
   mn_setting.terminate_keys[3] := 0;
   mn_environment.context := '';
   mn_environment.ext_proc := NIL;
+  mn_setting.text_attr := old_text_attr;
 end;
 
 function cstr2str(str: String): String;
@@ -932,7 +915,7 @@ begin
             dialog_hi_text SHL 4)
   else If (remap_selection = 1) then
          ShowStr(centered_frame_vdest^,_remap_xstart+18,_remap_ystart+_remap_inst_page_len+4,' PATTERN ',
-            dialog_sel_btn_bck+dialog_sel_btn)
+            dialog_sel_itm_bck+dialog_sel_itm)
        else
          ShowStr(centered_frame_vdest^,_remap_xstart+18,_remap_ystart+_remap_inst_page_len+4,' PATTERN ',
                  dialog_background+dialog_text);
@@ -942,7 +925,7 @@ begin
             dialog_hi_text SHL 4)
   else If (remap_selection = 2) then
          ShowStr(centered_frame_vdest^,_remap_xstart+29,_remap_ystart+_remap_inst_page_len+4,' SONG ',
-                 dialog_sel_btn_bck+dialog_sel_btn)
+                 dialog_sel_itm_bck+dialog_sel_itm)
        else
          ShowStr(centered_frame_vdest^,_remap_xstart+29,_remap_ystart+_remap_inst_page_len+4,' SONG ',
                  dialog_background+dialog_text);
@@ -952,7 +935,7 @@ begin
             dialog_hi_text SHL 4)
   else If (remap_selection = 3) then
          ShowStr(centered_frame_vdest^,_remap_xstart+37,_remap_ystart+_remap_inst_page_len+4,' TRACK ',
-                 dialog_sel_btn_bck+dialog_sel_btn)
+                 dialog_sel_itm_bck+dialog_sel_itm)
        else
          ShowStr(centered_frame_vdest^,_remap_xstart+37,_remap_ystart+_remap_inst_page_len+4,' TRACK ',
                  dialog_background+dialog_text);
@@ -962,13 +945,13 @@ begin
             dialog_hi_text SHL 4)
   else If (remap_selection = 4) then
          ShowStr(centered_frame_vdest^,_remap_xstart+46,_remap_ystart+_remap_inst_page_len+4,' BLOCK ',
-                 dialog_sel_btn_bck+dialog_sel_btn)
+                 dialog_sel_itm_bck+dialog_sel_itm)
        else If marking then
               ShowStr(centered_frame_vdest^,_remap_xstart+46,_remap_ystart+_remap_inst_page_len+4,' BLOCK ',
                       dialog_background+dialog_text)
             else
               ShowStr(centered_frame_vdest^,_remap_xstart+46,_remap_ystart+_remap_inst_page_len+4,' BLOCK ',
-                      dialog_background+dialog_button_dis);
+                      dialog_background+dialog_item_dis);
 end;
 
 procedure REMAP_instr_control_proc;
@@ -1420,18 +1403,18 @@ begin
               '~[~`'+_on_off[BYTE(replace_prompt)]+'`~]~ PROMPT ON REPLACE',
               dialog_background+dialog_hi_text,
               dialog_background+dialog_text,
-              dialog_background+dialog_button)
+              dialog_background+dialog_item)
   else ShowCStr(centered_frame_vdest^,xstart+2,ystart+7,
                 '[~'+_on_off[BYTE(replace_prompt)]+'~] PROMPT ON REPLACE',
                 dialog_background+dialog_text,
-                dialog_background+dialog_button);
+                dialog_background+dialog_item);
 
   If (pos = 23) then
     ShowStr(centered_frame_vdest^,xstart+2,ystart+9,' PATTERN ',
             dialog_hi_text SHL 4)
   else If (replace_selection = 1) then
          ShowStr(centered_frame_vdest^,xstart+2,ystart+9,' PATTERN ',
-            dialog_sel_btn_bck+dialog_sel_btn)
+            dialog_sel_itm_bck+dialog_sel_itm)
        else
          ShowStr(centered_frame_vdest^,xstart+2,ystart+9,' PATTERN ',
                  dialog_background+dialog_text);
@@ -1441,7 +1424,7 @@ begin
             dialog_hi_text SHL 4)
   else If (replace_selection = 2) then
          ShowStr(centered_frame_vdest^,xstart+13,ystart+9,' SONG ',
-                 dialog_sel_btn_bck+dialog_sel_btn)
+                 dialog_sel_itm_bck+dialog_sel_itm)
        else
          ShowStr(centered_frame_vdest^,xstart+13,ystart+9,' SONG ',
                  dialog_background+dialog_text);
@@ -1451,7 +1434,7 @@ begin
             dialog_hi_text SHL 4)
   else If (replace_selection = 3) then
          ShowStr(centered_frame_vdest^,xstart+21,ystart+9,' TRACK ',
-                 dialog_sel_btn_bck+dialog_sel_btn)
+                 dialog_sel_itm_bck+dialog_sel_itm)
        else
          ShowStr(centered_frame_vdest^,xstart+21,ystart+9,' TRACK ',
                  dialog_background+dialog_text);
@@ -1461,13 +1444,13 @@ begin
             dialog_hi_text SHL 4)
   else If (replace_selection = 4) then
          ShowStr(centered_frame_vdest^,xstart+30,ystart+9,' BLOCK ',
-                 dialog_sel_btn_bck+dialog_sel_btn)
+                 dialog_sel_itm_bck+dialog_sel_itm)
        else If marking then
               ShowStr(centered_frame_vdest^,xstart+30,ystart+9,' BLOCK ',
                       dialog_background+dialog_text)
             else
               ShowStr(centered_frame_vdest^,xstart+30,ystart+9,' BLOCK ',
-                      dialog_background+dialog_button_dis);
+                      dialog_background+dialog_item_dis);
 end;
 
 procedure reset_screen;
@@ -2231,46 +2214,82 @@ begin
   cstr2str := str;
 end;
 
+function last_chan_pos: Byte;
+begin
+  If (songdata.nm_tracks > MAX_TRACKS) then
+    last_chan_pos := max(16,songdata.nm_tracks-MAX_TRACKS+1)
+  else last_chan_pos := 1;
+end;
+
+function last_hpos: Byte;
+begin
+  last_hpos := max(PATEDIT_lastpos,songdata.nm_tracks*(PATEDIT_lastpos DIV MAX_TRACKS));
+end;
+
 const
   _perc_char: array[1..5] of Char = ' ¡¢£¤';
   _panning: array[0..3] of String = ('','``','``','``');
   _connection: array[0..1] of String = ('FM','AM');
   _off_on: array[1..4,0..1] of Char = ('úT','úV','úK','úS');
-
+  _win_title: array[Boolean] of String = (' DEBUG iNFO ','');
+  
 var
   temp,temp2,atr1,atr2,atr3,atr4,xstart,ystart: Byte;
   temps,temps2: String;
   old_debugging,old_replay_forbidden: Boolean;
   old_play_status: tPLAY_STATUS;
+  _ctrl_alt_flag,
   _reset_state: Boolean;
+  _win_attr: array[Boolean] of Byte;
+  _details_flag: Boolean;
+  fkey: Word;
+  bckg_attr,current_track: Byte;
+
+label _jmp1;
 
 begin { DEBUG_INFO }
   _debug_str_ := 'ADT2EXTN.PAS:DEBUG_INFO';
+  _ctrl_alt_flag := ctrl_pressed AND alt_pressed;
+  _details_flag := FALSE;
+  _win_attr[FALSE] := debug_info_bckg+debug_info_border2;
+  _win_attr[TRUE] := debug_info_bckg+debug_info_border;
+  _reset_state := FALSE;
+
+_jmp1:
+  
   Move(screen_ptr^,backup.screen,SizeOf(backup.screen));
   backup.cursor := GetCursor;
   backup.oldx   := WhereX;
   backup.oldy   := WhereY;
 
   HideCursor;
-  centered_frame(xstart,ystart,83,songdata.nm_tracks+6,'',
-                 debug_info_bckg+debug_info_border,
-                 debug_info_bckg,double);
-
-  _reset_state := FALSE;
+  centered_frame(xstart,ystart,83,songdata.nm_tracks+6,
+                 _win_title[_ctrl_alt_flag],_win_attr[_ctrl_alt_flag],
+                 debug_info_bckg+debug_info_title,double);
+  
   Repeat
+    If _ctrl_alt_flag then
+      _details_flag := shift_pressed;
+    
     If space_pressed and (play_status <> isStopped) then
-      If NOT _reset_state then
+      If NOT _ctrl_alt_flag and ctrl_pressed then
         begin
-          _reset_state := TRUE;
-          old_debugging := debugging;
-          old_play_status := play_status;
-          old_replay_forbidden := replay_forbidden;
-          debugging := TRUE;
-          play_status := isPlaying;
-          replay_forbidden := FALSE;
-        end;
+          debugging := FALSE;
+          _reset_state := FALSE;
+        end
+      else If NOT _reset_state then
+             begin
+               _reset_state := TRUE;
+               old_debugging := debugging;
+               old_play_status := play_status;
+               old_replay_forbidden := replay_forbidden;
+               debugging := TRUE;               
+               play_status := isPlaying;
+               replay_forbidden := FALSE;
+               STATUS_LINE_refresh;
+             end;
 
-    If NOT shift_pressed then
+    If NOT _details_flag then
       begin
         ShowCStr(screen_ptr^,xstart+2,ystart+1,
                  '     TRACK     ~³~          iNSTRUMENT          ~³~NOTE~³ ~FX Nù1~ ³ ~FX Nù2~ ³~FREQ~³ ~VOL',
@@ -2293,7 +2312,7 @@ begin { DEBUG_INFO }
                    'ÄÄÁÄÄÁÄÄÄÁÄÄÄÄÁÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÁÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÁÄÄ',
                    debug_info_bckg+debug_info_border);
          end;
-
+        
     If NOT play_single_patt and NOT replay_forbidden and
        repeat_pattern then temps := '~~'
     else temps := '';
@@ -2379,27 +2398,32 @@ begin { DEBUG_INFO }
              debug_info_bckg+debug_info_txt,
              debug_info_bckg+debug_info_hi_txt);
 
+    current_track := count_channel(pattern_hpos);
     For temp := 1 to songdata.nm_tracks do
       begin
+        If NOT _ctrl_alt_flag and (temp = current_track) then
+          bckg_attr := debug_info_bckg2
+        else bckg_attr := debug_info_bckg;
+        
         If channel_flag[temp] then
-          If event_new[temp] then atr1 := debug_info_bckg+debug_info_hi_txt
-          else atr1 := debug_info_bckg+debug_info_txt
-        else atr1 := debug_info_bckg+debug_info_txt_hid;
+          If event_new[temp] then atr1 := bckg_attr+debug_info_hi_txt
+          else atr1 := bckg_attr+debug_info_txt
+        else atr1 := bckg_attr+debug_info_txt_hid;
 
         If channel_flag[temp] then
-          If event_new[temp] then atr2 := debug_info_bckg+debug_info_hi_txt
-          else atr2 := debug_info_bckg+debug_info_txt
-        else atr2 := debug_info_bckg+debug_info_txt_hid;
+          If event_new[temp] then atr2 := bckg_attr+debug_info_hi_txt
+          else atr2 := bckg_attr+debug_info_txt
+        else atr2 := bckg_attr+debug_info_txt_hid;
 
         If channel_flag[temp] then
-          If event_new[temp] then atr3 := debug_info_bckg+debug_info_hi_car
-          else atr3 := debug_info_bckg+debug_info_car
-        else atr3 := debug_info_bckg+debug_info_txt_hid;
+          If event_new[temp] then atr3 := bckg_attr+debug_info_hi_car
+          else atr3 := bckg_attr+debug_info_car
+        else atr3 := bckg_attr+debug_info_txt_hid;
 
         If channel_flag[temp] then
-          If event_new[temp] then atr4 := debug_info_bckg+debug_info_hi_mod
-          else atr4 := debug_info_bckg+debug_info_mod
-        else atr4 := debug_info_bckg+debug_info_txt_hid;
+          If event_new[temp] then atr4 := bckg_attr+debug_info_hi_mod
+          else atr4 := bckg_attr+debug_info_mod
+        else atr4 := bckg_attr+debug_info_txt_hid;
 
         If percussion_mode and (temp in [16..20]) then temps := _perc_char[temp-15]
         else Case temp of
@@ -2432,14 +2456,14 @@ begin { DEBUG_INFO }
 
         ShowStr(screen_ptr^,xstart+1,ystart+temp+2,
                 temps,
-                debug_info_bckg+debug_info_perc);
+                bckg_attr+debug_info_perc);
 
         ShowCStr(screen_ptr^,xstart+2,ystart+temp+2,
                  ExpStrL(Num2str(temp,10),2,' '),
                  atr1,
-                 debug_info_bckg+debug_info_txt_hid);
+                 bckg_attr+debug_info_txt_hid);
 
-        If NOT shift_pressed then
+        If NOT _details_flag then
           If (event_table[temp].instr_def in [1..255]) then
             begin
               temps := ExpStrR(cstr2str(Copy(songdata.instr_names[event_table[temp].instr_def],2,30)),30,' ');
@@ -2472,25 +2496,25 @@ begin { DEBUG_INFO }
           temps2 := temps2+'~³~P+'
         else temps2 := temps2+'~³~`P+`';
 
-        If NOT shift_pressed then
+        If NOT _details_flag then
           begin
             If pan_lock[temp] then
               ShowC3Str(screen_ptr^,xstart+4,ystart+temp+2,
                         '~³~'+_panning[temp2]+'~³~',
                         atr2,
-                        debug_info_bckg+debug_info_border,
-                        debug_info_bckg+debug_info_txt_hid)
+                        bckg_attr+debug_info_border,
+                        bckg_attr+debug_info_txt_hid)
             else ShowC3Str(screen_ptr^,xstart+4,ystart+temp+2,
                            '~³~'+_panning[temp2]+'~³~',
                            atr3,
-                           debug_info_bckg+debug_info_border,
-                           debug_info_bckg+debug_info_txt_hid);
+                           bckg_attr+debug_info_border,
+                           bckg_attr+debug_info_txt_hid);
 
             ShowC3Str(screen_ptr^,xstart+8,ystart+temp+2,
                       temps2+'~³~',
                       atr2,
-                      debug_info_bckg+debug_info_border,
-                      debug_info_bckg+debug_info_txt_hid);
+                      bckg_attr+debug_info_border,
+                      bckg_attr+debug_info_txt_hid);
 
             If NOT (is_4op_chan(temp) and
                    (temp in [1,3,5,10,12,14])) then
@@ -2503,7 +2527,7 @@ begin { DEBUG_INFO }
                                   event_table[temp].effect2)+'~³~'+
                        ExpStrL(Num2str(freqtable2[temp] AND $1fff,16),4,'0')+'~³~',
                        atr1,
-                       debug_info_bckg+debug_info_border)
+                       bckg_attr+debug_info_border)
             else
               ShowCStr(screen_ptr^,xstart+18,ystart+temp+2,
                        temps+'~³~    ~³~'+
@@ -2512,18 +2536,18 @@ begin { DEBUG_INFO }
                        effect_str(event_table[temp].effect_def2,
                                   event_table[temp].effect2)+'~³~    ~³~',
                        atr1,
-                       debug_info_bckg+debug_info_border);
+                       bckg_attr+debug_info_border);
 
             If NOT (percussion_mode and (temp in [17..20])) then
               ShowCStr(screen_ptr^,xstart+77,ystart+temp+2,
                        ExpStrL(Num2str(carrier_vol[temp],16),2,'0')+'~³~',
                        atr3,
-                       debug_info_bckg+debug_info_border)
+                       bckg_attr+debug_info_border)
             else
               ShowCStr(screen_ptr^,xstart+77,ystart+temp+2,
                        ExpStrL(Num2str(carrier_vol[temp],16),2,'0')+'~³~',
-                       debug_info_bckg+debug_info_bckg SHR 4,
-                       debug_info_bckg+debug_info_border);
+                       bckg_attr+bckg_attr SHR 4,
+                       bckg_attr+debug_info_border);
           end
         else
           begin
@@ -2531,13 +2555,13 @@ begin { DEBUG_INFO }
               ShowC3Str(screen_ptr^,xstart+4,ystart+temp+2,
                         '~³~'+_panning[temp2]+'~³~',
                         atr2,
-                        debug_info_bckg+debug_info_border,
-                        debug_info_bckg+debug_info_txt_hid)
+                        bckg_attr+debug_info_border,
+                        bckg_attr+debug_info_txt_hid)
             else ShowC3Str(screen_ptr^,xstart+4,ystart+temp+2,
                            '~³~'+_panning[temp2]+'~³~',
                            atr3,
-                           debug_info_bckg+debug_info_border,
-                           debug_info_bckg+debug_info_txt_hid);
+                           bckg_attr+debug_info_border,
+                           bckg_attr+debug_info_txt_hid);
 
             If NOT (is_4op_chan(temp) and
                    (temp in [1,3,5,10,12,14])) then
@@ -2549,7 +2573,7 @@ begin { DEBUG_INFO }
                        effect_str(event_table[temp].effect_def2,
                                   event_table[temp].effect2)+'~³~'+
                        ExpStrL(Num2str(freqtable2[temp] AND $1fff,16),4,'0')+'~³~',
-                       atr1,debug_info_bckg+debug_info_border)
+                       atr1,bckg_attr+debug_info_border)
             else
               ShowCStr(screen_ptr^,xstart+8,ystart+temp+2,
                        temps+'~³~    ~³~'+
@@ -2558,7 +2582,7 @@ begin { DEBUG_INFO }
                        effect_str(event_table[temp].effect_def2,
                                   event_table[temp].effect2)+'~³~'+
                        '    ~³~',
-                       atr1,debug_info_bckg+debug_info_border);
+                       atr1,bckg_attr+debug_info_border);
 
             If NOT (percussion_mode and (temp in [17..20])) then
               ShowStr(screen_ptr^,xstart+40,ystart+temp+2,
@@ -2584,7 +2608,7 @@ begin { DEBUG_INFO }
                        _off_on[3,fmpar_table[temp].ksrC]+
                        _off_on[4,fmpar_table[temp].sustC]+'~³~',
                        atr3,
-                       debug_info_bckg+debug_info_border)
+                       bckg_attr+debug_info_border)
             else
               ShowCStr(screen_ptr^,xstart+45,ystart+temp+2,
                        Num2str(fmpar_table[temp].adsrw_car.attck,16)+
@@ -2598,8 +2622,8 @@ begin { DEBUG_INFO }
                        _off_on[2,fmpar_table[temp].vibrC]+
                        _off_on[3,fmpar_table[temp].ksrC]+
                        _off_on[4,fmpar_table[temp].sustC]+'~³~',
-                       debug_info_bckg+debug_info_bckg SHR 4,
-                       debug_info_bckg+debug_info_border);
+                       bckg_attr+bckg_attr SHR 4,
+                       bckg_attr+debug_info_border);
 
             ShowCStr(screen_ptr^,xstart+61,ystart+temp+2,
                      Num2str(fmpar_table[temp].adsrw_mod.attck,16)+
@@ -2614,31 +2638,200 @@ begin { DEBUG_INFO }
                      _off_on[3,fmpar_table[temp].ksrM]+
                      _off_on[4,fmpar_table[temp].sustM]+'~³~',
                      atr4,
-                     debug_info_bckg+debug_info_border);
+                     bckg_attr+debug_info_border);
 
             If NOT (percussion_mode and (temp in [17..20])) then
               ShowCStr(screen_ptr^,xstart+77,ystart+temp+2,
                        ExpStrL(Num2str(carrier_vol[temp],16),2,'0')+'~³~',
                        atr3,
-                       debug_info_bckg+debug_info_border)
+                       bckg_attr+debug_info_border)
             else
               ShowCStr(screen_ptr^,xstart+77,ystart+temp+2,
                        ExpStrL(Num2str(carrier_vol[temp],16),2,'0')+'~³~',
-                       debug_info_bckg+debug_info_bckg SHR 4,
-                       debug_info_bckg+debug_info_border);
+                       bckg_attr+bckg_attr SHR 4,
+                       bckg_attr+debug_info_border);
           end;
 
         ShowCStr(screen_ptr^,xstart+80,ystart+temp+2,
-                 ExpStrL(Num2str(modulator_vol[temp],16),2,'0'),
-                 atr4,debug_info_bckg+debug_info_border);
+                 ExpStrL(Num2str(modulator_vol[temp],16),2,'0')+' ',
+                 atr4,bckg_attr+debug_info_border);
       end;
 
-    keyboard_reset_buffer;
-    emulate_screen;
-  until NOT ((scankey(SC_LCTRL) or scankey(SC_RCTRL)) and { CTRL }
-             (scankey(SC_LALT) or scankey(SC_RALT))); { ALT }
+    fkey := WORD_NULL;
+    If _ctrl_alt_flag then keyboard_reset_buffer
+    else begin
+           keyboard_poll_input;
+           If keypressed then fkey := getkey;
+         end;  
 
-  If _reset_state then
+    Case fkey of
+      kCtLEFT: If NOT debugging and (play_status = isPlaying) then
+                 rewind := TRUE;
+
+      kCtRGHT: If NOT debugging and (play_status = isPlaying) then
+                 fast_forward := TRUE;
+
+      kTAB:    _details_flag := NOT _details_flag;
+      kBkSPC:  If NOT replay_forbidden then
+                 repeat_pattern := NOT repeat_pattern;
+
+      kUP:     If (chan_pos > 1) then
+                 begin
+                   Dec(chan_pos);
+                   PATTERN_ORDER_page_refresh(pattord_page);
+                   PATTERN_page_refresh(pattern_page);
+                 end
+               else If (pattern_hpos > PATEDIT_lastpos DIV MAX_TRACKS) then
+                      begin
+                        Dec(pattern_hpos,PATEDIT_lastpos DIV MAX_TRACKS);
+                        PATTERN_ORDER_page_refresh(pattord_page);
+                        PATTERN_page_refresh(pattern_page);
+                      end;
+
+      kDOWN:   If (chan_pos < last_chan_pos) then
+                 begin
+                   Inc(chan_pos);
+                   PATTERN_ORDER_page_refresh(pattord_page);
+                   PATTERN_page_refresh(pattern_page);
+                 end
+               else If (pattern_hpos <= last_hpos-PATEDIT_lastpos DIV MAX_TRACKS) then
+                      begin
+                        Inc(pattern_hpos,PATEDIT_lastpos DIV MAX_TRACKS);
+                        PATTERN_ORDER_page_refresh(pattord_page);
+                        PATTERN_page_refresh(pattern_page);
+                      end;
+
+      kNPmins: If NOT play_single_patt then
+                 begin
+                   temp := current_order;
+                   temp2 := current_line;
+                   While (temp > 0) and
+                         NOT (songdata.pattern_order[temp-1] < $80) do
+                     begin
+                       Dec(temp);
+                       // keyboard_reset_buffer;
+                     end;
+
+                   If (temp > 0) then
+                     begin
+                       Dec(temp);
+                       If (songdata.pattern_order[temp] < $80) then
+                         begin
+                           fade_out_playback(FALSE);
+                           If shift_pressed then calibrate_player(temp,temp2,TRUE,FALSE)
+                           else calibrate_player(temp,0,TRUE,FALSE);
+                         end;
+                     end;
+                 end;
+
+      kNPplus: If NOT play_single_patt then
+                 begin
+                   temp := current_order;
+                   temp2 := current_line;
+                   While (temp < $7f) and
+                         (songdata.pattern_order[SUCC(temp)] > $80) do
+                     begin
+                       Inc(temp);
+                       // keyboard_reset_buffer;
+                     end;
+
+                   If (temp < $7f) then
+                     begin
+                       Inc(temp);
+                       If (songdata.pattern_order[temp] < $80) then
+                         begin
+                           fade_out_playback(FALSE);
+                           If shift_pressed then calibrate_player(temp,temp2,TRUE,FALSE)
+                           else calibrate_player(temp,0,TRUE,FALSE);
+                         end;
+                     end;
+                 end;
+                 
+      kCtENTR: If play_single_patt then
+                 begin
+                   current_line := 0;
+                   PATTERN_ORDER_page_refresh(0);
+                   PATTERN_page_refresh(0);
+                 end
+               else
+                 begin
+                   no_status_refresh := TRUE;
+                   fade_out_playback(FALSE);
+                   If (current_order < $7f) and
+                      (play_status <> isStopped) then
+                     If (songdata.pattern_order[SUCC(current_order)] < $80) then
+                       calibrate_player(SUCC(current_order),0,FALSE,FALSE)
+                     else If (calc_following_order(SUCC(current_order)) <> -1) then
+                            calibrate_player(calc_following_order(SUCC(current_order)),0,FALSE,FALSE)
+                          else
+                   else If (calc_following_order(0) <> -1) then
+                          calibrate_player(calc_following_order(0),0,FALSE,FALSE);
+                   no_status_refresh := FALSE;
+                 end;
+
+      kNPastr: If NOT (opl3_channel_recording_mode and (play_status <> isStopped)) then
+                 begin
+                   For temp := 1 to songdata.nm_tracks do
+                     begin
+                       channel_flag[temp] := NOT channel_flag[temp];
+                       If NOT channel_flag[temp] then reset_chan_data(temp);
+                     end;
+                 end;
+
+      kAltS:   If NOT (opl3_channel_recording_mode and (play_status <> isStopped)) then
+                 begin
+                   For temp := 1 to songdata.nm_tracks do
+                     channel_flag[temp] := FALSE;
+                   For temp := 1 to songdata.nm_tracks do
+                     If (temp = count_channel(pattern_hpos)) then
+                       begin
+                         channel_flag[temp] := TRUE;
+                         If is_4op_chan(temp) then
+                           If (temp in [1,3,5,10,12,14]) then channel_flag[SUCC(temp)] := TRUE
+                           else channel_flag[PRED(temp)] := TRUE;
+                       end;
+                   For temp := 1 to songdata.nm_tracks do
+                     If NOT channel_flag[temp] then reset_chan_data(temp);
+                 end;
+
+      kAltR:   If NOT (opl3_channel_recording_mode and (play_status <> isStopped)) then
+                 FillChar(channel_flag,songdata.nm_tracks,BYTE(TRUE));
+      kAlt1..
+      kAlt9:   If NOT (opl3_channel_recording_mode and (play_status <> isStopped)) then
+                 If (HI(fkey)-$77 <= songdata.nm_tracks) then
+                   begin
+                     channel_flag[HI(fkey)-$77] := NOT channel_flag[HI(fkey)-$77];
+                     If NOT channel_flag[HI(fkey)-$77] then reset_chan_data(HI(fkey)-$77);
+                     If is_4op_chan(HI(fkey)-$77) then
+                       If (HI(fkey)-$77 in [1,3,5]) then
+                         begin
+                           channel_flag[SUCC(HI(fkey)-$77)] := channel_flag[HI(fkey)-$77];
+                           If NOT channel_flag[SUCC(HI(fkey)-$77)] then reset_chan_data(SUCC(HI(fkey)-$77));
+                         end
+                       else If (HI(fkey)-$77 in [2,4,6]) then
+                              begin
+                                channel_flag[PRED(HI(fkey)-$77)] := channel_flag[HI(fkey)-$77];
+                                If NOT channel_flag[PRED(HI(fkey)-$77)] then reset_chan_data(PRED(HI(fkey)-$77));
+                              end;  
+                     end;
+
+      kAlt0:   If (opl3_channel_recording_mode and (play_status <> isStopped)) then fkey := WORD_NULL
+               else If NOT (songdata.nm_tracks > 9) then fkey := WORD_NULL
+                    else If (songdata.nm_tracks = 10) then
+                           begin
+                             channel_flag[10] := NOT channel_flag[10];
+                             If NOT channel_flag[10] then reset_chan_data(10);
+                             fkey := WORD_NULL;
+                           end;
+    end;
+    emulate_screen;
+  until (NOT _ctrl_alt_flag and ((fkey = kESC) or (fkey = kF1) or (fkey = kAlt0))) or     
+        (_ctrl_alt_flag and NOT ((scankey(SC_LCTRL) or scankey(SC_RCTRL)) and
+                                 (scankey(SC_LALT) or scankey(SC_RALT)))) or
+        _force_program_quit;
+                                 
+  If NOT _ctrl_alt_flag then keyboard_reset_buffer;                                 
+  If NOT ((fkey = kF1) or (fkey = kAlt0)) and _reset_state then
     begin
       debugging := old_debugging;
       play_status := old_play_status;
@@ -2651,6 +2844,67 @@ begin { DEBUG_INFO }
   move_to_screen_area[3] := xstart+83+2;
   move_to_screen_area[4] := ystart+songdata.nm_tracks+6+1;
   move2screen;
+
+  If (fkey = kF1) then
+    begin
+      _no_step_debugging := TRUE;
+      HELP('debug_info');
+      For temp := 1 to 5 do
+        begin
+          Delay(20);
+          emulate_screen;
+        end;  
+      keyboard_reset_buffer;
+      _no_step_debugging := FALSE;
+      If NOT _force_program_quit then GOTO _jmp1;
+    end;
+
+  If (fkey = kAlt0) then
+    If NOT (opl3_channel_recording_mode and (play_status <> isStopped)) then
+      begin
+        _no_step_debugging := TRUE;
+        If NOT percussion_mode then temps := '1~0~$1~1~$1~2~$1~3~$1~4~$1~5~$1~6~$1~7~$1~8~$1~9~$2~0~$'
+        else temps := '1~0~$1~1~$1~2~$1~3~$1~4~$1~5~$16 ~B~D$17 ~S~D$18 ~T~T$19 T~C~$20 ~H~H$';
+        temps := FlipStr(temps);
+        For temp := 10 to 20 do
+          If (temp > songdata.nm_tracks) then
+            begin
+              Delete(temps,Pos('~',temps),1);
+              Delete(temps,Pos('~',temps),1);
+            end;
+        temps := FlipStr(temps);
+        If (Pos('~',temps) <> 0) then
+          begin
+            chpos := Dialog('USE CURSOR KEYS OR DiRECTLY PRESS HOTKEY '+
+                            'TO TOGGLE TRACK ON/OFF$',
+                            temps,
+                            ' TRACK ON/OFF ',chpos);
+            If (dl_environment.keystroke <> kESC) then
+              begin
+                channel_flag[9+chpos] := NOT channel_flag[9+chpos];
+                If NOT channel_flag[9+chpos] then reset_chan_data(9+chpos);
+                If is_4op_chan(9+chpos) then
+                  If (9+chpos in [10,12,14]) then
+                    begin
+                      channel_flag[SUCC(9+chpos)] := channel_flag[9+chpos];
+                      If NOT channel_flag[SUCC(9+chpos)] then reset_chan_data(SUCC(9+chpos));
+                    end  
+                  else If (9+chpos in [11,13,15]) then
+                         begin
+                           channel_flag[PRED(9+chpos)] := channel_flag[9+chpos];
+                           If NOT channel_flag[PRED(9+chpos)] then reset_chan_data(PRED(9+chpos));
+                         end;
+              end;
+          end;
+        For temp := 1 to 5 do
+          begin
+            Delay(20);
+            emulate_screen;
+          end;  
+        keyboard_reset_buffer;
+        _no_step_debugging := FALSE;
+        If NOT _force_program_quit then GOTO _jmp1;
+      end;    
 end;
 
 procedure LINE_MARKING_SETUP;
@@ -3112,12 +3366,12 @@ _jmp1:
           ShowCStr(vscreen,xstart+34,ystart+13+temp-1,
                    '[~û~] ñ'+_4op_str[temp],
                    dialog_background+dialog_text,
-                   dialog_background+dialog_button)
+                   dialog_background+dialog_item)
         else
           ShowCStr(vscreen,xstart+34,ystart+13+temp-1,
                    '[~ ~] ñ'+_4op_str[temp],
                    dialog_background+dialog_text,
-                   dialog_background+dialog_button);
+                   dialog_background+dialog_item);
 
     ShowStr(vscreen,xstart+51,ystart+4,'PANNiNG',
             attr[18]);
@@ -3140,15 +3394,15 @@ _jmp1:
               0: ShowCStr(vscreen,xstart+51,ystart+6+temp-1,
                           '~ú~ú~~ú~ú~',
                           dialog_background+dialog_text,
-                          dialog_background+dialog_button);
+                          dialog_background+dialog_item);
               1: ShowCStr(vscreen,xstart+51,ystart+6+temp-1,
                           '~~~ú~úú~ú~',
                           dialog_background+dialog_text,
-                          dialog_background+dialog_button);
+                          dialog_background+dialog_item);
               2: ShowCStr(vscreen,xstart+51,ystart+6+temp-1,
                           '~ú~úú~ú~~~',
                           dialog_background+dialog_text,
-                          dialog_background+dialog_button);
+                          dialog_background+dialog_item);
             end;
             ShowCStr(vscreen,xstart+60,ystart+6+temp-1,
                      '~'+ExpStrL(Num2str(temp,10),2,' ')+'~  '+
@@ -3156,7 +3410,7 @@ _jmp1:
                      _on_off[songdata.lock_flags[temp] SHR 2 AND 1]+' ~ö~ '+
                      _on_off[songdata.lock_flags[temp] SHR 4 AND 1]+' ~ö~ '+
                      _on_off[songdata.lock_flags[temp] SHR 5 AND 1],
-                     dialog_background+dialog_button,
+                     dialog_background+dialog_item,
                      dialog_background+dialog_context_dis);
           end
         else ShowStr(vscreen,xstart+51,ystart+6+temp-1,
@@ -3213,8 +3467,8 @@ _jmp1:
       ShowCStr(vscreen,xstart+2,ystart+11,
         '~MACRODEF.~ ',dialog_background+dialog_text,attr[17]);
 
-      If speed_update then ShowStr(vscreen,xstart+27,ystart+10,'û',dialog_background+dialog_button)
-      else ShowStr(vscreen,xstart+27,ystart+10,' ',dialog_background+dialog_button);
+      If speed_update then ShowStr(vscreen,xstart+27,ystart+10,'û',dialog_background+dialog_item)
+      else ShowStr(vscreen,xstart+27,ystart+10,' ',dialog_background+dialog_item);
 
       ShowCStr(vscreen,xstart+2,ystart+13,
         '[ ] ~TRACK VOLUME LOCK~',dialog_background+dialog_text,attr[6]);
@@ -3223,14 +3477,14 @@ _jmp1:
       ShowCStr(vscreen,xstart+2,ystart+15,
         '[ ] ~VOLUME PEAK LOCK~',dialog_background+dialog_text,attr[8]);
 
-      If lockvol then ShowStr(vscreen,xstart+3,ystart+13,'û',dialog_background+dialog_button)
-      else ShowStr(vscreen,xstart+3,ystart+13,' ',dialog_background+dialog_button);
+      If lockvol then ShowStr(vscreen,xstart+3,ystart+13,'û',dialog_background+dialog_item)
+      else ShowStr(vscreen,xstart+3,ystart+13,' ',dialog_background+dialog_item);
 
-      If panlock then ShowStr(vscreen,xstart+3,ystart+14,'û',dialog_background+dialog_button)
-      else ShowStr(vscreen,xstart+3,ystart+14,' ',dialog_background+dialog_button);
+      If panlock then ShowStr(vscreen,xstart+3,ystart+14,'û',dialog_background+dialog_item)
+      else ShowStr(vscreen,xstart+3,ystart+14,' ',dialog_background+dialog_item);
 
-      If lockVP then ShowStr(vscreen,xstart+3,ystart+15,'û',dialog_background+dialog_button)
-      else ShowStr(vscreen,xstart+3,ystart+15,' ',dialog_background+dialog_button);
+      If lockVP then ShowStr(vscreen,xstart+3,ystart+15,'û',dialog_background+dialog_item)
+      else ShowStr(vscreen,xstart+3,ystart+15,' ',dialog_background+dialog_item);
 
       ShowStr(vscreen,xstart+2,ystart+17,
         'TREMOLO DEPTH',attr[9]+attr[10]);
@@ -3240,8 +3494,8 @@ _jmp1:
       ShowStr(vscreen,xstart+2,ystart+19,
         '( ) 4.8 dB',dialog_background+dialog_text);
 
-      If (tremolo_depth = 0) then ShowVStr(vscreen,xstart+3,ystart+18,'û ',dialog_background+dialog_button)
-      else ShowVStr(vscreen,xstart+3,ystart+18,' û',dialog_background+dialog_button);
+      If (tremolo_depth = 0) then ShowVStr(vscreen,xstart+3,ystart+18,'û ',dialog_background+dialog_item)
+      else ShowVStr(vscreen,xstart+3,ystart+18,' û',dialog_background+dialog_item);
 
       ShowStr(vscreen,xstart+18,ystart+17,
         'ViBRATO DEPTH',attr[11]+attr[12]);
@@ -3251,8 +3505,8 @@ _jmp1:
       ShowStr(vscreen,xstart+18,ystart+19,
         '( ) 14%',dialog_background+dialog_text);
 
-      If (vibrato_depth = 0) then ShowVStr(vscreen,xstart+19,ystart+18,'û ',dialog_background+dialog_button)
-      else ShowVStr(vscreen,xstart+19,ystart+18,' û',dialog_background+dialog_button);
+      If (vibrato_depth = 0) then ShowVStr(vscreen,xstart+19,ystart+18,'û ',dialog_background+dialog_item)
+      else ShowVStr(vscreen,xstart+19,ystart+18,' û',dialog_background+dialog_item);
 
       ShowStr(vscreen,xstart+2,ystart+21,
         'PATTERN LENGTH',attr[13]);
@@ -3262,14 +3516,14 @@ _jmp1:
       ShowCStr(vscreen,xstart+2,ystart+24,
         '[ ] ~PERCUSSiON TRACK EXTENSiON ( ,¡,¢,£,¤)~',dialog_background+dialog_text,attr[15]);
 
-      If percussion_mode then ShowStr(vscreen,xstart+3,ystart+24,'û',dialog_background+dialog_button)
-      else ShowStr(vscreen,xstart+3,ystart+24,' ',dialog_background+dialog_button);
+      If percussion_mode then ShowStr(vscreen,xstart+3,ystart+24,'û',dialog_background+dialog_item)
+      else ShowStr(vscreen,xstart+3,ystart+24,' ',dialog_background+dialog_item);
 
       ShowCStr(vscreen,xstart+2,ystart+25,
         '[ ] ~VOLUME SCALiNG~',dialog_background+dialog_text,attr[16]);
 
-      If volume_scaling then ShowStr(vscreen,xstart+3,ystart+25,'û',dialog_background+dialog_button)
-      else ShowStr(vscreen,xstart+3,ystart+25,' ',dialog_background+dialog_button);
+      If volume_scaling then ShowStr(vscreen,xstart+3,ystart+25,'û',dialog_background+dialog_item)
+      else ShowStr(vscreen,xstart+3,ystart+25,' ',dialog_background+dialog_item);
 
       is_setting.append_enabled := TRUE;
       is_environment.locate_pos := 1;

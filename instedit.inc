@@ -360,84 +360,84 @@ begin
       ShowCStr(mn_environment.v_dest^,
                INSCTRL_xshift+10,INSCTRL_yshift+06+temp,
                inst_itm1[temp].str,
-               instrument_bckg+instrument_text,
+               dialog_background+dialog_contxt_dis2,
                color_table[inst_itm1[temp].colr])
   else
     For temp := 1 to 18 do
       ShowCStr(mn_environment.v_dest^,
                INSCTRL_xshift+10,INSCTRL_yshift+06+temp,
                inst_itm2[temp].str,
-               instrument_bckg+instrument_text,
+               dialog_background+dialog_contxt_dis2,
                color_table[inst_itm2[temp].colr]);
 
   ShowStr(mn_environment.v_dest^,
           INSCTRL_xshift+56,INSCTRL_yshift+05,
           byte2hex(page),
-          menu_background+menu_title);
+          dialog_background+dialog_title);
 
   For temp := 1 to 11 do
     ShowStr(mn_environment.v_dest^,
             INSCTRL_xshift+32,INSCTRL_yshift+08+pos2[temp],
             byte2hex(tDUMMY_BUFF(Addr(songdata.instr_data[page])^)[_index[temp]]),
-            instrument_bckg+instrument_hi_text);
+            dialog_background+dialog_item);
 
   Case songdata.instr_data[page].panning of
     0: ShowStr(mn_environment.v_dest^,
                INSCTRL_xshift+24,INSCTRL_yshift+08+pos2[12],
                'CENTER',
-               instrument_bckg+instrument_hi_text);
+               dialog_background+dialog_item);
     1: ShowStr(mn_environment.v_dest^,
                INSCTRL_xshift+24,INSCTRL_yshift+08+pos2[12],
                'LEFT  ',
-               instrument_bckg+instrument_hi_text);
+               dialog_background+dialog_item);
     2: ShowStr(mn_environment.v_dest^,
                INSCTRL_xshift+24,INSCTRL_yshift+08+pos2[12],
                'RiGHT ',
-               instrument_bckg+instrument_hi_text);
+               dialog_background+dialog_item);
   end;
 
   If (songdata.instr_data[page].fine_tune < 0) then
     ShowStr(mn_environment.v_dest^,
             INSCTRL_xshift+24,INSCTRL_yshift+08+pos2[13],
             '-'+ExpStrR(Num2str(Abs(songdata.instr_data[page].fine_tune),16),2,' '),
-            instrument_bckg+instrument_hi_text)
+            dialog_background+dialog_item)
   else
     ShowStr(mn_environment.v_dest^,
             INSCTRL_xshift+24,INSCTRL_yshift+08+pos2[13],
             '+'+ExpStrR(Num2str(Abs(songdata.instr_data[page].fine_tune),16),2,' '),
-            instrument_bckg+instrument_hi_text);
+            dialog_background+dialog_item);
 
   Case songdata.instr_data[page].perc_voice of
     0: ShowCStr(mn_environment.v_dest^,
                 INSCTRL_xshift+09,INSCTRL_yshift+26,
                 ' [~MELODiC~] ',
-                menu_background+menu_border,
-                menu_background+menu_context);
+                dialog_background+dialog_border,
+                dialog_background+dialog_context);
     1: ShowCStr(mn_environment.v_dest^,
                 INSCTRL_xshift+09,INSCTRL_yshift+26,
                 ' [~PERC:BD~] ',
-                menu_background+menu_border,
-                menu_background+menu_context);
+                dialog_background+dialog_border,
+                dialog_background+dialog_context);
     2: ShowCStr(mn_environment.v_dest^,
                 INSCTRL_xshift+09,INSCTRL_yshift+26,
                 ' [~PERC:SD~] ',
-                menu_background+menu_border,
-                menu_background+menu_context);
+                dialog_background+dialog_border,
+                dialog_background+dialog_context);
     3: ShowCStr(mn_environment.v_dest^,
                  INSCTRL_xshift+09,INSCTRL_yshift+26,
                 ' [~PERC:TT~] ',
-                menu_background+menu_border,
-                menu_background+menu_context);
+                dialog_background+dialog_border,
+                dialog_background+dialog_context);
     4: ShowCStr(mn_environment.v_dest^,
                 INSCTRL_xshift+09,INSCTRL_yshift+26,
                 ' [~PERC:TC~] ',
-                menu_background+menu_border,
-                menu_background+menu_context);
+                dialog_background+dialog_border,
+                dialog_background+dialog_context);
     5: ShowCStr(mn_environment.v_dest^,
                 INSCTRL_xshift+09,INSCTRL_yshift+26,
                 ' [~PERC:HH~] ',
-                menu_background+menu_border,
-                menu_background+menu_context);
+                dialog_background+dialog_border,
+                dialog_background+dialog_context);
   end;
 
   If (songdata.instr_macros[page].length <> 0) then temp_str := ' [~MACRO:FM'
@@ -460,11 +460,17 @@ begin
   ShowCStr(mn_environment.v_dest^,
            INSCTRL_xshift+19,INSCTRL_yshift+26,
            ExpStrR(temp_str,21+2,'Í'),
-           menu_background+menu_border,
-           menu_background+menu_context);
+           dialog_background+dialog_border,
+           dialog_background+dialog_context);
 
   STATUS_LINE_refresh;
 end;
+
+const
+  ie_vsize_shift: array[0..2] of Byte = (0,12,12);
+
+var
+  adsr_bckg: Byte;
 
 procedure _show_adsr(var dest; xstart,ystart: Byte;
                      attack,decay,sustain,release,attenuation: Byte;
@@ -492,8 +498,8 @@ begin
 end;
 
 var
-  index,
-  pos,temp,temp2: Integer;
+  index,pos: Integer;
+  temp,temp2: Real;
 
 function _conv(value,variant: Byte): Byte;
 begin
@@ -506,11 +512,18 @@ begin { _show_adsr }
   fr_setting.update_area := FALSE;
   fr_setting.shadow_enabled := FALSE;
 
-  If reset then
-    Frame(dest,xstart,ystart,xstart+61,ystart+12,
-          instrument_bckg,'',0,solid1)
-  else Frame(dest,xstart,ystart,xstart+61,ystart+12,
-             instrument_adsr+instrument_text,' ADSR PREViEW ',instrument_adsr+instrument_text,double);
+  adsr_bckg := instrument_adsr;
+  If (program_screen_mode <> 0) then
+    begin
+      adsr_bckg := instrument_bckg;
+      Frame(dest,xstart,ystart+1,xstart+61,ystart+11,
+               instrument_bckg,'',0,solid1);
+    end
+  else If reset then
+         Frame(dest,xstart,ystart,xstart+63,ystart+12,
+               instrument_bckg,'',0,solid1)
+       else Frame(dest,xstart,ystart,xstart+63,ystart+12,
+                  instrument_adsr+instrument_text,' ADSR PREViEW ',instrument_adsr+instrument_text,double);
 
   fr_setting.update_area := TRUE;
   fr_setting.shadow_enabled := TRUE;
@@ -534,7 +547,7 @@ begin { _show_adsr }
 
   For index := 0 to (15-attack) do
     begin
-      Inc(temp,ROUND(8*16/(16-attack)));
+      temp := temp+8*16/(16-attack);
       If (attack <> 0) then
         begin
           ShowVStr(dest,xstart+1+pos,ystart+1,
@@ -557,7 +570,7 @@ begin { _show_adsr }
   If (decay <> 0) then
     For index := 0 to (15-decay) do
       begin
-        Dec(temp,ROUND(8*16/16*sustain/(16-decay)));
+        temp := temp-8*16/16*sustain/(16-decay);
         ShowVStr(dest,xstart+1+pos,ystart+1,
                  ExpStrL(_gfx_bar_str(ROUND(temp/63*(63-attenuation))),9,' '),
                  attr_hi);
@@ -588,7 +601,7 @@ begin { _show_adsr }
   temp2 := temp;
   For index := 1 to (15-release) do
     begin
-      Dec(temp,ROUND(temp2/(16-release)));
+      temp := temp-temp2/(16-release);
       If (release <> 0) and (temp > 0) then
         begin
           If (eg_type <> 1) then
@@ -609,7 +622,7 @@ begin { _show_adsr }
                       ExpStrR('ö',_conv(decay,16-decay),' ')+
                       ExpStrR('ö',_conv(sustain,sustain),' ')+
                       ExpStrR('ö',_conv(release,15-release),' '),1,60-1)+
-                 'ö'+ExpStrL('',60,' '),1,60-1),
+                 'ö'+ExpStrL('',60,' '),1,60),
              attr_hi)
   else
     ShowStr(dest,xstart+2,ystart+10,
@@ -620,7 +633,7 @@ begin { _show_adsr }
                         15-_conv(release,15-release)+
                         15-_conv(sustain,sustain)+
                         15-_conv(decay,16-decay)+
-                        15-_conv(attack,16-attack)-1,' '),
+                        15-_conv(attack,16-attack),' '),
             attr_hi);
 
   If (release > 0) then
@@ -629,7 +642,7 @@ begin { _show_adsr }
                       ExpStrR('D',_conv(decay,16-decay),'ú')+
                       ExpStrR('S',_conv(sustain,sustain),'ú')+
                       ExpStrR('R',_conv(release,15-release),'ú'),1,60-1)+
-                 ''+ExpStrL('',60,'ú'),1,60-1),
+                 ''+ExpStrL('',60,'ú'),1,60),
              attr_hi)
   else
     ShowStr(dest,xstart+2,ystart+11,
@@ -637,10 +650,10 @@ begin { _show_adsr }
             ExpStrR('D',_conv(decay,16-decay),'ú')+
             ExpStrR('S',_conv(sustain,sustain),'ú')+
             ExpStrR('R',_conv(release,15-release)+
-                         15-_conv(release,15-release)+
-                         15-_conv(sustain,sustain)+
-                         15-_conv(decay,16-decay)+
-                         15-_conv(attack,16-attack)-1,'ú'),
+                        15-_conv(release,15-release)+
+                        15-_conv(sustain,sustain)+
+                        15-_conv(decay,16-decay)+
+                        15-_conv(attack,16-attack),'ú'),
             attr_hi);
 end;
 
@@ -658,12 +671,12 @@ begin
   If (ins_parameter(page,10) AND 1 <> 1) then
     For temp := 1 to 18 do
       ShowCStr(mn_environment.v_dest^,INSCTRL_xshift+10,INSCTRL_yshift+06+temp,inst_itm1[temp].str,
-               instrument_bckg+instrument_text,
+               dialog_background+dialog_contxt_dis2,
                color_table[inst_itm1[temp].colr])
   else
     For temp := 1 to 18 do
       ShowCStr(mn_environment.v_dest^,INSCTRL_xshift+10,INSCTRL_yshift+06+temp,inst_itm2[temp].str,
-               instrument_bckg+instrument_text,
+               dialog_background+dialog_contxt_dis2,
                color_table[inst_itm2[temp].colr]);
 
   For temp := 1 to 11 do
@@ -696,33 +709,33 @@ begin
     0: ShowCStr(mn_environment.v_dest^,
                 INSCTRL_xshift+09,INSCTRL_yshift+26,
                 ' [~MELODiC~] ',
-                menu_background+menu_border,
-                menu_background+menu_context);
+                dialog_background+dialog_border,
+                dialog_background+dialog_context);
     1: ShowCStr(mn_environment.v_dest^,
                 INSCTRL_xshift+09,INSCTRL_yshift+26,
                 ' [~PERC:BD~] ',
-                menu_background+menu_border,
-                menu_background+menu_context);
+                dialog_background+dialog_border,
+                dialog_background+dialog_context);
     2: ShowCStr(mn_environment.v_dest^,
                 INSCTRL_xshift+09,INSCTRL_yshift+26,
                 ' [~PERC:SD~] ',
-                menu_background+menu_border,
-                menu_background+menu_context);
+                dialog_background+dialog_border,
+                dialog_background+dialog_context);
     3: ShowCStr(mn_environment.v_dest^,
                  INSCTRL_xshift+09,INSCTRL_yshift+26,
                 ' [~PERC:TT~] ',
-                menu_background+menu_border,
-                menu_background+menu_context);
+                dialog_background+dialog_border,
+                dialog_background+dialog_context);
     4: ShowCStr(mn_environment.v_dest^,
                 INSCTRL_xshift+09,INSCTRL_yshift+26,
                 ' [~PERC:TC~] ',
-                menu_background+menu_border,
-                menu_background+menu_context);
+                dialog_background+dialog_border,
+                dialog_background+dialog_context);
     5: ShowCStr(mn_environment.v_dest^,
                 INSCTRL_xshift+09,INSCTRL_yshift+26,
                 ' [~PERC:HH~] ',
-                menu_background+menu_border,
-                menu_background+menu_context);
+                dialog_background+dialog_border,
+                dialog_background+dialog_context);
   end;
 
   If (songdata.instr_macros[page].length <> 0) then temp_str := ' [~MACRO:FM'
@@ -744,8 +757,8 @@ begin
 
   ShowCStr(mn_environment.v_dest^,INSCTRL_xshift+19,INSCTRL_yshift+26,
            ExpStrR(temp_str,21+2,'Í'),
-           menu_background+menu_border,
-           menu_background+menu_context);
+           dialog_background+dialog_border,
+           dialog_background+dialog_context);
 end;
 
 procedure INSTRUMENT_CONTROL_edit;
@@ -890,6 +903,9 @@ begin
           byte2hex(instrum_page),
           instrument_bckg+instrument_title);
 
+  If (program_screen_mode <> 0) then
+    ShowStr(vscreen,xstart-1,ystart+25,#204+ExpStrL('',70,#205)+#185,instrument_bckg+instrument_border);
+
   Case tADTRACK2_INS(inst^).perc_voice of
     0: ShowCStr(vscreen,xstart,ystart+25,' [~MELODiC~]',
                 instrument_bckg+instrument_border,
@@ -936,8 +952,8 @@ begin
 
   ShowCStr(vscreen,xstart+55,ystart+25,
            ExpStrL(' ~[SPEED:'+Num2str(songdata.tempo*songdata.macro_speedup,10)+#3+']~ ',17,'Í'),
-           macro_background+macro_border,
-           macro_background+macro_hi_text);
+           instrument_bckg+instrument_border,
+           instrument_bckg+instrument_context);
 
   If carrier or (tADTRACK2_INS(inst^).perc_voice in [2..5]) then
     begin
@@ -1105,29 +1121,37 @@ procedure page_refresh;
 var
   temp,x0,y0: Byte;
   temps1,temps2: String;
+  adsr_vpos: Byte;
 
 begin
   _debug_str_ := 'INSTEDIT.INC:INSTRUMENT_CONTROL_edit:page_refresh';
   x0 := xstart;
   y0 := ystart;
 
-  If NOT ((vpos in [1,2,4,5,7,20]) and (hpos = 1)) or
-     NOT _ADSR_preview_flag then
+  If (program_screen_mode = 0) then adsr_vpos := y0+10
+  else adsr_vpos := y0+25;
+
+  If (program_screen_mode = 0) and
+     (NOT ((vpos in [1,2,4,5,7,20]) and (hpos = 1)) or
+      NOT _ADSR_preview_flag) then
     begin
-      _show_adsr(vscreen,x0+4,y0+10,
+      _show_adsr(vscreen,x0+3,adsr_vpos,
                  BYTE_NULL,BYTE_NULL,BYTE_NULL,BYTE_NULL,BYTE_NULL,BYTE_NULL,BYTE_NULL,BYTE_NULL,
                  TRUE);
       page_build;
     end;
 
-  If _ADSR_preview_flag then
-    ShowCStr(vscreen,xstart+29,ystart+25,' [ADSR:~ON~] '+#205,
-             instrument_bckg+instrument_border,
-             instrument_bckg+instrument_context)
-  else
-    ShowCStr(vscreen,xstart+29,ystart+25,' [ADSR:~OFF~] ',
-             instrument_bckg+instrument_border,
-             instrument_bckg+instrument_context);
+  If (program_screen_mode = 0) then
+    begin
+      If _ADSR_preview_flag then
+        ShowCStr(vscreen,xstart+29,ystart+25,' [ADSR:~ON~] '+#205,
+                 instrument_bckg+instrument_border,
+                 instrument_bckg+instrument_context)
+      else
+        ShowCStr(vscreen,xstart+29,ystart+25,' [ADSR:~OFF~] ',
+                 instrument_bckg+instrument_border,
+                 instrument_bckg+instrument_context);
+    end;
 
   If carrier then temp := tADTRACK2_INS(inst^).fm_data.ATTCK_DEC_carrier
   else temp := tADTRACK2_INS(inst^).fm_data.ATTCK_DEC_modulator;
@@ -1311,25 +1335,25 @@ begin
   If (vpos in [1,2,4,5,7,20]) and (hpos = 1) and
      _ADSR_preview_flag then
     If NOT carrier or (tADTRACK2_INS(inst^).perc_voice in [2..5]) then
-      _show_adsr(vscreen,x0+4,y0+10,
+      _show_adsr(vscreen,x0+3,adsr_vpos,
                  tADTRACK2_INS(inst^).fm_data.ATTCK_DEC_modulator SHR 4,
                  tADTRACK2_INS(inst^).fm_data.ATTCK_DEC_modulator AND $0f,
                  tADTRACK2_INS(inst^).fm_data.SUSTN_REL_modulator SHR 4,
                  tADTRACK2_INS(inst^).fm_data.SUSTN_REL_modulator AND $0f,
                  tADTRACK2_INS(inst^).fm_data.KSL_VOLUM_modulator AND $3f,
                  tADTRACK2_INS(inst^).fm_data.AM_VIB_EG_modulator SHR 5 AND 1,
-                 instrument_adsr+instrument_mod,
-                 instrument_adsr+instrument_hi_mod,FALSE)
+                 adsr_bckg+instrument_mod,
+                 adsr_bckg+instrument_hi_mod,FALSE)
     else
-      _show_adsr(vscreen,x0+4,y0+10,
+      _show_adsr(vscreen,x0+3,adsr_vpos,
                  tADTRACK2_INS(inst^).fm_data.ATTCK_DEC_carrier SHR 4,
                  tADTRACK2_INS(inst^).fm_data.ATTCK_DEC_carrier AND $0f,
                  tADTRACK2_INS(inst^).fm_data.SUSTN_REL_carrier SHR 4,
                  tADTRACK2_INS(inst^).fm_data.SUSTN_REL_carrier AND $0f,
                  tADTRACK2_INS(inst^).fm_data.KSL_VOLUM_carrier AND $3f,
                  tADTRACK2_INS(inst^).fm_data.AM_VIB_EG_carrier SHR 5 AND 1,
-                 instrument_adsr+instrument_car,
-                 instrument_adsr+instrument_hi_car,FALSE);
+                 adsr_bckg+instrument_car,
+                 adsr_bckg+instrument_hi_car,FALSE);
 
   move2screen_alt;
 end;
@@ -1377,7 +1401,7 @@ _jmp1:
   HideCursor;
   Move(screen_ptr^,vscreen,SizeOf(vscreen));
   centered_frame_vdest := Addr(vscreen);
-  centered_frame(xstart,ystart,71,25,' iNSTRUMENT EDiTOR (iNS_  ) ',
+  centered_frame(xstart,ystart,71,25+ie_vsize_shift[program_screen_mode],' iNSTRUMENT EDiTOR (iNS_  ) ',
                  instrument_bckg+instrument_border,
                  instrument_bckg+instrument_title,double);
   centered_frame_vdest := screen_ptr;
@@ -1386,13 +1410,13 @@ _jmp1:
   move_to_screen_area[1] := xstart;
   move_to_screen_area[2] := ystart;
   move_to_screen_area[3] := xstart+71+2;
-  move_to_screen_area[4] := ystart+25+1;
+  move_to_screen_area[4] := ystart+25+ie_vsize_shift[program_screen_mode]+1;
   move2screen_alt;
 
   move_to_screen_area[1] := xstart+1;
   move_to_screen_area[2] := ystart;
   move_to_screen_area[3] := xstart+70;
-  move_to_screen_area[4] := ystart+25;
+  move_to_screen_area[4] := ystart+25+ie_vsize_shift[program_screen_mode];
   Inc(xstart);
 
   If NOT _force_program_quit then
@@ -1891,7 +1915,7 @@ _jmp1:
                    move_to_screen_area[1] := xstart;
                    move_to_screen_area[2] := ystart;
                    move_to_screen_area[3] := xstart+71+2;
-                   move_to_screen_area[4] := ystart+25+1;
+                   move_to_screen_area[4] := ystart+25+ie_vsize_shift[program_screen_mode]+1;
                    move2screen;
                    HELP('instrument_editor');
                    GOTO _jmp1;
@@ -1904,7 +1928,7 @@ _jmp1:
                    move_to_screen_area[1] := xstart;
                    move_to_screen_area[2] := ystart;
                    move_to_screen_area[3] := xstart+71+2;
-                   move_to_screen_area[4] := ystart+25+1;
+                   move_to_screen_area[4] := ystart+25+ie_vsize_shift[program_screen_mode]+1;
                    move2screen;
 
                    quick_cmd := FALSE;
@@ -1919,7 +1943,7 @@ _jmp1:
                    move_to_screen_area[1] := xstart;
                    move_to_screen_area[2] := ystart;
                    move_to_screen_area[3] := xstart+71+2;
-                   move_to_screen_area[4] := ystart+25+1;
+                   move_to_screen_area[4] := ystart+25+ie_vsize_shift[program_screen_mode]+1;
                    move2screen;
 
                    quick_cmd := FALSE;
@@ -1934,7 +1958,7 @@ _jmp1:
                    move_to_screen_area[1] := xstart;
                    move_to_screen_area[2] := ystart;
                    move_to_screen_area[3] := xstart+71+2;
-                   move_to_screen_area[4] := ystart+25+1;
+                   move_to_screen_area[4] := ystart+25+ie_vsize_shift[program_screen_mode]+1;
                    move2screen;
 
                    quick_cmd := FALSE;
@@ -1951,7 +1975,7 @@ _jmp1:
                    move_to_screen_area[1] := xstart;
                    move_to_screen_area[2] := ystart;
                    move_to_screen_area[3] := xstart+71+2;
-                   move_to_screen_area[4] := ystart+25+1;
+                   move_to_screen_area[4] := ystart+25+ie_vsize_shift[program_screen_mode]+1;
                    move2screen;
                    OCTAVE_CONTROL;
                    GOTO _jmp1;
@@ -1964,7 +1988,7 @@ _jmp1:
                    move_to_screen_area[1] := xstart;
                    move_to_screen_area[2] := ystart;
                    move_to_screen_area[3] := xstart+71+2;
-                   move_to_screen_area[4] := ystart+25+1;
+                   move_to_screen_area[4] := ystart+25+ie_vsize_shift[program_screen_mode]+1;
                    move2screen;
                    MACRO_EDITOR(current_inst,FALSE);
                    GOTO _jmp1;
@@ -1977,7 +2001,7 @@ _jmp1:
                    move_to_screen_area[1] := xstart;
                    move_to_screen_area[2] := ystart;
                    move_to_screen_area[3] := xstart+71+2;
-                   move_to_screen_area[4] := ystart+25+1;
+                   move_to_screen_area[4] := ystart+25+ie_vsize_shift[program_screen_mode]+1;
                    move2screen;
                    MACRO_EDITOR(current_inst,TRUE);
                    GOTO _jmp1;
@@ -2015,7 +2039,7 @@ _end:
   move_to_screen_area[1] := xstart;
   move_to_screen_area[2] := ystart;
   move_to_screen_area[3] := xstart+71+2;
-  move_to_screen_area[4] := ystart+25+1;
+  move_to_screen_area[4] := ystart+25+ie_vsize_shift[program_screen_mode]+1;
   move2screen;
 end;
 
@@ -2173,9 +2197,9 @@ begin
              INSCTRL_xshift+37,
              INSCTRL_yshift+07,
              istr,
-             menu_background+instrument_ai_off,
-             menu_background+instrument_ai_on,
-             menu_background+instrument_ai_trig);
+             dialog_background+instrument_ai_off,
+             dialog_background+instrument_ai_on,
+             dialog_background+instrument_ai_trig);
 end;
 
 procedure instr_control_proc;
@@ -2437,7 +2461,7 @@ begin
                    INSCTRL_xshift+41,
                    INSCTRL_yshift+26,
                    ExpStrL('',13,'Í'),
-                   menu_background+menu_border);
+                   dialog_background+dialog_border);
            STATUS_LINE_refresh;
          end;
 
@@ -2446,8 +2470,8 @@ begin
                   INSCTRL_yshift+26,
                   ' ®¯ õ~'+byte2hex(_1st_marked)+
                   '~,ô~'+byte2hex(instrum_page)+'~ ',
-                  menu_background+menu_border,
-                  menu_background+menu_context);
+                  dialog_background+dialog_border,
+                  dialog_background+dialog_context);
 
       2: If (last_marked <> _1st_marked) then
            ShowCStr(mn_environment.v_dest^,
@@ -2455,22 +2479,22 @@ begin
                     INSCTRL_yshift+26,
                     ' ®¯ õ~'+byte2hex(_1st_marked)+
                     '~,ô~'+byte2hex(_2nd_marked)+'~ ',
-                    menu_background+menu_border,
-                    menu_background+menu_context)
+                    dialog_background+dialog_border,
+                    dialog_background+dialog_context)
          else
            ShowCStr(mn_environment.v_dest^,
                     INSCTRL_xshift+41,
                     INSCTRL_yshift+26,
                     ' ®¯ õ~'+byte2hex(_2nd_marked)+
                     '~,ô~'+byte2hex(_1st_marked)+'~ ',
-                    menu_background+menu_border,
-                    menu_background+menu_context);
+                    dialog_background+dialog_border,
+                    dialog_background+dialog_context);
     end
   else ShowStr(mn_environment.v_dest^,
                INSCTRL_xshift+41,
                INSCTRL_yshift+26,
                ExpStrL('',13,'Í'),
-               menu_background+menu_border);
+               dialog_background+dialog_border);
 
   If NOT shift_pressed and NOT alt_pressed and NOT ctrl_pressed then
     If (_4op_to_test <> 0) then
@@ -2535,16 +2559,16 @@ _jmp1:
   fr_setting.shadow_enabled := FALSE;
   Frame(Addr(vscreen)^,INSCTRL_xshift+09,INSCTRL_yshift+06,
                        INSCTRL_xshift+34,INSCTRL_yshift+25,
-                       instrument_bckg+instrument_border,
+                       dialog_background+dialog_border,
                        '',
-                       instrument_bckg+instrument_title,
+                       dialog_background+dialog_title,
                        single);
 
   Frame(Addr(vscreen)^,INSCTRL_xshift+36,INSCTRL_yshift+06,
                        INSCTRL_xshift+81,INSCTRL_yshift+25,
-                       instrument_bckg+instrument_border,
+                       dialog_background+dialog_border,
                        '',
-                       instrument_bckg+instrument_title,
+                       dialog_background+dialog_title,
                        single);
 
   ShowStr(Addr(vscreen)^,INSCTRL_xshift+66,INSCTRL_yshift+25,
@@ -2555,25 +2579,25 @@ _jmp1:
                           dialog_background+dialog_context);
 
   ShowVStr(mn_environment.v_dest^,INSCTRL_xshift+37,INSCTRL_yshift+07,ExpStrL('',18,#28),
-           menu_background+instrument_ai_off);
+           dialog_background+instrument_ai_off);
   ShowVStr(mn_environment.v_dest^,INSCTRL_xshift+38,INSCTRL_yshift+06,'Â'+ExpStrL('',18,'³')+'Á',
-           menu_background+menu_border);
+           dialog_background+dialog_border);
 
   fr_setting.shadow_enabled := TRUE;
 
-  color_table[1] := instrument_bckg+instrument_text;
-  color_table[2] := instrument_bckg+instrument_hi_mod;
-  color_table[3] := instrument_bckg+instrument_hi_car;
+  color_table[1] := dialog_background+dialog_context_dis;
+  color_table[2] := dialog_background+dialog_mod_text;
+  color_table[3] := dialog_background+dialog_car_text;
 
   If (ins_parameter(instrum_page,10) AND 1 <> 1) then
     For temp := 1 to 18 do
       ShowCStr(Addr(vscreen)^,INSCTRL_xshift+10,INSCTRL_yshift+06+temp,inst_itm1[temp].str,
-               instrument_bckg+instrument_text,
+               dialog_background+dialog_contxt_dis2,
                color_table[inst_itm1[temp].colr])
   else
     For temp := 1 to 18 do
       ShowCStr(Addr(vscreen)^,INSCTRL_xshift+10,INSCTRL_yshift+06+temp,inst_itm2[temp].str,
-               instrument_bckg+instrument_text,
+               dialog_background+dialog_contxt_dis2,
                color_table[inst_itm2[temp].colr]);
 
   mn_setting.edit_contents := TRUE;
@@ -2771,9 +2795,9 @@ begin
                        single);
 
   ShowVStr(mn_environment.v_dest^,INSCTRL_xshift+37,INSCTRL_yshift+07,ExpStrL('',18,#28),
-           menu_background+instrument_ai_off);
+           dialog_background+instrument_ai_off);
   ShowVStr(mn_environment.v_dest^,INSCTRL_xshift+38,INSCTRL_yshift+06,'Â'+ExpStrL('',18,'³')+'Á',
-           menu_background+menu_border);
+           dialog_background+dialog_border);
 
   fr_setting.shadow_enabled := TRUE;
 
@@ -2784,12 +2808,12 @@ begin
   If (ins_parameter(instr,10) AND 1 <> 1) then
     For temp := 1 to 18 do
       ShowCStr(Addr(vscreen)^,INSCTRL_xshift+10,INSCTRL_yshift+06+temp,inst_itm1[temp].str,
-               instrument_bckg+instrument_text,
+               dialog_background+dialog_contxt_dis2,
                color_table[inst_itm1[temp].colr])
   else
     For temp := 1 to 18 do
       ShowCStr(Addr(vscreen)^,INSCTRL_xshift+10,INSCTRL_yshift+06+temp,inst_itm2[temp].str,
-               instrument_bckg+instrument_text,
+               dialog_background+dialog_contxt_dis2,
                color_table[inst_itm2[temp].colr]);
 
   mn_setting.shadow_enabled := FALSE;

@@ -10,7 +10,7 @@ http://www.adlibtracker.net/files/revision.htm
 
 
 * SDL/Win32/Linux version 2.4.15
-  released: --/--/----
+  released: 06/12/2014
 
    . added 'Set Custom Speed Table' effect command (`xx)
    . fixed speed of decay bars for different sdl_frame_rate values;
@@ -24,6 +24,12 @@ http://www.adlibtracker.net/files/revision.htm
    . fixed bug in processing of Arpeggio effect
    . fixed non-responding keyboard issue (hopefully :-)
    . small fixes in Arpeggio import from S3M files
+   . fixed/improved/enhanced ADSR preview feature
+   . optimized/enhanced color scheme options in config file
+   . added possibility to control config file options
+     with command line (refer to tip #25 in program documentation)
+   . fixed handling of ON/OFF flags for 4-OP track pair
+   . majorily improved Debug Info window functionality (hotkey: ^D)
 
 
 * SDL/Linux version 2.4.14

@@ -4762,8 +4762,8 @@ begin
             dialog_background+dialog_context_dis);
 
   ShowCStr(screen_ptr^,xstart+36,ystart+23,' ~C~ONTiNUE ',
-           dialog_sel_btn_bck+dialog_sel_btn,
-           dialog_sel_btn_bck+dialog_sel_short);
+           dialog_sel_itm_bck+dialog_sel_itm,
+           dialog_sel_itm_bck+dialog_sel_short);
 
   Repeat fkey := getkey;
   until (fkey = kESC) or (fkey = kENTER) or (HI(fkey) = $2e);
@@ -6389,8 +6389,8 @@ begin
             dialog_background+dialog_context_dis);
 
   ShowCStr(screen_ptr^,xstart+6,ystart+25,' ~C~ONTiNUE ',
-           dialog_sel_btn_bck+dialog_sel_btn,
-           dialog_sel_btn_bck+dialog_sel_short);
+           dialog_sel_itm_bck+dialog_sel_itm,
+           dialog_sel_itm_bck+dialog_sel_short);
 
   Repeat fkey := getkey;
   until (fkey = kESC) or (fkey = kENTER) or (HI(fkey) = $2e);
@@ -8941,10 +8941,10 @@ begin
   // arpeggio preview
   ShowStr(centered_frame_vdest^,xstart_arp+15,ystart_arp,
           'ý',
-          mn_setting.topic_attr);
+          macro_background+macro_topic2);
   ShowStr(centered_frame_vdest^,xstart_arp+15,ystart_arp+7,
           'ü',
-          mn_setting.topic_attr);
+          macro_background+macro_topic2);
   ShowVStr(centered_frame_vdest^,xstart_arp,ystart_arp+1,
            'ณณณณณ',
            macro_background+macro_text);
@@ -8988,10 +8988,10 @@ begin
   // vibrato preview
   ShowStr(centered_frame_vdest^,xstart_vib+15,ystart_vib,
           'ý',
-          mn_setting.topic_attr);
+          macro_background+macro_topic2);
   ShowStr(centered_frame_vdest^,xstart_vib+15,ystart_vib+7,
           'ü',
-          mn_setting.topic_attr);
+          macro_background+macro_topic2);
   ShowVStr(centered_frame_vdest^,xstart_vib,ystart_vib+1,
            'ณณณณณ',
            macro_background+macro_text);
@@ -9051,7 +9051,8 @@ begin
 
   VScrollBar(centered_frame_vdest^,scrollbar_xstart,scrollbar_ystart,
              scrollbar_size,macro_table_size,idx,WORD_NULL,
-             mn_setting.menu_attr,mn_setting.menu_attr);
+             macro_background+macro_border,
+             macro_background+macro_border);
 
   arpeggio_table_idx := idx;
   vibrato_table_idx := idx;
@@ -9171,59 +9172,59 @@ begin
    end;
 
   If arp_tab_selected then
-    attr := dialog_hi_text SHL 4+dialog_background SHR 4
-  else attr := dialog_background+dialog_hi_text;
+    attr := macro_hi_text SHL 4+macro_background SHR 4
+  else attr := macro_background+macro_hi_text;
   ShowStr(centered_frame_vdest^,xstart_arp-1,ystart_arp+8,'['+#251+']',attr);
 
   If vib_tab_selected then
-    attr := dialog_hi_text SHL 4+dialog_background SHR 4
-  else attr := dialog_background+dialog_hi_text;
+    attr := macro_hi_text SHL 4+macro_background SHR 4
+  else attr := macro_background+macro_hi_text;
   ShowStr(centered_frame_vdest^,xstart_vib-1,ystart_vib+8,'['+#251+']',attr);
 
   If (arpeggio_table_pos > 15) then
     ShowStr(centered_frame_vdest^,xstart_arp+6,ystart_arp+8,'',
-            dialog_background+dialog_text)
+            macro_background+macro_text)
   else ShowStr(centered_frame_vdest^,xstart_arp+6,ystart_arp+8,'',
-               dialog_background+dialog_hid);
+               macro_background+macro_text_dis);
 
   If (arpeggio_table_pos < temp_songdata.macro_table[idx].arpeggio.length-15+1) then
     ShowStr(centered_frame_vdest^,xstart_arp+25,ystart_arp+8,'',
-            dialog_background+dialog_text)
+            macro_background+macro_text)
   else ShowStr(centered_frame_vdest^,xstart_arp+25,ystart_arp+8,'',
-               dialog_background+dialog_hid);
+               macro_background+macro_text_dis);
 
   If (vibrato_table_pos > 15) then
     ShowStr(centered_frame_vdest^,xstart_vib+6,ystart_vib+8,'',
-            dialog_background+dialog_text)
+            macro_background+macro_text)
   else ShowStr(centered_frame_vdest^,xstart_vib+6,ystart_vib+8,'',
-               dialog_background+dialog_hid);
+               macro_background+macro_text_dis);
 
   If (vibrato_table_pos < temp_songdata.macro_table[idx].vibrato.length-15+1) then
     ShowStr(centered_frame_vdest^,xstart_vib+24,ystart_vib+8,'',
-            dialog_background+dialog_text)
+            macro_background+macro_text)
   else ShowStr(centered_frame_vdest^,xstart_vib+24,ystart_vib+8,'',
-               dialog_background+dialog_hid);
+               macro_background+macro_text_dis);
 
   ShowCStr(centered_frame_vdest^,xstart_arp+10,ystart_vib+8,
            'ARPEGGiO (~'+byte2hex(arpeggio_table_pos)+'~)',
-           dialog_background+dialog_text,
-           dialog_background+dialog_hi_text);
+           macro_background+macro_text,
+           macro_background+macro_hi_text);
   ShowCStr(centered_frame_vdest^,xstart_vib+10,ystart_vib+8,
            'ViBRATO (~'+byte2hex(vibrato_table_pos)+'~)',
-           dialog_background+dialog_text,
-           dialog_background+dialog_hi_text);
+           macro_background+macro_text,
+           macro_background+macro_hi_text);
 
   temps := '`'+ExpStrL('`'+context_str2+context_str+' [SPEED:'+Num2str(tempo*songdata.macro_speedup,10)+#3+'] ',40,'อ');
   ShowC3Str(centered_frame_vdest^,xstart+window_xsize-C3StrLen(temps),ystart+window_ysize,
             temps,
-            mn_setting.contxt_attr,
-            mn_setting.contxt2_attr,
-            mn_setting.menu_attr);
+            macro_background+macro_context,
+            macro_background+macro_context_dis,
+            macro_background+macro_border);
 
   If (a2w_institle_pos <> 0) then
     ShowStr(centered_frame_vdest^,mn_environment.xpos+a2w_institle_pos,mn_environment.ypos,
             byte2hex(current_inst),
-            mn_setting.title_attr);
+            macro_background+macro_title);
 
   arpvib_arpeggio_table := arpeggio_table_idx;
   arpvib_vibrato_table := vibrato_table_idx;
@@ -9659,10 +9660,10 @@ begin
   _debug_str_ := 'ILOADERS.INC:_fmreg_macro_preview_refresh';
   ShowStr(centered_frame_vdest^,xstart+10+(_fmreg_add_prev_size DIV 2),ystart,
           'ý',
-          mn_setting.topic_attr);
+          macro_background+macro_topic2);
   ShowStr(centered_frame_vdest^,xstart+10+(_fmreg_add_prev_size DIV 2),ystart+7,
           'ü',
-          mn_setting.topic_attr);
+          macro_background+macro_topic2);
 
   If NOT (fmreg_hpos in [29..33]) then
     begin
@@ -9878,14 +9879,14 @@ begin
   If (a2w_institle_pos <> 0) then
     ShowStr(centered_frame_vdest^,mn_environment.xpos+a2w_institle_pos,mn_environment.ypos,
             byte2hex(current_inst),
-            mn_setting.title_attr);
+            macro_background+macro_title);
 
   temps := '`'+ExpStrL('`'+context_str2+context_str+' [SPEED:'+Num2str(tempo*songdata.macro_speedup,10)+#3+'] ',40,'อ');
   ShowC3Str(centered_frame_vdest^,xstart+window_xsize-C3StrLen(temps),ystart+window_ysize,
             temps,
-            mn_setting.contxt_attr,
-            mn_setting.contxt2_attr,
-            mn_setting.menu_attr);
+            macro_background+macro_context,
+            macro_background+macro_context_dis,
+            macro_background+macro_border);
 
   ShowCStr(centered_frame_vdest^,xstart+2,ystart+window_ysize-10+2,
            'LENGTH:    ~'+
@@ -9925,21 +9926,23 @@ begin
 
   VScrollBar(centered_frame_vdest^,xstart+window_xsize,ystart+3,
              fmreg_scrlbar_size,fmreg_scrlbar_items,mn_environment.curr_pos,WORD_NULL,
-             mn_setting.menu_attr,mn_setting.menu_attr);
+             macro_background+macro_border,
+             macro_background+macro_border);
   VScrollBar(centered_frame_vdest^,xstart+window_xsize,ystart+window_ysize-10+1,
              8,255-6,fmreg_page,WORD_NULL,
-             mn_setting.menu_attr,mn_setting.menu_attr);
+             macro_background+macro_border,
+             macro_background+macro_border);
 
   _fmreg_macro_preview_refresh(xstart+17,ystart+window_ysize-10+1,fmreg_page+fmreg_vpos-1);
   ShowCStr(centered_frame_vdest^,xstart+49+_fmreg_add_prev_size,ystart+window_ysize-10+1,
            ExpStrL('',fmreg_cursor_pos,'อ')+'~'+#31+'~'+
            ExpStrL('',window_xsize-49-_fmreg_add_prev_size-fmreg_cursor_pos-1,'อ'),
-           mn_setting.topic_attr,
+           macro_background+macro_topic2,
            macro_background+macro_hi_text);
   ShowCStr(centered_frame_vdest^,xstart+49+_fmreg_add_prev_size,ystart+window_ysize-2,
            ExpStrL('',fmreg_cursor_pos,'อ')+'~'+#30+'~'+
            ExpStrL('',window_xsize-49-_fmreg_add_prev_size-fmreg_cursor_pos-1,'อ'),
-           mn_setting.topic_attr,
+           macro_background+macro_topic2,
            macro_background+macro_hi_text);
   ShowStr(centered_frame_vdest^,xstart+2,ystart+window_ysize-1,
           ExpStrR(macro_table_hint_str[20+fmreg_hpos],window_xsize-2,' '),
@@ -10004,6 +10007,15 @@ var
   old_winshade: Boolean;
   old_center_box: Boolean;
   old_show_scrollbar: Boolean;
+  old_text_attr,
+  old_text2_attr,
+  old_short_attr,
+  old_short2_attr,
+  old_disbld_attr,
+  old_contxt_attr,
+  old_contxt2_attr,
+  old_topic_attr,
+  old_hi_topic_attr: Byte;
 
 const
   new_keys: array[1..5] of Word = (kESC,kENTER,kF1,kTAB,kCtENTR);
@@ -10303,16 +10315,16 @@ _jmp1:
       centered_frame_vdest := Addr(vscreen);
       centered_frame(xstart,ystart,window_xsize,window_ysize,
                      temp_str,
-                     dialog_background+dialog_border,
-                     dialog_background+dialog_title,double);
+                     macro_background+macro_border,
+                     macro_background+macro_title,double);
 
       ShowStr(centered_frame_vdest^,xstart+1,ystart+window_ysize-10+1,
               'ออออสอออออฯอออออฯอออออฯอออออฯออออออสอออออฯอออออฯอออออฯอออออฯอออออฯออออออ',
-              mn_setting.topic_attr);
+              macro_background+macro_topic2);
 
       ShowStr(centered_frame_vdest^,xstart+1,ystart+window_ysize-2,
               ExpStrR('',72,'อ'),
-              mn_setting.topic_attr);
+              macro_background+macro_topic2);
 
       context_str := ' ~[~'+Num2str(nm_valid,10)+'~/255]~';
       xstart_arp := xstart+3;
@@ -10406,6 +10418,15 @@ _jmp1:
       old_winshade := mn_environment.winshade;
       old_center_box := mn_setting.center_box;
       old_show_scrollbar := mn_setting.show_scrollbar;
+      old_text_attr := mn_setting.text_attr;
+      old_text2_attr := mn_setting.text2_attr;
+      old_short_attr := mn_setting.short_attr;
+      old_short2_attr := mn_setting.short2_attr;
+      old_disbld_attr := mn_setting.disbld_attr;
+      old_contxt_attr := mn_setting.contxt_attr;
+      old_contxt2_attr := mn_setting.contxt2_attr;
+      old_topic_attr := mn_setting.topic_attr;
+      old_hi_topic_attr := mn_setting.hi_topic_attr;
 
       Move(new_keys,mn_setting.terminate_keys,SizeOf(new_keys));
       mn_setting.terminate_keys[4] := 0; // TAB possible only in FM-Register bank browser
@@ -10424,6 +10445,15 @@ _jmp1:
       mn_environment.unpolite := FALSE;
       mn_environment.preview := TRUE;
       mn_environment.v_dest := Addr(vscreen);
+      mn_setting.text_attr := macro_background+macro_item;
+      mn_setting.text2_attr := macro_sel_itm_bck+macro_sel_itm;
+      mn_setting.short_attr := macro_background+macro_short;
+      mn_setting.short2_attr := macro_sel_itm_bck+macro_sel_short;
+      mn_setting.disbld_attr := macro_background+macro_item_dis;
+      mn_setting.contxt_attr := macro_background+macro_context;
+      mn_setting.contxt2_attr := macro_background+macro_context_dis;
+      mn_setting.topic_attr := macro_background+macro_topic2;
+      mn_setting.hi_topic_attr := macro_background+macro_hi_topic;
 
       If (a2w_instdata_source <> '') then temp_str := a2w_instdata_source
       else temp_str := '?internal_instrument_data';
@@ -10472,6 +10502,15 @@ _jmp1:
       mn_environment.winshade := old_winshade;
       mn_setting.center_box := old_center_box;
       mn_setting.show_scrollbar := old_show_scrollbar;
+      mn_setting.text_attr := old_text_attr;
+      mn_setting.text2_attr := old_text2_attr;
+      mn_setting.short_attr := old_short_attr;
+      mn_setting.short2_attr := old_short2_attr;
+      mn_setting.disbld_attr := old_disbld_attr;
+      mn_setting.contxt_attr := old_contxt_attr;
+      mn_setting.contxt2_attr := old_contxt2_attr;
+      mn_setting.topic_attr := old_topic_attr;
+      mn_setting.hi_topic_attr := old_hi_topic_attr;
 
       move_to_screen_data := Addr(backup.screen);
       move_to_screen_area[1] := xstart;
@@ -10744,18 +10783,18 @@ _jmp2:
       centered_frame_vdest := Addr(vscreen);
       centered_frame(xstart,ystart,window_xsize,window_ysize,
                      temp_str,
-                     dialog_background+dialog_border,
-                     dialog_background+dialog_title,double);
+                     macro_background+macro_border,
+                     macro_background+macro_title,double);
 
       ShowStr(centered_frame_vdest^,xstart+1,ystart+window_ysize-10+1,
               ExpStrR('',window_xsize-1,'อ'),
-              mn_setting.topic_attr);
+              macro_background+macro_topic2);
       ShowStr(centered_frame_vdest^,xstart+1,ystart+window_ysize-2,
               ExpStrR('',window_xsize-1,'อ'),
-              mn_setting.topic_attr);
+              macro_background+macro_topic2);
       ShowVStr(centered_frame_vdest^,xstart+42+_fmreg_add_prev_size,ystart+window_ysize-10+1,
                'หบบบบบบส',
-               mn_setting.topic_attr);
+               macro_background+macro_topic2);
 
       Move(mn_setting.terminate_keys,old_keys,SizeOf(old_keys));
       old_external_proc := mn_environment.ext_proc;
@@ -10767,6 +10806,15 @@ _jmp2:
       old_winshade := mn_environment.winshade;
       old_center_box := mn_setting.center_box;
       old_show_scrollbar := mn_setting.show_scrollbar;
+      old_text_attr := mn_setting.text_attr;
+      old_text2_attr := mn_setting.text2_attr;
+      old_short_attr := mn_setting.short_attr;
+      old_short2_attr := mn_setting.short2_attr;
+      old_disbld_attr := mn_setting.disbld_attr;
+      old_contxt_attr := mn_setting.contxt_attr;
+      old_contxt2_attr := mn_setting.contxt2_attr;
+      old_topic_attr := mn_setting.topic_attr;
+      old_hi_topic_attr := mn_setting.hi_topic_attr;
 
       Move(new_keys,mn_setting.terminate_keys,SizeOf(new_keys));
       If NOT loadBankPossible then
@@ -10783,6 +10831,15 @@ _jmp2:
       mn_environment.unpolite := FALSE;
       mn_environment.preview := TRUE;
       mn_environment.v_dest := Addr(vscreen);
+      mn_setting.text_attr := macro_background+macro_item;
+      mn_setting.text2_attr := macro_sel_itm_bck+macro_sel_itm;
+      mn_setting.short_attr := macro_background+macro_short;
+      mn_setting.short2_attr := macro_sel_itm_bck+macro_sel_short;
+      mn_setting.disbld_attr := macro_background+macro_item_dis;
+      mn_setting.contxt_attr := macro_background+macro_context;
+      mn_setting.contxt2_attr := macro_background+macro_context_dis;
+      mn_setting.topic_attr := macro_background+macro_topic2;
+      mn_setting.hi_topic_attr := macro_background+macro_hi_topic;
 
       If NOT _force_program_quit then
         If (program_screen_mode = 0) then
@@ -10831,6 +10888,15 @@ _jmp2:
       mn_environment.winshade := old_winshade;
       mn_setting.center_box := old_center_box;
       mn_setting.show_scrollbar := old_show_scrollbar;
+      mn_setting.text_attr := old_text_attr;
+      mn_setting.text2_attr := old_text2_attr;
+      mn_setting.short_attr := old_short_attr;
+      mn_setting.short2_attr := old_short2_attr;
+      mn_setting.disbld_attr := old_disbld_attr;
+      mn_setting.contxt_attr := old_contxt_attr;
+      mn_setting.contxt2_attr := old_contxt2_attr;
+      mn_setting.topic_attr := old_topic_attr;
+      mn_setting.hi_topic_attr := old_hi_topic_attr;
 
       move_to_screen_data := Addr(backup.screen);
       move_to_screen_area[1] := xstart;

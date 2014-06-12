@@ -4,8 +4,8 @@ interface
 const
 {__AT2REV__}at2rev  = '055';
 {__AT2VER__}at2ver  = '2.4.15';
-{__AT2DAT__}at2date = '06-09-2014';
-{__AT2LNK__}at2link = '2:30pm';
+{__AT2DAT__}at2date = '06-12-2014';
+{__AT2LNK__}at2link = '1:02pm';
 
 const
   ascii_line_01 = 'ฺ-ฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ--๙๚               ๚๙-ฟ';
@@ -46,7 +46,7 @@ uses
     StringIO,DialogIO,TxtScrIO;
 
 const
-  LINES = 987;
+  LINES = 1008;
   help_data: array[1..LINES] of String[128] = (
     '@topic:general',
     'อหอออออออออออออออออออออออหอ',
@@ -85,6 +85,8 @@ const
     '~^Enter~                   Play next pattern according to order',
     '~^Left  (Up)~              Rewind current pattern (with Trace)',
     '~^Right (Down)~            Fast-Forward (with Trace)',
+    '~[Ctrl][Alt] <hold down>~  Temporarily show Debug Info window',
+    '~^D~                       Toggle Debug Info window',
     '~^Q~                       Toggle Instrument Macro Editor window',
     '~^E~                       Toggle Arpeggio/Vibrato Macro Editor window',
     '~^M~                       Toggle Macro Browser window',
@@ -96,7 +98,6 @@ const
     '~^R~                       Toggle Remap Instrument window',
     '~^T~                       Toggle Transpose window',
     '~^1..^8~                   Quick-set octave',
-    '~[Ctrl][Alt] <hold down>~  Toggle Debug Info window (~Shift~ toggles details)',
     '~[Alt] +,-~                Adjust overall volume',
     '~[Alt] C~                  Copy object to clipboard (with selection)',
     '~[Alt] P~                  Paste object from clipboard',
@@ -278,7 +279,7 @@ const
     '~[Shift] Tab~              Jump to previous setting',
     '~PgUp,PgDn (+,-)~          Adjust value',
     '~Space~                    Select item',
-    '~^Space~                   Toggle ADSR preview ON/OFF',
+    '~^Space~                   Toggle ADSR preview ON/OFF (if necessary)',
     '~[Ctrl] "[","]"~           Change current instrument',
     '~[Ctrl][Shift] "[","]"~    Change macro speed',
     '~Enter~                    Toggle carrier and modulator slot settings',
@@ -398,6 +399,26 @@ const
     '~Esc~                      Leave Arpeggio/Vibrato Macro Browser window',
     '',
     '~(*)~ Key combination with ~Ctrl+Shift~ applies action to both tables',
+    '',
+    '@topic:debug_info',
+    'อหอออออออออออออออออออออออออออออออออหอ',
+    ' บ `DEBUG iNFO WiNDOW KEY REFERENCE` บ',
+    'อสอออออออออออออออออออออออออออออออออสออออออออออออออออออออออออออออออออออออออ',
+    '~Tab~                      Toggle details',
+    '~Backspace~                Toggle pattern repeat',
+    '~Space~                    Enter Debug mode / Proceed step',
+    '~^Space~                   Exit Debug mode',
+    '~Up,Down~                  Change current track',
+    '~[Shift] +,-~              Skip to next/previous pattern',
+    '~+,-~                      Same as above; play pattern from start',
+    '~^Enter~                   Play next pattern according to order',
+    '~^Left~                    Rewind current pattern',
+    '~^Right~                   Fast-Forward',
+    '~[Alt] 1..9,0~             Toggle corresponding track ON/OFF',
+    '~[Alt] S~                  Set all OFF except current track (solo)',
+    '~[Alt] R~                  Reset flags on all tracks',
+    '~Asterisk~                 Reverse ON/OFF on all tracks',
+    '~Esc~                      Return to Pattern Editor or Pattern Order',
     '',
     '@topic:remap_dialog',
     'อหอออออออออออออออออออออออออออออออออออออออหอ',

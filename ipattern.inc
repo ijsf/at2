@@ -923,12 +923,17 @@ begin
       kAltS:   If NOT (opl3_channel_recording_mode and (play_status <> isStopped)) then
                  begin
                    For temp := 1 to songdata.nm_tracks do
-                     If (temp <> count_channel(pattern_hpos)) then
+                     channel_flag[temp] := FALSE;
+                   For temp := 1 to songdata.nm_tracks do
+                     If (temp = count_channel(pattern_hpos)) then
                        begin
-                         channel_flag[temp] := FALSE;
-                         reset_chan_data(temp);
-                       end
-                     else channel_flag[temp] := TRUE;
+                         channel_flag[temp] := TRUE;
+                         If is_4op_chan(temp) then
+                           If (temp in [1,3,5,10,12,14]) then channel_flag[SUCC(temp)] := TRUE
+                           else channel_flag[PRED(temp)] := TRUE;
+                       end;
+                   For temp := 1 to songdata.nm_tracks do
+                     If NOT channel_flag[temp] then reset_chan_data(temp);
                  end;
 
       kAltR:   If NOT (opl3_channel_recording_mode and (play_status <> isStopped)) then
@@ -941,32 +946,64 @@ begin
                        begin
                          channel_flag[HI(fkey2)-$77] := NOT channel_flag[HI(fkey2)-$77];
                          If NOT channel_flag[HI(fkey2)-$77] then reset_chan_data(HI(fkey2)-$77);
+                         If is_4op_chan(HI(fkey2)-$77) then
+                           If (HI(fkey2)-$77 in [1,3,5]) then
+                             begin
+                               channel_flag[SUCC(HI(fkey2)-$77)] := channel_flag[HI(fkey2)-$77];
+                               If NOT channel_flag[SUCC(HI(fkey2)-$77)] then reset_chan_data(SUCC(HI(fkey2)-$77));
+                             end
+                           else If (HI(fkey2)-$77 in [2,4,6]) then
+                                  begin
+                                    channel_flag[PRED(HI(fkey2)-$77)] := channel_flag[HI(fkey2)-$77];
+                                    If NOT channel_flag[PRED(HI(fkey2)-$77)] then reset_chan_data(PRED(HI(fkey2)-$77));
+                                  end;  
                        end;
                    end
-                 else begin
-                        If NOT percussion_mode then temps := '1~0~$1~1~$1~2~$1~3~$1~4~$1~5~$1~6~$1~7~$1~8~$1~9~$2~0~$'
-                        else temps := '1~0~$1~1~$1~2~$1~3~$1~4~$1~5~$16 ~B~D$17 ~S~D$18 ~T~T$19 T~C~$20 ~H~H$';
-                        temps := FlipStr(temps);
-                        For temp := 10 to 20 do
-                          If (temp > songdata.nm_tracks) then
-                            begin
-                              Delete(temps,Pos('~',temps),1);
-                              Delete(temps,Pos('~',temps),1);
-                            end;
-                        temps := FlipStr(temps);
-                        If (Pos('~',temps) <> 0) then
-                          begin
-                            chpos := Dialog('USE CURSOR KEYS OR DiRECTLY PRESS HOTKEY '+
-                                            'TO TOGGLE TRACK ON/OFF$',
-                                            temps,
-                                            ' TRACK ON/OFF ',chpos);
-                            If (dl_environment.keystroke <> kESC) then
-                              begin
-                                channel_flag[9+chpos] := NOT channel_flag[9+chpos];
-                                If NOT channel_flag[9+chpos] then reset_chan_data(9+chpos);
-                              end;
-                          end;
-                      end;
+                 else If (songdata.nm_tracks = 10) then
+                        begin
+                          channel_flag[10] := NOT channel_flag[10];
+                          If NOT channel_flag[10] then reset_chan_data(10);
+                          If is_4op_chan(10) then
+                           begin
+                             channel_flag[11] := channel_flag[10];
+                             If NOT channel_flag[11] then reset_chan_data(11);
+                           end;  
+                        end  
+                      else begin
+                             If NOT percussion_mode then temps := '1~0~$1~1~$1~2~$1~3~$1~4~$1~5~$1~6~$1~7~$1~8~$1~9~$2~0~$'
+                             else temps := '1~0~$1~1~$1~2~$1~3~$1~4~$1~5~$16 ~B~D$17 ~S~D$18 ~T~T$19 T~C~$20 ~H~H$';
+                             temps := FlipStr(temps);
+                             For temp := 10 to 20 do
+                               If (temp > songdata.nm_tracks) then
+                                 begin
+                                   Delete(temps,Pos('~',temps),1);
+                                   Delete(temps,Pos('~',temps),1);
+                                 end;
+                             temps := FlipStr(temps);
+                             If (Pos('~',temps) <> 0) then
+                               begin
+                                 chpos := Dialog('USE CURSOR KEYS OR DiRECTLY PRESS HOTKEY '+
+                                                 'TO TOGGLE TRACK ON/OFF$',
+                                                 temps,
+                                                 ' TRACK ON/OFF ',chpos);
+                                 If (dl_environment.keystroke <> kESC) then
+                                   begin
+                                     channel_flag[9+chpos] := NOT channel_flag[9+chpos];
+                                     If NOT channel_flag[9+chpos] then reset_chan_data(9+chpos);
+                                     If is_4op_chan(9+chpos) then
+                                       If (9+chpos in [10,12,14]) then
+                                         begin
+                                           channel_flag[SUCC(9+chpos)] := channel_flag[9+chpos];
+                                           If NOT channel_flag[SUCC(9+chpos)] then reset_chan_data(SUCC(9+chpos));
+                                         end  
+                                       else If (9+chpos in [11,13,15]) then
+                                              begin
+                                                channel_flag[PRED(9+chpos)] := channel_flag[9+chpos];
+                                                If NOT channel_flag[PRED(9+chpos)] then reset_chan_data(PRED(9+chpos));
+                                              end;
+                                   end;
+                               end;
+                           end;
       kUp,
       kCtLEFT: If NOT debugging and (play_status = isPlaying) then
                  rewind := TRUE;
@@ -1077,6 +1114,11 @@ begin
       kCtrlR:  begin
                  pause_debugging;
                  REMAP;
+               end;
+
+      kCtrlD:  begin
+                 pause_debugging;
+                 DEBUG_INFO;
                end;
 
       kCtrlO:  begin
@@ -1843,6 +1885,7 @@ begin
                          (fkey = kCtrlM)  or (fkey = kCtPgDN) or
                          (fkey = kCtrlT)  or (fkey = kCtrlR)  or
                          (fkey = kCtrlH)  or (fkey = kAltQ)   or
+                         (fkey = kCtrlD)  or
                          (fkey = kAltM)   or (fkey = kAltL)   or
                          (fkey = kF5)     or (fkey = kAltF5)  or
                          (fkey = kF6)     or (fkey = kAltF6)  or
@@ -2098,13 +2141,18 @@ begin
 
       kAltS:   If NOT (opl3_channel_recording_mode and (play_status <> isStopped)) then
                  begin
-                   For temp1 := 1 to songdata.nm_tracks do
-                     If (temp1 <> count_channel(pattern_hpos)) then
+                   For temp := 1 to songdata.nm_tracks do
+                     channel_flag[temp] := FALSE;
+                   For temp := 1 to songdata.nm_tracks do
+                     If (temp = count_channel(pattern_hpos)) then
                        begin
-                         channel_flag[temp1] := FALSE;
-                         reset_chan_data(temp1);
-                       end
-                     else channel_flag[temp1] := TRUE;
+                         channel_flag[temp] := TRUE;
+                         If is_4op_chan(temp) then
+                           If (temp in [1,3,5,10,12,14]) then channel_flag[SUCC(temp)] := TRUE
+                           else channel_flag[PRED(temp)] := TRUE;
+                       end;
+                   For temp := 1 to songdata.nm_tracks do
+                     If NOT channel_flag[temp] then reset_chan_data(temp);
                  end;
 
       kAltR:   If NOT (opl3_channel_recording_mode and (play_status <> isStopped)) then
@@ -2117,33 +2165,65 @@ begin
                        begin
                          channel_flag[HI(fkey)-$77] := NOT channel_flag[HI(fkey)-$77];
                          If NOT channel_flag[HI(fkey)-$77] then reset_chan_data(HI(fkey)-$77);
+                         If is_4op_chan(HI(fkey)-$77) then
+                           If (HI(fkey)-$77 in [1,3,5]) then
+                             begin
+                               channel_flag[SUCC(HI(fkey)-$77)] := channel_flag[HI(fkey)-$77];
+                               If NOT channel_flag[SUCC(HI(fkey)-$77)] then reset_chan_data(SUCC(HI(fkey)-$77));
+                             end
+                           else If (HI(fkey)-$77 in [2,4,6]) then
+                                  begin
+                                    channel_flag[PRED(HI(fkey)-$77)] := channel_flag[HI(fkey)-$77];
+                                    If NOT channel_flag[PRED(HI(fkey)-$77)] then reset_chan_data(PRED(HI(fkey)-$77));
+                                  end;  
                        end;
                    end
-                 else begin
-                        If NOT percussion_mode then temps := '1~0~$1~1~$1~2~$1~3~$1~4~$1~5~$1~6~$1~7~$1~8~$1~9~$2~0~$'
-                        else temps := '1~0~$1~1~$1~2~$1~3~$1~4~$1~5~$16 ~B~D$17 ~S~D$18 ~T~T$19 T~C~$20 ~H~H$';
-                        temps := FlipStr(temps);
-                        For temp := 10 to 20 do
-                          If (temp > songdata.nm_tracks) then
-                            begin
-                              Delete(temps,Pos('~',temps),1);
-                              Delete(temps,Pos('~',temps),1);
-                            end;
-                        temps := FlipStr(temps);
-                        If (Pos('~',temps) <> 0) then
-                          begin
-                            chpos := Dialog('USE CURSOR KEYS OR DiRECTLY PRESS HOTKEY '+
-                                            'TO TOGGLE TRACK ON/OFF$',
-                                            temps,
-                                            ' TRACK ON/OFF ',chpos);
-                            If (dl_environment.keystroke <> kESC) then
-                              begin
-                                channel_flag[9+chpos] := NOT channel_flag[9+chpos];
-                                If NOT channel_flag[9+chpos] then reset_chan_data(9+chpos);
-                              end;
-                          end;
-                      end;
-
+                 else If (songdata.nm_tracks = 10) then
+                        begin
+                          channel_flag[10] := NOT channel_flag[10];
+                          If NOT channel_flag[10] then reset_chan_data(10);
+                          If is_4op_chan(10) then
+                           begin
+                             channel_flag[11] := channel_flag[10];
+                             If NOT channel_flag[11] then reset_chan_data(11);
+                           end;  
+                        end  
+                      else begin
+                             If NOT percussion_mode then temps := '1~0~$1~1~$1~2~$1~3~$1~4~$1~5~$1~6~$1~7~$1~8~$1~9~$2~0~$'
+                             else temps := '1~0~$1~1~$1~2~$1~3~$1~4~$1~5~$16 ~B~D$17 ~S~D$18 ~T~T$19 T~C~$20 ~H~H$';
+                             temps := FlipStr(temps);
+                             For temp := 10 to 20 do
+                               If (temp > songdata.nm_tracks) then
+                                 begin
+                                   Delete(temps,Pos('~',temps),1);
+                                   Delete(temps,Pos('~',temps),1);
+                                 end;
+                             temps := FlipStr(temps);
+                             If (Pos('~',temps) <> 0) then
+                               begin
+                                 chpos := Dialog('USE CURSOR KEYS OR DiRECTLY PRESS HOTKEY '+
+                                                 'TO TOGGLE TRACK ON/OFF$',
+                                                 temps,
+                                                 ' TRACK ON/OFF ',chpos);
+                                 If (dl_environment.keystroke <> kESC) then
+                                   begin
+                                     channel_flag[9+chpos] := NOT channel_flag[9+chpos];
+                                     If NOT channel_flag[9+chpos] then reset_chan_data(9+chpos);
+                                     If is_4op_chan(9+chpos) then
+                                       If (9+chpos in [10,12,14]) then
+                                         begin
+                                           channel_flag[SUCC(9+chpos)] := channel_flag[9+chpos];
+                                           If NOT channel_flag[SUCC(9+chpos)] then reset_chan_data(SUCC(9+chpos));
+                                         end  
+                                       else If (9+chpos in [11,13,15]) then
+                                              begin
+                                                channel_flag[PRED(9+chpos)] := channel_flag[9+chpos];
+                                                If NOT channel_flag[PRED(9+chpos)] then reset_chan_data(PRED(9+chpos));
+                                              end;
+                                   end;
+                               end;
+                           end;
+                           
       kShTAB:  If (hpos > PATEDIT_lastpos DIV MAX_TRACKS) then
                  begin
                    Dec(hpos,PATEDIT_lastpos DIV MAX_TRACKS);
@@ -2643,7 +2723,8 @@ begin
                        end;
                  end;
 
-      kCtrlD:  If marking then
+      kCtrlD:  If NOT marking then DEBUG_INFO
+               else
                  begin
                    old_block_chan_pos := chan_pos;
                    old_block_patt_hpos := hpos;

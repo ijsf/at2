@@ -514,12 +514,12 @@ begin
     MenuLib1_mn_setting.cycle_moves    := FALSE;
     MenuLib1_mn_setting.title_attr     := dialog_background+dialog_title;
     MenuLib1_mn_setting.menu_attr      := dialog_background+dialog_text;
-    MenuLib1_mn_setting.text_attr      := dialog_background+dialog_button;
-    MenuLib1_mn_setting.text2_attr     := dialog_sel_btn_bck+dialog_sel_btn;
+    MenuLib1_mn_setting.text_attr      := dialog_background+dialog_item;
+    MenuLib1_mn_setting.text2_attr     := dialog_sel_itm_bck+dialog_sel_itm;
     MenuLib1_mn_setting.default_attr   := dialog_def_bckg+dialog_def;
     MenuLib1_mn_setting.short_attr     := dialog_background+dialog_short;
-    MenuLib1_mn_setting.short2_attr    := dialog_sel_btn_bck+dialog_sel_short;
-    MenuLib1_mn_setting.disbld_attr    := dialog_background+dialog_button_dis;
+    MenuLib1_mn_setting.short2_attr    := dialog_sel_itm_bck+dialog_sel_short;
+    MenuLib1_mn_setting.disbld_attr    := dialog_background+dialog_item_dis;
     MenuLib1_mn_setting.contxt_attr    := dialog_background+dialog_context;
     MenuLib1_mn_setting.contxt2_attr   := dialog_background+dialog_context_dis;
     MenuLib1_mn_setting.terminate_keys[3] := kTAB;
