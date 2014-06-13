@@ -10,7 +10,7 @@ http://www.adlibtracker.net/files/revision.htm
 
 
 * SDL/Win32/Linux version 2.4.15
-  released: 06/12/2014
+  released: 06/13/2014
 
    . added 'Set Custom Speed Table' effect command (`xx)
    . fixed speed of decay bars for different sdl_frame_rate values;
@@ -31,6 +31,7 @@ http://www.adlibtracker.net/files/revision.htm
    . fixed handling of ON/OFF flags for 4-OP track pair
    . added positional memory for Song variables and Replace window
    . majorily improved Debug Info window functionality (hotkey: ^D)
+   . fixed worse keyboard responsiveness upon instrument preview
 
 
 * SDL/Linux version 2.4.14
