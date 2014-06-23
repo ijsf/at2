@@ -3,7 +3,7 @@ set homedir=%~d1\AT2_Compilation_Environment
 cd %homedir%\at2-SDL
 set ERR_RESULT=???
 rem -------------------------------------
-set VERSION=2.4.15 055
+set VERSION=2.4.16 056
 rem -------------------------------------
 echo.
 echo ************************************

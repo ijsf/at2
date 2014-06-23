@@ -836,29 +836,10 @@ begin
   update_fmpar(chan);
   reset_adsrw[chan] := TRUE;
 
-  If (event_table[chan].note AND $7f in [1..12*8+1]) then
-    init_macro_table(chan,event_table[chan].note AND $7f,voice_table[chan],freq_table[chan])
-  else init_macro_table(chan,0,voice_table[chan],freq_table[chan]);
-end;
-
-procedure reset_chan_data_alt(chan: Byte);
-begin
-  opl3out(_instr[02]+_chan_m[chan],63);
-  opl3out(_instr[03]+_chan_c[chan],63);
-
-  opl3out($0b0+_chan_n[chan],0);
-  opl3out(_instr[04]+_chan_m[chan],BYTE_NULL);
-  opl3out(_instr[05]+_chan_c[chan],BYTE_NULL);
-  opl3out(_instr[06]+_chan_m[chan],BYTE_NULL);
-  opl3out(_instr[07]+_chan_c[chan],BYTE_NULL);
-
-  key_off(chan);
-  update_fmpar(chan);
-  reset_adsrw[chan] := TRUE;
-
-  If (event_table[chan].note AND $7f in [1..12*8+1]) then
-    init_macro_table(chan,event_table[chan].note AND $7f,voice_table[chan],freq_table[chan])
-  else init_macro_table(chan,0,voice_table[chan],freq_table[chan]);
+  If (play_status <> isStopped) then
+    If (event_table[chan].note AND $7f in [1..12*8+1]) then
+      init_macro_table(chan,event_table[chan].note AND $7f,voice_table[chan],freq_table[chan])
+    else init_macro_table(chan,0,voice_table[chan],freq_table[chan]);
 end;
 
 procedure init_macro_table(chan,note,ins: Byte; freq: Word);

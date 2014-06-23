@@ -9,6 +9,14 @@ For complete AT2 revision history refer to:
 http://www.adlibtracker.net/files/revision.htm
 
 
+* SDL/Win32/Linux version 2.4.16
+  released: --/--/----
+
+   . fixed cursor blink speed for non-default sdl_frame_rate value
+   . improved current track movement in Debug Info window
+   . added macro details section to Debug Info window
+
+
 * SDL/Win32/Linux version 2.4.15
   released: 06/13/2014
 

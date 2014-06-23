@@ -2,10 +2,10 @@ unit AdT2text;
 interface
 
 const
-{__AT2REV__}at2rev  = '055';
-{__AT2VER__}at2ver  = '2.4.15';
-{__AT2DAT__}at2date = '06-13-2014';
-{__AT2LNK__}at2link = '11:43am';
+{__AT2REV__}at2rev  = '056';
+{__AT2VER__}at2ver  = '2.4.16';
+{__AT2DAT__}at2date = '06-23-2014';
+{__AT2LNK__}at2link = '6:08pm';
 
 const
   ascii_line_01 = 'ฺ-ฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ--๙๚               ๚๙-ฟ';
@@ -46,7 +46,7 @@ uses
     StringIO,DialogIO,TxtScrIO;
 
 const
-  LINES = 1008;
+  LINES = 1009;
   help_data: array[1..LINES] of String[128] = (
     '@topic:general',
     'อหอออออออออออออออออออออออหอ',
@@ -404,11 +404,12 @@ const
     'อหอออออออออออออออออออออออออออออออออหอ',
     ' บ `DEBUG iNFO WiNDOW KEY REFERENCE` บ',
     'อสอออออออออออออออออออออออออออออออออสออออออออออออออออออออออออออออออออออออออ',
+    '~Up,Down,PgUp,PgDown~',
+    '~Home,End~                 Change current track',
     '~Tab~                      Toggle details',
     '~Backspace~                Toggle pattern repeat',
     '~Space~                    Enter Debug mode / Proceed step',
     '~^Space~                   Exit Debug mode',
-    '~Up,Down~                  Change current track',
     '~[Shift] +,-~              Skip to next/previous pattern',
     '~+,-~                      Same as above; play pattern from start',
     '~^Enter~                   Play next pattern according to order',
