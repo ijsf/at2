@@ -2264,9 +2264,9 @@ begin
     _macro_pos_str_av := byte2hex(pos)+'/'+byte2hex(len)+' '+slide_str+
                          _keyoff_str[(pos >= keyoff_pos) and (keyoff_pos > 0)]
   else If (pos = IDLE) then
-         _macro_pos_str_av := 'úúúú '+slide_str+' '+
+         _macro_pos_str_av := 'úúúú '+slide_str+
                               _keyoff_str[(pos >= keyoff_pos) and (keyoff_pos > 0)]
-       else _macro_pos_str_av := byte2hex(len)+'/'+byte2hex(len)+' '+slide_str+' '+
+       else _macro_pos_str_av := byte2hex(len)+'/'+byte2hex(len)+' '+slide_str+
                                  _keyoff_str[(pos >= keyoff_pos) and (keyoff_pos > 0)];
 end;
 
