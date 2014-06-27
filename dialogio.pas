@@ -7,7 +7,7 @@ uses
   {$IFDEF WINDOWS}
   Windows,
   {$ENDIF}
-  AdT2sys,AdT2vscr,AdT2unit,AdT2keyb,AdT2ext2,
+  AdT2sys,AdT2vscr,AdT2unit,AdT2keyb,AdT2ext2,AdT2text,
   StringIO,ParserIO,TxtScrIO;
 
 type
@@ -59,6 +59,7 @@ type
                     show_scrollbar: Boolean;
                     topic_len:      Byte;
                     fixed_len:      Byte;
+                    home_position:  Longint;
                     terminate_keys: array[1..50] of Word;
                   end;
 type
@@ -160,6 +161,7 @@ const
      show_scrollbar: TRUE;
      topic_len:      0;
      fixed_len:      0;
+     home_position:  0;
      terminate_keys: ($011b,$1c0d,$0000,$0000,$0000,
                       $0000,$0000,$0000,$0000,$0000,
                       $0000,$0000,$0000,$0000,$0000,
@@ -497,7 +499,7 @@ begin
       ThinCursor;
       str := InputStr(dl_environment.input_str,
                       xstart+2,ystart+num+1,ln,ln1,atr1,atr2);
-      If is_environment.keystroke = $1c0d then dl_environment.input_str := str;
+      If is_environment.keystroke = kENTER then dl_environment.input_str := str;
       dl_environment.keystroke := is_environment.keystroke;
       HideCursor;
     end
@@ -554,17 +556,17 @@ begin
                               AddPos(k);
                               If (k = temp) then
                                 begin
-                                  k := 1;
+                                  k := 1;  
                                   If NOT dbuf[k].use then AddPos(k);
                                 end;
                             end
                           else begin
-                                 k := 1;
+                                 k := 1;  
                                  If NOT dbuf[k].use then AddPos(k);
                                end;
 
-                     $47: begin
-                            k := 1;
+                     $47: begin                       
+                            k := 1;  
                             If NOT dbuf[k].use then AddPos(k);
                           end;
 
@@ -826,7 +828,7 @@ begin
   mn_environment.is_editing := FALSE;
 
   HideCursor;
-  If (is_environment.keystroke = $1c0d) then
+  If (is_environment.keystroke = kENTER) then
     begin
       If (mn_environment.edit_pos > 0) and (mn_environment.edit_pos < max-2) then
         temp := Copy(pstr(item),1,mn_environment.edit_pos)+temp
@@ -997,7 +999,11 @@ begin { Menu }
                                end;
 
                      $47: begin
-                            k := 1; page := 1;
+                            If (mn_setting.home_position = 0) then begin k := 1; page := 1; end  
+                            else If (k+page-1 > mn_setting.home_position) and
+                                    (mn_setting.home_position < count) then
+                                   Repeat SubPos(k) until (k+page-1 <= mn_setting.home_position)
+                                 else begin k := 1; page := 1; end;
                             If NOT mbuf[k+page-1].use then AddPos(k);
                           end;
 
@@ -1006,7 +1012,13 @@ begin { Menu }
                             If NOT mbuf[k+page-1].use then SubPos(k);
                           end;
 
-                     $49: For temp := 1 to len2-1 do SubPos(k);
+                     $49: If (k+page-1-(len2-1) > mn_setting.home_position) or
+                             (k+page-1 <= mn_setting.home_position) or
+                             (mn_setting.home_position = 0) or
+                             NOT (mn_setting.home_position < count) then
+                            For temp := 1 to len2-1 do SubPos(k)                            
+                          else Repeat SubPos(k) until (k+page-1 <= mn_setting.home_position);
+                          
                      $51: For temp := 1 to len2-1 do AddPos(k);
                    end;
 
@@ -1088,6 +1100,9 @@ var
   masks: array[1..20] of String;
   fstream: tSTREAM;
   drive_list: array[0..128] of Char;
+  
+const  
+  home_position: Longint = 0;
 
 function LookUpMask(filename: String): Boolean;
 
@@ -1233,7 +1248,7 @@ begin
 
   Inc(count1);
   stream.stuff[count1].name := '~'+#$ff+'~';
-  stream.stuff[count1].attr := volumeid;
+  stream.stuff[count1].attr := volumeid;  
 
   count2 := 0;
   stream.drive_count := count1;
@@ -1305,7 +1320,6 @@ var
   lastp: Longint;
   idx: Byte;
   backup: tBACKUP;
-  _preview_step: Boolean;
 
 function path_filter(path: String): String;
 begin
@@ -1314,14 +1328,19 @@ begin
   path_filter := Upper(path);
 end;
 
+label _jmp1;
+
 begin
   _debug_str_ := 'DIALOGIO.PAS:Fselect';
+  
+_jmp1:
+  
   idx := 1;
   count := 0;
 
-  Repeat // split mask string into masks and fill masks[1..20] array
-    temp6 := Upper(ReadChunk(mask,idx)); // read first part: *.a2m etc
-    Inc(idx ,Length(temp6)+1); // advance
+  Repeat
+    temp6 := Upper(ReadChunk(mask,idx));
+    Inc(idx,Length(temp6)+1);
     If NOT (temp6 = '') then
       begin
         Inc(count);
@@ -1330,10 +1349,9 @@ begin
   until (idx >= Length(mask)) or (temp6 = '');
 
   {$i-}
-  GetDir(0,temp6); // get current dir
+  GetDir(0,temp6);
   {$i+}
 
-  // if error, take last dir
   If (IOresult <> 0) then
     temp6 := fs_environment.last_dir;
 
@@ -1363,8 +1381,7 @@ begin
   mn_environment.descr_len := 20;
   mn_environment.descr := Addr(descr);
   mn_environment.winshade := FALSE;
-
-  _preview_step := TRUE;
+  
   Move(screen_ptr^,backup.screen,SizeOf(backup.screen));
   backup.cursor := GetCursor;
   backup.oldx   := WhereX;
@@ -1445,31 +1462,38 @@ begin
 
     mn_setting.reverse_use := TRUE;
     mn_environment.context := ' ~'+Num2str(fstream.match_count,10)+' FiLES FOUND~ ';
-    mn_setting.terminate_keys[3] := $0e08;
-    mn_setting.terminate_keys[4] := $2b5c;
+    mn_setting.terminate_keys[3] := kBkSPC;
+{$IFDEF WINDOWS}
+    mn_setting.terminate_keys[4] := kSlashR;
+{$ELSE}              
+    mn_setting.terminate_keys[4] := kSlash;
+{$ENDIF}              
+    mn_setting.terminate_keys[5] := kF1;
     old_fselect_external_proc := mn_environment.ext_proc;
     mn_environment.ext_proc := new_fselect_external_proc;
 
-    mn_setting.frame_enabled := _preview_step;
-    mn_setting.shadow_enabled := _preview_step;
-
+    temp := 1;
+    While (temp < fstream.count) and (SYSTEM.Pos('[UP-DiR]',descr[temp]) = 0) do Inc(temp);
+    If (temp < fstream.count) then mn_setting.home_position := temp
+    else mn_setting.home_position := 10;
+    
     If (program_screen_mode = 0) then
       temp2 := Menu(menudat,01,01,lastp,
                     1+23+1,work_MaxLn-5,fstream.count,' '+
-                    iCASE(DietStr(FilterStr2(path_filter(temp3),_valid_characters_fname,'_'),40))+' ')
+                    iCASE(DietStr(FilterStr2(path_filter(temp3),_valid_characters_fname,'_'),38))+' ')
     else
       temp2 := Menu(menudat,01,01,lastp,
                     1+23+1,work_MaxLn-15,fstream.count,' '+
-                    iCASE(DietStr(FilterStr2(path_filter(temp3),_valid_characters_fname,'_'),40))+' ');
+                    iCASE(DietStr(FilterStr2(path_filter(temp3),_valid_characters_fname,'_'),38))+' ');
 
-    _preview_step := FALSE;
     mn_environment.ext_proc := old_fselect_external_proc;
     mn_setting.reverse_use := FALSE;
     mn_environment.context := '';
     mn_setting.terminate_keys[3] := 0;
     mn_setting.terminate_keys[4] := 0;
-
-    If (mn_environment.keystroke = $1c0d) and
+    mn_setting.terminate_keys[5] := 0;
+    
+    If (mn_environment.keystroke = kENTER) and
        (fstream.stuff[temp2].attr AND directory <> 0) then
       begin
         fs_environment.last_file := 'FNAME:EXT';
@@ -1493,7 +1517,7 @@ begin
         {$i+}
         If (IOresult <> 0) then ;
       end
-    else If (mn_environment.keystroke = $1c0d) and
+    else If (mn_environment.keystroke = kENTER) and
             (fstream.stuff[temp2].attr AND volumeid <> 0) then
            begin
              fs_environment.last_file := 'FNAME:EXT';
@@ -1512,7 +1536,7 @@ begin
              temp4 := '';
              fs_environment.last_file := temp4;
            end
-         else If (mn_environment.keystroke = $0e08) and
+         else If (mn_environment.keystroke = kBkSPC) and
                  (SYSTEM.Pos(PATHSEP,Copy(temp3,3,Length(temp3)-3)) <> 0) then
                 begin
                   Delete(temp3,Length(temp3),1);
@@ -1525,7 +1549,11 @@ begin
                   {$i+}
                   If (IOresult <> 0) then ;
                 end
-              else If (mn_environment.keystroke = $2b5c) then
+{$IFDEF WINDOWS}
+              else If (mn_environment.keystroke = kSlashR) then
+{$ELSE}              
+              else If (mn_environment.keystroke = kSlash) then
+{$ENDIF}              
                      begin
                        temp3 := Copy(temp3,1,3);
                        temp4 := '';
@@ -1536,14 +1564,16 @@ begin
                        If (IOresult <> 0) then ;
                      end
                    else fs_environment.last_file := Lower_file(fstream.stuff[temp2].name);
-  until (mn_environment.keystroke = $1c0d) or
-        (mn_environment.keystroke = $011b);
+  until (mn_environment.keystroke = kENTER) or
+        (mn_environment.keystroke = kESC) or
+        (mn_environment.keystroke = kF1);
 
   mn_environment.descr_len := 0;
   mn_environment.descr := NIL;
   mn_environment.winshade := TRUE;
   mn_setting.frame_enabled := TRUE;
   mn_setting.shadow_enabled := TRUE;
+  mn_setting.home_position := 0;
 
   move_to_screen_data := Addr(backup.screen);
   move_to_screen_area[1] := mn_environment.xpos;
@@ -1552,13 +1582,19 @@ begin
   move_to_screen_area[4] := mn_environment.ypos+mn_environment.ysize+1;
   move2screen;
 
+  If (mn_environment.keystroke = kF1) then
+    begin
+      HELP('file_browser');
+      GOTO _jmp1;
+    end;
+    
   Fselect := temp3+fstream.stuff[temp2].name;
   fs_environment.last_dir := path[SUCC(ORD(UpCase(temp3[1]))-ORD('A'))];
   {$i-}
   ChDir(temp6);
   {$i+}
   If (IOresult <> 0) then ;
-  If (mn_environment.keystroke = $011b) then Fselect := '';
+  If (mn_environment.keystroke = kESC) then Fselect := '';
 end;
 
 function _partial(max,val: Word; base: Byte): Word;

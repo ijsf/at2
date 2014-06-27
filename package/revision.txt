@@ -15,6 +15,8 @@ http://www.adlibtracker.net/files/revision.htm
    . fixed cursor blink speed for non-default sdl_frame_rate value
    . improved current track movement in Debug Info window
    . added macro details section to Debug Info window
+   . added flipped paste block feature (hotkey: Alt+Shift+V)
+   . fixed/improved File Browser window
 
 
 * SDL/Win32/Linux version 2.4.15

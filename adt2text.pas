@@ -4,8 +4,8 @@ interface
 const
 {__AT2REV__}at2rev  = '056';
 {__AT2VER__}at2ver  = '2.4.16';
-{__AT2DAT__}at2date = '06-23-2014';
-{__AT2LNK__}at2link = '6:08pm';
+{__AT2DAT__}at2date = '06-27-2014';
+{__AT2LNK__}at2link = '4:10pm';
 
 const
   ascii_line_01 = 'ฺ-ฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ--๙๚               ๚๙-ฟ';
@@ -46,7 +46,7 @@ uses
     StringIO,DialogIO,TxtScrIO;
 
 const
-  LINES = 1009;
+  LINES = 1023;
   help_data: array[1..LINES] of String[128] = (
     '@topic:general',
     'อหอออออออออออออออออออออออหอ',
@@ -207,18 +207,20 @@ const
     'ณ ~^C~ ณ Copy block   ณ Copy block to clipboard                      ณ',
     'ณ ~^D~ ณ Delete block ณ Remove block from pattern                    ณ',
     'ณ ~^N~ ณ Nuke block   ณ Clear block contents                         ณ',
-    'ณ ~^V~ ณ Paste block  ณ Paste block from clipbaord to pattern ~(*)~    ณ',
+    'ณ ~^V~ ณ Paste block  ณ Paste block from clipboard to pattern ~(*)~    ณ',
     'ณ ~^X~ ณ Cut block    ณ Combine both Copy and Delete operation       ณ',
     'รฤฤฤฤมฤฤฤฤฤฤฤฤฤฤฤฤฤฤมฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤด',
     'ณ ~(*)~ PASTE BLOCK OPERATION VARiANTS                               ณ',
-    'ณ "Paste block" operation has two other functional variants        ณ',
+    'ณ "Paste block" operation has three other functional variants      ณ',
     'ณ with different key shortcuts for activation:                     ณ',
     'ณ 1) ~[Alt] V~ toggles "Mix block" operation, when block data        ณ',
     'ณ    from clipboard is applied without overwriting existing data;  ณ',
     'ณ 2) ~[Shift] ^V~ toggles "Selective paste block" operation,         ณ',
     'ณ    when only block data from clipboard corresponding to current  ณ',
     'ณ    cursor position is being applied (i.e. note, instrument,      ณ',
-    'ณ    1st effect or 2nd effect).                                    ณ',
+    'ณ    1st effect or 2nd effect);                                    ณ',
+    'ณ 3) ~[Alt][Shift] V~ toggles "Flipped paste block" operation,       ณ',
+    'ณ    when block data from clipboard is applied vertically flipped. ณ',
     'ภฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤู',
     '',
     '@topic:pattern_list',
@@ -459,6 +461,22 @@ const
     '~[Shift] Tab~              Jump to previous variable field',
     '~Space~                    Select item',
     '~Esc~                      Return to Pattern Editor or Pattern Order',
+    '',
+    '@topic:file_browser',
+    'อหออออออออออออออออออออออออออออหอ',
+    ' บ `FiLE BROWSER KEY REFERENCE` บ',
+    'อสออออออออออออออออออออออออออออสอออออออออออออออออออออออออออออออออออออออออออ',
+    '~Up,Down,Left,Right,~',
+    '~Home,End~                 Cursor navigation',   
+{$IFDEF WINDOWS}
+    '~\~                        Navigate to drive root',
+{$ELSE}              
+    '~/~                        Navigate to root directory',
+{$ENDIF}    
+    '~Backspace~                Navigate to parent directory',
+    '~MBoard keys <hold down>~  Preview instrument (instrument files only)',
+    '~Enter~                    Choose file under cursor / read instrument bank',
+    '~Esc~                      Leave without choosing file',
     '',
     '@topic:input_field',
     'อหอออออออออออออออออออออออออออหอ',

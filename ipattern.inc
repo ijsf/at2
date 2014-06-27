@@ -1910,7 +1910,7 @@ begin
                                    (fkey = kShF9)   or (fkey = kCtrlF9)   or
                                    (fkey = kCtLeft) or (fkey = kCtRght))) or
 
-                         (fkey = kCtENTR)))
+                         (fkey = kCtENTR)))   
     then begin
            If marking and
               NOT (((fkey = kENTER) and shift_pressed) or
@@ -2598,43 +2598,49 @@ begin
                else paste_object;
 
       kAltV: If (clipboard.object_type = objMarkedBlock) then
-               For temp2 := page to page+clipboard.block_vsize do
-                 For temp1 := count_channel(hpos) to count_channel(hpos)+clipboard.block_hsize do
-                   begin
-                     get_chunk(pattern,temp2,temp1,chunk);
-                     If (chunk.note = 0) then
-                       begin
-                         chunk.note :=
-                           clipboard.pattern[SUCC(temp1-count_channel(hpos))]
-                                         [temp2-page].note;
-                         chunk.instr_def :=
-                           clipboard.pattern[SUCC(temp1-count_channel(hpos))]
-                                         [temp2-page].instr_def;
-                       end;
+               If NOT shift_pressed then
+                 For temp2 := page to page+clipboard.block_vsize do
+                   For temp1 := count_channel(hpos) to count_channel(hpos)+clipboard.block_hsize do
+                     begin
+                       get_chunk(pattern,temp2,temp1,chunk);
+                       If (chunk.note = 0) then
+                         begin
+                           chunk.note :=
+                             clipboard.pattern[SUCC(temp1-count_channel(hpos))]
+                                           [temp2-page].note;
+                           chunk.instr_def :=
+                             clipboard.pattern[SUCC(temp1-count_channel(hpos))]
+                                           [temp2-page].instr_def;
+                         end;
+                 
+                         If (chunk.effect_def = 0) then
+                           chunk.effect_def :=
+                             clipboard.pattern[SUCC(temp1-count_channel(hpos))]
+                                           [temp2-page].effect_def;
+                 
+                         If (chunk.effect = 0) then
+                           chunk.effect :=
+                             clipboard.pattern[SUCC(temp1-count_channel(hpos))]
+                                           [temp2-page].effect;
+                 
+                         If (chunk.effect_def2 = 0) then
+                           chunk.effect_def2 :=
+                             clipboard.pattern[SUCC(temp1-count_channel(hpos))]
+                                           [temp2-page].effect_def2;
+                 
+                         If (chunk.effect2 = 0) then
+                           chunk.effect2 :=
+                             clipboard.pattern[SUCC(temp1-count_channel(hpos))]
+                                           [temp2-page].effect2;
+                 
+                         put_chunk(pattern,temp2,temp1,chunk);
+                       end
+               else
+                 For temp2 := page to page+clipboard.block_vsize do
+                   For temp1 := count_channel(hpos) to count_channel(hpos)+clipboard.block_hsize do
+                     put_chunk(pattern,temp2,temp1,
+                               clipboard.pattern[SUCC(temp1-count_channel(hpos))][clipboard.block_vsize-(temp2-page)]);
                
-                       If (chunk.effect_def = 0) then
-                         chunk.effect_def :=
-                           clipboard.pattern[SUCC(temp1-count_channel(hpos))]
-                                         [temp2-page].effect_def;
-               
-                       If (chunk.effect = 0) then
-                         chunk.effect :=
-                           clipboard.pattern[SUCC(temp1-count_channel(hpos))]
-                                         [temp2-page].effect;
-               
-                       If (chunk.effect_def2 = 0) then
-                         chunk.effect_def2 :=
-                           clipboard.pattern[SUCC(temp1-count_channel(hpos))]
-                                         [temp2-page].effect_def2;
-               
-                       If (chunk.effect2 = 0) then
-                         chunk.effect2 :=
-                           clipboard.pattern[SUCC(temp1-count_channel(hpos))]
-                                         [temp2-page].effect2;
-               
-                       put_chunk(pattern,temp2,temp1,chunk);
-                     end;
-
       kCtrlX:  If marking then
                  begin
                    clipboard.object_type := objMarkedBlock;
