@@ -16,7 +16,8 @@ http://www.adlibtracker.net/files/revision.htm
    . improved current track movement in Debug Info window
    . added macro details section to Debug Info window
    . added flipped paste block feature (hotkey: Alt+Shift+V)
-   . fixed/improved File Browser window
+   . fixed/improved File Browser and Replace window
+   . enhanced cursor movement in File Browser and Replace window
 
 
 * SDL/Win32/Linux version 2.4.15

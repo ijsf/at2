@@ -1530,7 +1530,7 @@ label _jmp1;
 begin { REPLACE }
   _debug_str_ := 'ADT2EXTN.PAS:REPLACE';
   If (replace_selection = 4) and NOT marking then replace_selection := 1;
-  pos := min(get_bank_position('?replace_window?pos',-1),1);
+  pos := min(get_bank_position('?replace_window?pos',-1),1);  
   qflag := FALSE;
   _charset[1] := ['A',UpCase(b_note),'C'..'G'];
 
@@ -1576,13 +1576,22 @@ _jmp1:
                  fkey := getkey;
 
                  Case fkey of
-                   kTAB: pos := 12;
-                   kShTAB: pos := 22+replace_selection;
+                   kTAB,
+                   kDOWN: begin
+                            add_bank_position('?replace_window?posfx',-1,pos);
+                            Inc(pos,11);
+                          end;  
+
+                   kShTAB,
+                   kUP: begin
+                          add_bank_position('?replace_window?posfx',-1,pos);
+                          pos := 22+replace_selection;
+                        end;
+                           
                    kLEFT: If (pos > 1) then Dec(pos);
                    kRIGHT: Inc(pos);
                    kHOME: pos := 1;
                    kEND: pos := 11;
-                   kDOWN: Inc(pos,11);
                    kESC: qflag := TRUE;
                    kENTER: begin pos := 22+replace_selection; qflag := TRUE; end;
                    kF1: begin reset_screen; HELP('replace_dialog'); GOTO _jmp1; end;
@@ -1660,16 +1669,25 @@ _jmp1:
                   fkey := getkey;
 
                   Case fkey of
-                    kTAB,kDOWN: pos := 27;
-                    kShTAB: pos := 1;
+                    kTAB,
+                    kDOWN: begin
+                             add_bank_position('?replace_window?posfx',-1,pos-11);
+                             pos := 27;
+                           end;
+                    
+                    kShTAB,
+                    kUP: begin
+                           add_bank_position('?replace_window?posfx',-1,pos-11);
+                           Dec(pos,11);
+                         end;  
+                          
                     kLEFT: Dec(pos);
                     kRIGHT: If (pos < 22) then Inc(pos) else pos := 27;
                     kHOME: pos := 12;
                     kEND: pos := 22;
-                    kUP: Dec(pos,11);
                     kESC: qflag := TRUE;
                     kENTER: begin pos := 22+replace_selection; qflag := TRUE; end;
-                  kF1: begin reset_screen; HELP('replace_dialog'); GOTO _jmp1; end;
+                    kF1: begin reset_screen; HELP('replace_dialog'); GOTO _jmp1; end;
 
                     kCtBkSp: begin
                                replace_data.new_event.note := 'תתת';
@@ -1766,9 +1784,9 @@ _jmp1:
               GotoXY(xstart+3,ystart+7);
               fkey := getkey;
               Case fkey of
+                kUP,kShTAB: pos := get_bank_position('?replace_window?posfx',-1)+11;
                 kLEFT: pos := 22;
-                kUP,kShTAB: pos := 12;
-                kTAB: pos := 22+replace_selection;
+                kTAB,kDOWN: pos := 22+replace_selection;
                 kENTER: qflag := TRUE;
                 kSPACE: replace_prompt := NOT replace_prompt;
                 kESC: begin pos := 1; qflag := TRUE; end;
@@ -1779,11 +1797,11 @@ _jmp1:
         23: begin
               fkey := getkey;
               Case fkey of
+                kTAB,kDOWN: pos := get_bank_position('?replace_window?posfx',-1);
+                kShTAB,kUP: pos := 27;
                 kHOME: pos := 23;
                 kEND,kLEFT: If marking then pos := 26 else pos := 25;
                 kRIGHT: pos := 24;
-                kTAB: pos := 1;
-                kShTAB: pos := 27;
                 kENTER: qflag := TRUE;
                 kESC: begin pos := 1; qflag := TRUE; end;
                 kF1: begin reset_screen; HELP('replace_dialog'); GOTO _jmp1; end;
@@ -1793,12 +1811,12 @@ _jmp1:
         24: begin
               fkey := getkey;
               Case fkey of
+                kTAB,kDOWN: pos := get_bank_position('?replace_window?posfx',-1);
+                kShTAB,kUP: pos := 27;
                 kHOME: pos := 23;
                 kEND: If marking then pos := 26 else pos := 25;
                 kLEFT: pos := 23;
                 kRIGHT: pos := 25;
-                kTAB: pos := 1;
-                kShTAB: pos := 27;
                 kENTER: qflag := TRUE;
                 kESC: begin pos := 1; qflag := TRUE; end;
                 kF1: begin reset_screen; HELP('replace_dialog'); GOTO _jmp1; end;
@@ -1808,12 +1826,12 @@ _jmp1:
         25: begin
               fkey := getkey;
               Case fkey of
+                kTAB,kDOWN: pos := get_bank_position('?replace_window?posfx',-1);
+                kShTAB,kUP: pos := 27;
                 kHOME: pos := 23;
                 kEND: If marking then pos := 26 else pos := 25;
                 kLEFT: pos := 24;
                 kRIGHT: If marking then pos := 26 else pos := 23;
-                kTAB: pos := 1;
-                kShTAB: pos := 27;
                 kENTER: qflag := TRUE;
                 kESC: begin pos := 1; qflag := TRUE; end;
                 kF1: begin reset_screen; HELP('replace_dialog'); GOTO _jmp1; end;
@@ -1823,12 +1841,12 @@ _jmp1:
         26: begin
               fkey := getkey;
               Case fkey of
+                kTAB,kDOWN: pos := get_bank_position('?replace_window?posfx',-1);
+                kShTAB,kUP: pos := 27;
                 kHOME: pos := 23;
                 kEND: pos := 26;
                 kLEFT: pos := 25;
                 kRIGHT: pos := 23;
-                kTAB: pos := 1;
-                kShTAB: pos := 27;
                 kENTER: qflag := TRUE;
                 kESC: begin pos := 1; qflag := TRUE; end;
                 kF1: begin reset_screen; HELP('replace_dialog'); GOTO _jmp1; end;
@@ -1839,9 +1857,9 @@ _jmp1:
       If (pos in [23..26]) then replace_selection := pos-22;
       refresh;
       emulate_screen;
+      If NOT qflag then add_bank_position('?replace_window?pos',-1,pos);
     until qflag;
-
-  add_bank_position('?replace_window?pos',-1,pos);
+  
   HideCursor;
   move_to_screen_data := Addr(backup.screen);
   move_to_screen_area[1] := xstart;
@@ -1868,7 +1886,7 @@ _jmp1:
       new_event.fx_1 := FilterStr(replace_data.new_event.fx_1,'ת','?');
       new_event.fx_2 := FilterStr(replace_data.new_event.fx_2,'ת','?');
 
-      Case pos-22 of
+      Case replace_selection of
         1: begin
              patt0  := pattern_patt;
              patt1  := patt0;
@@ -11629,6 +11647,7 @@ begin
           add_bank_position('?internal_instrument_data?macro_av?vib_pos',-1,1);
           add_bank_position('?song_variables_window?pos',-1,1);
           add_bank_position('?replace_window?pos',-1,1);
+          add_bank_position('?replace_window?posfx',-1,1);
         end
       else module_archived := FALSE;
     end;
@@ -11961,6 +11980,7 @@ _jmp1:
                add_bank_position('?internal_instrument_data?macro_av?vib_pos',-1,1);
                add_bank_position('?song_variables_window?pos',-1,1);
                add_bank_position('?replace_window?pos',-1,1);
+               add_bank_position('?replace_window?posfx',-1,1);
              end
            else begin
                   For index := 1 to 255 do

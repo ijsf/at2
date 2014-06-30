@@ -59,7 +59,7 @@ type
                     show_scrollbar: Boolean;
                     topic_len:      Byte;
                     fixed_len:      Byte;
-                    home_position:  Longint;
+                    homing_pos:     Longint;
                     terminate_keys: array[1..50] of Word;
                   end;
 type
@@ -161,7 +161,7 @@ const
      show_scrollbar: TRUE;
      topic_len:      0;
      fixed_len:      0;
-     home_position:  0;
+     homing_pos:     0;
      terminate_keys: ($011b,$1c0d,$0000,$0000,$0000,
                       $0000,$0000,$0000,$0000,$0000,
                       $0000,$0000,$0000,$0000,$0000,
@@ -999,27 +999,36 @@ begin { Menu }
                                end;
 
                      $47: begin
-                            If (mn_setting.home_position = 0) then begin k := 1; page := 1; end  
-                            else If (k+page-1 > mn_setting.home_position) and
-                                    (mn_setting.home_position < count) then
-                                   Repeat SubPos(k) until (k+page-1 <= mn_setting.home_position)
+                            If (mn_setting.homing_pos = 0) then begin k := 1; page := 1; end  
+                            else If (k+page-1 > mn_setting.homing_pos) and
+                                    (mn_setting.homing_pos < count) then
+                                   Repeat SubPos(k) until (k+page-1 <= mn_setting.homing_pos)
                                  else begin k := 1; page := 1; end;
                             If NOT mbuf[k+page-1].use then AddPos(k);
                           end;
 
                      $4f: begin
-                            k := len2; page := count-len2+1;
+                            If (mn_setting.homing_pos = 0) then begin k := len2; page := count-len2+1; end
+                            else If (k+page-1 < mn_setting.homing_pos) and
+                                    (mn_setting.homing_pos < count) then
+                                   Repeat AddPos(k) until (k+page-1 >= mn_setting.homing_pos)
+                                 else begin k := len2; page := count-len2+1; end;
                             If NOT mbuf[k+page-1].use then SubPos(k);
                           end;
 
-                     $49: If (k+page-1-(len2-1) > mn_setting.home_position) or
-                             (k+page-1 <= mn_setting.home_position) or
-                             (mn_setting.home_position = 0) or
-                             NOT (mn_setting.home_position < count) then
+                     $49: If (k+page-1-(len2-1) > mn_setting.homing_pos) or
+                             (k+page-1 <= mn_setting.homing_pos) or
+                             (mn_setting.homing_pos = 0) or
+                             NOT (mn_setting.homing_pos < count) then
                             For temp := 1 to len2-1 do SubPos(k)                            
-                          else Repeat SubPos(k) until (k+page-1 <= mn_setting.home_position);
+                          else Repeat SubPos(k) until (k+page-1 <= mn_setting.homing_pos);
                           
-                     $51: For temp := 1 to len2-1 do AddPos(k);
+                     $51: If (k+page-1+(len2-1) < mn_setting.homing_pos) or
+                             (k+page-1 >= mn_setting.homing_pos) or
+                             (mn_setting.homing_pos = 0) or
+                             NOT (mn_setting.homing_pos < count) then
+                            For temp := 1 to len2-1 do AddPos(k)                            
+                          else Repeat AddPos(k) until (k+page-1 >= mn_setting.homing_pos);
                    end;
 
             $20..$0ff:
@@ -1102,7 +1111,7 @@ var
   drive_list: array[0..128] of Char;
   
 const  
-  home_position: Longint = 0;
+  homing_pos: Longint = 0;
 
 function LookUpMask(filename: String): Boolean;
 
@@ -1474,8 +1483,8 @@ _jmp1:
 
     temp := 1;
     While (temp < fstream.count) and (SYSTEM.Pos('[UP-DiR]',descr[temp]) = 0) do Inc(temp);
-    If (temp < fstream.count) then mn_setting.home_position := temp
-    else mn_setting.home_position := 10;
+    If (temp < fstream.count) then mn_setting.homing_pos := temp
+    else mn_setting.homing_pos := 10;
     
     If (program_screen_mode = 0) then
       temp2 := Menu(menudat,01,01,lastp,
@@ -1573,7 +1582,7 @@ _jmp1:
   mn_environment.winshade := TRUE;
   mn_setting.frame_enabled := TRUE;
   mn_setting.shadow_enabled := TRUE;
-  mn_setting.home_position := 0;
+  mn_setting.homing_pos := 0;
 
   move_to_screen_data := Addr(backup.screen);
   move_to_screen_area[1] := mn_environment.xpos;
