@@ -1090,7 +1090,7 @@ const
 
 var
   mul_r: Real;
-  mul_b,div_b: Byte;
+  mul_b: Byte;
   idx,idx2: Byte;
 
 function min0(value: Longint): Longint;
@@ -3581,6 +3581,19 @@ var
   _debug_str_bak_: String;
   _force_macro_key_on: Boolean;
 
+function _ins_adsr_data_empty(ins: Byte): Boolean;
+begin
+  _ins_adsr_data_empty :=
+    (ins_parameter(ins,5) SHR 4 = 0) and
+    (ins_parameter(ins,4) SHR 4 = 0) and
+    (ins_parameter(ins,5) AND $0f = 0) and
+    (ins_parameter(ins,4) AND $0f = 0) and
+    (ins_parameter(ins,7) SHR 4 = 0) and
+    (ins_parameter(ins,6) SHR 4 = 0) and
+    (ins_parameter(ins,7) AND $0f = 0) and
+    (ins_parameter(ins,6) AND $0f = 0);
+end;
+
 begin
   _debug_str_bak_ := _debug_str_;
   _debug_str_ := 'ADT2UNIT.PAS:macro_poll_proc';
@@ -3625,22 +3638,15 @@ begin
                                // force KEY-ON with missing ADSR instrument data due to MAME OPL3 emulator
                                _force_macro_key_on := FALSE;
                                If (fmreg_pos = 1) then
-                                 If (fmpar_table[chan].adsrw_mod.attck +
-                                     fmpar_table[chan].adsrw_mod.dec +
-                                     fmpar_table[chan].adsrw_mod.sustn +
-                                     fmpar_table[chan].adsrw_mod.rel +
-                                     fmpar_table[chan].adsrw_car.attck +
-                                     fmpar_table[chan].adsrw_car.dec +
-                                     fmpar_table[chan].adsrw_car.sustn +
-                                     fmpar_table[chan].adsrw_car.rel = 0) or
-                                    (NOT songdata.dis_fmreg_col[fmreg_table][0] and
-                                     NOT songdata.dis_fmreg_col[fmreg_table][1] and
-                                     NOT songdata.dis_fmreg_col[fmreg_table][2] and
-                                     NOT songdata.dis_fmreg_col[fmreg_table][3] and
-                                     NOT songdata.dis_fmreg_col[fmreg_table][12] and
-                                     NOT songdata.dis_fmreg_col[fmreg_table][13] and
-                                     NOT songdata.dis_fmreg_col[fmreg_table][14] and
-                                     NOT songdata.dis_fmreg_col[fmreg_table][15]) then
+                                 If _ins_adsr_data_empty(voice_table[chan]) and
+                                    NOT (songdata.dis_fmreg_col[fmreg_table][0] and
+                                         songdata.dis_fmreg_col[fmreg_table][1] and
+                                         songdata.dis_fmreg_col[fmreg_table][2] and
+                                         songdata.dis_fmreg_col[fmreg_table][3] and
+                                         songdata.dis_fmreg_col[fmreg_table][12] and
+                                         songdata.dis_fmreg_col[fmreg_table][13] and
+                                         songdata.dis_fmreg_col[fmreg_table][14] and
+                                         songdata.dis_fmreg_col[fmreg_table][15]) then
                                    _force_macro_key_on := TRUE;
 
                                If NOT songdata.dis_fmreg_col[fmreg_table][0] then

@@ -1110,9 +1110,6 @@ var
   fstream: tSTREAM;
   drive_list: array[0..128] of Char;
   
-const  
-  homing_pos: Longint = 0;
-
 function LookUpMask(filename: String): Boolean;
 
 var
