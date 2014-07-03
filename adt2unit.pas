@@ -3622,11 +3622,25 @@ begin
                          If (fmreg_duration <> 0) then
                            With data[fmreg_pos] do
                              begin
-                               // force KEYON with empty ADSR instrument data due to MAME OPL3 emulator!!
+                               // force KEY-ON with missing ADSR instrument data due to MAME OPL3 emulator
                                _force_macro_key_on := FALSE;
                                If (fmreg_pos = 1) then
-                                 If Empty(fmpar_table[chan].adsrw_car,SizeOf(fmpar_table[chan].adsrw_car)) and
-                                    Empty(fmpar_table[chan].adsrw_mod,SizeOf(fmpar_table[chan].adsrw_mod)) then
+                                 If (fmpar_table[chan].adsrw_mod.attck +
+                                     fmpar_table[chan].adsrw_mod.dec +
+                                     fmpar_table[chan].adsrw_mod.sustn +
+                                     fmpar_table[chan].adsrw_mod.rel +
+                                     fmpar_table[chan].adsrw_car.attck +
+                                     fmpar_table[chan].adsrw_car.dec +
+                                     fmpar_table[chan].adsrw_car.sustn +
+                                     fmpar_table[chan].adsrw_car.rel = 0) or
+                                    (NOT songdata.dis_fmreg_col[fmreg_table][0] and
+                                     NOT songdata.dis_fmreg_col[fmreg_table][1] and
+                                     NOT songdata.dis_fmreg_col[fmreg_table][2] and
+                                     NOT songdata.dis_fmreg_col[fmreg_table][3] and
+                                     NOT songdata.dis_fmreg_col[fmreg_table][12] and
+                                     NOT songdata.dis_fmreg_col[fmreg_table][13] and
+                                     NOT songdata.dis_fmreg_col[fmreg_table][14] and
+                                     NOT songdata.dis_fmreg_col[fmreg_table][15]) then
                                    _force_macro_key_on := TRUE;
 
                                If NOT songdata.dis_fmreg_col[fmreg_table][0] then
