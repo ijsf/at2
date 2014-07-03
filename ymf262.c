@@ -6,15 +6,18 @@
 ** Copyright Jarek Burczynski
 ** Updates since SVN 0.148u1 (version 0.2) by subz3ro/Altair
 **
-** Version 0.3.1
+** Version 0.3.2
 **
 
 Revision History:
 
+07-03-2014: version 0.3.2
+ - experimental treating of ADSR envelope restart when Attack Rate = 0
+
 02-26-2014: version 0.3.1
  - removed obsolete parts of code in YMF262UpdateOne
  - added 'per channel' sample output buffers
- 
+
 02-18-2014: version 0.3
  - removed 'logerror' and saving to file stuff
  - completely rewritten 4op channel output level handling according Yamaha YMF262 datasheet
@@ -1298,6 +1301,20 @@ INLINE void FM_KEYON(OPL3_SLOT *SLOT, UINT32 key_set)
                 SLOT->state = EG_ATT;
         }
         SLOT->key |= key_set;
+
+        /*** UPDATE IN VERSION 0.3.2 ****************************/
+        /***                                                  ***/
+        /*** EXPERIMENTAL!!!                                  ***/
+        /*** For instruments which have Attack Rate = 0       ***/
+        /*** skip Attack phase and switch directly to Decay   ***/
+        /*** phase after key note has been set                ***/
+        /***                                                  ***/
+        /********************************************************/
+        if (SLOT->ar==0)
+        {
+                /* phase -> Decay */
+                SLOT->state = EG_DEC;
+        }
 }
 
 INLINE void FM_KEYOFF(OPL3_SLOT *SLOT, UINT32 key_clr)
@@ -1421,7 +1438,7 @@ INLINE void set_ksl_tl(OPL3 *chip,int slot,int v)
 {
         OPL3_CH   *CH   = &chip->P_CH[slot/2];
         OPL3_SLOT *SLOT = &CH->SLOT[slot&1];
-       
+
         /*** UPDATE IN VERSION 0.3 ******************************/
         /***                                                  ***/
         /*** Treat volume attenuation according KSL selection ***/
@@ -1438,18 +1455,18 @@ INLINE void set_ksl_tl(OPL3 *chip,int slot,int v)
         /***   |  1  | 3.0 dB/oct  |                          ***/
         /***   |  3  | 6.0 dB/oct  |                          ***/
         /***   +-----+-------------+                          ***/
-        /***                                                  ***/       
+        /***                                                  ***/
         /********************************************************/
-        
+
         const UINT8 KslSelectionValue[4] = { 31,1,2,0 };
 
         SLOT->ksl = KslSelectionValue[ v >> 6 ]; /* 0 / 1.5 / 3.0 / 6.0 dB/OCT */
         SLOT->TL  = (v&0x3f)<<(ENV_BITS-1-7); /* 7 bits TL (bit 6 = always 0) */
-       
+
         if (chip->OPL3_mode & 1)
         {
                 /* in OPL3 mode */
-                int chan_no = slot/2;              
+                int chan_no = slot/2;
                 switch(chan_no)
                 {
                 /*** UPDATE IN VERSION 0.3 ******************************/
@@ -1980,7 +1997,7 @@ static void OPL3WriteReg(OPL3 *chip, int r, int v)
                                                 CALC_FCSLOT(CH,&CH->SLOT[SLOT2]);
                                         }
                                 break;
-                                
+
                                 /*** UPDATE IN VERSION 0.3 ******************************/
                                 /***                                                  ***/
                                 /*** EXPERIMENTAL!!!                                  ***/
@@ -2010,7 +2027,7 @@ static void OPL3WriteReg(OPL3 *chip, int r, int v)
                                                 CALC_FCSLOT(CH,&CH->SLOT[SLOT2]);
                                         }
                                 break;
-                                
+
                                 default:
                                         /* refresh Total Level in both SLOTs of this channel */
                                         CH->SLOT[SLOT1].TLL = CH->SLOT[SLOT1].TL + (CH->ksl_base>>CH->SLOT[SLOT1].ksl);
@@ -2112,7 +2129,7 @@ static void OPL3WriteReg(OPL3 *chip, int r, int v)
                                                 /* 1 ------\
                                                    2 -> 3 -+- out
                                                    4 ------/     */
-                                                   
+
                                                 CH->SLOT[SLOT1].connect = &chanout[ chan_no ];
                                                 CH->SLOT[SLOT2].connect = &chip->phase_modulation2;
                                                 (CH+3)->SLOT[SLOT1].connect = &chanout[ chan_no + 3 ];
@@ -2552,7 +2569,7 @@ void YMF262UpdateOne(int which, INT16 *buffer, INT16 *buffers_chan[], int length
         UINT8 rhythm = chip->rhythm&0x20;
         signed int *chanout = chip->chanout;
         INT16 a_ch_swap,b_ch_swap;
-       
+
         /* mapping of channels from OPL3 emulator to real channels */
         static const int CHAN_MAPPING_TABLE[18] = {
             1,3,5,      // 4op (register set #1) - 1st pair
@@ -2750,7 +2767,7 @@ void YMF262UpdateOne(int which, INT16 *buffer, INT16 *buffers_chan[], int length
                     a_ch[8] = a_ch_swap;
                     b_ch[8] = b_ch_swap;
                 }
-                
+
                 a >>= FINAL_SH;
                 b >>= FINAL_SH;
                 a = limit( a , MAXOUT, MINOUT );
@@ -2758,14 +2775,14 @@ void YMF262UpdateOne(int which, INT16 *buffer, INT16 *buffers_chan[], int length
 
                 /* store to sound buffer */
                 *buffer++=(INT16)a;
-                *buffer++=(INT16)b;                
+                *buffer++=(INT16)b;
 
                 /* store to 'per channel' sound buffers */
                 for(int idx=0; idx < 18 ; idx++ )
                 {
                     *buffers_chan[idx]++=(INT16)a_ch[idx];
                     *buffers_chan[idx]++=(INT16)b_ch[idx];
-                }    
+                }
 
                 advance(chip);
         }

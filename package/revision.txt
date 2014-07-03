@@ -18,6 +18,9 @@ http://www.adlibtracker.net/files/revision.htm
    . added flipped paste block feature (hotkey: Alt+Shift+V)
    . fixed/improved File Browser and Replace window
    . enhanced cursor movement in File Browser and Replace window
+   . fixed in MAME OPL3 emulator:
+       - experimental treatment of ADSR envelope restart
+         for instruments with Attack Rate = 0
 
 
 * SDL/Win32/Linux version 2.4.15

@@ -10,7 +10,7 @@ const
   reset_slide_ticks: Boolean = FALSE;
   blink_ticks: Longint = 0;
   blink_flag: Boolean = FALSE;
-  
+
 const
   _force_program_quit: Boolean = FALSE;
   _realtime_gfx_no_update: Boolean = FALSE;
@@ -78,7 +78,7 @@ var
   vibtrem_speed_factor: Byte;
   vibtrem_table_size: Byte;
   vibtrem_table: array[0..255] of Byte;
-  
+
 const
   macro_preview_indic_proc: procedure(state: Byte) = NIL;
   seconds_counter: Longint = 0;
@@ -140,7 +140,7 @@ var
                                    arpg_note: Byte;
                                    vib_freq: Word;
                                  end;
-                                 
+
   loopbck_table: array[1..20] of Byte;
   loop_table:    array[1..20,0..255] of Byte;
   misc_register: Byte;
@@ -1469,7 +1469,7 @@ begin
             set_ins_volume(63-event.effect,BYTE_NULL,chan)
           else If (ins_parameter(voice_table[chan],10) AND 1 = 0) then
                  set_ins_volume(scale_volume(ins_parameter(voice_table[chan],2) AND $3f,63-event.effect),63-event.effect,chan)
-               else set_ins_volume(63-event.effect,63-event.effect,chan); 
+               else set_ins_volume(63-event.effect,63-event.effect,chan);
 
         ef_PositionJump:
           If no_loop(chan,current_line) then
@@ -2452,7 +2452,7 @@ begin
                    macro_table[chan].vib_delay := songdata.macro_table[macro_table[chan].vib_table].vibrato.delay;
                  end;
           end;
-          
+
         ef_SetCustomSpeedTab:
           generate_custom_vibrato(event.effect);
       end;
@@ -3579,6 +3579,7 @@ var
 
 var
   _debug_str_bak_: String;
+  _force_macro_key_on: Boolean;
 
 begin
   _debug_str_bak_ := _debug_str_;
@@ -3621,6 +3622,13 @@ begin
                          If (fmreg_duration <> 0) then
                            With data[fmreg_pos] do
                              begin
+                               // force KEYON with empty ADSR instrument data due to MAME OPL3 emulator!!
+                               _force_macro_key_on := FALSE;
+                               If (fmreg_pos = 1) then
+                                 If Empty(fmpar_table[chan].adsrw_car,SizeOf(fmpar_table[chan].adsrw_car)) and
+                                    Empty(fmpar_table[chan].adsrw_mod,SizeOf(fmpar_table[chan].adsrw_mod)) then
+                                   _force_macro_key_on := TRUE;
+
                                If NOT songdata.dis_fmreg_col[fmreg_table][0] then
                                  fmpar_table[chan].adsrw_mod.attck := fm_data.ATTCK_DEC_modulator SHR 4;
 
@@ -3709,7 +3717,8 @@ begin
                                update_carrier_adsrw(chan);
                                update_fmpar(chan);
 
-                               If NOT (fm_data.FEEDBACK_FM OR $80 <> fm_data.FEEDBACK_FM) then
+                               If _force_macro_key_on or
+                                  NOT (fm_data.FEEDBACK_FM OR $80 <> fm_data.FEEDBACK_FM) then
                                  output_note(event_table[chan].note,
                                              event_table[chan].instr_def,chan,FALSE);
 
@@ -4213,7 +4222,7 @@ var
 begin
   _debug_str_ := 'ADT2UNIT.PAS:init_player';
   opl3_init;
-  If opl3_channel_recording_mode then renew_wav_files_flag := TRUE;  
+  If opl3_channel_recording_mode then renew_wav_files_flag := TRUE;
   FillChar(ai_table,SizeOf(ai_table),0);
   opl2out($01,0);
 
@@ -4342,7 +4351,7 @@ var
 
 begin
   _debug_str_ := 'ADT2UNIT.PAS:stop_playing';
-  flush_WAV_data;  
+  flush_WAV_data;
   replay_forbidden := TRUE;
   play_status := isStopped;
   fade_out_volume := 63;
@@ -4688,7 +4697,7 @@ begin
       realtime_gfx_poll_proc;
       If NOT Empty(pattdata^[temp1 DIV 8][temp1 MOD 8],PATTERN_SIZE) then
         patterns := temp1+1;
-    end;    
+    end;
 end;
 
 procedure count_instruments(var instruments: Byte);
@@ -4982,7 +4991,7 @@ end;
 
 procedure realtime_gfx_poll_proc;
 begin
-  If _realtime_gfx_no_update then EXIT; 
+  If _realtime_gfx_no_update then EXIT;
   If blink_flag then
     begin
       If debugging and (play_status = isStopped) then status_layout[isStopped][9] := #9
@@ -5011,10 +5020,10 @@ begin
 
   If tracing and (@trace_update_proc <> NIL) then trace_update_proc
   else If (play_status = isPlaying) then update_without_trace;
-                    
+
   If (@mn_environment.ext_proc_rt <> NIL) then
     mn_environment.ext_proc_rt;
-    
+
   If NOT reset_slide_ticks and
      (slide_ticks > 2) and do_slide then
     begin
