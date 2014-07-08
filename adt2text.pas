@@ -4,8 +4,8 @@ interface
 const
 {__AT2REV__}at2rev  = '056';
 {__AT2VER__}at2ver  = '2.4.16';
-{__AT2DAT__}at2date = '07-03-2014';
-{__AT2LNK__}at2link = '5:47pm';
+{__AT2DAT__}at2date = '07-07-2014';
+{__AT2LNK__}at2link = '11:30am';
 
 const
   ascii_line_01 = 'ฺ-ฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ--๙๚               ๚๙-ฟ';
@@ -26,7 +26,7 @@ const
   ascii_line_16 = 'ณ ~subz3ro/Altair~                 ~/ดDLiBณR/ดCK3R ณณ SDL~ ๚';
   ascii_line_17 = 'ณ `SDL portation support:`          ~ณ       ณ     ฤฤ~      ';
   ascii_line_18 = 'ณ ~Dmitry Smagin~                             ~'+at2ver+'~      ';
-  ascii_line_19 = 'ณ `Linux portation:`';  
+  ascii_line_19 = 'ณ `Linux portation:`';
   ascii_line_20 = 'ณ ~Florian Jung (Windfisch)~';
   ascii_line_21 = 'ณ `additional ideas:`                                    ๚';
   ascii_line_22 = 'ณ ~Malfunction/Altair~                                   ๙';
@@ -46,7 +46,7 @@ uses
     StringIO,DialogIO,TxtScrIO;
 
 const
-  LINES = 1023;
+  LINES = 1029;
   help_data: array[1..LINES] of String[128] = (
     '@topic:general',
     'อหอออออออออออออออออออออออหอ',
@@ -467,12 +467,12 @@ const
     ' บ `FiLE BROWSER KEY REFERENCE` บ',
     'อสออออออออออออออออออออออออออออสอออออออออออออออออออออออออออออออออออออออออออ',
     '~Up,Down,Left,Right,~',
-    '~Home,End~                 Cursor navigation',   
+    '~Home,End~                 Cursor navigation',
 {$IFDEF WINDOWS}
     '~\~                        Navigate to drive root',
-{$ELSE}              
+{$ELSE}
     '~/~                        Navigate to root directory',
-{$ENDIF}    
+{$ENDIF}
     '~Backspace~                Navigate to parent directory',
     '~MBoard keys <hold down>~  Preview instrument (instrument files only)',
     '~Enter~                    Choose file under cursor / read instrument bank',
@@ -889,7 +889,7 @@ const
     'ณ  `[F]`  ณ 15  ณ " "       "   " "     "   "        ณ',
     'ภฤฤฤฤฤฤฤมฤฤฤฤฤมฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤู',
     '',
-    '@topic:effects',
+    '@topic:effects_page1',
     'อหอออออออออออออออออออหอ',
     ' บ `SUPPORTED EFFECTS` บ',
     'อสอออออออออออออออออออสออออออออออออออออออออออออออออออออออออออออออออออออออออ',
@@ -913,6 +913,7 @@ const
     '`H`xy ฤฤ ~4xy~ & FiNE VOLUME SLiDE    xy=up_speed|down_speed  [1-F]  ~C~',
     '`I`xx ฤฤ SET CARRiER VOLUME         xx=volume_level         [0-3F]',
     '`J`xy ฤฤ SET WAVEFORM               xy=carrier|modulator    [0-7,F=NiL]',
+    '@topic:effects_page2',
     '`K`xy ฤฤ FiNE VOLUME SLiDE          xy=up_speed|down_speed  [1-F]',
     '`L`xx ฤฤ RETRiG NOTE                xx=interval             [1-FF]',
     '`M`xy ฤฤ TREMOLO                    xy=speed|depth          [1-F]  ~C~',
@@ -939,6 +940,7 @@ const
     '`X`xy ฤฤ ~7xx~ ๘ FiNE VOLUME SLiDE ๖',
     '`Y`xy ฤฤ ~8xx~ ู                   ู',
     '',
+    '@topic:effects_page3',
     '`Z`?? `0`x SET TREMOLO DEPTH          x=1dB/4.8dB             [0-1]',
     '    `1`x SET ViBRATO DEPTH          x=7%/14%                [0-1]',
     '    `2`x SET ATTACK RATE   ฟ        x=attack_rate           [0-F]',
@@ -962,6 +964,7 @@ const
     '`ZD`?  `0` = Set loopback point',
     '     x = Loop ~x~ times',
     '',
+    '@topic:effects_page4',
     '`ZF`?  `0` RELEASE SUSTAiNiNG SOUND',
     '     `1` RESET iNSTRUMENT VOLUME',
     '     `2` LOCK TRACK VOLUME',
@@ -984,6 +987,7 @@ const
     '`=`xx ฤฤ FORCE iNSTRUMENT VOLUME    xx=volume_level         [0-3F]',
     '`%`xx ฤฤ SET GLOBAL VOLUME          xx=volume_level         [0-3F]',
     '',
+    '@topic:effects_page5',
     '`#`?? `0`x SET CONNECTiON TYPE        x=FM/AM                 [0-1]',
     '    `1`x SET MULTiPLiER ฟ           x=multiplier            [0-F]',
     '    `2`x SET KSL        ๖           x=scaling_level         [0-3]',
@@ -998,6 +1002,7 @@ const
     '    `B`x SET KSR        ๖           x=off/on                [0-1]',
     '    `C`x SET SUSTAiN    ู           x=off/on                [0-1]',
     '',
+    '@topic:effects_page6',
     '`&`?? `0`x PATTERN DELAY (FRAMES)     x=interval              [1-F]',
     '    `1`x PATTERN DELAY (ROWS)       x=interval              [1-F]',
     '    `2`x NOTE DELAY                 x=interval              [1-F]',
@@ -1008,6 +1013,7 @@ const
     '    `7`x GLOBAL VOLUME SLiDE DOWN   x=speed_of_slide        [1-F]',
     '    `8`x FiNE ~&6x~                   x=speed_of_slide        [1-F]',
     '    `9`x FiNE ~&7x~                   x=speed_of_slide        [1-F]',
+    '@topic:effects_page7',
     '    `A`x EXTRA FiNE ~&6x~             x=speed_of_slide        [1-F]',
     '    `B`x EXTRA FiNE ~&7x~             x=speed_of_slide        [1-F]',
     '    `C`x EXTRA FiNE VSLiDE UP       x=speed_of_slide        [1-F]',

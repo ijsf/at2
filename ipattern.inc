@@ -645,12 +645,12 @@ begin
             end;
         end;
     end;
-  
+
   chanrec_indicator_attr[TRUE] := main_behavior SHL 4 AND $0f0;
   If (play_status = isPlaying) then
     chanrec_indicator_attr[FALSE] := pattern_bckg+pattern_border
   else chanrec_indicator_attr[FALSE] := main_behavior SHL 4 AND $0f0;
-  
+
   STATUS_LINE_refresh;
   For temp1 := chan_pos to chan_pos+MAX_TRACKS-1 do
     begin
@@ -956,7 +956,7 @@ begin
                                   begin
                                     channel_flag[PRED(HI(fkey2)-$77)] := channel_flag[HI(fkey2)-$77];
                                     If NOT channel_flag[PRED(HI(fkey2)-$77)] then reset_chan_data(PRED(HI(fkey2)-$77));
-                                  end;  
+                                  end;
                        end;
                    end
                  else If (songdata.nm_tracks = 10) then
@@ -967,8 +967,8 @@ begin
                            begin
                              channel_flag[11] := channel_flag[10];
                              If NOT channel_flag[11] then reset_chan_data(11);
-                           end;  
-                        end  
+                           end;
+                        end
                       else begin
                              If NOT percussion_mode then temps := '1~0~$1~1~$1~2~$1~3~$1~4~$1~5~$1~6~$1~7~$1~8~$1~9~$2~0~$'
                              else temps := '1~0~$1~1~$1~2~$1~3~$1~4~$1~5~$16 ~B~D$17 ~S~D$18 ~T~T$19 T~C~$20 ~H~H$';
@@ -995,7 +995,7 @@ begin
                                          begin
                                            channel_flag[SUCC(9+chpos)] := channel_flag[9+chpos];
                                            If NOT channel_flag[SUCC(9+chpos)] then reset_chan_data(SUCC(9+chpos));
-                                         end  
+                                         end
                                        else If (9+chpos in [11,13,15]) then
                                               begin
                                                 channel_flag[PRED(9+chpos)] := channel_flag[9+chpos];
@@ -1856,7 +1856,7 @@ begin
 
     If (command_typing <> 0) then GotoXY(08+pos4[hpos],11+PRED(MAX_PATTERN_ROWS DIV 2))
     else GotoXY(08+pos3[hpos],11+PRED(MAX_PATTERN_ROWS DIV 2));
-    
+
     If tracing then fkey := PATTERN_trace
     else ThinCursor;
 
@@ -1910,7 +1910,7 @@ begin
                                    (fkey = kShF9)   or (fkey = kCtrlF9)   or
                                    (fkey = kCtLeft) or (fkey = kCtRght))) or
 
-                         (fkey = kCtENTR)))   
+                         (fkey = kCtENTR)))
     then begin
            If marking and
               NOT (((fkey = kENTER) and shift_pressed) or
@@ -2175,7 +2175,7 @@ begin
                                   begin
                                     channel_flag[PRED(HI(fkey)-$77)] := channel_flag[HI(fkey)-$77];
                                     If NOT channel_flag[PRED(HI(fkey)-$77)] then reset_chan_data(PRED(HI(fkey)-$77));
-                                  end;  
+                                  end;
                        end;
                    end
                  else If (songdata.nm_tracks = 10) then
@@ -2186,8 +2186,8 @@ begin
                            begin
                              channel_flag[11] := channel_flag[10];
                              If NOT channel_flag[11] then reset_chan_data(11);
-                           end;  
-                        end  
+                           end;
+                        end
                       else begin
                              If NOT percussion_mode then temps := '1~0~$1~1~$1~2~$1~3~$1~4~$1~5~$1~6~$1~7~$1~8~$1~9~$2~0~$'
                              else temps := '1~0~$1~1~$1~2~$1~3~$1~4~$1~5~$16 ~B~D$17 ~S~D$18 ~T~T$19 T~C~$20 ~H~H$';
@@ -2214,7 +2214,7 @@ begin
                                          begin
                                            channel_flag[SUCC(9+chpos)] := channel_flag[9+chpos];
                                            If NOT channel_flag[SUCC(9+chpos)] then reset_chan_data(SUCC(9+chpos));
-                                         end  
+                                         end
                                        else If (9+chpos in [11,13,15]) then
                                               begin
                                                 channel_flag[PRED(9+chpos)] := channel_flag[9+chpos];
@@ -2223,7 +2223,7 @@ begin
                                    end;
                                end;
                            end;
-                           
+
       kShTAB:  If (hpos > PATEDIT_lastpos DIV MAX_TRACKS) then
                  begin
                    Dec(hpos,PATEDIT_lastpos DIV MAX_TRACKS);
@@ -2421,7 +2421,7 @@ begin
                  chunk.note := BYTE_NULL;
                  put_chunk(pattern,pattern_page,count_channel(hpos),chunk);
                  If page < PRED(songdata.patt_len) then Inc(page)
-                 else If cycle_pattern then page := 0;                 
+                 else If cycle_pattern then page := 0;
                end;
 
       kBkSPC:  begin
@@ -2612,27 +2612,27 @@ begin
                              clipboard.pattern[SUCC(temp1-count_channel(hpos))]
                                            [temp2-page].instr_def;
                          end;
-                 
+
                          If (chunk.effect_def = 0) then
                            chunk.effect_def :=
                              clipboard.pattern[SUCC(temp1-count_channel(hpos))]
                                            [temp2-page].effect_def;
-                 
+
                          If (chunk.effect = 0) then
                            chunk.effect :=
                              clipboard.pattern[SUCC(temp1-count_channel(hpos))]
                                            [temp2-page].effect;
-                 
+
                          If (chunk.effect_def2 = 0) then
                            chunk.effect_def2 :=
                              clipboard.pattern[SUCC(temp1-count_channel(hpos))]
                                            [temp2-page].effect_def2;
-                 
+
                          If (chunk.effect2 = 0) then
                            chunk.effect2 :=
                              clipboard.pattern[SUCC(temp1-count_channel(hpos))]
                                            [temp2-page].effect2;
-                 
+
                          put_chunk(pattern,temp2,temp1,chunk);
                        end
                else
@@ -2640,7 +2640,7 @@ begin
                    For temp1 := count_channel(hpos) to count_channel(hpos)+clipboard.block_hsize do
                      put_chunk(pattern,temp2,temp1,
                                clipboard.pattern[SUCC(temp1-count_channel(hpos))][clipboard.block_vsize-(temp2-page)]);
-               
+
       kCtrlX:  If marking then
                  begin
                    clipboard.object_type := objMarkedBlock;
@@ -2782,13 +2782,45 @@ begin
 
       kF1:     begin
                  If marking then temps := 'block_operations'
-                 else If NOT (command_typing <> 0) and (count_pos(hpos) in [2,3]) then temps := 'effects'
-                      else If (command_typing <> 0) and (count_pos(hpos) in [4..9]) then temps := 'effects'
+                 else If NOT (command_typing <> 0) and (count_pos(hpos) in [2,3]) then temps := 'effects_page1'
+                      else If (command_typing <> 0) and (count_pos(hpos) in [4..9]) then temps := 'effects_page1'
                            else If debugging and (play_status = isStopped) then temps := 'midiboard'
                                else temps := 'pattern_editor';
                  If NOT marking and (sdl_opl3_emulator = 1) and
-                    opl3_channel_recording_mode then HELP('wav_recorder')          
-                 else HELP(temps);
+                    opl3_channel_recording_mode then HELP('wav_recorder')
+                 else begin
+                        get_chunk(pattern,page,count_channel(hpos),chunk);
+                        If (NOT (command_typing <> 0) and (count_pos(hpos) = 2)) or
+                           ((command_typing <> 0) and (count_pos(hpos) in [4,5,6])) then
+                          temp1 := chunk.effect_def+(chunk.effect DIV 16) SHL 8
+                        else If (NOT (command_typing <> 0) and (count_pos(hpos) = 3)) or
+                                ((command_typing <> 0) and (count_pos(hpos) in [7,8,9])) then
+                               temp1 := chunk.effect_def2+(chunk.effect2 DIV 16) SHL 8
+                             else temp1 := WORD_NULL;
+
+                         If (temp1 <> WORD_NULL) then
+                          Case LO(temp1) of
+                            ef_VolSlideFine..ef_FSlDownFineVSlF:
+                              temps := 'effects_page2';
+                            ef_Extended:
+                              Case HI(temp1) of
+                                ef_ex_SetTremDepth..ef_ex_MacroKOffLoop:
+                                  temps := 'effects_page3';
+                                ef_ex_ExtendedCmd:
+                                  temps := 'effects_page4';
+                              end;
+                            ef_SetGlobalVolume..ef_ForceInsVolume:
+                              temps := 'effects_page4';
+                            ef_Extended3:
+                              temps := 'effects_page5';
+                            ef_Extended2,
+                            ef_ExtraFineArpeggio..ef_ExtraFineTremolo:
+                              temps := 'effects_page6';
+                            ef_SetCustomSpeedTab:
+                              temps := 'effects_page7';
+                          end;
+                        HELP(temps);
+                      end;
                end;
       kF2,
       kShF2,

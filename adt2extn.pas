@@ -2294,7 +2294,7 @@ const
   _connection: array[0..1] of String = ('FM','AM');
   _off_on: array[1..4,0..1] of Char = ('úT','úV','úK','úS');
   _win_title: array[Boolean] of String = (' DEBUG iNFO ','');
-  _contxt_str: String = ' L/R-SHiFT Ä TOGGLE DETAiLS ';
+  _contxt_str: String = ' LSHiFT/RSHiFT Ä TOGGLE DETAiLS ';
 
 var
   temp,temp2,atr1,atr2,atr3,atr4,xstart,ystart: Byte;
@@ -13314,7 +13314,7 @@ _jmp1:
     dl_setting.terminate_keys[3] := kTAB;
     is_setting.terminate_keys[3] := kTAB;
     is_environment.locate_pos    := 1;
-    dl_environment.context       := ' TAB Ä DiRLiST ';
+    dl_environment.context       := ' TAB Ä FiLE SELECTOR ';
 
     If (Lower_file(ext) = 'a2i') then
       begin

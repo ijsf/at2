@@ -21,6 +21,7 @@ http://www.adlibtracker.net/files/revision.htm
    . fixed in MAME OPL3 emulator:
        - experimental treatment of ADSR envelope restart
          for instruments with Attack Rate = 0
+   . enhanced Help screen navigation for effect columns
 
 
 * SDL/Win32/Linux version 2.4.15
