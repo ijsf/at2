@@ -4,8 +4,8 @@ interface
 const
 {__AT2REV__}at2rev  = '056';
 {__AT2VER__}at2ver  = '2.4.16';
-{__AT2DAT__}at2date = '07-07-2014';
-{__AT2LNK__}at2link = '11:30am';
+{__AT2DAT__}at2date = '07-09-2014';
+{__AT2LNK__}at2link = '3:28pm';
 
 const
   ascii_line_01 = 'Ú-ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ--ùú               úù-¿';
@@ -46,7 +46,7 @@ uses
     StringIO,DialogIO,TxtScrIO;
 
 const
-  LINES = 1029;
+  LINES = 1044;
   help_data: array[1..LINES] of String[128] = (
     '@topic:general',
     'ÍËÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍ',
@@ -210,7 +210,8 @@ const
     '³ ~^V~ ³ Paste block  ³ Paste block from clipboard to pattern ~(*)~    ³',
     '³ ~^X~ ³ Cut block    ³ Combine both Copy and Delete operation       ³',
     'ÃÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´',
-    '³ ~(*)~ PASTE BLOCK OPERATION VARiANTS                               ³',
+    '³ `(*) PASTE BLOCK OPERATION VARiANTS`                               ³',
+    '³ ŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸ                               ³',
     '³ "Paste block" operation has three other functional variants      ³',
     '³ with different key shortcuts for activation:                     ³',
     '³ 1) ~[Alt] V~ toggles "Mix block" operation, when block data        ³',
@@ -221,6 +222,20 @@ const
     '³    1st effect or 2nd effect);                                    ³',
     '³ 3) ~[Alt][Shift] V~ toggles "Flipped paste block" operation,       ³',
     '³    when block data from clipboard is applied vertically flipped. ³',
+    '³                                                                  ³',
+    '³ `MANiPULATiON WiTH FX VOLUME iNFORMATION`                          ³',
+    '³ ŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸ                          ³',
+    '³ When there is block marked, which contains some effect           ³',
+    '³ commands carrying volume information, you can increase/decrease  ³',
+    '³ their values with ~+~/~-~ keys.                                      ³',
+    '³ Effect commands are processed with following priority:           ³',
+    '³   1) Set instrument volume (~Cxx~),                                ³',
+    '³      Force instrument volume (~=xx~)                               ³',
+    '³   2) Set modulator volume (~9xx~)                                  ³',
+    '³   3) Set carrier volume (~Ixx~)                                    ³',
+    '³   4) Set global volume (~%xx~)                                     ³',
+    '³ If effect command with higher priority has been processed,       ³',
+    '³ all remaining effect commands with lower priority are skipped.   ³',
     'ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ',
     '',
     '@topic:pattern_list',

@@ -22,6 +22,7 @@ http://www.adlibtracker.net/files/revision.htm
        - experimental treatment of ADSR envelope restart
          for instruments with Attack Rate = 0
    . enhanced Help screen navigation for effect columns
+   . added FX volume information processing in marked block
 
 
 * SDL/Win32/Linux version 2.4.15
@@ -99,7 +100,7 @@ http://www.adlibtracker.net/files/revision.htm
 
    . added “per track” mode to WAV recorder (alter key: [Ctrl])  
    . added fully-featured macro browser
-   . added bank browser for A2B and A2W files (finally ?)   
+   . added bank browser for A2B and A2W files (finally :)   
    . added file-dependent positional memory to all bank browsers
    . added positional memory to Macro Editor window
    . fixed command typing bug in arpeggio macro table
@@ -127,7 +128,7 @@ http://www.adlibtracker.net/files/revision.htm
    . fixed cursor and decay bar speed to match DOS version parameters
    . fixed occasionally appearing interface bug in Pattern Editor window
    . improved CPU saving feature (refer to option “sdl_frame_rate”)
-   . improved screen rendering routine (back to pure assembler roots ?)
+   . improved screen rendering routine (back to pure assembler roots :)
    . added Fade in/out feature for WAV recorder (alter key: [Shift])
    . added new modules from Diode Milliampere
    . removed emergency unfreeze flash screen confirmation and changed
@@ -150,7 +151,7 @@ http://www.adlibtracker.net/files/revision.htm
   released: 02/13/2014
 
    . fixed drive list being not shown in File Selector window
-   . removed DBOPL emulation core (no more necessary I think ?)
+   . removed DBOPL emulation core (no more necessary I think :)
    . added WAV recording feature (hotkey: [Alt] F11/F12);
      check out config file and comments around option “sdl_wav_directory”
      for more information about how to setup output files
@@ -166,14 +167,14 @@ http://www.adlibtracker.net/files/revision.htm
    . fixed bad keyboard responsiveness when testing instrument
      in Instrument Editor window
    . fixed back treating of maximum macro speedup value (IRQ at 1000Hz
-     with SDL works surprisingly without issues now ?)
+     with SDL works surprisingly without issues now :)
    . added emergency unfreeze command (hotkey: Ctrl+Shift+F10)
    . added command typing behavior mode handling in Macro Editor window
    . added instrument type indicators in Macro Editor window
    . added instrument type indicators and possibility to change current
      instrument in Instrument Editor window
    . added some new modules (Madbrain’s awesome A2M collection is
-     hopefully complete now ?) and a bit put to order some old ones
+     hopefully complete now :) and a bit put to order some old ones
    . changed length of filename in File Selector to 23 chars
    . changed handling of F2/F3 related actions over instrument data
    . added wide enhanced screen mode (option “sdl_screen_mode=2”);
@@ -215,7 +216,7 @@ http://www.adlibtracker.net/files/revision.htm
    . added new “AT” command typing behavior mode (like FT but without
      cycling pattern moves) (hotkey: Shift+F11);
      if not overriden by config file, this mode is set by default
-   . removed console window (here you go Mikkel ?)
+   . removed console window (here you go Mikkel :)
    . added window icon and activated window close button functionality
    * fixed wrong position of bye-bye screen under some circumstances
    * fixed in MAME OPL3 emulator:
@@ -228,12 +229,12 @@ http://www.adlibtracker.net/files/revision.htm
 
    . fixed bug in replay routine (playback never advanced to order #7f)
    . fixed Status window update during playback calibration
-   . fixed bug in treating KSL by MAME emulator (lucky at 4th attempt ?);
+   . fixed bug in treating KSL by MAME emulator (lucky at 4th attempt :);
      rollback of all previous changes to KSL – this trivial bug caused
      all the annoying discrepancies in sound compared to DBOPL emulator
    . fixed some serious interface bugs in Macro Editor and Remap
      Instrument window, which raised during portation to Free Pascal
-     (btw, those ‘wtf’ table pointers had their meaning, Dmitry ?)
+     (btw, those ‘wtf’ table pointers had their meaning, Dmitry :)
    . added quick access key for Macro Editor window (^Q)
    . added macro-preview mode for Arpeggio/Vibrato Macro Editor window
    . added possibility to change current instrument directly within

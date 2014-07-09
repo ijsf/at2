@@ -1369,7 +1369,7 @@ var
   chunk,chunk2: tCHUNK;
   old_order,old_pattern,old_line: Byte;
   old_speed,old_tempo: Byte;
-  flag: Boolean;
+  flag,flag2: Boolean;
 
 function correct_range(fxdef: Byte; var fxdata: Byte): Boolean;
 
@@ -1766,6 +1766,61 @@ end;
 function FX(chr: Char): Byte;
 begin FX := PRED(Pos(UpCase(chr),fx_digits)); end;
 
+type
+  tByteSet = Set of Byte;
+  
+function update_block_volume(block_x0,block_y0,block_x1,block_y1: Byte;
+                             volume_commands: tByteSet; shift: Integer;
+                             var fx_found_flag: Boolean; update_values: Boolean): Boolean;
+var
+  temp1,temp2: Byte;
+
+begin
+  fx_found_flag := FALSE;
+  For temp2 := block_y0 to block_y1 do
+    For temp1 := block_x0 to block_x1 do
+      begin
+        get_chunk(pattern,temp2,temp1,chunk);
+        If (chunk.effect_def in volume_commands) then
+          begin
+            fx_found_flag := TRUE;
+            If (shift >= 0) then
+              If (chunk.effect+shift <= 63) then
+                Inc(chunk.effect,shift)
+              else begin
+                     update_block_volume := FALSE;
+                     EXIT;
+                   end
+            else If (chunk.effect+shift >= 0) then
+                   Inc(chunk.effect,shift)
+                  else begin
+                         update_block_volume := FALSE;
+                         EXIT;
+                       end;
+          end;
+        If (chunk.effect_def2 in volume_commands) then
+          begin
+            fx_found_flag := TRUE;
+            If (shift >= 0) then
+              If (chunk.effect2+shift <= 63) then
+                Inc(chunk.effect2,shift)
+              else begin
+                     update_block_volume := FALSE;
+                     EXIT;
+                   end
+            else If (chunk.effect2+shift >= 0) then
+                   Inc(chunk.effect2,shift)
+                  else begin
+                         update_block_volume := FALSE;
+                         EXIT;
+                       end;
+          end;
+        If update_values then
+          put_chunk(pattern,temp2,temp1,chunk);
+      end;
+  update_block_volume := fx_found_flag;      
+end;
+
 label _end;
 
 begin
@@ -1894,7 +1949,8 @@ begin
                          (fkey = kF9)     or (fkey = kAltF9)  or
                          (fkey = kCtrlF9) or (fkey = kCtLeft) or
                          (fkey = kCtRght) or (fkey = kCtENTR) or
-                         (fkey = kAltB)   or (fkey = kAltV)))
+                         (fkey = kAltB)   or (fkey = kAltV)   or
+                         (fkey = kNPplus) or (fkey = kNPmins)))
     or (shift_pressed and
                     NOT ((fkey = kLEFT)   or (fkey = kRIGHT)  or
                          (fkey = kUP)     or (fkey = kDOWN)   or
@@ -2005,9 +2061,51 @@ begin
                else If NOT marking and cycle_pattern then page := 0;
 
       kCHplus,
-      kNPplus: If pattern < PRED(max_patterns) then Inc(pattern);
+      kNPplus: If NOT marking then
+                 If pattern < PRED(max_patterns) then Inc(pattern)
+                 else
+               else begin               
+                      If update_block_volume(block_x0,block_y0,block_x1,block_y1,
+                                            [ef_SetInsVolume,ef_ForceInsVolume],+1,flag2,FALSE) then
+                        update_block_volume(block_x0,block_y0,block_x1,block_y1,
+                                            [ef_SetInsVolume,ef_ForceInsVolume],+1,flag2,TRUE)
+                      else If NOT flag2 and update_block_volume(block_x0,block_y0,block_x1,block_y1,
+                                                                [ef_SetModulatorVol],+1,flag2,FALSE) then
+                             update_block_volume(block_x0,block_y0,block_x1,block_y1,
+                                                 [ef_SetModulatorVol],+1,flag2,TRUE)
+                           else If NOT flag2 and update_block_volume(block_x0,block_y0,block_x1,block_y1,
+                                                                     [ef_SetCarrierVol],+1,flag2,FALSE) then
+                                  update_block_volume(block_x0,block_y0,block_x1,block_y1,
+                                                      [ef_SetCarrierVol],+1,flag2,TRUE)
+                                else If NOT flag2 and update_block_volume(block_x0,block_y0,block_x1,block_y1,
+                                                                          [ef_SetGlobalVolume],+1,flag2,FALSE) then
+                                       update_block_volume(block_x0,block_y0,block_x1,block_y1,
+                                                           [ef_SetGlobalVolume],+1,flag2,TRUE);
+                      PATTERN_page_refresh(pattern_page);
+                    end;                            
       kCHmins,
-      kNPmins: If pattern > 0 then Dec(pattern);
+      kNPmins: If NOT marking then
+                 If pattern > 0 then Dec(pattern)
+                 else
+               else begin
+                      If update_block_volume(block_x0,block_y0,block_x1,block_y1,
+                                            [ef_SetInsVolume,ef_ForceInsVolume],-1,flag2,FALSE) then
+                        update_block_volume(block_x0,block_y0,block_x1,block_y1,
+                                            [ef_SetInsVolume,ef_ForceInsVolume],-1,flag2,TRUE)
+                      else If NOT flag2 and update_block_volume(block_x0,block_y0,block_x1,block_y1,
+                                                                [ef_SetModulatorVol],-1,flag2,FALSE) then
+                             update_block_volume(block_x0,block_y0,block_x1,block_y1,
+                                                 [ef_SetModulatorVol],-1,flag2,TRUE)
+                           else If NOT flag2 and update_block_volume(block_x0,block_y0,block_x1,block_y1,
+                                                                     [ef_SetCarrierVol],-1,flag2,FALSE) then
+                                  update_block_volume(block_x0,block_y0,block_x1,block_y1,
+                                                      [ef_SetCarrierVol],-1,flag2,TRUE)
+                                else If NOT flag2 and update_block_volume(block_x0,block_y0,block_x1,block_y1,
+                                                                          [ef_SetGlobalVolume],-1,flag2,FALSE) then
+                                       update_block_volume(block_x0,block_y0,block_x1,block_y1,
+                                                           [ef_SetGlobalVolume],-1,flag2,TRUE);
+                      PATTERN_page_refresh(pattern_page);
+                    end;  
 
       kPgUP:   If NOT shift_pressed or marking then
                  begin
@@ -2790,11 +2888,11 @@ begin
                     opl3_channel_recording_mode then HELP('wav_recorder')
                  else begin
                         get_chunk(pattern,page,count_channel(hpos),chunk);
-                        If (NOT (command_typing <> 0) and (count_pos(hpos) = 2)) or
-                           ((command_typing <> 0) and (count_pos(hpos) in [4,5,6])) then
+                        If NOT marking and ((NOT (command_typing <> 0) and (count_pos(hpos) = 2)) or
+                           ((command_typing <> 0) and (count_pos(hpos) in [4,5,6]))) then
                           temp1 := chunk.effect_def+(chunk.effect DIV 16) SHL 8
-                        else If (NOT (command_typing <> 0) and (count_pos(hpos) = 3)) or
-                                ((command_typing <> 0) and (count_pos(hpos) in [7,8,9])) then
+                        else If NOT marking and ((NOT (command_typing <> 0) and (count_pos(hpos) = 3)) or
+                                ((command_typing <> 0) and (count_pos(hpos) in [7,8,9]))) then
                                temp1 := chunk.effect_def2+(chunk.effect2 DIV 16) SHL 8
                              else temp1 := WORD_NULL;
 
