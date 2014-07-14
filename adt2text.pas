@@ -2,10 +2,9 @@ unit AdT2text;
 interface
 
 const
-{__AT2REV__}at2rev  = '056';
 {__AT2VER__}at2ver  = '2.4.16';
-{__AT2DAT__}at2date = '07-09-2014';
-{__AT2LNK__}at2link = '3:28pm';
+{__AT2DAT__}at2date = '07-14-2014';
+{__AT2LNK__}at2link = '10:26am';
 
 const
   ascii_line_01 = 'Ú-ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ--ùú               úù-¿';
@@ -210,7 +209,7 @@ const
     '³ ~^V~ ³ Paste block  ³ Paste block from clipboard to pattern ~(*)~    ³',
     '³ ~^X~ ³ Cut block    ³ Combine both Copy and Delete operation       ³',
     'ÃÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´',
-    '³ `(*) PASTE BLOCK OPERATION VARiANTS`                               ³',
+    '³ `(*) PASTE BLOCK OPERATiON VARiANTS`                               ³',
     '³ ŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸ                               ³',
     '³ "Paste block" operation has three other functional variants      ³',
     '³ with different key shortcuts for activation:                     ³',
@@ -223,7 +222,7 @@ const
     '³ 3) ~[Alt][Shift] V~ toggles "Flipped paste block" operation,       ³',
     '³    when block data from clipboard is applied vertically flipped. ³',
     '³                                                                  ³',
-    '³ `MANiPULATiON WiTH FX VOLUME iNFORMATION`                          ³',
+    '³ `MANiPULATiON WiTH FX VOLUME iNFORMATiON`                          ³',
     '³ ŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸ                          ³',
     '³ When there is block marked, which contains some effect           ³',
     '³ commands carrying volume information, you can increase/decrease  ³',
@@ -1346,12 +1345,12 @@ var
 
 begin
   For temp := 0 to 18 do
-    adt2_title[temp] := RotStrL('/´DLiB TR/´CK3R ][', ' - REViSiON '+at2rev+' - ',temp);
+    adt2_title[temp] := RotStrL('/´DLiB TR/´CK3R ][', ' [SDL] VER.'+at2ver+' ',temp);
 
-  adt2_title[18] := '-+ REViSiON '+at2rev+' +-';
+  adt2_title[18] := ' [SDL] VER.'+at2ver+' ';
 
   For temp := 19 to 36 do
-     adt2_title[temp] := RotStrL(' - REViSiON '+at2rev+' - ', '/´DLiB TR/´CK3R ][',temp-18);
+     adt2_title[temp] := RotStrL(' [SDL] VER.'+at2ver+' ', '/´DLiB TR/´CK3R ][',temp-18);
 
   WriteLn;
   WriteLn('/´DLiB TR/´CK3R ][ SDL');

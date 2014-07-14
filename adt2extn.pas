@@ -2394,6 +2394,10 @@ _jmp1:
         ShowStr(screen_ptr^,xstart+2,ystart+songdata.nm_tracks+3,
                 '컴좔컨컴컨컴좔컨컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴좔컴컨컴컴컴컴좔컴컴컴컨컴컴좔컨컴',
                 debug_info_bckg+debug_info_border);
+        If NOT _ctrl_alt_flag then
+          ShowCStr(screen_ptr^,xstart+76,ystart+songdata.nm_tracks+6,' [~1/3~] ',
+                   _win_attr[_ctrl_alt_flag],
+                   debug_info_bckg+debug_info_topic);
       end
     else If NOT _macro_details_flag then
            begin
@@ -2406,6 +2410,10 @@ _jmp1:
              ShowStr(screen_ptr^,xstart+2,ystart+songdata.nm_tracks+3,
                      '컴좔컨컴컨컴컴좔컴컴컴컨컴컴컴컴좔컴컨컴컴컴컴컴컴컴컴컴컴좔컴컴컴컴컴컴컴좔컨컴',
                      debug_info_bckg+debug_info_border);
+             If NOT _ctrl_alt_flag then
+               ShowCStr(screen_ptr^,xstart+76,ystart+songdata.nm_tracks+6,' [~2/3~] ',
+                        _win_attr[_ctrl_alt_flag],
+                        debug_info_bckg+debug_info_topic);
            end
          else begin
                 ShowCStr(screen_ptr^,xstart+2,ystart+1,
@@ -2417,6 +2425,10 @@ _jmp1:
                 ShowStr(screen_ptr^,xstart+2,ystart+songdata.nm_tracks+3,
                         '컴좔컨컴컨컴컴좔컴컴컴컨컴컴컴컴좔컴컴컴컴컴컴좔컴컴컴컴컨컴컴컴컴컴컨컴컴좔컨컴',
                         debug_info_bckg+debug_info_border);
+                If NOT _ctrl_alt_flag then
+                  ShowCStr(screen_ptr^,xstart+76,ystart+songdata.nm_tracks+6,' [~3/3~] ',
+                           _win_attr[_ctrl_alt_flag],
+                           debug_info_bckg+debug_info_topic);
               end;
 
     If NOT play_single_patt and NOT replay_forbidden and
