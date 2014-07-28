@@ -1131,8 +1131,7 @@ begin
   If (program_screen_mode = 0) then adsr_vpos := y0+10
   else adsr_vpos := y0+25;
 
-  If (program_screen_mode = 0) and
-     (NOT ((vpos in [1,2,4,5,7,20]) and (hpos = 1)) or
+  If (NOT ((vpos in [1,2,4,5,7,20]) and (hpos = 1)) or
       NOT _ADSR_preview_flag) then
     begin
       _show_adsr(vscreen,x0+3,adsr_vpos,
@@ -1332,8 +1331,9 @@ begin
     else ShowStr(vscreen,x0+_hpos[20,2+temp-1],y0+_vpos[20],'û',
                  instrument_bckg+instrument_hi_text);
 
-  If (vpos in [1,2,4,5,7,20]) and (hpos = 1) and
-     _ADSR_preview_flag then
+  If (program_screen_mode <> 0) or
+     ((vpos in [1,2,4,5,7,20]) and (hpos = 1) and
+      _ADSR_preview_flag) then
     If NOT carrier or (tADTRACK2_INS(inst^).perc_voice in [2..5]) then
       _show_adsr(vscreen,x0+3,adsr_vpos,
                  tADTRACK2_INS(inst^).fm_data.ATTCK_DEC_modulator SHR 4,

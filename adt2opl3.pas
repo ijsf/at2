@@ -27,7 +27,7 @@ const
   opl3_flushmode: Boolean = FALSE;
 
 const
-  WAV_BUFFER_SIZE = 18*256*1024; // cache buffer size -> 256k per file
+  WAV_BUFFER_SIZE = 18*512*1024; // cache buffer size -> 512k per file
  
 var
   wav_buffer_len: Longint;  

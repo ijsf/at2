@@ -609,10 +609,11 @@ var
   _ch_tmp: tTRACK_ADDR;
 
 const
-  tracing:    Boolean = FALSE;
-  marking:    Boolean = FALSE;
-  debugging:  Boolean = FALSE;
-  quick_cmd:  Boolean = FALSE;
+  tracing:     Boolean = FALSE;
+  track_notes: Boolean = FALSE;
+  marking:     Boolean = FALSE;
+  debugging:   Boolean = FALSE;
+  quick_cmd:   Boolean = FALSE;
 
 const
   ef_Arpeggio          = 0;

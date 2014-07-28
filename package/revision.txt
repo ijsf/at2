@@ -9,6 +9,15 @@ For complete AT2 revision history refer to:
 http://www.adlibtracker.net/files/revision.htm
 
 
+* SDL/Win32/Linux version 2.4.17
+  released: 07/28/2014
+
+   . fixed ADSR preview update with enhanced screen modes
+   . added Note Recorder feature (hotkey: ^Space)
+   . changed file cache buffer for OPL3 recording to 512kb
+   . added startup files for HQ-modes to program package
+
+
 * SDL/Win32/Linux version 2.4.16
   released: 07/14/2014
 

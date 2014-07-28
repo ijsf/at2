@@ -414,6 +414,7 @@ begin
          ((sdl_opl3_emulator = 0) or (play_status = isStopped)) then
 	    begin
           opl3_channel_recording_mode := TRUE;
+          track_notes := FALSE;
           If shift_pressed then sdl_opl3_emulator := 0;
 		end;
       If NOT shift_pressed then sdl_opl3_emulator := 1

@@ -51,6 +51,10 @@ begin
 end;
 
 procedure STATUS_LINE_refresh;
+
+var
+  tracking_indicator_attr: array[Boolean] of Byte;
+
 begin
   If _debug_ then
     _debug_str_ := 'IPATTERN.INC:STATUS_LINE_refresh';
@@ -90,9 +94,16 @@ begin
     show_str(16,MAX_PATTERN_ROWS+12,'DEBUG',main_background+main_hi_stat_line)
   else show_str(16,MAX_PATTERN_ROWS+12,'DEBUG',main_background+main_stat_line);
 
-  If debugging and (play_status = isStopped) then
-    show_str(22,MAX_PATTERN_ROWS+12,'TRACKiNG',main_background+main_hi_stat_line)
-  else show_str(22,MAX_PATTERN_ROWS+12,'TRACKiNG',main_background+main_stat_line);
+  tracking_indicator_attr[TRUE] := main_background+main_hi_stat_line;
+  If (play_status = isPlaying) and tracing then
+    tracking_indicator_attr[FALSE] := main_behavior SHL 4 AND $0f0
+  else tracking_indicator_attr[FALSE] := main_background+main_stat_line;
+
+  If track_notes then
+    show_str(22,MAX_PATTERN_ROWS+12,'TRACKiNG',tracking_indicator_attr[_generic_blink_event_flag])
+  else If debugging and (play_status = isStopped) then
+         show_str(22,MAX_PATTERN_ROWS+12,'TRACKiNG',main_background+main_hi_stat_line)
+       else show_str(22,MAX_PATTERN_ROWS+12,'TRACKiNG',main_background+main_stat_line);
 end;
 
 function last_chan_pos: Byte;
@@ -665,7 +676,10 @@ begin
 
       If opl3_channel_recording_mode and opl3_record_channel[temp1] then
         chan_attr := chanrec_indicator_attr[_generic_blink_event_flag]
-      else chan_attr := pattern_bckg+pattern_border;
+      else If track_notes and (temp1 >= track_chan_start) and
+                              (temp1 <= track_chan_start+nm_track_chan-1) then
+             chan_attr := main_behavior SHL 4 and $0f0
+           else chan_attr := pattern_bckg+pattern_border;
 
       show_cstr(08+(temp1-PRED(chan_pos)-1)*15,09,temps,
                 chan_attr,
@@ -740,6 +754,7 @@ begin
            block_xstart := count_channel(pattern_hpos);
            block_ystart := line;
            marking := TRUE;
+           track_notes := FALSE;
            discard_block := TRUE;
            PATTERN_ORDER_page_refresh(pattord_page);
            PATTERN_page_refresh(pattern_page);
@@ -817,10 +832,14 @@ function PATTERN_trace: Word;
 var
   old_pattord_page,old_pattord_hpos,old_pattord_vpos: Byte;
   old_pattern_patt,old_pattern_page,old_pattern_hpos: Byte;
-  nope: Boolean;
+  nope,flag: Boolean;
   temp,temp2,fkey2: Word;
+  idx,idx2,track_ch,curr_ch: Byte;
+  track_ch_key: array[1..20] of Byte;
+  old_hpos: Byte;
   temps: String;
-
+  chunk,chunk2: tCHUNK;
+  
 procedure pause_debugging;
 begin
   If debugging then
@@ -871,6 +890,7 @@ begin
         PATTERN_page_refresh(pattern_page);
       end;
 
+    old_hpos := pattern_hpos;
     If keypressed then fkey2 := getkey
     else If NOT (seconds_counter >= ssaver_time) then GOTO _end //CONTINUE
          else begin
@@ -878,6 +898,91 @@ begin
                 GOTO _end; //CONTINUE;
               end;
 
+    If track_notes and midiboard then
+      begin
+        curr_ch := track_chan_start;
+        track_ch := 0;
+        flag := FALSE;
+        FillChar(track_ch_key,SizeOf(track_ch_key),BYTE_NULL);
+        If NOT ctrl_pressed and NOT alt_pressed then
+          For idx := 1 to 29 do
+            If (scankey(board_scancodes[idx])) then
+              begin
+                flag := TRUE;
+                If (track_ch < nm_track_chan) then Inc(track_ch)
+                else BREAK;
+                track_ch_key[track_ch] := idx;
+              end;
+
+        If (fkey2 = kWeird) or
+           (flag AND ((NOT (is_4op_chan(curr_ch) and
+                           (curr_ch in [1,3,5,10,12,14]))) or track_notes)) then
+          begin
+            idx2 := 1;
+            For idx := 1 to nm_track_chan do
+              begin
+                If (fkey2 = kWeird) or
+                   ((track_ch_key[idx2] <> BYTE_NULL) and
+                    (track_ch_key[idx2]+12*(current_octave-1) in [1..12*8+1])) then
+                  begin
+                    If NOT (is_4op_chan(curr_ch+idx-1) and
+                           (curr_ch+idx-1 in [1,3,5,10,12,14])) then
+                      begin
+                        get_chunk(pattern_patt,pattern_page,curr_ch+idx-1,chunk);
+                        If (fkey2 <> kWeird) then
+                          begin
+                            If NOT right_shift_pressed then
+                              chunk.note := track_ch_key[idx2]+12*(current_octave-1)
+                            else chunk.note := track_ch_key[idx2]+12*(current_octave-1)+fixed_note_flag;
+                            If NOT (chunk.effect_def in [ef_TonePortamento,
+                                                         ef_TPortamVolSlide]) then
+                              begin
+                                If track_notes_ins then
+                                  chunk.instr_def := current_inst
+                                else chunk.instr_def := voice_table[curr_ch+idx-1];
+                                If is_4op_chan(curr_ch+idx-1) and
+                                   (curr_ch+idx-1 in [2,4,6,11,13,15]) and
+                                   (_4op_to_test <> 0) then
+                                  begin
+                                    get_chunk(pattern_patt,pattern_page,PRED(curr_ch)+idx-1,chunk2);
+                                    chunk2.note := 0;
+                                    If track_notes_ins then
+                                      chunk2.instr_def := HI(_4op_to_test)
+                                    else chunk2.instr_def := voice_table[PRED(curr_ch)+idx-1];
+                                    If channel_flag[PRED(curr_ch)+idx-1] then
+                                      put_chunk(pattern_patt,pattern_page,PRED(curr_ch)+idx-1,chunk2);
+                                  end;
+                              end
+                            else chunk.instr_def := 0;
+                          end
+                        else begin
+                               chunk.note := BYTE_NULL;
+                               chunk.instr_def := 0;
+                             end;
+                        If channel_flag[curr_ch+idx-1] then
+                          begin
+                            ignore_note_once[curr_ch+idx-1] := TRUE;
+                            put_chunk(pattern_patt,pattern_page,curr_ch+idx-1,chunk);
+                            If (chunk.instr_def <> 0) then
+                              load_instrument(songdata.instr_data[chunk.instr_def],curr_ch+idx-1);
+                            If (chunk.note <> BYTE_NULL) then
+                              output_note(chunk.note,chunk.instr_def,curr_ch+idx-1,TRUE);
+                            Inc(idx2);
+                          end;    
+                      end;
+
+                    If (play_status = isPaused) then
+                      begin
+                        debugging := FALSE;
+                        replay_forbidden := FALSE;
+                        play_status := isPlaying;
+                      end;  
+                  end;
+              end;    
+            keyboard_reset_buffer;
+          end;
+      end;
+              
     Case fkey2 of
       kCtLbr: If NOT shift_pressed then
                 If (_4op_to_test = 0) then
@@ -920,7 +1025,8 @@ begin
                    PATTERN_page_refresh(pattern_page);
                  end;
 
-      kAltS:   If NOT (opl3_channel_recording_mode and (play_status <> isStopped)) then
+      kAltS:   If NOT (opl3_channel_recording_mode and (play_status <> isStopped)) and
+                  NOT track_notes then      
                  begin
                    For temp := 1 to songdata.nm_tracks do
                      channel_flag[temp] := FALSE;
@@ -1004,12 +1110,29 @@ begin
                                    end;
                                end;
                            end;
+
+      kBkSPC:  If track_notes then
+                 For idx := track_chan_start to track_chan_start+nm_track_chan-1 do
+                   If channel_flag[chan_pos+idx-1] then
+                     begin
+                       get_chunk(pattern_patt,pattern_page,chan_pos+idx-1,chunk);
+                       chunk.note := 0;
+                       chunk.instr_def := 0;
+                       put_chunk(pattern_patt,pattern_page,chan_pos+idx-1,chunk);
+                       keyboard_reset_buffer;
+                     end;
       kUp,
-      kCtLEFT: If NOT debugging and (play_status = isPlaying) then
-                 rewind := TRUE;
+      kCtLEFT: If track_notes then
+                 If (fkey2 = kUp) then rewind := TRUE
+                 else
+               else If NOT debugging and (play_status = isPlaying) then
+                      rewind := TRUE;
       kDown,
-      kCtRGHT: If NOT debugging and (play_status = isPlaying) then
-                 fast_forward := TRUE;
+      kCtRGHT: If track_notes then
+                 If (fkey2 = kDown) then fast_forward := TRUE
+                 else
+               else If NOT debugging and (play_status = isPlaying) and NOT track_notes then
+                      fast_forward := TRUE;
 
       kLEFT,
       kShTAB:  If (chan_pos > 1) then
@@ -1109,62 +1232,75 @@ begin
       kCtrlT:  begin
                  pause_debugging;
                  TRANSPOSE;
+                 keyboard_reset_buffer;
                end;
 
       kCtrlR:  begin
                  pause_debugging;
                  REMAP;
+                 keyboard_reset_buffer;
                end;
 
       kCtrlD:  begin
                  pause_debugging;
                  DEBUG_INFO;
+                 keyboard_reset_buffer;
                end;
 
       kCtrlO:  begin
                  pause_debugging;
                  OCTAVE_CONTROL;
+                 keyboard_reset_buffer;
                end;
 
       kCtrlP:  begin
                  pause_debugging;
                  PATTERN_LIST(pattern_list__page);
+                 keyboard_reset_buffer;
                end;
 
       kCtrlF:  begin
                  pause_debugging;
                  SONG_VARIABLES;
+                 keyboard_reset_buffer;
                end;
 
       kCtrlH:  begin
                  pause_debugging;
                  REPLACE;
+                 keyboard_reset_buffer;
                end;
 
       kCtrlI:  begin
                  pause_debugging;
                  INSTRUMENT_CONTROL;
+                 keyboard_reset_buffer;
                end;
 
       kCtrlQ:  begin
                  pause_debugging;
                  MACRO_EDITOR(current_inst,FALSE);
+                 keyboard_reset_buffer;
                end;
 
       kCtrlE:  begin
                  pause_debugging;
                  MACRO_EDITOR(current_inst,TRUE);
+                 keyboard_reset_buffer;
                end;
 
       kCtrlM:  begin
                  pause_debugging;
                  MACRO_BROWSER(TRUE,TRUE);
+                 keyboard_reset_buffer;
                end;
 
       kF1:     begin
                  pause_debugging;
                  If (sdl_opl3_emulator = 1) and ((play_status = isPlaying) or opl3_channel_recording_mode) then HELP('wav_recorder')
-                 else HELP('general');
+                 else If track_notes then HELP('note_recorder')
+                      else HELP('general');
+                 keyboard_reset_buffer;
                end;
       kF2,
       kShF2,
@@ -1173,11 +1309,13 @@ begin
                  If (fkey2 = kShF2) then quick_cmd := TRUE;
                  FILE_save('a2m');
                  quick_cmd := FALSE;
+                 keyboard_reset_buffer;
                end;
 
       kCtrlF2: begin
                  pause_debugging;
                  FILE_save('a2t');
+                 keyboard_reset_buffer;
                end;
       kF3,
       kShF3,
@@ -1187,19 +1325,38 @@ begin
                  FILE_open('*.a2m$*.a2t$*.a2p$*.amd$*.cff$*.dfm$*.fmk$*.hsc$*.mtk$*.rad$'+
                            '*.s3m$*.sat$*.sa2$*.xms$',FALSE);
                  quick_cmd := FALSE;
+                 keyboard_reset_buffer;                 
                end;
 
       kF4,
       kCtrlA:  NUKE;
 
-      kSPACE:  If (play_status = isPaused) then
+      kSPACE:  If ctrl_pressed then
                  begin
-                   debugging := TRUE;
-                   replay_forbidden := FALSE;
-                   play_status := isPlaying;
+                   If NOT opl3_channel_recording_mode then track_notes := NOT track_notes;
+                   If track_notes then
+                     begin
+                       If debugging then
+                         begin
+                           debugging := FALSE;
+                           stop_playing;
+                         end;  
+                       track_chan_start := count_channel(pattern_hpos);
+                       midiboard := TRUE;
+                     end
+                   else nm_track_chan := 1;
+                   fkey2 := WORD_NULL;
                    PATTERN_ORDER_page_refresh(pattord_page);
                    PATTERN_page_refresh(pattern_page);
-                 end;
+                 end  
+               else If (play_status = isPaused) and NOT track_notes then
+                      begin
+                        debugging := TRUE;
+                        replay_forbidden := FALSE;
+                        play_status := isPlaying;
+                        PATTERN_ORDER_page_refresh(pattord_page);
+                        PATTERN_page_refresh(pattern_page);
+                      end;
 
       kF10:    begin
                  QUIT_request;
@@ -1213,6 +1370,7 @@ begin
       kESC:    begin
                  nope := TRUE;
                  debugging := FALSE;
+                 track_notes := FALSE;
                  If (fkey2 = kENTER) then
                    begin
                       replay_forbidden := TRUE;
@@ -1264,6 +1422,7 @@ begin
                end;
 
       kShF6:   begin
+                 track_notes := FALSE;
                  debugging := TRUE;
                  replay_forbidden := FALSE;
                  play_status := isPlaying;
@@ -1334,6 +1493,13 @@ begin
                               end;
                  end;
     end;
+
+    If track_notes and (pattern_hpos <> old_hpos) then
+      begin
+        track_notes := FALSE;
+        nm_track_chan := 1;
+      end;      
+
 _end:
     emulate_screen;
     // keyboard_reset_buffer;
@@ -1344,6 +1510,8 @@ _end:
   trace_update_proc := NIL;
   ThinCursor;
   tracing := FALSE;
+  If (play_status <> isStopped) then track_notes := FALSE;
+  
   If nope and (fkey2 <> kENTER) then
     begin
       pattord_page := old_pattord_page;
@@ -1370,6 +1538,9 @@ var
   old_order,old_pattern,old_line: Byte;
   old_speed,old_tempo: Byte;
   flag,flag2: Boolean;
+  idx,idx2,track_ch,curr_ch: Byte;
+  track_ch_key: array[1..20] of Byte;
+  old_hpos: Byte;
 
 function correct_range(fxdef: Byte; var fxdata: Byte): Boolean;
 
@@ -1924,6 +2095,7 @@ begin
         PATTERN_page_refresh(pattern_page);
       end;
 
+    old_hpos := hpos;
     If keypressed then fkey := getkey
     else If NOT (seconds_counter >= ssaver_time) then GOTO _end //CONTINUE
          else begin
@@ -1947,8 +2119,8 @@ begin
                          (fkey = kF7)     or (fkey = kF8)     or
                          (fkey = kAltF8)  or (fkey = kCtrlF8) or
                          (fkey = kF9)     or (fkey = kAltF9)  or
-                         (fkey = kCtrlF9) or (fkey = kCtLeft) or
-                         (fkey = kCtRght) or (fkey = kCtENTR) or
+                         (fkey = kCtrlF9) or (fkey = kCtLEFT) or
+                         (fkey = kCtRGHT) or (fkey = kCtENTR) or
                          (fkey = kAltB)   or (fkey = kAltV)   or
                          (fkey = kNPplus) or (fkey = kNPmins)))
     or (shift_pressed and
@@ -1964,7 +2136,7 @@ begin
                                    (fkey = kAltF8)  or (fkey = kShF8)     or
                                    (fkey = kCtrlF8) or (fkey = kAltF9)    or
                                    (fkey = kShF9)   or (fkey = kCtrlF9)   or
-                                   (fkey = kCtLeft) or (fkey = kCtRght))) or
+                                   (fkey = kCtLEFT) or (fkey = kCtRGHT))) or
 
                          (fkey = kCtENTR)))
     then begin
@@ -1992,6 +2164,7 @@ begin
              old_hpos := hpos;
              old_page := page;
              marking := TRUE;
+             track_notes := FALSE;
              fkey := WORD_NULL;
              block_xstart := count_channel(hpos);
              block_ystart := page;
@@ -2237,7 +2410,8 @@ begin
                    PATTERN_page_refresh(pattern_page);
                  end;
 
-      kAltS:   If NOT (opl3_channel_recording_mode and (play_status <> isStopped)) then
+      kAltS:   If NOT (opl3_channel_recording_mode and (play_status <> isStopped)) and
+                  NOT track_notes then
                  begin
                    For temp := 1 to songdata.nm_tracks do
                      channel_flag[temp] := FALSE;
@@ -2366,15 +2540,37 @@ begin
                              hpos := 1;
                            end;
 
-      kSPACE:  If shift_pressed then
+      kSPACE:  If ctrl_pressed and NOT shift_pressed and
+                  NOT alt_pressed then
                  begin
-                   midiboard := NOT midiboard;
+                   If NOT opl3_channel_recording_mode then track_notes := NOT track_notes;
+                   If track_notes and (play_status <> isStopped) then stop_playing;
+                   If track_notes then
+                     begin
+                       If debugging then
+                         begin
+                           debugging := FALSE;
+                           stop_playing;
+                         end;  
+                       track_chan_start := count_channel(hpos);
+                       nm_track_chan := 1;
+                       midiboard := TRUE;
+                     end;
+                   midisynth := FALSE;
                    fkey := WORD_NULL;
                  end
-               else
-                 If NOT midiboard then
-                   If page < PRED(songdata.patt_len) then Inc(page)
-                   else If cycle_pattern then page := 0;
+               else If NOT ctrl_pressed and shift_pressed and
+                       NOT alt_pressed then
+                      begin
+                        midiboard := NOT midiboard;
+                        If midiboard then midisynth := FALSE;
+                        fkey := WORD_NULL;
+                      end
+                    else If NOT shift_pressed and NOT ctrl_pressed and
+                            NOT alt_pressed then
+                           If NOT midiboard then
+                             If page < PRED(songdata.patt_len) then Inc(page)
+                             else If cycle_pattern then page := 0;
 
       kINSERT: If NOT shift_pressed then
                  begin
@@ -2478,6 +2674,7 @@ begin
                       page := old_block_patt_page;
                       chan_pos := old_block_chan_pos;
                       marking := TRUE;
+                      track_notes := FALSE;
                     end;
 
       kAltQ:   Case quick_mark_type of
@@ -2487,6 +2684,7 @@ begin
                       old_page := page;
                       page := 0;
                       marking := TRUE;
+                      track_notes := FALSE;
                       block_xstart := count_channel(hpos);
                       block_ystart := PRED(songdata.patt_len);
                       quick_mark_type := 1;
@@ -2494,6 +2692,7 @@ begin
 
                  1: begin
                       marking := TRUE;
+                      track_notes := FALSE;
                       chan_pos := 1;
                       hpos := 1;
                       page := 0;
@@ -2522,115 +2721,133 @@ begin
                  else If cycle_pattern then page := 0;
                end;
 
-      kBkSPC:  begin
-                 get_chunk(pattern,pattern_page,count_channel(hpos),chunk);
-                 If (command_typing <> 0) then
-                   Case count_pos(hpos) of
-                     0,
-                     1: begin
-                          chunk.note := 0;
-                          If is_4op_chan(count_channel(hpos)) and
-                             (count_channel(hpos) in [2,4,6,11,13,15]) and
-                             (_4op_to_test <> 0) then
-                            begin
-                              get_chunk(pattern,pattern_page,PRED(count_channel(hpos)),chunk2);
-                              chunk2.note := 0;
-                              put_chunk(pattern,pattern_page,PRED(count_channel(hpos)),chunk2);
-                            end;
-
-                          If midiboard then
-                            begin
-                              chunk.instr_def := 0;
-                              If is_4op_chan(count_channel(hpos)) and
-                                 (count_channel(hpos) in [2,4,6,11,13,15]) and
-                                 (_4op_to_test <> 0) then
-                                begin
-                                  get_chunk(pattern,pattern_page,PRED(count_channel(hpos)),chunk2);
-                                  chunk2.note := 0;
-                                  chunk2.instr_def := 0;
-                                  put_chunk(pattern,pattern_page,PRED(count_channel(hpos)),chunk2);
+      kBkSPC:  If track_notes then
+                 begin
+                   For idx := track_chan_start to track_chan_start+nm_track_chan-1 do
+                     If channel_flag[chan_pos+idx-1] then
+                       begin
+                         get_chunk(pattern_patt,pattern_page,chan_pos+idx-1,chunk);
+                         chunk.note := 0;
+                         chunk.instr_def := 0;
+                         put_chunk(pattern_patt,pattern_page,chan_pos+idx-1,chunk);
+                         keyboard_reset_buffer;
+                       end;
+                   Case backspace_dir of
+                     1: If page < PRED(songdata.patt_len) then Inc(page)
+                        else If cycle_pattern then page := 0;
+                     2: If page > 0 then Dec(page)
+                        else If cycle_pattern then page := PRED(songdata.patt_len);
+                   end;
+                 end
+               else begin
+                      get_chunk(pattern,pattern_page,count_channel(hpos),chunk);
+                      If (command_typing <> 0) then
+                        Case count_pos(hpos) of
+                          0,
+                          1: begin
+                               chunk.note := 0;
+                               If is_4op_chan(count_channel(hpos)) and
+                                  (count_channel(hpos) in [2,4,6,11,13,15]) and
+                                  (_4op_to_test <> 0) then
+                                 begin
+                                   get_chunk(pattern,pattern_page,PRED(count_channel(hpos)),chunk2);
+                                   chunk2.note := 0;
+                                   put_chunk(pattern,pattern_page,PRED(count_channel(hpos)),chunk2);
+                                 end;
+              
+                               If midiboard then
+                                 begin
+                                   chunk.instr_def := 0;
+                                   If is_4op_chan(count_channel(hpos)) and
+                                      (count_channel(hpos) in [2,4,6,11,13,15]) and
+                                      (_4op_to_test <> 0) then
+                                     begin
+                                       get_chunk(pattern,pattern_page,PRED(count_channel(hpos)),chunk2);
+                                       chunk2.note := 0;
+                                       chunk2.instr_def := 0;
+                                       put_chunk(pattern,pattern_page,PRED(count_channel(hpos)),chunk2);
+                                     end;
+                                 end;
+              
+                             end;
+                          2,
+                          3: begin
+                               chunk.instr_def := 0;
+                               If is_4op_chan(count_channel(hpos)) and
+                                  (count_channel(hpos) in [2,4,6,11,13,15]) and
+                                  (_4op_to_test <> 0) then
+                                 begin
+                                   get_chunk(pattern,pattern_page,PRED(count_channel(hpos)),chunk2);
+                                   chunk2.note := 0;
+                                   chunk2.instr_def := 0;
+                                   put_chunk(pattern,pattern_page,PRED(count_channel(hpos)),chunk2);
+                                 end;
+                             end;
+              
+                          4,5,
+                          6: begin
+                               chunk.effect_def := 0;
+                               chunk.effect := 0;
+                             end;
+              
+                          7,8,
+                          9: begin
+                               chunk.effect_def2 := 0;
+                               chunk.effect2 := 0;
+                             end;
+                        end
+                      else Case count_pos(hpos) of
+                             0: begin
+                                  chunk.note := 0;
+                                  If is_4op_chan(count_channel(hpos)) and
+                                     (count_channel(hpos) in [2,4,6,11,13,15]) and
+                                     (_4op_to_test <> 0) then
+                                    begin
+                                      get_chunk(pattern,pattern_page,PRED(count_channel(hpos)),chunk2);
+                                      chunk2.note := 0;
+                                      put_chunk(pattern,pattern_page,PRED(count_channel(hpos)),chunk2);
+                                    end;
+              
+                                  If midiboard then
+                                    begin
+                                      chunk.instr_def := 0;
+                                      If is_4op_chan(count_channel(hpos)) and
+                                         (count_channel(hpos) in [2,4,6,11,13,15]) and
+                                         (_4op_to_test <> 0) then
+                                        begin
+                                          get_chunk(pattern,pattern_page,PRED(count_channel(hpos)),chunk2);
+                                          chunk2.note := 0;
+                                          chunk2.instr_def := 0;
+                                          put_chunk(pattern,pattern_page,PRED(count_channel(hpos)),chunk2);
+                                        end;
+                                    end;
                                 end;
-                            end;
-
-                        end;
-                     2,
-                     3: begin
-                          chunk.instr_def := 0;
-                          If is_4op_chan(count_channel(hpos)) and
-                             (count_channel(hpos) in [2,4,6,11,13,15]) and
-                             (_4op_to_test <> 0) then
-                            begin
-                              get_chunk(pattern,pattern_page,PRED(count_channel(hpos)),chunk2);
-                              chunk2.note := 0;
-                              chunk2.instr_def := 0;
-                              put_chunk(pattern,pattern_page,PRED(count_channel(hpos)),chunk2);
-                            end;
-                        end;
-
-                     4,5,
-                     6: begin
-                          chunk.effect_def := 0;
-                          chunk.effect := 0;
-                        end;
-
-                     7,8,
-                     9: begin
-                          chunk.effect_def2 := 0;
-                          chunk.effect2 := 0;
-                        end;
-                   end
-                 else Case count_pos(hpos) of
-                        0: begin
-                             chunk.note := 0;
-                             If is_4op_chan(count_channel(hpos)) and
-                                (count_channel(hpos) in [2,4,6,11,13,15]) and
-                                (_4op_to_test <> 0) then
-                               begin
-                                 get_chunk(pattern,pattern_page,PRED(count_channel(hpos)),chunk2);
-                                 chunk2.note := 0;
-                                 put_chunk(pattern,pattern_page,PRED(count_channel(hpos)),chunk2);
-                               end;
-
-                             If midiboard then
-                               begin
-                                 chunk.instr_def := 0;
-                                 If is_4op_chan(count_channel(hpos)) and
-                                    (count_channel(hpos) in [2,4,6,11,13,15]) and
-                                    (_4op_to_test <> 0) then
-                                   begin
-                                     get_chunk(pattern,pattern_page,PRED(count_channel(hpos)),chunk2);
-                                     chunk2.note := 0;
-                                     chunk2.instr_def := 0;
-                                     put_chunk(pattern,pattern_page,PRED(count_channel(hpos)),chunk2);
-                                   end;
-                               end;
+              
+                             1: begin
+                                  chunk.instr_def := 0;
+                                  If is_4op_chan(count_channel(hpos)) and
+                                     (count_channel(hpos) in [2,4,6,11,13,15]) and
+                                     (_4op_to_test <> 0) then
+                                    begin
+                                      get_chunk(pattern,pattern_page,PRED(count_channel(hpos)),chunk2);
+                                      chunk2.note := 0;
+                                      chunk2.instr_def := 0;
+                                      put_chunk(pattern,pattern_page,PRED(count_channel(hpos)),chunk2);
+                                    end;
+                                end;
+              
+                             2: begin chunk.effect_def := 0; chunk.effect := 0; end;
+                             3: begin chunk.effect_def2 := 0; chunk.effect2 := 0; end;
                            end;
-
-                        1: begin
-                             chunk.instr_def := 0;
-                             If is_4op_chan(count_channel(hpos)) and
-                                (count_channel(hpos) in [2,4,6,11,13,15]) and
-                                (_4op_to_test <> 0) then
-                               begin
-                                 get_chunk(pattern,pattern_page,PRED(count_channel(hpos)),chunk2);
-                                 chunk2.note := 0;
-                                 chunk2.instr_def := 0;
-                                 put_chunk(pattern,pattern_page,PRED(count_channel(hpos)),chunk2);
-                               end;
-                           end;
-
-                        2: begin chunk.effect_def := 0; chunk.effect := 0; end;
-                        3: begin chunk.effect_def2 := 0; chunk.effect2 := 0; end;
+              
+                      put_chunk(pattern,pattern_page,count_channel(hpos),chunk);
+                      Case backspace_dir of
+                        1: If page < PRED(songdata.patt_len) then Inc(page)
+                           else If cycle_pattern then page := 0;
+                        2: If page > 0 then Dec(page)
+                           else If cycle_pattern then page := PRED(songdata.patt_len);
                       end;
-
-                 put_chunk(pattern,pattern_page,count_channel(hpos),chunk);
-                 Case backspace_dir of
-                   1: If page < PRED(songdata.patt_len) then Inc(page)
-                      else If cycle_pattern then page := 0;
-                   2: If page > 0 then Dec(page)
-                      else If cycle_pattern then page := PRED(songdata.patt_len);
-                 end;
-               end;
+                    end;
 
       kCtPgUP: If marking then
                  transpose_custom_area(ttTransposeUp,
@@ -2858,8 +3075,32 @@ begin
       kCtrlE:  MACRO_EDITOR(current_inst,TRUE);
       kCtrlM:  MACRO_BROWSER(TRUE,TRUE);
 
-      kCtLEFT: If (play_status = isPlaying) then rewind := TRUE;
-      kCtRGHT: If (play_status = isPlaying) then fast_forward := TRUE;
+      kCtLEFT: If track_notes then
+                 begin
+                 If (track_chan_start = count_channel(hpos)) and (nm_track_chan > 1) then
+                   Dec(nm_track_chan)
+                 else If (track_chan_start > chan_pos) then
+                        begin
+                          Dec(track_chan_start);
+                          Inc(nm_track_chan);
+                        end
+                 end
+               else If NOT debugging and (play_status = isPlaying) then
+                      rewind := TRUE;
+
+      kCtRGHT: If track_notes then
+                 begin
+                 If (track_chan_start = count_channel(hpos)) and
+                    (track_chan_start+nm_track_chan-chan_pos < max(MAX_TRACKS,songdata.nm_tracks)) then
+                   Inc(nm_track_chan)
+                 else If (track_chan_start < count_channel(hpos)) then
+                        begin
+                          Inc(track_chan_start);
+                          Dec(nm_track_chan);
+                        end
+                 end
+               else If (play_status = isPlaying) then
+                      fast_forward := TRUE;
 
       kCtENTR: If play_single_patt then current_line := 0
                else
@@ -2886,39 +3127,40 @@ begin
                                else temps := 'pattern_editor';
                  If NOT marking and (sdl_opl3_emulator = 1) and
                     opl3_channel_recording_mode then HELP('wav_recorder')
-                 else begin
-                        get_chunk(pattern,page,count_channel(hpos),chunk);
-                        If NOT marking and ((NOT (command_typing <> 0) and (count_pos(hpos) = 2)) or
-                           ((command_typing <> 0) and (count_pos(hpos) in [4,5,6]))) then
-                          temp1 := chunk.effect_def+(chunk.effect DIV 16) SHL 8
-                        else If NOT marking and ((NOT (command_typing <> 0) and (count_pos(hpos) = 3)) or
-                                ((command_typing <> 0) and (count_pos(hpos) in [7,8,9]))) then
-                               temp1 := chunk.effect_def2+(chunk.effect2 DIV 16) SHL 8
-                             else temp1 := WORD_NULL;
-
-                         If (temp1 <> WORD_NULL) then
-                          Case LO(temp1) of
-                            ef_VolSlideFine..ef_FSlDownFineVSlF:
-                              temps := 'effects_page2';
-                            ef_Extended:
-                              Case HI(temp1) of
-                                ef_ex_SetTremDepth..ef_ex_MacroKOffLoop:
-                                  temps := 'effects_page3';
-                                ef_ex_ExtendedCmd:
-                                  temps := 'effects_page4';
-                              end;
-                            ef_SetGlobalVolume..ef_ForceInsVolume:
-                              temps := 'effects_page4';
-                            ef_Extended3:
-                              temps := 'effects_page5';
-                            ef_Extended2,
-                            ef_ExtraFineArpeggio..ef_ExtraFineTremolo:
-                              temps := 'effects_page6';
-                            ef_SetCustomSpeedTab:
-                              temps := 'effects_page7';
-                          end;
-                        HELP(temps);
-                      end;
+                 else If track_notes then HELP('note_recorder')
+                      else begin
+                             get_chunk(pattern,page,count_channel(hpos),chunk);
+                             If NOT marking and ((NOT (command_typing <> 0) and (count_pos(hpos) = 2)) or
+                                ((command_typing <> 0) and (count_pos(hpos) in [4,5,6]))) then
+                               temp1 := chunk.effect_def+(chunk.effect DIV 16) SHL 8
+                             else If NOT marking and ((NOT (command_typing <> 0) and (count_pos(hpos) = 3)) or
+                                     ((command_typing <> 0) and (count_pos(hpos) in [7,8,9]))) then
+                                    temp1 := chunk.effect_def2+(chunk.effect2 DIV 16) SHL 8
+                                  else temp1 := WORD_NULL;
+                       
+                             If (temp1 <> WORD_NULL) then
+                               Case LO(temp1) of
+                                 ef_VolSlideFine..ef_FSlDownFineVSlF:
+                                   temps := 'effects_page2';
+                                 ef_Extended:
+                                   Case HI(temp1) of
+                                     ef_ex_SetTremDepth..ef_ex_MacroKOffLoop:
+                                       temps := 'effects_page3';
+                                     ef_ex_ExtendedCmd:
+                                       temps := 'effects_page4';
+                                   end;
+                                 ef_SetGlobalVolume..ef_ForceInsVolume:
+                                   temps := 'effects_page4';
+                                 ef_Extended3:
+                                   temps := 'effects_page5';
+                                 ef_Extended2,
+                                 ef_ExtraFineArpeggio..ef_ExtraFineTremolo:
+                                   temps := 'effects_page6';
+                                 ef_SetCustomSpeedTab:
+                                   temps := 'effects_page7';
+                               end;
+                             HELP(temps);
+                           end;
                end;
       kF2,
       kShF2,
@@ -2944,76 +3186,79 @@ begin
       kCtrlA:  NUKE;
       kF5,
       kAltF5,
-      kShF5:   If play_single_patt and (play_status = isPaused) then
-                 begin
-                   replay_forbidden := FALSE;
-                   play_status := isPlaying;
-                   If (shift_pressed and NOT trace_by_default) or
-                      (NOT shift_pressed and trace_by_default) then
-                     begin
-                       temp1 := PATTERN_trace;
-                       If (temp1 = kF10) then
-                         begin
-                           fkey := temp1;
-                           nope := TRUE;
-                         end;
-                     end;
-                 end
-               else
-                 Case play_status of
-                   isPlaying: If (shift_pressed and NOT trace_by_default) or
-                                 (NOT shift_pressed and trace_by_default) then
-                                begin
+      kShF5:   begin
+                 track_notes := FALSE;
+                 If play_single_patt and (play_status = isPaused) then
+                   begin
+                     replay_forbidden := FALSE;
+                     play_status := isPlaying;
+                     If (shift_pressed and NOT trace_by_default) or
+                        (NOT shift_pressed and trace_by_default) then
+                       begin
+                         temp1 := PATTERN_trace;
+                         If (temp1 = kF10) then
+                           begin
+                             fkey := temp1;
+                             nope := TRUE;
+                           end;
+                       end;
+                   end
+                 else
+                   Case play_status of
+                     isPlaying: If (shift_pressed and NOT trace_by_default) or
+                                   (NOT shift_pressed and trace_by_default) then
+                                  begin
+                                    If (NOT nosync_by_default and (fkey = kAltF5)) or
+                                       (nosync_by_default and (fkey = kF5)) then
+                                      no_sync_playing := TRUE;
+             
+                                    temp1 := PATTERN_trace;
+                                    If (temp1 = kF10) then
+                                      begin
+                                        fkey := temp1;
+                                        nope := TRUE;
+                                      end;
+                                  end;
+             
+                     isStopped: begin
                                   If (NOT nosync_by_default and (fkey = kAltF5)) or
                                      (nosync_by_default and (fkey = kF5)) then
                                     no_sync_playing := TRUE;
-
-                                  temp1 := PATTERN_trace;
-                                  If (temp1 = kF10) then
+             
+                                  start_playing;
+                                  If (shift_pressed and NOT trace_by_default) or
+                                     (NOT shift_pressed and trace_by_default) then
                                     begin
-                                      fkey := temp1;
-                                      nope := TRUE;
+                                      temp1 := PATTERN_trace;
+                                      If (temp1 = kF10) then
+                                        begin
+                                          fkey := temp1;
+                                          nope := TRUE;
+                                        end;
                                     end;
                                 end;
-
-                   isStopped: begin
-                                If (NOT nosync_by_default and (fkey = kAltF5)) or
-                                   (nosync_by_default and (fkey = kF5)) then
-                                  no_sync_playing := TRUE;
-
-                                start_playing;
-                                If (shift_pressed and NOT trace_by_default) or
-                                   (NOT shift_pressed and trace_by_default) then
-                                  begin
-                                    temp1 := PATTERN_trace;
-                                    If (temp1 = kF10) then
-                                      begin
-                                        fkey := temp1;
-                                        nope := TRUE;
-                                      end;
-                                  end;
-                              end;
-
-                   isPaused:  begin
-                                replay_forbidden := FALSE;
-                                play_status := isPlaying;
-
-                                If (NOT nosync_by_default and (fkey = kAltF5)) or
-                                   (nosync_by_default and (fkey = kF5)) then
-                                  no_sync_playing := TRUE;
-
-                                If (shift_pressed and NOT trace_by_default) or
-                                   (NOT shift_pressed and trace_by_default) then
-                                  begin
-                                    temp1 := PATTERN_trace;
-                                    If (temp1 = kF10) then
-                                      begin
-                                        fkey := temp1;
-                                        nope := TRUE;
-                                      end;
-                                  end;
-                              end;
-                 end;
+             
+                     isPaused:  begin
+                                  replay_forbidden := FALSE;
+                                  play_status := isPlaying;
+             
+                                  If (NOT nosync_by_default and (fkey = kAltF5)) or
+                                     (nosync_by_default and (fkey = kF5)) then
+                                    no_sync_playing := TRUE;
+             
+                                  If (shift_pressed and NOT trace_by_default) or
+                                     (NOT shift_pressed and trace_by_default) then
+                                    begin
+                                      temp1 := PATTERN_trace;
+                                      If (temp1 = kF10) then
+                                        begin
+                                          fkey := temp1;
+                                          nope := TRUE;
+                                        end;
+                                    end;
+                                end;
+                   end;
+               end;
 
       kF6:     Case play_status of
                  isPlaying: begin
@@ -3027,53 +3272,56 @@ begin
                             end;
                end;
 
-      kShF6:   If NOT replay_forbidden then
-                 begin
-                   debugging := TRUE;
-                   play_status := isPlaying;
-                   temp1 := PATTERN_trace;
-                   If (temp1 = kF10) then
-                     begin
-                       fkey := temp1;
-                       nope := TRUE;
-                     end;
-                 end
-               else If NOT play_single_patt and
-                       (calc_pattern_pos(pattern) <> BYTE_NULL) then
-                      begin
-                        fade_out_playback(FALSE);
-                        calibrate_player(calc_pattern_pos(pattern),pattern_page,TRUE,TRUE);
-                        If (play_status <> isStopped) then
-                          begin
-                            debugging := TRUE;
-                            play_status := isPlaying;
-                            replay_forbidden := FALSE;
-                            PATTERN_ORDER_page_refresh(pattord_page);
-                            PATTERN_page_refresh(pattern_page);
-                            temp1 := PATTERN_trace;
-                            If (temp1 = kF10) then
-                              begin
-                                fkey := temp1;
-                                nope := TRUE;
-                              end;
-                          end;
-                      end
-                    else If (calc_pattern_pos(pattern) = BYTE_NULL) then
-                           begin
-                             fade_out_playback(FALSE);
-                             play_single_patt := TRUE;
-                             no_sync_playing := TRUE;
-                             start_pattern := pattern_patt;
-                             start_line := pattern_page;
-                             start_playing;
-                             debugging := TRUE;
-                             temp1 := PATTERN_trace;
-                             If (temp1 = kF10) then
-                               begin
-                                 fkey := temp1;
-                                 nope := TRUE;
-                               end;
-                           end;
+      kShF6:   begin
+                 track_notes := FALSE;
+                 If NOT replay_forbidden then
+                   begin
+                     debugging := TRUE;
+                     play_status := isPlaying;
+                     temp1 := PATTERN_trace;
+                     If (temp1 = kF10) then
+                       begin
+                         fkey := temp1;
+                         nope := TRUE;
+                       end;
+                   end
+                 else If NOT play_single_patt and
+                         (calc_pattern_pos(pattern) <> BYTE_NULL) then
+                        begin
+                          fade_out_playback(FALSE);
+                          calibrate_player(calc_pattern_pos(pattern),pattern_page,TRUE,TRUE);
+                          If (play_status <> isStopped) then
+                            begin
+                              debugging := TRUE;
+                              play_status := isPlaying;
+                              replay_forbidden := FALSE;
+                              PATTERN_ORDER_page_refresh(pattord_page);
+                              PATTERN_page_refresh(pattern_page);
+                              temp1 := PATTERN_trace;
+                              If (temp1 = kF10) then
+                                begin
+                                  fkey := temp1;
+                                  nope := TRUE;
+                                end;
+                            end;
+                        end
+                      else If (calc_pattern_pos(pattern) = BYTE_NULL) then
+                             begin
+                               fade_out_playback(FALSE);
+                               play_single_patt := TRUE;
+                               no_sync_playing := TRUE;
+                               start_pattern := pattern_patt;
+                               start_line := pattern_page;
+                               start_playing;
+                               debugging := TRUE;
+                               temp1 := PATTERN_trace;
+                               If (temp1 = kF10) then
+                                 begin
+                                   fkey := temp1;
+                                   nope := TRUE;
+                                 end;
+                             end;
+               end;
 
       kAltF6:  If NOT play_single_patt then
                  begin
@@ -3441,160 +3689,201 @@ begin
        midiboard then
       begin
         nope := FALSE;
+        If track_notes then curr_ch := track_chan_start
+        else curr_ch := count_channel(hpos);
+        track_ch := 0;
         flag := FALSE;
-
+        FillChar(track_ch_key,SizeOf(track_ch_key),BYTE_NULL);        
         If NOT ctrl_pressed and NOT alt_pressed then
-          For temp1 := 1 to 29 do
-            If (board_scancodes[temp1] = HI(fkey)) then
+          For idx := 1 to 29 do
+            If (scankey(board_scancodes[idx])) then
               begin
                 flag := TRUE;
-                BREAK;
-              end
-            else
-              If shift_pressed and (board_scancodes[temp1] = HI(fkey)) then
-                begin
-                  flag := TRUE;
-                  BREAK;
-                end;
+                If NOT track_notes or NOT (track_ch < nm_track_chan) then
+                  begin
+                    track_ch_key[1] := idx;
+                    BREAK;
+                  end  
+                else begin
+                       Inc(track_ch);
+                       track_ch_key[track_ch] := idx;
+                     end;  
+              end;
 
         fkey_X := fkey;
         If ((fkey = kSPACE) or
             (((fkey = kWeird) or
               (flag AND (count_pos(hpos) = 0))) and
-               NOT ((fkey = kWeird) and (count_pos(hpos) >= 2)) and
+              (NOT ((fkey = kWeird) and (count_pos(hpos) >= 2)) and
                     NOT (is_4op_chan(count_channel(hpos)) and
-                        (count_channel(hpos) in [1,3,5,10,12,14])))) then
+                        (count_channel(hpos) in [1,3,5,10,12,14]))) or track_notes)) then             
           begin
-            If (fkey = kSPACE) or (fkey = kWeird) or
-               (temp1+12*(current_octave-1) in [1..12*8+1]) then
-              begin
-                If (fkey <> kSPACE) and
-                   NOT (is_4op_chan(count_channel(hpos)) and
-                       (count_channel(hpos) in [1,3,5,10,12,14])) then
-                  begin
-                    get_chunk(pattern,page,count_channel(hpos),chunk);
-                    If (fkey <> kWeird) then
+            If track_notes then temp1 := nm_track_chan
+            else temp1 := 1;          
+            If track_notes and (fkey <> kSPACE) then track_notes_ins := TRUE
+            else track_notes_ins := FALSE;
+            idx2 := 1;
+            
+            If (fkey <> kSPACE) then
+              For idx := 1 to temp1 do     
+              If (fkey = kWeird) or
+                 ((track_ch_key[idx2] <> BYTE_NULL) and
+                  (track_ch_key[idx2]+12*(current_octave-1) in [1..12*8+1])) then
+                begin
+                  If (fkey <> kSPACE) and
+                     NOT (is_4op_chan(curr_ch+idx-1) and
+                         (curr_ch+idx-1 in [1,3,5,10,12,14])) then
                       begin
-                        If NOT right_shift_pressed then
-                          chunk.note := temp1+12*(current_octave-1)
-                        else chunk.note := temp1+12*(current_octave-1)+fixed_note_flag;
-                        If NOT (chunk.effect_def in [ef_TonePortamento,
-                                                     ef_TPortamVolSlide]) then
+                        get_chunk(pattern,page,curr_ch+idx-1,chunk);
+                        If (fkey <> kWeird) then
                           begin
-                            chunk.instr_def := current_inst;
-                            If is_4op_chan(count_channel(hpos)) and
-                               (count_channel(hpos) in [2,4,6,11,13,15]) and
-                               (_4op_to_test <> 0) then
+                            If NOT right_shift_pressed then
+                              chunk.note := track_ch_key[idx2]+12*(current_octave-1)
+                            else chunk.note := track_ch_key[idx2]+12*(current_octave-1)+fixed_note_flag;
+                            If NOT (chunk.effect_def in [ef_TonePortamento,
+                                                         ef_TPortamVolSlide]) then
                               begin
-                                get_chunk(pattern,pattern_page,PRED(count_channel(hpos)),chunk2);
-                                chunk2.note := 0;
-                                chunk2.instr_def := HI(_4op_to_test);
-                                put_chunk(pattern,pattern_page,PRED(count_channel(hpos)),chunk2);
-                              end;
+                                chunk.instr_def := current_inst;
+                                If is_4op_chan(curr_ch+idx-1) and
+                                   (curr_ch+idx-1 in [2,4,6,11,13,15]) and
+                                   (_4op_to_test <> 0) then
+                                  begin
+                                    get_chunk(pattern,pattern_page,PRED(curr_ch)+idx-1,chunk2);
+                                    chunk2.note := 0;
+                                    If track_notes_ins then
+                                      chunk2.instr_def := HI(_4op_to_test)
+                                    else chunk2.instr_def := voice_table[PRED(curr_ch)+idx-1];
+                                    If channel_flag[PRED(curr_ch)+idx-1] then
+                                      put_chunk(pattern,pattern_page,PRED(curr_ch)+idx-1,chunk2);
+                                  end;
+                              end
+                            else chunk.instr_def := 0;
                           end
-                        else chunk.instr_def := 0;
+                        else begin
+                               chunk.note := BYTE_NULL;
+                               chunk.instr_def := 0;
+                             end;
+                        If channel_flag[curr_ch+idx-1] then
+                          begin
+                            put_chunk(pattern,page,curr_ch+idx-1,chunk);
+                            Inc(idx2);
+                          end;  
+                      end;
+                end;
+                fkey := kSPACE;
+                If track_notes then
+                  begin
+                    If (calc_pattern_pos(pattern) <> BYTE_NULL) then
+                      begin
+                        fade_out_playback(FALSE);
+                        calibrate_player(calc_pattern_pos(pattern),page,TRUE,TRUE);
                       end
                     else begin
-                           chunk.note := BYTE_NULL;
-                           chunk.instr_def := 0;
+                           start_pattern := pattern;
+                           start_line := page;
+                           play_single_patt := TRUE;
+                           no_sync_playing := TRUE;
+                           start_playing;
+                           repeat_pattern := TRUE;
                          end;
-                    put_chunk(pattern,page,count_channel(hpos),chunk);
-                    fkey := kSPACE;
-                  end;
-
-                If (songdata.pattern_order[pattern] <> BYTE_NULL) and
-                   NOT ((play_status <> isStopped) and (fkey_X = kSPACE)) then
-                  begin
-                    status_backup.replay_forbidden := replay_forbidden;
-                    status_backup.play_status := play_status;
-
-                    If (status_backup.play_status <> isStopped) then
+                    temp1 := PATTERN_trace;
+                    If (temp1 = kF10) then
                       begin
-                        replay_forbidden := TRUE;
-                        If (play_status <> isStopped) then play_status := isPaused;
-                        nul_volume_bars;
-
-                        Move(event_table,event_table_backup,SizeOf(event_table));
-                        Move(voice_table,voice_table_backup,SizeOf(voice_table));
-                        Move(volume_table,volume_table_backup,SizeOf(volume_table));
-                        Move(pan_lock,pan_lock_backup,SizeOf(pan_lock));
-                        Move(volume_lock,volume_lock_backup,SizeOf(volume_lock));
-                        Move(peak_lock,peak_lock_backup,SizeOf(volume_lock));
-                        Move(panning_table,panning_table_backup,SizeOf(panning_table));
-                        FillChar(pan_lock,SizeOf(pan_lock),0);
-                        FillChar(volume_lock,SizeOf(volume_lock),0);
-                        FillChar(peak_lock,SizeOf(volume_lock),0);
-
-                        reset_player;
-                        Move(fmpar_table,fmpar_table_backup,SizeOf(fmpar_table_backup));
-                        Move(freq_table,freq_table_backup,SizeOf(freq_table));
-                        Move(freqtable2,freqtable2_backup,SizeOf(freqtable2));
-                        Move(keyoff_loop,keyoff_loop_backup,SizeOf(keyoff_loop));
-                        FillChar(keyoff_loop,SizeOf(keyoff_loop),FALSE);
+                        fkey := temp1;
+                        nope := TRUE;
                       end;
-
-                    If NOT (debugging and (play_status = isStopped)) then
-                      begin
-                        init_player;
-                        debugging := TRUE;
-                      end;
-
-                    old_order := current_order;
-                    old_pattern := current_pattern;
-                    old_line := current_line;
-                    old_speed := speed;
-                    old_tempo := tempo;
-                    current_order := 0;
-                    current_pattern := pattern;
-                    current_line := page;
-                    single_play := TRUE;
-                    poll_proc;
-                    single_play := FALSE;
-                    current_order := old_order;
-                    current_pattern := old_pattern;
-                    current_line := old_line;
-                    speed := old_speed;
-                    tempo := old_tempo;
-
-                    play_status := isStopped;
-                    PATTERN_ORDER_page_refresh(pattord_page);
-                    PATTERN_page_refresh(page);
-                    If (fkey_X <> kSPACE) then wait_until_key_released;
-
-                    If (status_backup.play_status <> isStopped) then
-                      begin
-                        Move(event_table_backup,event_table,SizeOf(event_table));
-                        Move(voice_table_backup,voice_table,SizeOf(voice_table));
-                        Move(volume_table_backup,volume_table,SizeOf(volume_table));
-                        Move(fmpar_table_backup,fmpar_table,SizeOf(fmpar_table));
-                        Move(panning_table_backup,panning_table,SizeOf(panning_table));
-                        reset_player;
-
-                        Move(pan_lock_backup,pan_lock,SizeOf(pan_lock));
-                        Move(volume_lock_backup,volume_lock,SizeOf(volume_lock));
-                        Move(peak_lock_backup,peak_lock,SizeOf(volume_lock));
-
-                        Move(freq_table_backup,freq_table,SizeOf(freq_table));
-                        Move(freqtable2_backup,freqtable2,SizeOf(freqtable2));
-                        Move(keyoff_loop_backup,keyoff_loop,SizeOf(keyoff_loop));
-                        FillChar(macro_table,SizeOf(macro_table),0);
-                        replay_forbidden := status_backup.replay_forbidden;
-                        play_status := status_backup.play_status;
-                        debugging := FALSE;
-                      end;
-
-                    If (page < PRED(songdata.patt_len)) then Inc(page)
-                    else If cycle_pattern then page := 0;
-
-                    If left_shift_pressed and (mark_line <> 0) and mark_lines then
-                      While (page MOD mark_line <> 0) do
-                        If (page < PRED(songdata.patt_len)) then Inc(page)
-                        else If cycle_pattern then page := 0;
-                  end
-                else
-                  If (page < PRED(songdata.patt_len)) then Inc(page)
-                  else If cycle_pattern then page := 0;
-              end;
+                  end                
+                else If (songdata.pattern_order[pattern] <> BYTE_NULL) and
+                        NOT ((play_status <> isStopped) and (fkey_X = kSPACE)) then
+                       begin
+                         status_backup.replay_forbidden := replay_forbidden;
+                         status_backup.play_status := play_status;
+                     
+                         If (status_backup.play_status <> isStopped) then
+                           begin
+                             replay_forbidden := TRUE;
+                             If (play_status <> isStopped) then play_status := isPaused;
+                             nul_volume_bars;
+                     
+                             Move(event_table,event_table_backup,SizeOf(event_table));
+                             Move(voice_table,voice_table_backup,SizeOf(voice_table));
+                             Move(volume_table,volume_table_backup,SizeOf(volume_table));
+                             Move(pan_lock,pan_lock_backup,SizeOf(pan_lock));
+                             Move(volume_lock,volume_lock_backup,SizeOf(volume_lock));
+                             Move(peak_lock,peak_lock_backup,SizeOf(volume_lock));
+                             Move(panning_table,panning_table_backup,SizeOf(panning_table));
+                             FillChar(pan_lock,SizeOf(pan_lock),0);
+                             FillChar(volume_lock,SizeOf(volume_lock),0);
+                             FillChar(peak_lock,SizeOf(volume_lock),0);
+                     
+                             reset_player;
+                             Move(fmpar_table,fmpar_table_backup,SizeOf(fmpar_table_backup));
+                             Move(freq_table,freq_table_backup,SizeOf(freq_table));
+                             Move(freqtable2,freqtable2_backup,SizeOf(freqtable2));
+                             Move(keyoff_loop,keyoff_loop_backup,SizeOf(keyoff_loop));
+                             FillChar(keyoff_loop,SizeOf(keyoff_loop),FALSE);
+                           end;
+                     
+                         If NOT (debugging and (play_status = isStopped)) then
+                           begin
+                             init_player;
+                             debugging := TRUE;
+                           end;
+                     
+                         old_order := current_order;
+                         old_pattern := current_pattern;
+                         old_line := current_line;
+                         old_speed := speed;
+                         old_tempo := tempo;
+                         current_order := 0;
+                         current_pattern := pattern;
+                         current_line := page;
+                         single_play := TRUE;
+                         poll_proc;
+                         single_play := FALSE;
+                         current_order := old_order;
+                         current_pattern := old_pattern;
+                         current_line := old_line;
+                         speed := old_speed;
+                         tempo := old_tempo;
+                     
+                         play_status := isStopped;
+                         PATTERN_ORDER_page_refresh(pattord_page);
+                         PATTERN_page_refresh(page);
+                         If (fkey_X <> kSPACE) then wait_until_key_released;
+                     
+                         If (status_backup.play_status <> isStopped) then
+                           begin
+                             Move(event_table_backup,event_table,SizeOf(event_table));
+                             Move(voice_table_backup,voice_table,SizeOf(voice_table));
+                             Move(volume_table_backup,volume_table,SizeOf(volume_table));
+                             Move(fmpar_table_backup,fmpar_table,SizeOf(fmpar_table));
+                             Move(panning_table_backup,panning_table,SizeOf(panning_table));
+                             reset_player;
+                     
+                             Move(pan_lock_backup,pan_lock,SizeOf(pan_lock));
+                             Move(volume_lock_backup,volume_lock,SizeOf(volume_lock));
+                             Move(peak_lock_backup,peak_lock,SizeOf(volume_lock));
+                     
+                             Move(freq_table_backup,freq_table,SizeOf(freq_table));
+                             Move(freqtable2_backup,freqtable2,SizeOf(freqtable2));
+                             Move(keyoff_loop_backup,keyoff_loop,SizeOf(keyoff_loop));
+                             FillChar(macro_table,SizeOf(macro_table),0);
+                             replay_forbidden := status_backup.replay_forbidden;
+                             play_status := status_backup.play_status;
+                             debugging := FALSE;
+                           end;
+                     
+                         If (page < PRED(songdata.patt_len)) then Inc(page)
+                         else If cycle_pattern then page := 0;
+                     
+                         If left_shift_pressed and (mark_line <> 0) and mark_lines then
+                           While (page MOD mark_line <> 0) do
+                             If (page < PRED(songdata.patt_len)) then Inc(page)
+                             else If cycle_pattern then page := 0;
+                       end
+                     else If (page < PRED(songdata.patt_len)) then Inc(page)
+                          else If cycle_pattern then page := 0;
           end
         else If (fkey <> kUp)     and (fkey <> kDown)   and
                 (fkey <> kHome)   and (fkey <> kEnd)    and
@@ -3649,6 +3938,12 @@ begin
              debugging := FALSE;
            end;
 
+     If track_notes and (hpos <> old_hpos) then
+       begin
+         track_notes := FALSE;
+         nm_track_chan := 1;
+       end;      
+
      If nope and NOT midiboard and (count_pos(hpos) = 0) and
         NOT (is_4op_chan(count_channel(hpos)) and
             (count_channel(hpos) in [1,3,5,10,12,14])) and
@@ -3663,7 +3958,7 @@ begin
         is_setting.terminate_keys[3] := kTAB;
 
         Repeat
-               tstr := InputStr(tstr,08+pos3[1+(count_channel(hpos)-PRED(chan_pos)-1)*4],
+          tstr := InputStr(tstr,08+pos3[1+(count_channel(hpos)-PRED(chan_pos)-1)*4],
                                 11+PRED(MAX_PATTERN_ROWS DIV 2),3,3,
                            pattern_input_bckg+pattern_input,
                            pattern_input_warn+pattern_input);
@@ -3716,7 +4011,7 @@ begin
         nope := FALSE;
       end;
 
-    If NOT (command_typing <> 0) and nope and (count_pos(hpos) = 1) and
+    If NOT (command_typing <> 0) and NOT track_notes and nope and (count_pos(hpos) = 1) and
        (UpCase(CHAR(LO(fkey))) in ['0'..'9','A'..'F']) then
       begin
         nope := FALSE;
@@ -3764,7 +4059,7 @@ begin
         nope := FALSE;
       end;
 
-    If NOT (command_typing <> 0) and nope and (count_pos(hpos) = 2) and
+    If NOT (command_typing <> 0) and NOT track_notes and nope and (count_pos(hpos) = 2) and
        (UpCase(CHAR(LO(fkey))) in ['0'..'9','A'..'Z','&','%','!','@','=','#','$','~','^','`']) then
       begin
         nope := FALSE;
@@ -3807,7 +4102,7 @@ begin
         nope := FALSE;
       end;
 
-    If NOT (command_typing <> 0) and nope and (count_pos(hpos) = 3) and
+    If NOT (command_typing <> 0) and NOT track_notes and nope and (count_pos(hpos) = 3) and
        (UpCase(CHAR(LO(fkey))) in ['0'..'9','A'..'Z','&','%','!','@','=','#','$','~','^','`']) then
       begin
         nope := FALSE;
@@ -3850,7 +4145,7 @@ begin
         nope := FALSE;
       end;
 
-      If NOT marking and nope then
+      If NOT marking and NOT track_notes and nope then
         If (command_typing <> 0) and
            ((count_pos(hpos) > 0) and
             (UpCase(CHAR(LO(fkey))) in ['0'..'9','A'..'Z','&','%','!','@','=','#','$','~','^','`'])) then
@@ -3977,6 +4272,12 @@ _end:
     // keyboard_reset_buffer;
   until (nope and ((fkey = kENTER) or (fkey = kESC) or (fkey = kF10))) or _force_program_quit;
 
+  If track_notes then
+    begin
+      track_notes := FALSE;
+      stop_playing;
+    end;
+    
   PATTERN_ORDER_page_refresh(pattord_page);
   PATTERN_page_refresh(page);
 end;

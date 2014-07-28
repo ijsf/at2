@@ -4302,6 +4302,9 @@ _end:
     until (is_environment.keystroke = kESC) or
           (is_environment.keystroke = kF1);
 
+  If (nm_track_chan > songdata.nm_tracks) then
+    nm_track_chan := songdata.nm_tracks;
+    
   songdata.common_flag := BYTE(speed_update)+BYTE(lockvol) SHL 1+
                                              BYTE(lockVP)  SHL 2+
                                              tremolo_depth SHL 3+
@@ -11616,6 +11619,9 @@ begin
           POSITIONS_reset;
           songdata_title := 'noname.';
           FillChar(channel_flag,SizeOf(channel_flag),BYTE(TRUE));
+          track_notes := FALSE;
+          track_chan_start := 1;
+          nm_track_chan := 1;
           remap_mtype := 1;
           remap_ins1 := 1;
           remap_ins2 := 1;
@@ -11949,6 +11955,9 @@ _jmp1:
            If NOT quick_cmd then
              begin
                FillChar(channel_flag,SizeOf(channel_flag),BYTE(TRUE));
+               track_notes := FALSE;
+               track_chan_start := 1;
+               nm_track_chan := 1;
                remap_mtype := 1;
                remap_ins1 := 1;
                remap_ins2 := 1;

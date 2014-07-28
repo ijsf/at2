@@ -154,6 +154,8 @@ const
   chan_pos: Byte = 1;
   chpos: Byte = 1;
   transpos: Byte = 1;
+  track_chan_start: Byte = 1;
+  nm_track_chan: Byte = 1;
 
 const
   current_order: Byte = 0;
@@ -187,6 +189,8 @@ var
   load_flag,load_flag_alt: Byte;
   reset_chan: array[1..20] of Boolean;
   reset_adsrw: array[1..20] of Boolean;
+  ignore_note_once: array[1..20] of Boolean;
+  track_notes_ins: Boolean;
 
 var
   speed_update,lockvol,panlock,lockVP: Boolean;
@@ -291,6 +295,7 @@ procedure count_instruments(var instruments: Byte);
 procedure init_songdata;
 procedure update_instr_data(ins: Byte);
 procedure load_instrument(var data; chan: Byte);
+procedure output_note(note,ins,chan: Byte; restart_macro: Boolean);
 
 function  min(value: Longint; minimum: Longint): Longint;
 function  max(value: Longint; maximum: Longint): Longint;
@@ -865,7 +870,7 @@ var
   freq: Word;
 
 begin
-  If (note = 0) and (ftune_table[chan] = 0) then EXIT;
+  If (note = 0) and (ftune_table[chan] = 0) then EXIT;     
   If NOT (note in [1..12*8+1]) then freq := freq_table[chan]
   else begin
          freq := nFreq(note-1)+SHORTINT(ins_parameter(ins,12));
@@ -2399,7 +2404,9 @@ begin
                      (event.effect_def2 = ef_Extended) and
                      (event.effect2 DIV 16 = ef_ex_ExtendedCmd) and
                      (event.effect2 MOD 16 = ef_ex_cmd_NoRestart)) then
-               output_note(event.note,voice_table[chan],chan,TRUE)
+               If NOT ignore_note_once[chan] then
+			     output_note(event.note,voice_table[chan],chan,TRUE)
+			   else
              else output_note_NR(event.note,voice_table[chan],chan,TRUE)
           else If (event_table[chan].note = event_table[chan].note OR keyoff_flag) and
                   ((LO(effect_table[chan]) in [ef_TonePortamento,
@@ -2408,7 +2415,9 @@ begin
                    (LO(effect_table2[chan]) in [ef_TonePortamento,
                                                 ef_TPortamVolSlide,
                                                 ef_TPortamVSlideFine])) then
-                 output_note(event_table[chan].note AND NOT keyoff_flag,voice_table[chan],chan,FALSE)
+                 If NOT ignore_note_once[chan] then
+				   output_note(event_table[chan].note AND NOT keyoff_flag,voice_table[chan],chan,FALSE)
+				 else
                else If (event.note <> 0) then
                       event_table[chan].note := event.note;
 
@@ -2526,6 +2535,8 @@ begin
               If (time_playing > 1/tempo*speed) then
                 time_playing := time_playing-1/tempo*speed
               else time_playing := 0;
+  
+  For chan := 1 to 20 do ignore_note_once[chan] := FALSE;
 end;
 
 procedure portamento_up(chan: Byte; slide: Word; limit: Word);
@@ -3635,7 +3646,7 @@ begin
                          If (fmreg_duration <> 0) then
                            With data[fmreg_pos] do
                              begin
-                               // force KEY-ON with missing ADSR instrument data due to MAME OPL3 emulator
+                               // force KEY-ON with missing ADSR instrument data
                                _force_macro_key_on := FALSE;
                                If (fmreg_pos = 1) then
                                  If _ins_adsr_data_empty(voice_table[chan]) and
@@ -4220,6 +4231,7 @@ begin
   FillChar(reset_adsrw,SizeOf(reset_adsrw),BYTE(FALSE));
   FillChar(keyoff_loop,SizeOf(keyoff_loop),BYTE(FALSE));
   FillChar(macro_table,SizeOf(macro_table),0);
+  FillChar(ignore_note_once,SizeOf(ignore_note_once),FALSE);
 
   If NOT lockvol then FillChar(volume_lock,SizeOf(volume_lock),0)
   else For temp := 1 to 20 do volume_lock[temp] := BOOLEAN(songdata.lock_flags[temp] SHR 4 AND 1);
@@ -5037,6 +5049,7 @@ begin
   If (_name_scrl_pending_frames > 0) then Dec(_name_scrl_pending_frames);
   Inc(_cursor_blink_pending_frames);
   status_refresh;
+  STATUS_LINE_refresh;
 
   If tracing and (@trace_update_proc <> NIL) then trace_update_proc
   else If (play_status = isPlaying) then update_without_trace;

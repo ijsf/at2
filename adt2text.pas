@@ -2,9 +2,9 @@ unit AdT2text;
 interface
 
 const
-{__AT2VER__}at2ver  = '2.4.16';
-{__AT2DAT__}at2date = '07-14-2014';
-{__AT2LNK__}at2link = '10:26am';
+{__AT2VER__}at2ver  = '2.4.17';
+{__AT2DAT__}at2date = '07-28-2014';
+{__AT2LNK__}at2link = '12:07pm';
 
 const
   ascii_line_01 = 'Ú-ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ--ùú               úù-¿';
@@ -45,7 +45,7 @@ uses
     StringIO,DialogIO,TxtScrIO;
 
 const
-  LINES = 1044;
+  LINES = 1072;
   help_data: array[1..LINES] of String[128] = (
     '@topic:general',
     'ÍËÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍ',
@@ -71,8 +71,36 @@ const
     '@input:shift_f8',
     '@input:shift_f9',
     '~[Shift] Space~            Toggle MidiBoard mode ON/OFF',
+    '~^Space~                   Toggle Note Recorder mode ON/OFF',
     '~[Shift] +,-~              Skip to next/previous pattern while Tracing',
     '~+,-~                      Same as above; play pattern from start',
+    '',
+    '@topic:note_recorder',
+    'ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿',
+    '³ `WHEN iN NOTE RECORDER MODE`                                     ³',
+    'ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´',
+    '³ ~^Left,^Right~ ³ Select group of tracks for recording            ³',
+    '³ ~Space~        ³ Start recording from current position using     ³',
+    '³              ³ present instruments in tracks                   ³',
+    '³ ~MBoard keys~  ³ `1) When recording is armed:`                     ³',
+    '³              ³    Permanently set current instrument for all   ³',
+    '³              ³    tracks and start recording with given notes  ³',
+    '³              ³ `2) When recording is started:`                   ³',
+    '³              ³    Write notes to corresponding tracks          ³',
+    '³ ~Backspace~    ³ Clear note/instrument sequence in tracks        ³',
+    '³ ~Up,Down~      ³ Rewind/Fast-Forward while recording             ³',
+    '³ ~[Shift] F6~   ³ Continue in Debug mode from position at cursor  ³',
+    '³ ~F7~           ³ Stop recording and reset starting position;     ³',
+    '³              ³ current group of tracks can be modified         ³',
+    '³ ~F8,F9~        ³ Toggle pattern repeat OFF/ON while recording    ³',
+    '³ ~[Alt] 1..9,0~ ³ Toggle corresponding track ON/OFF               ³',
+    '³ ~[Alt] R~      ³ Reset flags on all tracks                       ³',
+    '³ ~Asterisk~     ³ Reverse ON/OFF on all tracks                    ³',
+    'ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´',
+    '³ In case you need non-continuos track selection, you can choose ³',
+    '³ from already selected group a subset of tracks where notes     ³',
+    '³ will be written by manipulating track ON/OFF flags.            ³',
+    'ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ',
     '',
     'ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿',
     '³ `WHiLE SONG iS PLAYED WiTH TRACE`           ³',
