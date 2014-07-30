@@ -1161,6 +1161,7 @@ begin
                         PATTERN_page_refresh(pattern_page);
                       end;
 
+      kCHmins,
       kNPmins: If NOT play_single_patt then
                  begin
                    temp := current_order;
@@ -1184,6 +1185,7 @@ begin
                      end;
                  end;
 
+      kCHplus,
       kNPplus: If NOT play_single_patt then
                  begin
                    temp := current_order;
@@ -2122,6 +2124,7 @@ begin
                          (fkey = kCtrlF9) or (fkey = kCtLEFT) or
                          (fkey = kCtRGHT) or (fkey = kCtENTR) or
                          (fkey = kAltB)   or (fkey = kAltV)   or
+                         (fkey = kCHmins) or
                          (fkey = kNPplus) or (fkey = kNPmins)))
     or (shift_pressed and
                     NOT ((fkey = kLEFT)   or (fkey = kRIGHT)  or
@@ -2136,7 +2139,8 @@ begin
                                    (fkey = kAltF8)  or (fkey = kShF8)     or
                                    (fkey = kCtrlF8) or (fkey = kAltF9)    or
                                    (fkey = kShF9)   or (fkey = kCtrlF9)   or
-                                   (fkey = kCtLEFT) or (fkey = kCtRGHT))) or
+                                   (fkey = kCtLEFT) or (fkey = kCtRGHT)   or
+                                   (fkey = kCHplus))) or
 
                          (fkey = kCtENTR)))
     then begin

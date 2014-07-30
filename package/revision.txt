@@ -10,12 +10,13 @@ http://www.adlibtracker.net/files/revision.htm
 
 
 * SDL/Win32/Linux version 2.4.17
-  released: 07/28/2014
+  released: 07/28/2014 * 07/30/2014
 
    . fixed ADSR preview update with enhanced screen modes
    . added Note Recorder feature (hotkey: ^Space)
    . changed file cache buffer for OPL3 recording to 512kb
    . added startup files for HQ-modes to program package
+   * fixed some missing usage of non-NUMPAD +/- keys
 
 
 * SDL/Win32/Linux version 2.4.16
