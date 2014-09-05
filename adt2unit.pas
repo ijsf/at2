@@ -3503,6 +3503,7 @@ procedure poll_proc;
 
 var
   temp: Byte;
+  chunk: tCHUNK;
 
 var
   _debug_str_bak_: String;
@@ -3510,6 +3511,17 @@ var
 begin
   _debug_str_bak_ := _debug_str_;
   _debug_str_ := 'ADT2UNIT.PAS:_poll_proc';
+  
+  If track_notes and scankey(SC_BACKSPACE) then
+    For temp := 1 to nm_track_chan do
+      If channel_flag[track_chan_start+temp-1] then
+        begin
+          get_chunk(pattern_patt,pattern_page,track_chan_start+temp-1,chunk);
+          chunk.note := 0;
+          chunk.instr_def := 0;
+          put_chunk(pattern_patt,pattern_page,track_chan_start+temp-1,chunk);
+        end;
+
   If (NOT pattern_delay and (ticks-tick0+1 >= speed)) or
      fast_forward or rewind or single_play then
     begin

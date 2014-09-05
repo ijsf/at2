@@ -9,6 +9,18 @@ For complete AT2 revision history refer to:
 http://www.adlibtracker.net/files/revision.htm
 
 
+* SDL/Win32/Linux version 2.4.18
+  released: 09/05/2014
+
+   . changes in Note Recorder feature:
+     - fixed bug when deleting notes was operating in wrong track
+       if current track view on screen was moved by user;
+       fixed precision with high song speeds (all notes are deleted now :)
+     - added possibility to switch between using custom instrument
+       and using present instruments in tracks (hotkey: Space / [Alt] Space)
+     - improved keyboard reference on Help screen
+
+
 * SDL/Win32/Linux version 2.4.17
   released: 07/28/2014 * 07/30/2014
 

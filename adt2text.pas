@@ -2,9 +2,9 @@ unit AdT2text;
 interface
 
 const
-{__AT2VER__}at2ver  = '2.4.17';
-{__AT2DAT__}at2date = '07-30-2014';
-{__AT2LNK__}at2link = '8:49am';
+{__AT2VER__}at2ver  = '2.4.18';
+{__AT2DAT__}at2date = '09-05-2014';
+{__AT2LNK__}at2link = '1:49pm';
 
 const
   ascii_line_01 = 'Ú-ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ--ùú               úù-¿';
@@ -45,7 +45,7 @@ uses
     StringIO,DialogIO,TxtScrIO;
 
 const
-  LINES = 1072;
+  LINES = 1069;
   help_data: array[1..LINES] of String[128] = (
     '@topic:general',
     'ÍËÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍ',
@@ -76,31 +76,28 @@ const
     '~+,-~                      Same as above; play pattern from start',
     '',
     '@topic:note_recorder',
-    'ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿',
-    '³ `WHEN iN NOTE RECORDER MODE`                                     ³',
-    'ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´',
-    '³ ~^Left,^Right~ ³ Select group of tracks for recording            ³',
-    '³ ~Space~        ³ Start recording from current position using     ³',
-    '³              ³ present instruments in tracks                   ³',
-    '³ ~MBoard keys~  ³ `1) When recording is armed:`                     ³',
-    '³              ³    Permanently set current instrument for all   ³',
-    '³              ³    tracks and start recording with given notes  ³',
-    '³              ³ `2) When recording is started:`                   ³',
-    '³              ³    Write notes to corresponding tracks          ³',
-    '³ ~Backspace~    ³ Clear note/instrument sequence in tracks        ³',
-    '³ ~Up,Down~      ³ Rewind/Fast-Forward while recording             ³',
-    '³ ~[Shift] F6~   ³ Continue in Debug mode from position at cursor  ³',
-    '³ ~F7~           ³ Stop recording and reset starting position;     ³',
-    '³              ³ current group of tracks can be modified         ³',
-    '³ ~F8,F9~        ³ Toggle pattern repeat OFF/ON while recording    ³',
-    '³ ~[Alt] 1..9,0~ ³ Toggle corresponding track ON/OFF               ³',
-    '³ ~[Alt] R~      ³ Reset flags on all tracks                       ³',
-    '³ ~Asterisk~     ³ Reverse ON/OFF on all tracks                    ³',
-    'ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´',
-    '³ In case you need non-continuos track selection, you can choose ³',
-    '³ from already selected group a subset of tracks where notes     ³',
-    '³ will be written by manipulating track ON/OFF flags.            ³',
-    'ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ',
+    'ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿',
+    '³ `WHEN iN NOTE RECORDER MODE`                                         ³',
+    'ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´',
+    '³ ~^Left,^Right~ ³ Select group of tracks for recording                ³',
+    '³ ~Enter~        ³ Start recording from current position ~(*)~           ³',
+    '³ ~Space~        ³ `Toggle` using custom instrument for all tracks ¿     ³@@spec_attr:01@@',
+    '³ ~[Alt] Space~  ³ `Toggle` using present instruments in tracks    Ã (*) ³@@spec_attr:02@@',
+    '³ ~MBoard keys~  ³ Write notes to corresponding tracks           ³     ³',
+    '³ ~F8,F9~        ³ Toggle pattern repeat OFF/ON                  Ù     ³',
+    '³ ~Backspace~    ³ Clear note/instrument sequence in tracks            ³',
+    '³ ~Up,Down~      ³ Rewind/Fast-Forward while recording                 ³',
+    '³ ~[Shift] F6~   ³ Continue in Debug mode from position at cursor      ³',
+    '³ ~F7~           ³ Stop recording and reset starting position;         ³',
+    '³              ³ current group of tracks can be modified             ³',
+    '³ ~[Alt] 1..9,0~ ³ Toggle corresponding track ON/OFF                   ³',
+    '³ ~[Alt] R~      ³ Reset flags on all tracks                           ³',
+    '³ ~Asterisk~     ³ Reverse ON/OFF on all tracks                        ³',
+    'ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´',
+    '³ In case you need non-continuos track selection, you can choose     ³',
+    '³ from already selected group a subset of tracks where notes will be ³',
+    '³ written by manipulating track ON/OFF flags.                        ³',
+    'ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ',
     '',
     'ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿',
     '³ `WHiLE SONG iS PLAYED WiTH TRACE`           ³',
@@ -1145,15 +1142,24 @@ const
 procedure HELP(topic: String);
 
 var
+  spec_attr_table: array[1..255] of Byte;
   temps: String;
   page,temp,fkey: Word;
+  temp2: Byte;
   xstart,ystart,ypos: Byte;
   mpos: Byte;
   mchr: Char;
+  new_atr1,
+  new_atr2,
+  new_atr3: Byte;
+  temp_pos_atr1: Byte;
+  temp_pos_atr2: Byte;
 
 procedure ListCStr(var dest; x,y: Byte;
                              str: String; atr1,atr2,atr3: Byte);
 begin
+  temp_pos_atr1 := Pos('@@attr:',str);
+  temp_pos_atr2 := Pos('@@spec_attr:',str);
   If (Pos('~@@',str) <> 0) then
     begin
       mpos := Pos('~@@',str);
@@ -1176,9 +1182,33 @@ begin
                      atr1,atr2,atr3);
            ShowStr(dest,x+mpos-1,y,mchr,atr3);
          end
-       else ShowC3Str(dest,x,y,
-                      ExpStrR(str,74+Length(str)-C3StrLen(str),' '),
-                      atr1,atr2,atr3);
+       else If (temp_pos_atr1 <> 0) and SameName('@@attr:??,??,??@@',Copy(str,temp_pos_atr1,17)) then
+              begin
+                new_atr1 := Str2num(Copy(str,temp_pos_atr1+7,2),16);
+                If (new_atr1 = 0) then new_atr1 := atr1;
+                new_atr2 := Str2num(Copy(str,temp_pos_atr1+10,2),16);
+                If (new_atr2 = 0) then new_atr2 := atr2;
+                new_atr3 := Str2num(Copy(str,temp_pos_atr1+13,2),16);
+                If (new_atr3 = 0) then new_atr3 := atr3;
+                Delete(str,temp_pos_atr1,17);
+                ShowC3Str(dest,x,y,
+                          ExpStrR(str,74+Length(str)-C3StrLen(str),' '),
+                          new_atr1,new_atr2,new_atr3);
+              end
+            else If (temp_pos_atr2 <> 0) and SameName('@@spec_attr:??@@',Copy(str,temp_pos_atr2,16)) then
+              begin
+                temp2 := Str2num(Copy(str,temp_pos_atr2+12,2),16);
+                If (temp2 = 0) or (spec_attr_table[temp2] = 0) then new_atr3 := atr3
+                else new_atr3 := spec_attr_table[temp2];
+                Delete(str,temp_pos_atr2,16);
+                ShowC3Str(dest,x,y,
+                          ExpStrR(str,74+Length(str)-C3StrLen(str),' '),
+                          atr1,atr2,new_atr3);
+              end
+            else
+              ShowC3Str(dest,x,y,
+                        ExpStrR(str,74+Length(str)-C3StrLen(str),' '),
+                        atr1,atr2,atr3);
 end;
 
 begin
@@ -1187,6 +1217,11 @@ begin
   backup.cursor := GetCursor;
   backup.oldx   := WhereX;
   backup.oldy   := WhereY;
+
+  // assign special attribute values
+  FillChar(spec_attr_table,SizeOf(spec_attr_table),0);
+  spec_attr_table[1] := main_behavior SHL 4 AND $0f0;
+  spec_attr_table[2] := main_hi_stat_line SHL 4 AND $0f0;
 
   HideCursor;
   centered_frame(xstart,ystart,77,MAX_PATTERN_ROWS+8,' HELP ',

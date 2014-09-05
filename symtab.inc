@@ -57,7 +57,7 @@ const
 { /?}	$35,	$2F,	$3F,	$F000,	$F000,	$2F,	$2F,	$3F,	$3F,	SDLK_SLASH,
 {Rshft}	$36,	$FFFF,	$FFFF,	$FFFF,	$FFFF,	$FFFF,	$FFFF,	$FFFF,	$FFFF,	SDLK_RSHIFT,
 {PrtSc}	$37,	$2A,	$F000,	$F000,	$F000,	$2A,	$2A,	$F000,	$F000,	SDLK_PRINT,
-{space}	$39,	$20,	$20,	$20,	$F000,	$20,	$20,	$20,	$20,	SDLK_SPACE,
+{space}	$39,	$20,	$20,	$20,	$20,    $20,	$20,	$20,	$20,	SDLK_SPACE,
 {caps}	$3A,	$FFFF,	$FFFF,	$FFFF,	$FFFF,	$FFFF,	$FFFF,	$FFFF,	$FFFF,	SDLK_CAPSLOCK,
 { F1 }	$3B,	$3B00,	$5400,	$5E00,	$6800,	$3B00,	$3B00,	$5400,	$5400,	SDLK_F1,
 { F2 }	$3C,	$3C00,	$5500,	$5F00,	$6900,	$3C00,	$3C00,	$5500,	$5500,	SDLK_F2,
