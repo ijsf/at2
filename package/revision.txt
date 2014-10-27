@@ -9,6 +9,23 @@ For complete AT2 revision history refer to:
 http://www.adlibtracker.net/files/revision.htm
 
 
+* SDL/Win32/Linux version 2.4.19
+  released: 10/27/2014
+
+   . fixed switchover from offline to normal Debug mode with ^Enter
+   . fixed not working instrument selection with no 4OP track extension
+   . fixed position bugs in File Selector and updated layout for Linux
+   . fixed lately introduced bug in Tone Portamento (arrgh)
+   . fixed Tone Portamento with offline Debug mode and Note Recorder
+   . fixed usage of non-NUMPAD asterisk (*) key for track ON/OFF flags
+   . fixed/improved Replace function and added new shortkey functions
+   . fixed pattern/order editor refresh bug occuring with small song speeds
+   . added synchronized instrument/command processing for selected tracks
+     when Note Recorder mode is armed
+   . added quick reset of track group selection (hotkey: [Alt] Q)
+   . improved layout in Instrument Control panel
+
+
 * SDL/Win32/Linux version 2.4.18
   released: 09/05/2014
 
@@ -22,7 +39,7 @@ http://www.adlibtracker.net/files/revision.htm
 
 
 * SDL/Win32/Linux version 2.4.17
-  released: 07/28/2014 * 07/30/2014
+  released: 07/28/2014 (* 07/30/2014)
 
    . fixed ADSR preview update with enhanced screen modes
    . added Note Recorder feature (hotkey: ^Space)
@@ -241,8 +258,8 @@ http://www.adlibtracker.net/files/revision.htm
      if not overriden by config file, this mode is set by default
    . removed console window (here you go Mikkel :)
    . added window icon and activated window close button functionality
-   * fixed wrong position of bye-bye screen under some circumstances
-   * fixed in MAME OPL3 emulator:
+   . fixed wrong position of bye-bye screen under some circumstances
+   . fixed in MAME OPL3 emulator:
        - increased volume attenuation level in rhythm mode for all
          percussion channels except BD (experimental)
 

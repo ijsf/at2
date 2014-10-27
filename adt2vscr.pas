@@ -18,6 +18,7 @@ const
   virtual_cur_pos: Word = 0;
   cursor_sync: Boolean = FALSE;
   emulate_screen: procedure = NIL;
+  _cursor_blink_factor: Longint = 13;
 
 const
   area_x1: Byte = 0;
@@ -92,7 +93,7 @@ const
 
 implementation
 uses
-  AdT2unit,AdT2sys,
+  AdT2unit,AdT2sys,AdT2ext2,
   DialogIO,TxtScrIO,ParserIO;
 
 const
@@ -118,6 +119,8 @@ begin
   scroll_pos2 := $0ff;
   scroll_pos3 := $0ff;
   scroll_pos4 := $0ff;
+  PATTERN_ORDER_page_refresh(pattord_page);
+  PATTERN_page_refresh(pattern_page);
 end;
 
 procedure move2screen_alt; assembler;
@@ -183,7 +186,8 @@ asm
         push    edx
         push    esi
         push    edi
-        cmp     _cursor_blink_pending_frames,13
+        mov     eax,_cursor_blink_factor
+        cmp     _cursor_blink_pending_frames,eax
         jnae    @@1
         mov     _cursor_blink_pending_frames,0
         xor     byte ptr [cursor_sync],1
@@ -288,7 +292,8 @@ asm
         push    edx
         push    esi
         push    edi
-        cmp     _cursor_blink_pending_frames,13
+        mov     eax,_cursor_blink_factor
+        cmp     _cursor_blink_pending_frames,eax
         jnae    @@1
         mov     _cursor_blink_pending_frames,0
         xor     byte ptr [cursor_sync],1
@@ -379,7 +384,8 @@ asm
         push    edx
         push    esi
         push    edi
-        cmp     _cursor_blink_pending_frames,13
+        mov     eax,_cursor_blink_factor
+        cmp     _cursor_blink_pending_frames,eax
         jnae    @@1
         mov     _cursor_blink_pending_frames,0
         xor     byte ptr [cursor_sync],1
@@ -461,6 +467,7 @@ begin
   _update_sdl_screen := FALSE;
   If Compare(screen_mirror,virtual_screen,MAX_COLUMNS*MAX_ROWS*2) then EXIT
   else Move(virtual_screen,screen_mirror,MAX_COLUMNS*MAX_ROWS*2);
+  _cursor_blink_factor := ROUND(13/100*sdl_frame_rate);
   _update_sdl_screen := TRUE;
   Case program_screen_mode of
     0: emulate_screen_720x480;

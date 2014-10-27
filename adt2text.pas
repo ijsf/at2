@@ -2,9 +2,9 @@ unit AdT2text;
 interface
 
 const
-{__AT2VER__}at2ver  = '2.4.18';
-{__AT2DAT__}at2date = '09-05-2014';
-{__AT2LNK__}at2link = '1:49pm';
+{__AT2VER__}at2ver  = '2.4.19';
+{__AT2DAT__}at2date = '10-27-2014';
+{__AT2LNK__}at2link = '8:10am';
 
 const
   ascii_line_01 = 'Ú-ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ--ùú               úù-¿';
@@ -45,7 +45,7 @@ uses
     StringIO,DialogIO,TxtScrIO;
 
 const
-  LINES = 1069;
+  LINES = 1076;
   help_data: array[1..LINES] of String[128] = (
     '@topic:general',
     'ÍËÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍ',
@@ -80,6 +80,7 @@ const
     '³ `WHEN iN NOTE RECORDER MODE`                                         ³',
     'ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´',
     '³ ~^Left,^Right~ ³ Select group of tracks for recording                ³',
+    '³ ~[Alt] Q~      ³ Quick reset last selected group of tracks           ³',   
     '³ ~Enter~        ³ Start recording from current position ~(*)~           ³',
     '³ ~Space~        ³ `Toggle` using custom instrument for all tracks ¿     ³@@spec_attr:01@@',
     '³ ~[Alt] Space~  ³ `Toggle` using present instruments in tracks    Ã (*) ³@@spec_attr:02@@',
@@ -92,7 +93,7 @@ const
     '³              ³ current group of tracks can be modified             ³',
     '³ ~[Alt] 1..9,0~ ³ Toggle corresponding track ON/OFF                   ³',
     '³ ~[Alt] R~      ³ Reset flags on all tracks                           ³',
-    '³ ~Asterisk~     ³ Reverse ON/OFF on all tracks                        ³',
+    '³ ~*~            ³ Reverse ON/OFF on all tracks                        ³',
     'ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´',
     '³ In case you need non-continuos track selection, you can choose     ³',
     '³ from already selected group a subset of tracks where notes will be ³',
@@ -130,7 +131,7 @@ const
     '~[Alt] 1..9,0~             Toggle corresponding track ON/OFF',
     '~[Alt] S~                  Set all OFF except current track (solo)',
     '~[Alt] R~                  Reset flags on all tracks',
-    '~Asterisk~                 Reverse ON/OFF on all tracks',
+    '~*~                        Reverse ON/OFF on all tracks',
     '~F10~                      Toggle Quit Program dialog',
     '~[Shift] F11~              Toggle default (AdT2) behavior mode (optional)',
     '~F11~                      Toggle FastTracker behavior mode (optional)',
@@ -364,7 +365,7 @@ const
     '~^Backspace~               Toggle corresponding column ON/OFF ö FM-register',
     '~[Alt] S~                  Set all OFF except current column  ø table',
     '~[Alt] R~                  Reset flags on all columns         ö',
-    '~Asterisk~                 Reverse ON/OFF on all columns      Ù',
+    '~*~                        Reverse ON/OFF on all columns      Ù',
     '~\~                        Toggle current item (switch types only)',
     '~Space~                    Toggle macro-preview mode',
     '~^Space~                   Toggle Key-Off loop within macro-preview mode',
@@ -459,7 +460,7 @@ const
     '~[Alt] 1..9,0~             Toggle corresponding track ON/OFF',
     '~[Alt] S~                  Set all OFF except current track (solo)',
     '~[Alt] R~                  Reset flags on all tracks',
-    '~Asterisk~                 Reverse ON/OFF on all tracks',
+    '~*~                        Reverse ON/OFF on all tracks',
     '~Esc~                      Return to Pattern Editor or Pattern Order',
     '',
     '@topic:remap_dialog',
@@ -485,9 +486,10 @@ const
     '~[Shift] Tab~              Jump to previous selection',
     '~^K~                       Insert Key-Off in note column',
     '~^N~                       Mark "new" field to clear found item',
+    '~^W~                       Swap "to find" and "replace" mask content',
     '~Delete,Backspace~         Delete current/previous character',
-    '~^Backspace~               Delete whole "to find" or "replace" mask',
-    '~Space~                    Toggle prompt on replace',
+    '~^Backspace~               Delete "to find" or "replace" mask content',
+    '~[Shift] ^Backspace~       Delete content of both masks',
     '~Enter~                    Replace',
     '~Esc~                      Return to Pattern Editor or Pattern Order',
     '',
@@ -980,18 +982,18 @@ const
     '`Y`xy ÄÄ ~8xx~ Ù                   Ù',
     '',
     '@topic:effects_page3',
-    '`Z`?? `0`x SET TREMOLO DEPTH          x=1dB/4.8dB             [0-1]',
-    '    `1`x SET ViBRATO DEPTH          x=7%/14%                [0-1]',
-    '    `2`x SET ATTACK RATE   ¿        x=attack_rate           [0-F]',
-    '    `3`x SET DECAY RATE    ö MOD.   x=decay_rate            [0-F]',
-    '    `4`x SET SUSTAiN LEVEL ø        x=sustain_level         [0-F]',
-    '    `5`x SET RELEASE RATE  Ù        x=release_rate          [0-F]',
-    '    `6`x SET ATTACK RATE   ¿        x=attack_rate           [0-F]',
-    '    `7`x SET DECAY RATE    ö CAR.   x=decay_rate            [0-F]',
-    '    `8`x SET SUSTAiN LEVEL ø        x=sustain_level         [0-F]',
-    '    `9`x SET RELEASE RATE  Ù        x=release_rate          [0-F]',
-    '    `A`x SET FEEDBACK STRENGTH      x=feedback_strength     [0-7]',
-    '    `B`x SET PANNiNG POSiTiON       x=panning_position      [0-2]',
+    '`Z`?? `0`x SET TREMOLO DEPTH          x=1dB/4.8dB             [0-1]  ~I~',
+    '    `1`x SET ViBRATO DEPTH          x=7%/14%                [0-1]  ~I~',
+    '    `2`x SET ATTACK RATE   ¿        x=attack_rate           [0-F]  ~I~',
+    '    `3`x SET DECAY RATE    ö MOD.   x=decay_rate            [0-F]  ~I~',
+    '    `4`x SET SUSTAiN LEVEL ø        x=sustain_level         [0-F]  ~I~',
+    '    `5`x SET RELEASE RATE  Ù        x=release_rate          [0-F]  ~I~',
+    '    `6`x SET ATTACK RATE   ¿        x=attack_rate           [0-F]  ~I~',
+    '    `7`x SET DECAY RATE    ö CAR.   x=decay_rate            [0-F]  ~I~',
+    '    `8`x SET SUSTAiN LEVEL ø        x=sustain_level         [0-F]  ~I~',
+    '    `9`x SET RELEASE RATE  Ù        x=release_rate          [0-F]  ~I~',
+    '    `A`x SET FEEDBACK STRENGTH      x=feedback_strength     [0-7]  ~I~',
+    '    `B`x SET PANNiNG POSiTiON       x=panning_position      [0-2]  ~I~',
     '    `C`x PATTERN LOOP               x=parameter             [0-F]',
     '    `D`x RECURSiVE PATTERN LOOP     x=parameter             [0-F]',
     '    `E`x MACRO KEY-OFF LOOP         x=off/on                [0-1]',
@@ -1027,19 +1029,19 @@ const
     '`%`xx ÄÄ SET GLOBAL VOLUME          xx=volume_level         [0-3F]',
     '',
     '@topic:effects_page5',
-    '`#`?? `0`x SET CONNECTiON TYPE        x=FM/AM                 [0-1]',
-    '    `1`x SET MULTiPLiER ¿           x=multiplier            [0-F]',
-    '    `2`x SET KSL        ö           x=scaling_level         [0-3]',
-    '    `3`x SET TREMOLO    ö MOD.      x=off/on                [0-1]',
-    '    `4`x SET ViBRATO    ø           x=off/on                [0-1]',
-    '    `5`x SET KSR        ö           x=off/on                [0-1]',
-    '    `6`x SET SUSTAiN    Ù           x=off/on                [0-1]',
-    '    `7`x SET MULTiPLiER ¿           x=multiplier            [0-F]',
-    '    `8`x SET KSL        ö           x=scaling_level         [0-3]',
-    '    `9`x SET TREMOLO    ö CAR.      x=off/on                [0-1]',
-    '    `A`x SET ViBRATO    ø           x=off/on                [0-1]',
-    '    `B`x SET KSR        ö           x=off/on                [0-1]',
-    '    `C`x SET SUSTAiN    Ù           x=off/on                [0-1]',
+    '`#`?? `0`x SET CONNECTiON TYPE        x=FM/AM                 [0-1]  ~I~',
+    '    `1`x SET MULTiPLiER ¿           x=multiplier            [0-F]  ~I~',
+    '    `2`x SET KSL        ö           x=scaling_level         [0-3]  ~I~',
+    '    `3`x SET TREMOLO    ö MOD.      x=off/on                [0-1]  ~I~',
+    '    `4`x SET ViBRATO    ø           x=off/on                [0-1]  ~I~',
+    '    `5`x SET KSR        ö           x=off/on                [0-1]  ~I~',
+    '    `6`x SET SUSTAiN    Ù           x=off/on                [0-1]  ~I~',
+    '    `7`x SET MULTiPLiER ¿           x=multiplier            [0-F]  ~I~',
+    '    `8`x SET KSL        ö           x=scaling_level         [0-3]  ~I~',
+    '    `9`x SET TREMOLO    ö CAR.      x=off/on                [0-1]  ~I~',
+    '    `A`x SET ViBRATO    ø           x=off/on                [0-1]  ~I~',
+    '    `B`x SET KSR        ö           x=off/on                [0-1]  ~I~',
+    '    `C`x SET SUSTAiN    Ù           x=off/on                [0-1]  ~I~',
     '',
     '@topic:effects_page6',
     '`&`?? `0`x PATTERN DELAY (FRAMES)     x=interval              [1-F]',
@@ -1079,9 +1081,13 @@ const
     '            ³ `[FC]`..`[FF]` ³ ~256~  ³ FF     ³ ~'#7'1~..~'#7'4~ ³',
     '            ÀÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÙ',
     '',
+    '`FURTHER NOTES:`',
     '',
-    'Note that effects marked as ~C~ can be continued',
-    'in subsequent lines by setting the parameter to value 0.',
+    '1) Effects marked as ~C~ in the above list of commands can be continued',
+    '   in subsequent lines by setting the parameter value to 0.',
+    '',
+    '2) Effects marked as ~I~ in the above list of commands do apply',
+    '   to currently played instrument only.',
     '',
     'For detailed information on effect commands, see the ~adtrack2.doc~ file.',
     '',
@@ -1090,6 +1096,7 @@ const
     '                           /´DLiB³R/´CK3R ³³ SDL',
     '                            ³       ³     ÄÄ',
     '                                      '+at2ver+'',
+    '',
     '',
     '`Get the latest version from:`',
     'http://www.adlibtracker.net',
@@ -1118,8 +1125,8 @@ const
     '',
     '`Greetz fly to the following people:`',
     'Dragan Espenschied (drx/Bodenstandig 2000), Carl Peczynski (OxygenStar),',
-    'Hubert Lamontagne (Madbrain), Diode Milliampere, Matej Hudak,',
-    'and all others whom I forgot in this list :-)');
+    'Hubert Lamontagne (Madbrain), Diode Milliampere, Jason Karl Warren,',
+    'Nick Balega and all members of AT2 community who are missing here :-)');
 
 const
   key_comment_B =

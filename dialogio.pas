@@ -556,17 +556,17 @@ begin
                               AddPos(k);
                               If (k = temp) then
                                 begin
-                                  k := 1;  
+                                  k := 1;
                                   If NOT dbuf[k].use then AddPos(k);
                                 end;
                             end
                           else begin
-                                 k := 1;  
+                                 k := 1;
                                  If NOT dbuf[k].use then AddPos(k);
                                end;
 
-                     $47: begin                       
-                            k := 1;  
+                     $47: begin
+                            k := 1;
                             If NOT dbuf[k].use then AddPos(k);
                           end;
 
@@ -967,7 +967,7 @@ begin { Menu }
   mn_environment.curr_item := CutStr(pstr(k+page-1));
   mn_environment.keystroke := WORD_NULL;
   If (Addr(mn_environment.ext_proc) <> NIL) then mn_environment.ext_proc;
-  
+
   qflg := FALSE;
   If mn_environment.preview then
     begin
@@ -999,7 +999,7 @@ begin { Menu }
                                end;
 
                      $47: begin
-                            If (mn_setting.homing_pos = 0) then begin k := 1; page := 1; end  
+                            If (mn_setting.homing_pos = 0) then begin k := 1; page := 1; end
                             else If (k+page-1 > mn_setting.homing_pos) and
                                     (mn_setting.homing_pos < count) then
                                    Repeat SubPos(k) until (k+page-1 <= mn_setting.homing_pos)
@@ -1020,14 +1020,14 @@ begin { Menu }
                              (k+page-1 <= mn_setting.homing_pos) or
                              (mn_setting.homing_pos = 0) or
                              NOT (mn_setting.homing_pos < count) then
-                            For temp := 1 to len2-1 do SubPos(k)                            
+                            For temp := 1 to len2-1 do SubPos(k)
                           else Repeat SubPos(k) until (k+page-1 <= mn_setting.homing_pos);
-                          
+
                      $51: If (k+page-1+(len2-1) < mn_setting.homing_pos) or
                              (k+page-1 >= mn_setting.homing_pos) or
                              (mn_setting.homing_pos = 0) or
                              NOT (mn_setting.homing_pos < count) then
-                            For temp := 1 to len2-1 do AddPos(k)                            
+                            For temp := 1 to len2-1 do AddPos(k)
                           else Repeat AddPos(k) until (k+page-1 >= mn_setting.homing_pos);
                    end;
 
@@ -1082,6 +1082,11 @@ end;
 const
   MAX_FILES = 4096;
   UPDIR_STR = 'updir';
+{$IFDEF WINDOWS}
+  DRIVE_DIVIDER = 1;
+{$ELSE}
+  DRIVE_DIVIDER = 0;
+{$ENDIF}
 
 type
   tSEARCH = Record
@@ -1109,7 +1114,7 @@ var
   masks: array[1..20] of String;
   fstream: tSTREAM;
   drive_list: array[0..128] of Char;
-  
+
 function LookUpMask(filename: String): Boolean;
 
 var
@@ -1254,7 +1259,7 @@ begin
 
   Inc(count1);
   stream.stuff[count1].name := '~'+#$ff+'~';
-  stream.stuff[count1].attr := volumeid;  
+  stream.stuff[count1].attr := volumeid;
 
   count2 := 0;
   stream.drive_count := count1;
@@ -1299,8 +1304,8 @@ begin
       FindNext(search);
     end;
 
-  QuickSort(stream.drive_count+1,count1);
-  QuickSort(count1+1,count1+count2);
+  QuickSort(stream.drive_count+DRIVE_DIVIDER,count1);
+  QuickSort(count1+DRIVE_DIVIDER,count1+count2);
   stream.count := count1+count2;
   stream.match_count := count2;
 end;
@@ -1338,9 +1343,9 @@ label _jmp1;
 
 begin
   _debug_str_ := 'DIALOGIO.PAS:Fselect';
-  
+
 _jmp1:
-  
+
   idx := 1;
   count := 0;
 
@@ -1387,7 +1392,7 @@ _jmp1:
   mn_environment.descr_len := 20;
   mn_environment.descr := Addr(descr);
   mn_environment.winshade := FALSE;
-  
+
   Move(screen_ptr^,backup.screen,SizeOf(backup.screen));
   backup.cursor := GetCursor;
   backup.oldx   := WhereX;
@@ -1452,14 +1457,19 @@ _jmp1:
         While (SYSTEM.Pos('~',menudat[temp2]) <> 0) do
           menudat[temp2][SYSTEM.Pos('~',menudat[temp2])] := PATHSEP;
 
-    temp5 := fstream.drive_count+1;
+    temp5 := fstream.drive_count+DRIVE_DIVIDER;
     While (temp5 <= fstream.count) and (temp4 <> '') and
           (temp4 <> fstream.stuff[temp5].name) do Inc(temp5);
     If (temp5 > fstream.count) then temp5 := 1;
 
     For temp2 := 1 to fstream.count do
-      If (Lower_file(fstream.stuff[temp2].name) = fs_environment.last_file) then
-        begin lastp := temp2; BREAK; end;
+      If (Lower_file(fstream.stuff[temp2].name) = fs_environment.last_file) and
+         NOT (fstream.stuff[temp2].attr AND volumeid <> 0) then
+        begin
+          lastp := temp2;
+          BREAK;
+        end;
+
     If (Lower_file(fstream.stuff[temp2].name) <> fs_environment.last_file) then
       lastp := 0;
 
@@ -1471,9 +1481,9 @@ _jmp1:
     mn_setting.terminate_keys[3] := kBkSPC;
 {$IFDEF WINDOWS}
     mn_setting.terminate_keys[4] := kSlashR;
-{$ELSE}              
+{$ELSE}
     mn_setting.terminate_keys[4] := kSlash;
-{$ENDIF}              
+{$ENDIF}
     mn_setting.terminate_keys[5] := kF1;
     old_fselect_external_proc := mn_environment.ext_proc;
     mn_environment.ext_proc := new_fselect_external_proc;
@@ -1481,8 +1491,11 @@ _jmp1:
     temp := 1;
     While (temp < fstream.count) and (SYSTEM.Pos('[UP-DiR]',descr[temp]) = 0) do Inc(temp);
     If (temp < fstream.count) then mn_setting.homing_pos := temp
-    else mn_setting.homing_pos := 10;
-    
+    else mn_setting.homing_pos := fstream.drive_count+DRIVE_DIVIDER;
+{$IFNDEF WINDOWS}
+    Dec(fstream.count);
+{$ENDIF}
+
     If (program_screen_mode = 0) then
       temp2 := Menu(menudat,01,01,lastp,
                     1+23+1,work_MaxLn-5,fstream.count,' '+
@@ -1498,7 +1511,7 @@ _jmp1:
     mn_setting.terminate_keys[3] := 0;
     mn_setting.terminate_keys[4] := 0;
     mn_setting.terminate_keys[5] := 0;
-    
+
     If (mn_environment.keystroke = kENTER) and
        (fstream.stuff[temp2].attr AND directory <> 0) then
       begin
@@ -1557,9 +1570,9 @@ _jmp1:
                 end
 {$IFDEF WINDOWS}
               else If (mn_environment.keystroke = kSlashR) then
-{$ELSE}              
+{$ELSE}
               else If (mn_environment.keystroke = kSlash) then
-{$ENDIF}              
+{$ENDIF}
                      begin
                        temp3 := Copy(temp3,1,3);
                        temp4 := '';
@@ -1593,7 +1606,7 @@ _jmp1:
       HELP('file_browser');
       GOTO _jmp1;
     end;
-    
+
   Fselect := temp3+fstream.stuff[temp2].name;
   fs_environment.last_dir := path[SUCC(ORD(UpCase(temp3[1]))-ORD('A'))];
   {$i-}

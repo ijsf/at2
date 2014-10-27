@@ -569,6 +569,7 @@ begin { PATTERN_ORDER_edit }
                        Inc(songdata.pattern_order[vpos+4*(hpos+page-1)-1]);
                    end;
 
+      kAstrsk,
       kNPastr: If NOT (opl3_channel_recording_mode and (play_status <> isStopped)) then
                  begin
                    For temp := 1 to songdata.nm_tracks do

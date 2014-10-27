@@ -1509,8 +1509,10 @@ end;
 
 var
   _1st_choice,_replace_all,
-  _cancel: Boolean;
+  _cancel,_valid_note: Boolean;
   chr: Char;
+  temp_note: Byte;
+  temps: String;
   event_to_find: Record
                    note: String[3];
                    inst: String[2];
@@ -1595,13 +1597,6 @@ _jmp1:
                    kESC: qflag := TRUE;
                    kENTER: begin pos := 22+replace_selection; qflag := TRUE; end;
                    kF1: begin reset_screen; HELP('replace_dialog'); GOTO _jmp1; end;
-
-                   kCtBkSp: begin
-                              replace_data.event_to_find.note := 'úúú';
-                              replace_data.event_to_find.inst := 'úú';
-                              replace_data.event_to_find.fx_1 := 'úúú';
-                              replace_data.event_to_find.fx_2 := 'úúú';
-                            end;
 
                    kCtrlK: If (pos in [1,2,3]) then
                              begin
@@ -1688,13 +1683,6 @@ _jmp1:
                     kESC: qflag := TRUE;
                     kENTER: begin pos := 22+replace_selection; qflag := TRUE; end;
                     kF1: begin reset_screen; HELP('replace_dialog'); GOTO _jmp1; end;
-
-                    kCtBkSp: begin
-                               replace_data.new_event.note := 'úúú';
-                               replace_data.new_event.inst := 'úú';
-                               replace_data.new_event.fx_1 := 'úúú';
-                               replace_data.new_event.fx_2 := 'úúú';
-                             end;
 
                     kCtrlN: Case pos-11 of
                               1,2,3: begin
@@ -1854,6 +1842,40 @@ _jmp1:
             end;
       end;
 
+      Case fkey of
+        kCtrlW:  begin
+                   temps := replace_data.event_to_find.note;
+                   replace_data.event_to_find.note := replace_data.new_event.note;
+                   replace_data.new_event.note := temps;                  
+                   temps := replace_data.event_to_find.inst;
+                   replace_data.event_to_find.inst := replace_data.new_event.inst;
+                   replace_data.new_event.inst := temps;                 
+                   temps := replace_data.event_to_find.fx_1;
+                   replace_data.event_to_find.fx_1 := replace_data.new_event.fx_1;
+                   replace_data.new_event.fx_1 := temps;
+                   temps := replace_data.event_to_find.fx_2;
+                   replace_data.event_to_find.fx_2 := replace_data.new_event.fx_2;
+                   replace_data.new_event.fx_2 := temps;
+                 end;
+
+        kCtBkSp: begin
+                   If (pos < 12) or shift_pressed then
+                     begin
+                       replace_data.event_to_find.note := 'úúú';
+                       replace_data.event_to_find.inst := 'úú';
+                       replace_data.event_to_find.fx_1 := 'úúú';
+                       replace_data.event_to_find.fx_2 := 'úúú';
+                     end;
+                   If (pos >= 12) or shift_pressed then
+                     begin                   
+                       replace_data.new_event.note := 'úúú';
+                       replace_data.new_event.inst := 'úú';
+                       replace_data.new_event.fx_1 := 'úúú';
+                       replace_data.new_event.fx_2 := 'úúú';
+                     end;
+                 end;    
+      end;
+
       If (pos in [23..26]) then replace_selection := pos-22;
       refresh;
       emulate_screen;
@@ -1934,51 +1956,58 @@ _jmp1:
             If NOT _cancel then
               begin
                 get_chunk(temp3,temp1,temp2,chunk);
-                old_chunk := chunk;
+                old_chunk := chunk;                
 
-                If (chunk.note <> 0) and
-                   (new_event.note <> '???') then
-                  Case chunk.note of
-                    1..12*8+1: If SameName(event_to_find.note,note_layout[chunk.note]) then
-                                 chunk.note := _find_note(_wildcard_str(new_event.note,note_layout[chunk.note]));
+                If SameName(event_to_find.inst,byte2hex(old_chunk.instr_def)) and
+                   SameName(event_to_find.fx_1,fx_digits[old_chunk.effect_def]+byte2hex(old_chunk.effect)) and
+                   SameName(event_to_find.fx_2,fx_digits[old_chunk.effect_def2]+byte2hex(old_chunk.effect2)) then
+                  begin 
+                    _valid_note := FALSE;
+                    Case old_chunk.note of
+                      0,
+                      1..12*8+1: If SameName(event_to_find.note,note_layout[old_chunk.note]) then
+                                   begin
+                                     temp_note := _find_note(_wildcard_str(new_event.note,note_layout[old_chunk.note]));
+                                     _valid_note := TRUE;
+                                   end;  
+                    
+                      fixed_note_flag+
+                      1..
+                      fixed_note_flag+
+                      12*8+1: If SameName(event_to_find.note,note_layout[old_chunk.note-fixed_note_flag]) then
+                                begin
+                                  If NOT (FilterStr(replace_data.new_event.note,'?','ú') = _keyoff_str[pattern_layout]) then
+                                    temp_note := fixed_note_flag+_find_note(_wildcard_str(new_event.note,note_layout[old_chunk.note-fixed_note_flag]))
+                                  else temp_note := _find_note(new_event.note);
+                                  _valid_note := TRUE;
+                                end;  
+                    
+                      BYTE_NULL: begin
+                                   If NOT (SYSTEM.Pos('?',new_event.note) <> 0) then temp_note := _find_note(new_event.note)
+                                   else temp_note := old_chunk.note;
+                                   _valid_note := TRUE;
+                                 end;
+                    end;
+                    
+                    If _valid_note and (new_event.note <> '???') then
+                      If (new_event.note <> #7#7#7) then chunk.note := temp_note  
+                      else chunk.note := 0;
+                       
+                    If _valid_note and (new_event.inst <> '??') then
+                      chunk.instr_def := Str2num(_wildcard_str(new_event.inst,byte2hex(old_chunk.instr_def)),16);
 
-                    fixed_note_flag+
-                    1..
-                    fixed_note_flag+
-                    12*8+1: If SameName(event_to_find.note,note_layout[chunk.note-fixed_note_flag]) then
-                              chunk.note := fixed_note_flag+_find_note(_wildcard_str(new_event.note,note_layout[chunk.note-fixed_note_flag]));
+                    If _valid_note and (new_event.fx_1 <> '???') then
+                      begin
+                        chunk.effect_def := _find_fx(_wildcard_str(new_event.fx_1[1],fx_digits[old_chunk.effect_def])[1]);
+                        chunk.effect := Str2num(_wildcard_str(new_event.fx_1[2]+new_event.fx_1[3],byte2hex(old_chunk.effect)),16);
+                      end;
 
-                    BYTE_NULL: If (FilterStr(event_to_find.note,'?','ú') = _keyoff_str[pattern_layout]) and
-                             NOT (SYSTEM.Pos('?',new_event.note) <> 0) then
-                            chunk.note := _find_note(new_event.note);
+                    If _valid_note and (new_event.fx_2 <> '???') then
+                      begin
+                        chunk.effect_def2 := _find_fx(_wildcard_str(new_event.fx_2[1],fx_digits[old_chunk.effect_def2])[1]);
+                        chunk.effect2 := Str2num(_wildcard_str(new_event.fx_2[2]+new_event.fx_2[3],byte2hex(old_chunk.effect2)),16);
+                      end;
                   end;
-
-                If (chunk.instr_def <> 0) and
-                   (new_event.inst <> '??') then
-                  If SameName(event_to_find.inst,byte2hex(chunk.instr_def)) and
-                     SameName(event_to_find.fx_1,fx_digits[chunk.effect_def]+byte2hex(chunk.effect)) and
-                     SameName(event_to_find.fx_2,fx_digits[chunk.effect_def2]+byte2hex(chunk.effect2)) then
-                    chunk.instr_def := Str2num(_wildcard_str(new_event.inst,byte2hex(chunk.instr_def)),16);
-
-                If (chunk.effect_def+chunk.effect <> 0) and
-                   (new_event.fx_1 <> '???') then
-                  If SameName(event_to_find.inst,byte2hex(chunk.instr_def)) and
-                     SameName(event_to_find.fx_1,fx_digits[chunk.effect_def]+byte2hex(chunk.effect)) and
-                     SameName(event_to_find.fx_2,fx_digits[chunk.effect_def2]+byte2hex(chunk.effect2)) then
-                    begin
-                      chunk.effect_def := _find_fx(_wildcard_str(new_event.fx_1[1],fx_digits[chunk.effect_def])[1]);
-                      chunk.effect := Str2num(_wildcard_str(new_event.fx_1[2]+new_event.fx_1[3],byte2hex(chunk.effect)),16);
-                    end;
-
-                If (chunk.effect_def2+chunk.effect2 <> 0) and
-                   (new_event.fx_2 <> '???') then
-                  If SameName(event_to_find.inst,byte2hex(chunk.instr_def)) and
-                     SameName(event_to_find.fx_1,fx_digits[chunk.effect_def]+byte2hex(chunk.effect)) and
-                     SameName(event_to_find.fx_2,fx_digits[chunk.effect_def2]+byte2hex(chunk.effect2)) then
-                    begin
-                      chunk.effect_def2 := _find_fx(_wildcard_str(new_event.fx_2[1],fx_digits[chunk.effect_def2])[1]);
-                      chunk.effect2 := Str2num(_wildcard_str(new_event.fx_2[2]+new_event.fx_2[3],byte2hex(chunk.effect2)),16);
-                    end;
 
                 If NOT Compare(chunk,old_chunk,SizeOf(chunk)) then
                   begin
@@ -2417,7 +2446,7 @@ _jmp1:
            end
          else begin
                 ShowCStr(screen_ptr^,xstart+2,ystart+1,
-                         'TRACK~³~iNS~³~NOTE~³ ~FX Nù1~ ³ ~FX Nù2~ ³~iNSTR. MACRO~ ³~MACRO ARP.~³~MACRO ViBR.~³~FREQ~³ ~VOL',
+                         'TRACK~³~iNS~³~NOTE~³ ~FX Nù1~ ³ ~FX Nù2~ ³~MACRO FM-REG~ ³~MACRO ARPG~³~MACRO ViBR ~³~FREQ~³ ~VOL',
                          debug_info_bckg+debug_info_topic,debug_info_bckg+debug_info_border);
                 ShowStr(screen_ptr^,xstart+2,ystart+2,
                         'ÄÄÂÄÄÅÄÄÄÅÄÄÄÄÅÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÅÄÄÂÄÄ',
@@ -2986,6 +3015,7 @@ _jmp1:
                    no_status_refresh := FALSE;
                  end;
 
+      kAstrsk,
       kNPastr: If NOT (opl3_channel_recording_mode and (play_status <> isStopped)) then
                  begin
                    For temp := 1 to songdata.nm_tracks do
@@ -7938,6 +7968,7 @@ _jmp2:
                kAltR: For temp := 0 to 27 do
                         songdata.dis_fmreg_col[instr][temp] := FALSE;
 
+               kAstrsk,
                kNPastr: For temp := 0 to 27 do
                           songdata.dis_fmreg_col[instr][temp] :=
                             NOT songdata.dis_fmreg_col[instr][temp];

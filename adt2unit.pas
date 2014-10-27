@@ -2408,18 +2408,30 @@ begin
 			     output_note(event.note,voice_table[chan],chan,TRUE)
 			   else
              else output_note_NR(event.note,voice_table[chan],chan,TRUE)
-          else If (event_table[chan].note = event_table[chan].note OR keyoff_flag) and
-                  ((LO(effect_table[chan]) in [ef_TonePortamento,
-                                               ef_TPortamVolSlide,
-                                               ef_TPortamVSlideFine]) or
-                   (LO(effect_table2[chan]) in [ef_TonePortamento,
-                                                ef_TPortamVolSlide,
-                                                ef_TPortamVSlideFine])) then
+          else If (event.note <> 0) and
+                  (event_table[chan].note = event_table[chan].note OR keyoff_flag) and                  
+                  ((event.effect_def in [ef_TonePortamento,
+                                         ef_TPortamVolSlide,
+                                         ef_TPortamVSlideFine]) or
+                   (event.effect_def2 in [ef_TonePortamento,
+                                          ef_TPortamVolSlide,
+                                          ef_TPortamVSlideFine])) then
                  If NOT ignore_note_once[chan] then
-				   output_note(event_table[chan].note AND NOT keyoff_flag,voice_table[chan],chan,FALSE)
-				 else
-               else If (event.note <> 0) then
-                      event_table[chan].note := event.note;
+                   output_note(event_table[chan].note AND NOT keyoff_flag,voice_table[chan],chan,FALSE)
+                 else
+               else If single_play and
+                       NOT (event.note = event.note OR keyoff_flag) and
+                       NOT (event_table[chan].note <> 0) and
+                       (event.instr_def <> 0) and
+                       ((event.effect_def in [ef_TonePortamento,
+                                              ef_TPortamVolSlide,
+                                              ef_TPortamVSlideFine]) or
+                        (event.effect_def2 in [ef_TonePortamento,
+                                               ef_TPortamVolSlide,
+                                               ef_TPortamVSlideFine])) then
+                      output_note(event.note,event.instr_def,chan,FALSE)
+                    else If (event.note <> 0) then
+                           event_table[chan].note := event.note;
 
       Case event.effect_def of
         ef_SwapArpeggio:

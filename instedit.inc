@@ -343,14 +343,14 @@ begin
     end;
 end;
 
+const
+  _index: array[1..13] of Byte = (1,0,3,2,5,4,7,6,9,8,10,11,12);
+
 procedure INSTRUMENT_CONTROL_page_refresh(page: Byte);
 
 var
   temp: Byte;
   temp_str: String;
-
-const
-  _index: array[1..13] of Byte = (1,0,3,2,5,4,7,6,9,8,10,11,12);
 
 begin
   If _debug_ then
@@ -375,12 +375,20 @@ begin
           byte2hex(page),
           dialog_background+dialog_title);
 
-  For temp := 1 to 11 do
+  For temp := 1 to 10 do
     ShowStr(mn_environment.v_dest^,
             INSCTRL_xshift+32,INSCTRL_yshift+08+pos2[temp],
             byte2hex(tDUMMY_BUFF(Addr(songdata.instr_data[page])^)[_index[temp]]),
             dialog_background+dialog_item);
 
+
+  ShowCStr(mn_environment.v_dest^,
+           INSCTRL_xshift+30,INSCTRL_yshift+08+pos2[11],
+           connection_str[tDUMMY_BUFF(Addr(songdata.instr_data[page])^)[_index[11]] AND 1]+'~/~'+
+           CHR(ORD('0')+(tDUMMY_BUFF(Addr(songdata.instr_data[page])^)[_index[11]] SHR 1 AND 7)),
+           dialog_background+dialog_item,
+           color_table[inst_itm1[temp].colr]);
+ 
   Case songdata.instr_data[page].panning of
     0: ShowStr(mn_environment.v_dest^,
                INSCTRL_xshift+24,INSCTRL_yshift+08+pos2[12],
@@ -457,9 +465,8 @@ begin
 
   If (temp_str <> ' ') then temp_str := temp_str+'~] ';
 
-  ShowCStr(mn_environment.v_dest^,
-           INSCTRL_xshift+19,INSCTRL_yshift+26,
-           ExpStrR(temp_str,21+2,'Í'),
+  ShowCStr(mn_environment.v_dest^,INSCTRL_xshift+19,INSCTRL_yshift+26,
+           ExpStrR(temp_str,21+1,'Í'),
            dialog_background+dialog_border,
            dialog_background+dialog_context);
 
@@ -679,11 +686,18 @@ begin
                dialog_background+dialog_contxt_dis2,
                color_table[inst_itm2[temp].colr]);
 
-  For temp := 1 to 11 do
+  For temp := 1 to 10 do
     ShowStr(mn_environment.v_dest^,INSCTRL_xshift+32,INSCTRL_yshift+08+pos2[temp],
             byte2hex(tDUMMY_BUFF(Addr(songdata.instr_data[page])^)[_index[temp]]),
             instrument_bckg+instrument_hi_text);
 
+  ShowCStr(mn_environment.v_dest^,
+           INSCTRL_xshift+30,INSCTRL_yshift+08+pos2[11],
+           connection_str[tDUMMY_BUFF(Addr(songdata.instr_data[page])^)[_index[11]] AND 1]+'~/~'+
+           CHR(ORD('0')+(tDUMMY_BUFF(Addr(songdata.instr_data[page])^)[_index[11]] SHR 1 AND 7)),
+           dialog_background+dialog_item,
+           color_table[inst_itm1[temp].colr]);
+            
   Case songdata.instr_data[page].panning of
     0: ShowStr(mn_environment.v_dest^,INSCTRL_xshift+24,INSCTRL_yshift+08+pos2[12],
                'CENTER',
@@ -756,7 +770,7 @@ begin
   If (temp_str <> ' ') then temp_str := temp_str+'~] ';
 
   ShowCStr(mn_environment.v_dest^,INSCTRL_xshift+19,INSCTRL_yshift+26,
-           ExpStrR(temp_str,21+2,'Í'),
+           ExpStrR(temp_str,21+1,'Í'),
            dialog_background+dialog_border,
            dialog_background+dialog_context);
 end;
@@ -889,7 +903,7 @@ var
   nope: Boolean;
   hpos,vpos: Byte;
   carrier: Boolean;
-  inst: Pointer;
+  inst: ^tADTRACK2_INS;
 
 procedure page_build;
 
@@ -906,7 +920,7 @@ begin
   If (program_screen_mode <> 0) then
     ShowStr(vscreen,xstart-1,ystart+25,#204+ExpStrL('',70,#205)+#185,instrument_bckg+instrument_border);
 
-  Case tADTRACK2_INS(inst^).perc_voice of
+  Case inst^.perc_voice of
     0: ShowCStr(vscreen,xstart,ystart+25,' [~MELODiC~]',
                 instrument_bckg+instrument_border,
                 instrument_bckg+instrument_context);
@@ -946,7 +960,7 @@ begin
 
   ShowCStr(vscreen,
            xstart+10,ystart+25,
-           ExpStrR(temp_str,21+2,'Í'),
+           ExpStrR(temp_str,21+1,'Í'),
            instrument_bckg+instrument_border,
            instrument_bckg+instrument_context);
 
@@ -955,12 +969,12 @@ begin
            instrument_bckg+instrument_border,
            instrument_bckg+instrument_context);
 
-  If carrier or (tADTRACK2_INS(inst^).perc_voice in [2..5]) then
+  If carrier or (inst^.perc_voice in [2..5]) then
     begin
       Move(_ext_carrier,_text[12],SizeOf(_ext_carrier));
       Move(_hpos_ext_carrier,_hpos[12],SizeOf(_hpos_ext_carrier));
 
-      If (tADTRACK2_INS(inst^).perc_voice in [2..5]) then
+      If (inst^.perc_voice in [2..5]) then
         begin
           Move(_ext_perc,_text[15],SizeOf(_ext_perc));
           Move(_hpos_ext_perc,_hpos[14],SizeOf(_hpos_ext_perc));
@@ -987,7 +1001,7 @@ begin
         ShowCStr(vscreen,xstart+1,ystart+temp,_text[temp],
                  instrument_bckg+instrument_text,
                  instrument_bckg+instrument_mod)
-      else If carrier or (tADTRACK2_INS(inst^).perc_voice in [2..5]) then
+      else If carrier or (inst^.perc_voice in [2..5]) then
              begin
                If NOT (temp in [15..17]) then
                  ShowCStr(vscreen,xstart+1,ystart+temp,_text[temp],
@@ -1152,8 +1166,8 @@ begin
                  instrument_bckg+instrument_context);
     end;
 
-  If carrier then temp := tADTRACK2_INS(inst^).fm_data.ATTCK_DEC_carrier
-  else temp := tADTRACK2_INS(inst^).fm_data.ATTCK_DEC_modulator;
+  If carrier then temp := inst^.fm_data.ATTCK_DEC_carrier
+  else temp := inst^.fm_data.ATTCK_DEC_modulator;
 
   ShowCStr(vscreen,x0+_hpos[1,1],y0+_vpos[1],'~'+
            ExpStrL('',   (temp SHR 4),'')+'~'+
@@ -1175,8 +1189,8 @@ begin
           ExpStrR(Num2str(temp AND $0f,16),1,' '),
           instrument_bckg+instrument_text);
 
-  If carrier then temp := tADTRACK2_INS(inst^).fm_data.SUSTN_REL_carrier
-  else temp := tADTRACK2_INS(inst^).fm_data.SUSTN_REL_modulator;
+  If carrier then temp := inst^.fm_data.SUSTN_REL_carrier
+  else temp := inst^.fm_data.SUSTN_REL_modulator;
 
   ShowCStr(vscreen,x0+_hpos[4,1],y0+_vpos[4],'~'+
            ExpStrL('',   (temp SHR 4),'')+'~'+
@@ -1198,15 +1212,15 @@ begin
           ExpStrR(Num2str(temp AND $0f,16),1,' '),
           instrument_bckg+instrument_text);
 
-  If carrier then temp := tADTRACK2_INS(inst^).fm_data.WAVEFORM_carrier
-  else temp := tADTRACK2_INS(inst^).fm_data.WAVEFORM_modulator;
+  If carrier then temp := inst^.fm_data.WAVEFORM_carrier
+  else temp := inst^.fm_data.WAVEFORM_modulator;
 
   ShowVStr(vscreen,x0+_hpos[2,2],y0+_vpos[2],
            ExpStrL('',temp AND 7,' ')+'û'+ExpStrL('',7-temp AND 7,' '),
            instrument_bckg+instrument_hi_text);
 
-  If carrier then temp := tADTRACK2_INS(inst^).fm_data.KSL_VOLUM_carrier
-  else temp := tADTRACK2_INS(inst^).fm_data.KSL_VOLUM_modulator;
+  If carrier then temp := inst^.fm_data.KSL_VOLUM_carrier
+  else temp := inst^.fm_data.KSL_VOLUM_modulator;
 
   ShowCStr(vscreen,x0+_hpos[7,1],y0+_vpos[7],'~'+
            ExpStrL('',   ((63-(temp AND $3f)) DIV 2),'')+'~'+
@@ -1224,9 +1238,9 @@ begin
            ExpStrL('',temp,' ')+'û'+ExpStrL('',3-temp,' '),
            instrument_bckg+instrument_hi_text);
 
-  If carrier or (tADTRACK2_INS(inst^).perc_voice in [2..5]) then
+  If carrier or (inst^.perc_voice in [2..5]) then
     begin
-      Case tADTRACK2_INS(inst^).panning of
+      Case inst^.panning of
         0: ShowCStr(vscreen,x0+_hpos[13,2],y0+_vpos[13],'~ú~úúú~~úúú~ú~',
                    instrument_bckg+instrument_text,
                    instrument_bckg+instrument_hi_text);
@@ -1240,10 +1254,10 @@ begin
                    instrument_bckg+instrument_hi_text);
       end;
 
-      temp := Abs(tADTRACK2_INS(inst^).fine_tune);
+      temp := Abs(inst^.fine_tune);
       temps1 := ExpStrL('',19,'');
 
-      If (tADTRACK2_INS(inst^).fine_tune > 0) then
+      If (inst^.fine_tune > 0) then
         begin
           Delete(temps1,1+8+(temp DIV 15),3);
           Insert('',temps1,1+8+(temp DIV 15));
@@ -1254,8 +1268,8 @@ begin
           Insert('',temps1,1+8-(temp DIV 15));
         end;
 
-      If (tADTRACK2_INS(inst^).fine_tune > 0) then temps2 := '+'
-      else If (tADTRACK2_INS(inst^).fine_tune < 0) then temps2 := '-'
+      If (inst^.fine_tune > 0) then temps2 := '+'
+      else If (inst^.fine_tune < 0) then temps2 := '-'
            else temps2 := '';
 
       ShowStr(vscreen,x0+_hpos[15,1]+15,y0+_vpos[15]-1,
@@ -1268,7 +1282,7 @@ begin
 
       If carrier then
         begin
-          temp := tADTRACK2_INS(inst^).fm_data.FEEDBACK_FM;
+          temp := inst^.fm_data.FEEDBACK_FM;
           ShowCStr(vscreen,x0+_hpos[14,1],y0+_vpos[14],'~'+
                    ExpStrL('',   (temp SHR 1) AND 7, '')+'~'+
                    ExpStrL('',7-((temp SHR 1) AND 7),''),
@@ -1289,8 +1303,8 @@ begin
         end;
     end;
 
-  If carrier then temp := tADTRACK2_INS(inst^).fm_data.AM_VIB_EG_carrier
-  else temp := tADTRACK2_INS(inst^).fm_data.AM_VIB_EG_modulator;
+  If carrier then temp := inst^.fm_data.AM_VIB_EG_carrier
+  else temp := inst^.fm_data.AM_VIB_EG_modulator;
 
   If  (temp SHR 7        = 0) then temps1 := ' '        else temps1 := 'û';
   If ((temp SHR 6) AND 1 = 0) then temps1 := temps1+' ' else temps1 := temps1+'û';
@@ -1334,24 +1348,24 @@ begin
   If (program_screen_mode <> 0) or
      ((vpos in [1,2,4,5,7,20]) and (hpos = 1) and
       _ADSR_preview_flag) then
-    If NOT carrier or (tADTRACK2_INS(inst^).perc_voice in [2..5]) then
+    If NOT carrier or (inst^.perc_voice in [2..5]) then
       _show_adsr(vscreen,x0+3,adsr_vpos,
-                 tADTRACK2_INS(inst^).fm_data.ATTCK_DEC_modulator SHR 4,
-                 tADTRACK2_INS(inst^).fm_data.ATTCK_DEC_modulator AND $0f,
-                 tADTRACK2_INS(inst^).fm_data.SUSTN_REL_modulator SHR 4,
-                 tADTRACK2_INS(inst^).fm_data.SUSTN_REL_modulator AND $0f,
-                 tADTRACK2_INS(inst^).fm_data.KSL_VOLUM_modulator AND $3f,
-                 tADTRACK2_INS(inst^).fm_data.AM_VIB_EG_modulator SHR 5 AND 1,
+                 inst^.fm_data.ATTCK_DEC_modulator SHR 4,
+                 inst^.fm_data.ATTCK_DEC_modulator AND $0f,
+                 inst^.fm_data.SUSTN_REL_modulator SHR 4,
+                 inst^.fm_data.SUSTN_REL_modulator AND $0f,
+                 inst^.fm_data.KSL_VOLUM_modulator AND $3f,
+                 inst^.fm_data.AM_VIB_EG_modulator SHR 5 AND 1,
                  adsr_bckg+instrument_mod,
                  adsr_bckg+instrument_hi_mod,FALSE)
     else
       _show_adsr(vscreen,x0+3,adsr_vpos,
-                 tADTRACK2_INS(inst^).fm_data.ATTCK_DEC_carrier SHR 4,
-                 tADTRACK2_INS(inst^).fm_data.ATTCK_DEC_carrier AND $0f,
-                 tADTRACK2_INS(inst^).fm_data.SUSTN_REL_carrier SHR 4,
-                 tADTRACK2_INS(inst^).fm_data.SUSTN_REL_carrier AND $0f,
-                 tADTRACK2_INS(inst^).fm_data.KSL_VOLUM_carrier AND $3f,
-                 tADTRACK2_INS(inst^).fm_data.AM_VIB_EG_carrier SHR 5 AND 1,
+                 inst^.fm_data.ATTCK_DEC_carrier SHR 4,
+                 inst^.fm_data.ATTCK_DEC_carrier AND $0f,
+                 inst^.fm_data.SUSTN_REL_carrier SHR 4,
+                 inst^.fm_data.SUSTN_REL_carrier AND $0f,
+                 inst^.fm_data.KSL_VOLUM_carrier AND $3f,
+                 inst^.fm_data.AM_VIB_EG_carrier SHR 5 AND 1,
                  adsr_bckg+instrument_car,
                  adsr_bckg+instrument_hi_car,FALSE);
 
@@ -1385,7 +1399,7 @@ label _jmp1,_end;
 begin { INSTRUMENT_CONTROL_edit }
   _debug_str_ := 'INSTEDIT.INC:INSTRUMENT_CONTROL_edit';
   inst := Addr(songdata.instr_data[instrum_page]);
-  If (tADTRACK2_INS(inst^).perc_voice in [0,1]) then carrier := TRUE
+  If (inst^.perc_voice in [0,1]) then carrier := TRUE
   else carrier := FALSE;
 
   hpos := 1; vpos := 1;
@@ -1583,19 +1597,19 @@ _jmp1:
                     9: begin vpos := 7; hpos := 1; end;
 
                    10,11,
-                   12: If carrier or (tADTRACK2_INS(inst^).perc_voice in [2..5]) then begin vpos := 13; hpos := 2; end
+                   12: If carrier or (inst^.perc_voice in [2..5]) then begin vpos := 13; hpos := 2; end
                        else begin vpos := 17; hpos := 1; end;
 
                    13: If (hpos = 1) then
                          begin
-                           If carrier or (tADTRACK2_INS(inst^).perc_voice in [2..5]) then begin vpos := 13; hpos := 2; end
+                           If carrier or (inst^.perc_voice in [2..5]) then begin vpos := 13; hpos := 2; end
                            else begin vpos := 17; hpos := 1; end;
                          end
                        else begin vpos := 15; hpos := 1; end;
 
                    14: begin vpos := 16; hpos := 1; end;
 
-                   15: If NOT (tADTRACK2_INS(inst^).perc_voice in [2..5]) then begin vpos := 14; hpos := 1; end
+                   15: If NOT (inst^.perc_voice in [2..5]) then begin vpos := 14; hpos := 1; end
                        else begin vpos := 17; hpos := 1; end;
 
                    16: begin vpos := 17; hpos := 1; end;
@@ -1604,7 +1618,7 @@ _jmp1:
                    20: begin
                          vpos := 1;
                          hpos := 1;
-                         If NOT (tADTRACK2_INS(inst^).perc_voice in [2..5]) then
+                         If NOT (inst^.perc_voice in [2..5]) then
                            carrier := NOT carrier;
                        end;
                  end;
@@ -1613,7 +1627,7 @@ _jmp1:
                     1: begin
                          vpos := 18;
                          hpos := 2;
-                         If NOT (tADTRACK2_INS(inst^).perc_voice in [2..5]) then
+                         If NOT (inst^.perc_voice in [2..5]) then
                            carrier := NOT carrier;
                        end;
 
@@ -1650,7 +1664,7 @@ _jmp1:
 
                    17,18,19,
                    20: If carrier then begin vpos := 16; hpos := 1; end
-                       else If (tADTRACK2_INS(inst^).perc_voice in [2..5]) then begin vpos := 15; hpos := 1; end
+                       else If (inst^.perc_voice in [2..5]) then begin vpos := 15; hpos := 1; end
                             else begin vpos := 10; hpos := 1; end;
                  end;
 
@@ -1659,74 +1673,74 @@ _jmp1:
                    begin
                      Case vpos of
                        2: If (hpos = 2) then
-                            If carrier then tADTRACK2_INS(inst^).fm_data.WAVEFORM_carrier := 0
-                            else tADTRACK2_INS(inst^).fm_data.WAVEFORM_modulator := 0;
+                            If carrier then inst^.fm_data.WAVEFORM_carrier := 0
+                            else inst^.fm_data.WAVEFORM_modulator := 0;
 
-                       3: If carrier then tADTRACK2_INS(inst^).fm_data.WAVEFORM_carrier := 1
-                          else tADTRACK2_INS(inst^).fm_data.WAVEFORM_modulator := 1;
+                       3: If carrier then inst^.fm_data.WAVEFORM_carrier := 1
+                          else inst^.fm_data.WAVEFORM_modulator := 1;
 
                        4: If (hpos = 2) then
-                            If carrier then tADTRACK2_INS(inst^).fm_data.WAVEFORM_carrier := 2
-                            else tADTRACK2_INS(inst^).fm_data.WAVEFORM_modulator := 2;
+                            If carrier then inst^.fm_data.WAVEFORM_carrier := 2
+                            else inst^.fm_data.WAVEFORM_modulator := 2;
 
                        5: If (hpos = 2) then
-                            If carrier then tADTRACK2_INS(inst^).fm_data.WAVEFORM_carrier := 3
-                            else tADTRACK2_INS(inst^).fm_data.WAVEFORM_modulator := 3;
+                            If carrier then inst^.fm_data.WAVEFORM_carrier := 3
+                            else inst^.fm_data.WAVEFORM_modulator := 3;
 
-                       6: If carrier then tADTRACK2_INS(inst^).fm_data.WAVEFORM_carrier := 4
-                          else tADTRACK2_INS(inst^).fm_data.WAVEFORM_modulator := 4;
+                       6: If carrier then inst^.fm_data.WAVEFORM_carrier := 4
+                          else inst^.fm_data.WAVEFORM_modulator := 4;
 
                        7: If (hpos = 2) then
-                            If carrier then tADTRACK2_INS(inst^).fm_data.WAVEFORM_carrier := 5
-                            else tADTRACK2_INS(inst^).fm_data.WAVEFORM_modulator := 5;
+                            If carrier then inst^.fm_data.WAVEFORM_carrier := 5
+                            else inst^.fm_data.WAVEFORM_modulator := 5;
 
-                       8: If carrier then tADTRACK2_INS(inst^).fm_data.WAVEFORM_carrier := 6
-                          else tADTRACK2_INS(inst^).fm_data.WAVEFORM_modulator := 6;
+                       8: If carrier then inst^.fm_data.WAVEFORM_carrier := 6
+                          else inst^.fm_data.WAVEFORM_modulator := 6;
 
-                       9: If carrier then tADTRACK2_INS(inst^).fm_data.WAVEFORM_carrier := 7
-                          else tADTRACK2_INS(inst^).fm_data.WAVEFORM_modulator := 7;
+                       9: If carrier then inst^.fm_data.WAVEFORM_carrier := 7
+                          else inst^.fm_data.WAVEFORM_modulator := 7;
 
                       10,11,
                       12: If carrier then
-                            tADTRACK2_INS(inst^).fm_data.KSL_VOLUM_carrier :=
-                            tADTRACK2_INS(inst^).fm_data.KSL_VOLUM_carrier AND $3f+KSL_volume[vpos-10]
+                            inst^.fm_data.KSL_VOLUM_carrier :=
+                            inst^.fm_data.KSL_VOLUM_carrier AND $3f+KSL_volume[vpos-10]
                           else
-                            tADTRACK2_INS(inst^).fm_data.KSL_VOLUM_modulator :=
-                            tADTRACK2_INS(inst^).fm_data.KSL_VOLUM_modulator AND $3f+KSL_volume[vpos-10];
+                            inst^.fm_data.KSL_VOLUM_modulator :=
+                            inst^.fm_data.KSL_VOLUM_modulator AND $3f+KSL_volume[vpos-10];
 
                       13: If (hpos = 1) then
                             begin
                               If carrier then
-                                tADTRACK2_INS(inst^).fm_data.KSL_VOLUM_carrier :=
-                                tADTRACK2_INS(inst^).fm_data.KSL_VOLUM_carrier AND $3f+KSL_volume[vpos-10]
+                                inst^.fm_data.KSL_VOLUM_carrier :=
+                                inst^.fm_data.KSL_VOLUM_carrier AND $3f+KSL_volume[vpos-10]
                               else
-                                tADTRACK2_INS(inst^).fm_data.KSL_VOLUM_modulator :=
-                                tADTRACK2_INS(inst^).fm_data.KSL_VOLUM_modulator AND $3f+KSL_volume[vpos-10];
+                                inst^.fm_data.KSL_VOLUM_modulator :=
+                                inst^.fm_data.KSL_VOLUM_modulator AND $3f+KSL_volume[vpos-10];
                              end
-                           else tADTRACK2_INS(inst^).panning := panning_pos[hpos-2];
+                           else inst^.panning := panning_pos[hpos-2];
 
-                      16: tADTRACK2_INS(inst^).fm_data.FEEDBACK_FM := hpos-1+
-                          tADTRACK2_INS(inst^).fm_data.FEEDBACK_FM AND $0e;
+                      16: inst^.fm_data.FEEDBACK_FM := hpos-1+
+                          inst^.fm_data.FEEDBACK_FM AND $0e;
 
                       17,18,19,
                       20: If (hpos = 1) then
                             begin
                               If carrier then
-                                tADTRACK2_INS(inst^).fm_data.AM_VIB_EG_carrier :=
-                                tADTRACK2_INS(inst^).fm_data.AM_VIB_EG_carrier XOR AM_Vibrato_EG[vpos-17]
+                                inst^.fm_data.AM_VIB_EG_carrier :=
+                                inst^.fm_data.AM_VIB_EG_carrier XOR AM_Vibrato_EG[vpos-17]
                               else
-                                tADTRACK2_INS(inst^).fm_data.AM_VIB_EG_modulator :=
-                                tADTRACK2_INS(inst^).fm_data.AM_VIB_EG_modulator XOR AM_Vibrato_EG[vpos-17];
+                                inst^.fm_data.AM_VIB_EG_modulator :=
+                                inst^.fm_data.AM_VIB_EG_modulator XOR AM_Vibrato_EG[vpos-17];
                             end
                           else
                             begin
                               If carrier then
-                                tADTRACK2_INS(inst^).fm_data.AM_VIB_EG_carrier :=
-                                tADTRACK2_INS(inst^).fm_data.AM_VIB_EG_carrier AND $0f0+
+                                inst^.fm_data.AM_VIB_EG_carrier :=
+                                inst^.fm_data.AM_VIB_EG_carrier AND $0f0+
                                 (vpos-18)*6+hpos-2
                               else
-                                tADTRACK2_INS(inst^).fm_data.AM_VIB_EG_modulator :=
-                                tADTRACK2_INS(inst^).fm_data.AM_VIB_EG_modulator AND $0f0+
+                                inst^.fm_data.AM_VIB_EG_modulator :=
+                                inst^.fm_data.AM_VIB_EG_modulator AND $0f0+
                                 (vpos-18)*6+hpos-2;
                             end;
                      end;
@@ -1739,64 +1753,64 @@ _jmp1:
                    If carrier then
                      begin
                        If (vpos = 1) and
-                          (tADTRACK2_INS(inst^).fm_data.ATTCK_DEC_carrier SHR 4 < $0f) then
-                           tADTRACK2_INS(inst^).fm_data.ATTCK_DEC_carrier :=
-                           tADTRACK2_INS(inst^).fm_data.ATTCK_DEC_carrier AND $0f+
-                          (tADTRACK2_INS(inst^).fm_data.ATTCK_DEC_carrier SHR 4 +1) SHL 4;
+                          (inst^.fm_data.ATTCK_DEC_carrier SHR 4 < $0f) then
+                           inst^.fm_data.ATTCK_DEC_carrier :=
+                           inst^.fm_data.ATTCK_DEC_carrier AND $0f+
+                          (inst^.fm_data.ATTCK_DEC_carrier SHR 4 +1) SHL 4;
 
                        If (vpos = 2) and (hpos = 1) and
-                          (tADTRACK2_INS(inst^).fm_data.ATTCK_DEC_carrier AND $0f < $0f) then
-                           Inc(tADTRACK2_INS(inst^).fm_data.ATTCK_DEC_carrier);
+                          (inst^.fm_data.ATTCK_DEC_carrier AND $0f < $0f) then
+                           Inc(inst^.fm_data.ATTCK_DEC_carrier);
 
                        If (vpos = 4) and (hpos = 1) and
-                          (tADTRACK2_INS(inst^).fm_data.SUSTN_REL_carrier SHR 4 < $0f) then
-                           tADTRACK2_INS(inst^).fm_data.SUSTN_REL_carrier :=
-                           tADTRACK2_INS(inst^).fm_data.SUSTN_REL_carrier AND $0f+
-                          (tADTRACK2_INS(inst^).fm_data.SUSTN_REL_carrier SHR 4 +1) SHL 4;
+                          (inst^.fm_data.SUSTN_REL_carrier SHR 4 < $0f) then
+                           inst^.fm_data.SUSTN_REL_carrier :=
+                           inst^.fm_data.SUSTN_REL_carrier AND $0f+
+                          (inst^.fm_data.SUSTN_REL_carrier SHR 4 +1) SHL 4;
 
                        If (vpos = 5) and (hpos = 1) and
-                          (tADTRACK2_INS(inst^).fm_data.SUSTN_REL_carrier AND $0f < $0f) then
-                           Inc(tADTRACK2_INS(inst^).fm_data.SUSTN_REL_carrier);
+                          (inst^.fm_data.SUSTN_REL_carrier AND $0f < $0f) then
+                           Inc(inst^.fm_data.SUSTN_REL_carrier);
 
                        If (vpos = 7) and (hpos = 1) and
-                          (tADTRACK2_INS(inst^).fm_data.KSL_VOLUM_carrier AND $3f > 0) then
-                           Dec(tADTRACK2_INS(inst^).fm_data.KSL_VOLUM_carrier);
+                          (inst^.fm_data.KSL_VOLUM_carrier AND $3f > 0) then
+                           Dec(inst^.fm_data.KSL_VOLUM_carrier);
                      end
                    else
                      begin
                        If (vpos = 1) and
-                          (tADTRACK2_INS(inst^).fm_data.ATTCK_DEC_modulator SHR 4 < $0f) then
-                           tADTRACK2_INS(inst^).fm_data.ATTCK_DEC_modulator :=
-                           tADTRACK2_INS(inst^).fm_data.ATTCK_DEC_modulator AND $0f+
-                          (tADTRACK2_INS(inst^).fm_data.ATTCK_DEC_modulator SHR 4 +1) SHL 4;
+                          (inst^.fm_data.ATTCK_DEC_modulator SHR 4 < $0f) then
+                           inst^.fm_data.ATTCK_DEC_modulator :=
+                           inst^.fm_data.ATTCK_DEC_modulator AND $0f+
+                          (inst^.fm_data.ATTCK_DEC_modulator SHR 4 +1) SHL 4;
 
                        If (vpos = 2) and (hpos = 1) and
-                          (tADTRACK2_INS(inst^).fm_data.ATTCK_DEC_modulator AND $0f < $0f) then
-                           Inc(tADTRACK2_INS(inst^).fm_data.ATTCK_DEC_modulator);
+                          (inst^.fm_data.ATTCK_DEC_modulator AND $0f < $0f) then
+                           Inc(inst^.fm_data.ATTCK_DEC_modulator);
 
                        If (vpos = 4) and (hpos = 1) and
-                          (tADTRACK2_INS(inst^).fm_data.SUSTN_REL_modulator SHR 4 < $0f) then
-                           tADTRACK2_INS(inst^).fm_data.SUSTN_REL_modulator :=
-                           tADTRACK2_INS(inst^).fm_data.SUSTN_REL_modulator AND $0f+
-                          (tADTRACK2_INS(inst^).fm_data.SUSTN_REL_modulator SHR 4 +1) SHL 4;
+                          (inst^.fm_data.SUSTN_REL_modulator SHR 4 < $0f) then
+                           inst^.fm_data.SUSTN_REL_modulator :=
+                           inst^.fm_data.SUSTN_REL_modulator AND $0f+
+                          (inst^.fm_data.SUSTN_REL_modulator SHR 4 +1) SHL 4;
 
                        If (vpos = 5) and (hpos = 1) and
-                          (tADTRACK2_INS(inst^).fm_data.SUSTN_REL_modulator AND $0f < $0f) then
-                           Inc(tADTRACK2_INS(inst^).fm_data.SUSTN_REL_modulator);
+                          (inst^.fm_data.SUSTN_REL_modulator AND $0f < $0f) then
+                           Inc(inst^.fm_data.SUSTN_REL_modulator);
 
                        If (vpos = 7) and (hpos = 1) and
-                          (tADTRACK2_INS(inst^).fm_data.KSL_VOLUM_modulator AND $3f > 0) then
-                           Dec(tADTRACK2_INS(inst^).fm_data.KSL_VOLUM_modulator);
+                          (inst^.fm_data.KSL_VOLUM_modulator AND $3f > 0) then
+                           Dec(inst^.fm_data.KSL_VOLUM_modulator);
                      end;
 
                    If (vpos = 14) and
-                     ((tADTRACK2_INS(inst^).fm_data.FEEDBACK_FM SHR 1) AND 7 < 7) then
-                       tADTRACK2_INS(inst^).fm_data.FEEDBACK_FM :=
-                       tADTRACK2_INS(inst^).fm_data.FEEDBACK_FM AND 1+
-                     ((tADTRACK2_INS(inst^).fm_data.FEEDBACK_FM SHR 1) AND 7 +1) SHL 1;
+                     ((inst^.fm_data.FEEDBACK_FM SHR 1) AND 7 < 7) then
+                       inst^.fm_data.FEEDBACK_FM :=
+                       inst^.fm_data.FEEDBACK_FM AND 1+
+                     ((inst^.fm_data.FEEDBACK_FM SHR 1) AND 7 +1) SHL 1;
 
-                   If (vpos = 15) and (tADTRACK2_INS(inst^).fine_tune < 127) then
-                     Inc(tADTRACK2_INS(inst^).fine_tune);
+                   If (vpos = 15) and (inst^.fine_tune < 127) then
+                     Inc(inst^.fine_tune);
                    update_instr_data(instrum_page);
                  end;
 
@@ -1806,64 +1820,64 @@ _jmp1:
                    If carrier then
                      begin
                        If (vpos = 1) and
-                          (tADTRACK2_INS(inst^).fm_data.ATTCK_DEC_carrier SHR 4 > 0) then
-                           tADTRACK2_INS(inst^).fm_data.ATTCK_DEC_carrier :=
-                           tADTRACK2_INS(inst^).fm_data.ATTCK_DEC_carrier AND $0f+
-                          (tADTRACK2_INS(inst^).fm_data.ATTCK_DEC_carrier SHR 4 -1) SHL 4;
+                          (inst^.fm_data.ATTCK_DEC_carrier SHR 4 > 0) then
+                           inst^.fm_data.ATTCK_DEC_carrier :=
+                           inst^.fm_data.ATTCK_DEC_carrier AND $0f+
+                          (inst^.fm_data.ATTCK_DEC_carrier SHR 4 -1) SHL 4;
 
                        If (vpos = 2) and (hpos = 1) and
-                          (tADTRACK2_INS(inst^).fm_data.ATTCK_DEC_carrier AND $0f > 0) then
-                           Dec(tADTRACK2_INS(inst^).fm_data.ATTCK_DEC_carrier);
+                          (inst^.fm_data.ATTCK_DEC_carrier AND $0f > 0) then
+                           Dec(inst^.fm_data.ATTCK_DEC_carrier);
 
                        If (vpos = 4) and (hpos = 1) and
-                          (tADTRACK2_INS(inst^).fm_data.SUSTN_REL_carrier SHR 4 > 0) then
-                           tADTRACK2_INS(inst^).fm_data.SUSTN_REL_carrier :=
-                           tADTRACK2_INS(inst^).fm_data.SUSTN_REL_carrier AND $0f+
-                          (tADTRACK2_INS(inst^).fm_data.SUSTN_REL_carrier SHR 4 -1) SHL 4;
+                          (inst^.fm_data.SUSTN_REL_carrier SHR 4 > 0) then
+                           inst^.fm_data.SUSTN_REL_carrier :=
+                           inst^.fm_data.SUSTN_REL_carrier AND $0f+
+                          (inst^.fm_data.SUSTN_REL_carrier SHR 4 -1) SHL 4;
 
                        If (vpos = 5) and (hpos = 1) and
-                          (tADTRACK2_INS(inst^).fm_data.SUSTN_REL_carrier AND $0f > 0) then
-                           Dec(tADTRACK2_INS(inst^).fm_data.SUSTN_REL_carrier);
+                          (inst^.fm_data.SUSTN_REL_carrier AND $0f > 0) then
+                           Dec(inst^.fm_data.SUSTN_REL_carrier);
 
                        If (vpos = 7) and (hpos = 1) and
-                          (tADTRACK2_INS(inst^).fm_data.KSL_VOLUM_carrier AND $3f < $3f) then
-                           Inc(tADTRACK2_INS(inst^).fm_data.KSL_VOLUM_carrier);
+                          (inst^.fm_data.KSL_VOLUM_carrier AND $3f < $3f) then
+                           Inc(inst^.fm_data.KSL_VOLUM_carrier);
                      end
                    else
                      begin
                        If (vpos = 1) and
-                          (tADTRACK2_INS(inst^).fm_data.ATTCK_DEC_modulator SHR 4 > 0) then
-                           tADTRACK2_INS(inst^).fm_data.ATTCK_DEC_modulator :=
-                           tADTRACK2_INS(inst^).fm_data.ATTCK_DEC_modulator AND $0f+
-                          (tADTRACK2_INS(inst^).fm_data.ATTCK_DEC_modulator SHR 4 -1) SHL 4;
+                          (inst^.fm_data.ATTCK_DEC_modulator SHR 4 > 0) then
+                           inst^.fm_data.ATTCK_DEC_modulator :=
+                           inst^.fm_data.ATTCK_DEC_modulator AND $0f+
+                          (inst^.fm_data.ATTCK_DEC_modulator SHR 4 -1) SHL 4;
 
                        If (vpos = 2) and (hpos = 1) and
-                          (tADTRACK2_INS(inst^).fm_data.ATTCK_DEC_modulator AND $0f > 0) then
-                           Dec(tADTRACK2_INS(inst^).fm_data.ATTCK_DEC_modulator);
+                          (inst^.fm_data.ATTCK_DEC_modulator AND $0f > 0) then
+                           Dec(inst^.fm_data.ATTCK_DEC_modulator);
 
                        If (vpos = 4) and (hpos = 1) and
-                          (tADTRACK2_INS(inst^).fm_data.SUSTN_REL_modulator SHR 4 > 0) then
-                           tADTRACK2_INS(inst^).fm_data.SUSTN_REL_modulator :=
-                           tADTRACK2_INS(inst^).fm_data.SUSTN_REL_modulator AND $0f+
-                          (tADTRACK2_INS(inst^).fm_data.SUSTN_REL_modulator SHR 4 -1) SHL 4;
+                          (inst^.fm_data.SUSTN_REL_modulator SHR 4 > 0) then
+                           inst^.fm_data.SUSTN_REL_modulator :=
+                           inst^.fm_data.SUSTN_REL_modulator AND $0f+
+                          (inst^.fm_data.SUSTN_REL_modulator SHR 4 -1) SHL 4;
 
                        If (vpos = 5) and (hpos = 1) and
-                          (tADTRACK2_INS(inst^).fm_data.SUSTN_REL_modulator AND $0f > 0) then
-                           Dec(tADTRACK2_INS(inst^).fm_data.SUSTN_REL_modulator);
+                          (inst^.fm_data.SUSTN_REL_modulator AND $0f > 0) then
+                           Dec(inst^.fm_data.SUSTN_REL_modulator);
 
                        If (vpos = 7) and (hpos = 1) and
-                          (tADTRACK2_INS(inst^).fm_data.KSL_VOLUM_modulator AND $3f < $3f) then
-                           Inc(tADTRACK2_INS(inst^).fm_data.KSL_VOLUM_modulator);
+                          (inst^.fm_data.KSL_VOLUM_modulator AND $3f < $3f) then
+                           Inc(inst^.fm_data.KSL_VOLUM_modulator);
                      end;
 
                    If (vpos = 14) and
-                     ((tADTRACK2_INS(inst^).fm_data.FEEDBACK_FM SHR 1) AND 7 > 0) then
-                       tADTRACK2_INS(inst^).fm_data.FEEDBACK_FM :=
-                       tADTRACK2_INS(inst^).fm_data.FEEDBACK_FM AND 1+
-                     ((tADTRACK2_INS(inst^).fm_data.FEEDBACK_FM SHR 1) AND 7 -1) SHL 1;
+                     ((inst^.fm_data.FEEDBACK_FM SHR 1) AND 7 > 0) then
+                       inst^.fm_data.FEEDBACK_FM :=
+                       inst^.fm_data.FEEDBACK_FM AND 1+
+                     ((inst^.fm_data.FEEDBACK_FM SHR 1) AND 7 -1) SHL 1;
 
-                   If (vpos = 15) and (tADTRACK2_INS(inst^).fine_tune > -127) then
-                     Dec(tADTRACK2_INS(inst^).fine_tune);
+                   If (vpos = 15) and (inst^.fine_tune > -127) then
+                     Dec(inst^.fine_tune);
                    update_instr_data(instrum_page);
                  end;
 
@@ -1881,7 +1895,7 @@ _jmp1:
                           instrum_page := current_inst;
                           STATUS_LINE_refresh;
                           inst := Addr(songdata.instr_data[instrum_page]);
-                          If NOT (tADTRACK2_INS(inst^).perc_voice in [0,1]) then
+                          If NOT (inst^.perc_voice in [0,1]) then
                             carrier := FALSE;
                           page_build;
                           page_refresh;
@@ -1902,7 +1916,7 @@ _jmp1:
                           instrum_page := current_inst;
                           STATUS_LINE_refresh;
                           inst := Addr(songdata.instr_data[instrum_page]);
-                          If NOT (tADTRACK2_INS(inst^).perc_voice in [0,1]) then
+                          If NOT (inst^.perc_voice in [0,1]) then
                             carrier := FALSE;
                           page_build;
                           page_refresh;
@@ -2007,7 +2021,7 @@ _jmp1:
                    GOTO _jmp1;
                  end;
 
-        kENTER:  If (tADTRACK2_INS(inst^).perc_voice in [0,1]) then
+        kENTER:  If (inst^.perc_voice in [0,1]) then
                    carrier := NOT carrier;
         else nope := TRUE;
       end;
@@ -2016,14 +2030,14 @@ _jmp1:
          (UpCase(CHR(LO(fkey))) in ['M','B','S','T','C','H']) then
         begin
           Case UpCase(CHR(LO(fkey))) of
-            'M': tADTRACK2_INS(inst^).perc_voice := 0;
-            'B': tADTRACK2_INS(inst^).perc_voice := 1;
-            'S': tADTRACK2_INS(inst^).perc_voice := 2;
-            'T': tADTRACK2_INS(inst^).perc_voice := 3;
-            'C': tADTRACK2_INS(inst^).perc_voice := 4;
-            'H': tADTRACK2_INS(inst^).perc_voice := 5;
+            'M': inst^.perc_voice := 0;
+            'B': inst^.perc_voice := 1;
+            'S': inst^.perc_voice := 2;
+            'T': inst^.perc_voice := 3;
+            'C': inst^.perc_voice := 4;
+            'H': inst^.perc_voice := 5;
           end;
-          If NOT (tADTRACK2_INS(inst^).perc_voice in [0,1]) then carrier := FALSE;
+          If NOT (inst^.perc_voice in [0,1]) then carrier := FALSE;
           page_build;
           page_refresh;
           nope := FALSE;
@@ -2206,6 +2220,7 @@ procedure instr_control_proc;
 
 var
   temp,temp2,ins1,ins2: Byte;
+  temps: String;
   temp_inst: Record
                name:   String[32];
                data:   tADTRACK2_INS;
@@ -2406,26 +2421,25 @@ begin
                  mn_environment.refresh;
                end;
 
-    kSPACE:  If is_4op_mode then
-                   begin
-                 If (songdata.instr_names[instrum_page][1] <> '') then
-                   begin
-                     If (marked_instruments < 2) then
-                       begin
-                         songdata.instr_names[instrum_page][1] := '';
-                         last_marked := instrum_page;
-                       end
-                     else begin
-                            songdata.instr_names[last_marked][1] := ' ';
-                            songdata.instr_names[instrum_page][1] := '';
-                            last_marked := instrum_page;
-                          end;
-                   end
-                 else songdata.instr_names[instrum_page][1] := ' ';
+    kSPACE:  begin
+               If (songdata.instr_names[instrum_page][1] <> '') then
+                 begin
+                   If (marked_instruments < 2) then
+                     begin
+                       songdata.instr_names[instrum_page][1] := '';
+                       last_marked := instrum_page;
+                     end
+                   else begin
+                          songdata.instr_names[last_marked][1] := ' ';
+                          songdata.instr_names[instrum_page][1] := '';
+                          last_marked := instrum_page;
+                        end;
+                 end
+               else songdata.instr_names[instrum_page][1] := ' ';
 
-                 mn_environment.do_refresh := TRUE;
-                 mn_environment.refresh;
-               end;
+               mn_environment.do_refresh := TRUE;
+               mn_environment.refresh;
+             end;
   end;
 
   instrum_page := mn_environment.curr_pos;
@@ -2457,43 +2471,45 @@ begin
   If is_4op_mode then
     Case marked_instruments of
       0: begin
-           ShowStr(mn_environment.v_dest^,
-                   INSCTRL_xshift+41,
-                   INSCTRL_yshift+26,
-                   ExpStrL('',13,'Í'),
+           ShowStr(mn_environment.v_dest^,INSCTRL_xshift+39,INSCTRL_yshift+26,
+                   ExpStrL('',17,'Í'),
                    dialog_background+dialog_border);
            STATUS_LINE_refresh;
          end;
 
-      1: ShowCStr(mn_environment.v_dest^,
-                  INSCTRL_xshift+41,
-                  INSCTRL_yshift+26,
-                  ' ®¯ õ~'+byte2hex(_1st_marked)+
-                  '~,ô~'+byte2hex(instrum_page)+'~ ',
+      1: begin
+           temps := connection_str[tDUMMY_BUFF(Addr(songdata.instr_data[_1st_marked])^)[_index[11]] AND 1]+'/'+
+                    connection_str[tDUMMY_BUFF(Addr(songdata.instr_data[instrum_page])^)[_index[11]] AND 1];
+           ShowCStr(mn_environment.v_dest^,INSCTRL_xshift+41,INSCTRL_yshift+26,
+                  ' õ~'+byte2hex(_1st_marked)+
+                  '~,ô~'+byte2hex(instrum_page)+'~ '+temps+' ',
                   dialog_background+dialog_border,
                   dialog_background+dialog_context);
+         end;
 
       2: If (last_marked <> _1st_marked) then
-           ShowCStr(mn_environment.v_dest^,
-                    INSCTRL_xshift+41,
-                    INSCTRL_yshift+26,
-                    ' ®¯ õ~'+byte2hex(_1st_marked)+
-                    '~,ô~'+byte2hex(_2nd_marked)+'~ ',
-                    dialog_background+dialog_border,
-                    dialog_background+dialog_context)
+           begin
+             temps := connection_str[tDUMMY_BUFF(Addr(songdata.instr_data[_1st_marked])^)[_index[11]] AND 1]+'/'+
+                      connection_str[tDUMMY_BUFF(Addr(songdata.instr_data[_2nd_marked])^)[_index[11]] AND 1];
+             ShowCStr(mn_environment.v_dest^,INSCTRL_xshift+41,INSCTRL_yshift+26,
+                      ' õ~'+byte2hex(_1st_marked)+
+                      '~,ô~'+byte2hex(_2nd_marked)+'~ '+temps+' ',
+                      dialog_background+dialog_border,
+                      dialog_background+dialog_context);
+           end
          else
-           ShowCStr(mn_environment.v_dest^,
-                    INSCTRL_xshift+41,
-                    INSCTRL_yshift+26,
-                    ' ®¯ õ~'+byte2hex(_2nd_marked)+
-                    '~,ô~'+byte2hex(_1st_marked)+'~ ',
-                    dialog_background+dialog_border,
-                    dialog_background+dialog_context);
+           begin
+             temps := connection_str[tDUMMY_BUFF(Addr(songdata.instr_data[_2nd_marked])^)[_index[11]] AND 1]+'/'+
+                      connection_str[tDUMMY_BUFF(Addr(songdata.instr_data[_1st_marked])^)[_index[11]] AND 1];           
+             ShowCStr(mn_environment.v_dest^,INSCTRL_xshift+41,INSCTRL_yshift+26,
+                      ' õ~'+byte2hex(_2nd_marked)+
+                      '~,ô~'+byte2hex(_1st_marked)+'~ '+temps+' ',
+                      dialog_background+dialog_border,
+                      dialog_background+dialog_context);
+           end
     end
-  else ShowStr(mn_environment.v_dest^,
-               INSCTRL_xshift+41,
-               INSCTRL_yshift+26,
-               ExpStrL('',13,'Í'),
+  else ShowStr(mn_environment.v_dest^,INSCTRL_xshift+41,INSCTRL_yshift+26,
+               ExpStrL('',17,'Í'),
                dialog_background+dialog_border);
 
   If NOT shift_pressed and NOT alt_pressed and NOT ctrl_pressed then

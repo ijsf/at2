@@ -234,7 +234,7 @@ const
   kShF3   = $5600; kShRGHT = $4d36; kShTAB  = $0f00; kCtRbr  = $1b1d;
   kF4     = $3e00; kCtRGHT = $7400; kSPACE  = $3920; kCtrlF3 = $6000;
   kF5     = $3f00; kUP     = $4800; kBkSPC  = $0e08; kAltV   = $2f00;
-  kShF5   = $5800; kShUP   = $4838; kNPastr = $372a;
+  kShF5   = $5800; kShUP   = $4838; kNPastr = $372a; kAstrsk = $092a;
   kF6     = $4000; kDOWN   = $5000; kNPplus = $4e2b;
   kShF6   = $5900; kShDOWN = $5032; kNPmins = $4a2d;
   kF7     = $4100; kPgUP   = $4900; kAlt1   = $7800;
@@ -387,45 +387,45 @@ const
   inst_itm1: array[1..18] of Record str: String[24]; colr: Byte;
                              end = (
 
-    (str: '~AM/ViB/EG/KSR/MUL~ Ä¿  '; colr: 1),
+    (str: '~AM/ViB/EG/KSR/MUL~ Ä¿  ';   colr: 1),
     (str: '~Carrier~            ÃÄ'; colr: 3),
     (str: '~Modulator~          ÀÄ'; colr: 2),
-    (str: '~KSL/VOLUME~ ÄÄÄÄÄÄÄÄ¿  '; colr: 1),
+    (str: '~KSL/VOLUME~ ÄÄÄÄÄÄÄÄ¿  ';   colr: 1),
     (str: '~Carrier~            ÃÄ'; colr: 3),
     (str: '~Modulator~          ÀÄ'; colr: 2),
-    (str: '~ATTACK/DECAY~ ÄÄÄÄÄÄ¿  '; colr: 1),
+    (str: '~ATTACK/DECAY~ ÄÄÄÄÄÄ¿  ';   colr: 1),
     (str: '~Carrier~            ÃÄ'; colr: 3),
     (str: '~Modulator~          ÀÄ'; colr: 2),
-    (str: '~SUSTAiN/RELEASE~ ÄÄÄ¿  '; colr: 1),
+    (str: '~SUSTAiN/RELEASE~ ÄÄÄ¿  ';   colr: 1),
     (str: '~Carrier~            ÃÄ'; colr: 3),
     (str: '~Modulator~          ÀÄ'; colr: 2),
-    (str: '~WAVEFORM~ ÄÄÄÄÄÄÄÄÄÄ¿  '; colr: 1),
+    (str: '~WAVEFORM~ ÄÄÄÄÄÄÄÄÄÄ¿  ';   colr: 1),
     (str: '~Carrier~            ÃÄ'; colr: 3),
     (str: '~Modulator~          ÀÄ'; colr: 2),
-    (str: '~FEEDBACK/FM~ ÄÄÄÄÄÄÄÄÄ'; colr: 1),
+    (str: '~CONNECTiON/FB~ ÄÄÄÄÄ';   colr: 1),
     (str: '~PANNiNG~ ÄÄÄÄÄ';         colr: 1),
     (str: '~FiNE-TUNE~ ÄÄÄ';         colr: 1));
 
 const
-  inst_itm2: array[1..18] of Record str: String[24]; colr: Byte;
+  inst_itm2: array[1..18] of Record str: String[25]; colr: Byte;
                              end = (
 
-    (str: '~AM/ViB/EG/KSR/MUL~ Ä¿  '; colr: 1),
+    (str: '~AM/ViB/EG/KSR/MUL~ Ä¿  ';   colr: 1),
     (str: '~Carrier~            ÃÄ'; colr: 3),
     (str: '~Modulator~          ÀÄ'; colr: 2),
-    (str: '~KSL/VOLUME~ ÄÄÄÄÄÄÄÄ¿  '; colr: 1),
+    (str: '~KSL/VOLUME~ ÄÄÄÄÄÄÄÄ¿  ';   colr: 1),
     (str: '~Carrier~            ÃÄ'; colr: 3),
     (str: '~Modulator~          ÀÄ'; colr: 2),
-    (str: '~ATTACK/DECAY~ ÄÄÄÄÄÄ¿  '; colr: 1),
+    (str: '~ATTACK/DECAY~ ÄÄÄÄÄÄ¿  ';   colr: 1),
     (str: '~Carrier~            ÃÄ'; colr: 3),
     (str: '~Modulator~          ÀÄ'; colr: 2),
-    (str: '~SUSTAiN/RELEASE~ ÄÄÄ¿  '; colr: 1),
+    (str: '~SUSTAiN/RELEASE~ ÄÄÄ¿  ';   colr: 1),
     (str: '~Carrier~            ÃÄ'; colr: 3),
     (str: '~Modulator~          ÀÄ'; colr: 2),
-    (str: '~WAVEFORM~ ÄÄÄÄÄÄÄÄÄÄ¿  '; colr: 1),
+    (str: '~WAVEFORM~ ÄÄÄÄÄÄÄÄÄÄ¿  ';   colr: 1),
     (str: '~Carrier~            ÃÄ'; colr: 3),
     (str: '~Modulator~          ÀÄ'; colr: 2),
-    (str: '~FEEDBACK/FM~ ÄÄÄÄÄÄÄÄÄ'; colr: 1),
+    (str: '~CONNECTiON/FB~ ÄÄÄÄÄ';   colr: 1),
     (str: '~PANNiNG~ ÄÄÄÄÄ';         colr: 1),
     (str: '~FiNE-TUNE~ ÄÄÄ';         colr: 1));
 
@@ -454,6 +454,7 @@ const
 
 const
   b_note: Char = 'b';
+  connection_str: array[0..1] of String[2] = ('FM','AM');
 
 const
   pos1: array[1..22] of Byte = (+07,+14,+21,+28,+35,+42,+49,+56,+63,+70,+77,+84,+91,+98,+105,+112,+119,+126,+133,+140,+147,+154);
