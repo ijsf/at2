@@ -3,8 +3,8 @@ interface
 
 const
 {__AT2VER__}at2ver  = '2.4.19';
-{__AT2DAT__}at2date = '10-27-2014';
-{__AT2LNK__}at2link = '8:10am';
+{__AT2DAT__}at2date = '10-30-2014';
+{__AT2LNK__}at2link = '8:35am';
 
 const
   ascii_line_01 = 'Ú-ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ--ùú               úù-¿';
@@ -147,13 +147,13 @@ const
     '~[Alt|Ctrl]{Shift} F12~    Toggle WAV recording OFF',
     '',
     'ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿',
-    '³ `FUNCTiONALITY OF ALTERNATiVE KEYS`                    ³',
+    '³ `FUNCTiONALiTY OF ALTERNATiVE KEYS`                    ³',
     'ÃÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´',
     '³ ~Alt~   ³ Toggle normal recording mode                 ³',
     '³ ~Ctrl~  ³ Toggle ''per track'' recording mode            ³',
     '³ ~Shift~ ³ Toggle Fade in / Fade out sound processing   ³',
     'ÃÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´',
-    '³ POSSIBLE COMBiNATIONS: Alt,Ctrl,Alt+Shift,Ctrl+Shift ³',
+    '³ POSSiBLE COMBiNATiONS: Alt,Ctrl,Alt+Shift,Ctrl+Shift ³',
     'ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ',
     '',
     'If ''per track'' recording mode is activated and song playback is stopped,',
@@ -744,7 +744,7 @@ const
     'Frequency modulation means that the modulator slot modulates the carrier.',
     'Additive synthesis means that both slots produce sound on their own.',
     '',
-    '`[FM] FREQUENCY MODULATION`',
+    '`[FM] FREQUENCY MODULATiON`',
     '',
     '',
     '        ÚÄÄÄÄÄÄÄÄÄÄÄÄ¿',
