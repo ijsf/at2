@@ -10,7 +10,7 @@ http://www.adlibtracker.net/files/revision.htm
 
 
 * SDL/Win32/Linux version 2.4.19
-  released: 10/27/2014
+  released: 10/27/2014 (* 11/04/2014)
 
    . fixed switchover from offline to normal Debug mode with ^Enter
    . fixed not working instrument selection with no 4OP track extension
@@ -24,6 +24,7 @@ http://www.adlibtracker.net/files/revision.htm
      when Note Recorder mode is armed
    . added quick reset of track group selection (hotkey: [Alt] Q)
    . improved layout in Instrument Control panel
+   * fixed interface bug in Remap window occuring with sdl_screen_mode=2
 
 
 * SDL/Win32/Linux version 2.4.18

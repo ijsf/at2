@@ -1004,6 +1004,7 @@ asm
         push    ebx
         push    ecx
         push    edx
+        push    edi
         mov     al,MaxCol
         dec     al
         xor     ah,ah
@@ -1017,6 +1018,8 @@ asm
         push    eax
         push    ebx
         mov     al,MaxCol
+        xor     ah,ah
+        xor     ebx,ebx
         mov     bl,y
         dec     bl
         mul     bl
@@ -1036,7 +1039,8 @@ asm
         stosb
         add     edi,ebx
         loop    @@1
-@@2:    pop     edx
+@@2:    pop     edi
+        pop     edx
         pop     ecx
         pop     ebx
 end;
