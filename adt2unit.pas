@@ -324,7 +324,12 @@ const
 implementation
 
 uses
-  DOS,CRT,
+  DOS,
+{$IFDEF UNIX}
+  SDL_Timer,
+{$ELSE}
+  CRT,
+{$ENDIF}
   AdT2sys,AdT2vscr,AdT2vid,AdT2keyb,TimerInt,AdT2opl3,AdT2extn,AdT2ext2,
   StringIO,DialogIO,ParserIO,TxtScrIO;
 
@@ -5033,7 +5038,11 @@ begin
         If fade_screen then
           begin
             vid_FadeOut;
+	  {$IFDEF UNIX}
+	    SDL_Delay(1);
+	  {$ELSE}
             Delay(1);
+	  {$ENDIF}
           end;
       end
   else
@@ -5041,7 +5050,11 @@ begin
       If fade_screen then
         begin
           vid_FadeOut;
+	{$IFDEF UNIX}
+	  SDL_Delay(1);
+	{$ELSE}
           Delay(1);
+	{$ENDIF}
         end;
 end;
 

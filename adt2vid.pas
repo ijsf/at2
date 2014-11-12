@@ -11,7 +11,9 @@ procedure vid_FadeOut;
 implementation
 
 uses
+{$IFNDEF UNIX}
   CRT,
+{$ENDIF}
   SDL,SDL_Video,SDL_Timer,SDL__rwops,
   AdT2vscr,AdT2unit,AdT2ext2,DialogIO,TxtScrIO,StringIO;
 

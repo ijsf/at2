@@ -99,7 +99,11 @@ procedure show_progress(value: Longint);
 implementation
 
 uses
+{$IFDEF UNIX}
+  SDL_Timer,
+{$ELSE}
   CRT,
+{$ENDIF}
   AdT2sys,AdT2vscr,AdT2opl3,AdT2keyb,
   AdT2unit,AdT2ext2,AdT2ext3,AdT2text,AdT2apak,
   StringIO,DialogIO,ParserIO,TxtScrIO,
@@ -3105,7 +3109,11 @@ _jmp1:
       HELP('debug_info');
       For temp := 1 to 5 do
         begin
+	{$IFDEF UNIX}
+	  SDL_Delay(20);
+	{$ELSE}
           Delay(20);
+	{$ENDIF}
           emulate_screen;
         end;
       keyboard_reset_buffer;
@@ -3152,7 +3160,11 @@ _jmp1:
           end;
         For temp := 1 to 5 do
           begin
+  	  {$IFDEF UNIX}
+  	    SDL_Delay(20);
+  	  {$ELSE}
             Delay(20);
+  	  {$ENDIF}
             emulate_screen;
           end;
         keyboard_reset_buffer;

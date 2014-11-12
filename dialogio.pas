@@ -193,6 +193,7 @@ function VScrollBar(var dest; x,y: Byte; size: Byte; len1,len2,pos: Word;
 procedure DialogIO_Init;
 
 function Lower_file(s: String) : String;
+function Upper_file(s: String) : String;
 function iCASE_file(s: String) : String;
 
 implementation
@@ -249,6 +250,17 @@ begin
   Lower_file := Lower(s);
 {$endif}
 end;
+
+function Upper_file(s: String) : String;
+
+begin
+{$ifdef UNIX}
+  Upper_file := s;
+{$else}
+  Upper_file := Upper(s);
+{$endif}
+end;
+
 
 
 function OutStr(var queue; len: Byte; order: Word): String; assembler;
@@ -1336,7 +1348,7 @@ function path_filter(path: String): String;
 begin
   If (Length(path) > 3) and (path[Length(path)] = PATHSEP) then
     Delete(path,Length(path),1);
-  path_filter := Upper(path);
+  path_filter := Upper_File(path);
 end;
 
 label _jmp1;

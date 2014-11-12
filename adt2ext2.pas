@@ -46,7 +46,10 @@ function _4op_to_test: Word;
 implementation
 
 uses
-  CRT,SDL_Timer,
+{$IFNDEF UNIX}
+  CRT,
+{$ENDIF}
+  SDL_Timer,
   AdT2sys,AdT2vid,AdT2vscr,AdT2keyb,AdT2opl3,AdT2unit,AdT2extn,AdT2text,AdT2apak,
   StringIO,DialogIO,ParserIO,TxtScrIO;
 
