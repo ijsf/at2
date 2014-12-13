@@ -1,27 +1,14 @@
 unit AdT2unit;
+{$IFDEF __TMT__}
+{$S-,Q-,R-,V-,B-,X+}
+{$ELSE}
 {$PACKRECORDS 1}
+{$ENDIF}
 interface
 
 const
   MAX_IRQ_FREQ = 1000;
 
-const
-  slide_ticks: Longint = 0;
-  reset_slide_ticks: Boolean = FALSE;
-  blink_ticks: Longint = 0;
-  blink_flag: Boolean = FALSE;
-
-const
-  _force_program_quit: Boolean = FALSE;
-  _realtime_gfx_no_update: Boolean = FALSE;
-  _no_step_debugging: Boolean = FALSE;
-  _emulate_screen_without_delay: Boolean = FALSE;
-  _update_sdl_screen: Boolean = FALSE;
-  _generic_blink_event_flag: Boolean = FALSE;
-  _name_scrl_shift_ctr: Shortint = 1;
-  _name_scrl_shift: Byte = 0;
-  _name_scrl_pending_frames: Longint = 0;
-  _cursor_blink_pending_frames: Longint = 0;
 
 {$i typconst.inc}
 const
@@ -49,9 +36,11 @@ const
   module_archived:   Boolean   = FALSE;
   force_scrollbars:  Boolean   = FALSE;
   no_sync_playing:   Boolean   = FALSE;
+  no_step_debugging: Boolean   = FALSE;
   play_single_patt:  Boolean   = FALSE;
   no_trace_pattord:  Boolean   = FALSE;
   max_patterns:      Byte      = 128;
+  jump_mark_mode:    Boolean   = FALSE;
 
 const
   def_vibtrem_speed_factor: Byte = 1;
@@ -110,6 +99,8 @@ var
   effect_table2: array[1..20] of Word;
   fslide_table:  array[1..20] of Byte;
   fslide_table2: array[1..20] of Byte;
+  glfsld_table:  array[1..20] of Word;
+  glfsld_table2: array[1..20] of Word;
   porta_table:   array[1..20] of Record freq: Word; speed: Byte; end;
   porta_table2:  array[1..20] of Record freq: Word; speed: Byte; end;
   arpgg_table:   array[1..20] of Record state,note,add1,add2: Byte; end;
@@ -156,6 +147,8 @@ const
   transpos: Byte = 1;
   track_chan_start: Byte = 1;
   nm_track_chan: Byte = 1;
+  play_pos_buf: array[1..9] of Word = (0,0,0,0,0,0,0,0,0);
+  rec_correction: Byte = 0;
 
 const
   current_order: Byte = 0;
@@ -175,8 +168,6 @@ var
   songdata_title:  String;
 
 var
-  old_songdata: tOLD_FIXED_SONGDATA;
-  songdata,temp_songdata: tFIXED_SONGDATA;
   songdata_crc,songdata_crc_ord: Longint;
   temp_instrument: tADTRACK2_INS;
   temp_instrument_macro: tREGISTER_TABLE;
@@ -199,22 +190,47 @@ var
   last_order: Byte;
 
 var
+  buf1: array[0..PRED(SizeOf(tVARIABLE_DATA))] of Byte;
+  buf2: array[0..PRED(65535)] of Byte;
+  buf3: array[0..PRED(65535)] of Byte;
+  buf4: array[0..PRED(65535)] of Byte;
+
+var
   pattdata: ^tPATTERN_DATA;
   old_hash_buffer: tOLD_VARIABLE_DATA1;
   hash_buffer: tOLD_VARIABLE_DATA2;
-  clipboard: tCLIPBOARD;
-  centered_frame_vdest: Pointer;
-  buffer: array[0..PRED(SizeOf(tVARIABLE_DATA))] of Byte;
-  backup: tBACKUP;
+  old_songdata: tOLD_FIXED_SONGDATA;
+  dos_memavail: Word;
+
+var
+  songdata:      tFIXED_SONGDATA;
+  songdata_bak:  tFIXED_SONGDATA;
+  temp_songdata: tFIXED_SONGDATA;
+  clipboard:     tCLIPBOARD;
+
+const
+  ptr_songdata:      Pointer = Addr(songdata);
+  ptr_songdata_bak:  Pointer = Addr(songdata_bak);
+  ptr_temp_songdata: Pointer = Addr(ptr_temp_songdata);
+  ptr_clipboard:     Pointer = Addr(clipboard);
 
 var
   song_timer,timer_temp: Longint;
   song_timer_tenths: Longint;
   ticks,tick0,tickD,tickXF: Longint;
-  time_playing: Real;
+  time_playing,time_playing0: Real;
 
 const
+{$IFDEF __TMT__}
+  timer_determinator: Longint = 1;
+  timer_det2: Longint = 1;
+  scr_scroll_x: Word = 0;
+  old_scr_scroll_x: Word = 0;
+  scr_scroll_y: Word = 0;
+  old_scr_scroll_y: Word = 0;
+{$ELSE}
   screen_scroll_offset: Word = 0;
+{$ENDIF}
 
 var
   common_flag_backup: Byte;
@@ -236,11 +252,11 @@ var
                    play_status: tPLAY_STATUS;
                  end;
 
-function nFreq(note: Byte): Word;
-function calc_pattern_pos(pattern: Byte): Byte;
-function concw(Lo,Hi: Byte): Word;
-function ins_parameter(ins,param: Byte): Byte;
-function scale_volume(volume,scale_factor: Byte): Byte;
+function  nFreq(note: Byte): Word;
+function  calc_pattern_pos(pattern: Byte): Byte;
+function  concw(Lo,Hi: Byte): Word;
+function  ins_parameter(ins,param: Byte): Byte;
+function  scale_volume(volume,scale_factor: Byte): Byte;
 function _macro_speedup: Word;
 procedure calibrate_player(order,line: Byte; status_filter: Boolean;
                            line_dependent: Boolean);
@@ -267,6 +283,7 @@ procedure set_ins_data(ins,chan: Byte);
 procedure init_timer_proc;
 procedure done_timer_proc;
 procedure realtime_gfx_poll_proc;
+procedure status_refresh;
 
 function  hscroll_bar(x,y: Byte; size: Byte; len1,len2,pos: Word;
                       atr1,atr2: Byte): Byte;
@@ -274,7 +291,7 @@ function  vscroll_bar(x,y: Byte; size: Byte; len1,len2,pos: Word;
                       atr1,atr2: Byte): Byte;
 
 procedure centered_frame(var xstart,ystart: Byte; hsize,vsize: Byte;
-                             name: String; atr1,atr2: Byte; border: String);
+                         name: String; atr1,atr2: Byte; border: String);
 
 procedure get_chunk(pattern,line,channel: Byte; var chunk: tCHUNK);
 procedure put_chunk(pattern,line,channel: Byte; chunk: tCHUNK);
@@ -324,14 +341,18 @@ const
 implementation
 
 uses
-  DOS,
+{$IFDEF __TMT__}
+  CRT,DOS,DPMI,
+{$ELSE}
 {$IFDEF UNIX}
   SDL_Timer,
 {$ELSE}
   CRT,
 {$ENDIF}
-  AdT2sys,AdT2vscr,AdT2vid,AdT2keyb,TimerInt,AdT2opl3,AdT2extn,AdT2ext2,
-  StringIO,DialogIO,ParserIO,TxtScrIO;
+  DOS,
+{$ENDIF}
+  AdT2opl3,AdT2sys,AdT2extn,AdT2ext2,AdT2keyb,
+  TimerInt,TxtScrIO,StringIO,DialogIO,ParserIO;
 
 {$i realtime.inc}
 
@@ -613,7 +634,10 @@ end;
 
 procedure update_timer(Hz: Longint);
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2UNIT.PAS:update_timer';
+{$ENDIF}
   If (Hz = 0) then begin TimerSetup(18); EXIT end
   else tempo := Hz;
   If (tempo = 18) and timer_fix then IRQ_freq := TRUNC((tempo+0.2)*20)
@@ -875,7 +899,7 @@ var
   freq: Word;
 
 begin
-  If (note = 0) and (ftune_table[chan] = 0) then EXIT;     
+  If (note = 0) and (ftune_table[chan] = 0) then EXIT;
   If NOT (note in [1..12*8+1]) then freq := freq_table[chan]
   else begin
          freq := nFreq(note-1)+SHORTINT(ins_parameter(ins,12));
@@ -1159,7 +1183,7 @@ procedure play_line;
 var
   event: tCHUNK;
   chan,eLo,eHi,
-  eLo2,eHi2: Byte;
+  eLo2,eHi2,idx: Byte;
 
 function no_loop(current_chan,current_line: Byte): Boolean;
 
@@ -1180,10 +1204,6 @@ begin
 end;
 
 begin
-  If (current_line = 0) and
-     (current_order = calc_following_order(0)) then
-    time_playing := 0;
-
   For chan := 1 to songdata.nm_tracks do
     If channel_flag[chan] and reset_adsrw[chan] then
       begin
@@ -1196,9 +1216,11 @@ begin
     begin
       event := get_event(current_pattern,current_line,chan);
       If (effect_table[chan] <> 0) then last_effect[chan] := effect_table[chan];
-      effect_table[chan] := effect_table[chan] AND $0ff00;
+      If (glfsld_table[chan] <> 0) then effect_table[chan] := glfsld_table[chan]
+      else effect_table[chan] := effect_table[chan] AND $0ff00;
       If (effect_table2[chan] <> 0) then last_effect2[chan] := effect_table2[chan];
-      effect_table2[chan] := effect_table2[chan] AND $0ff00;
+      If (glfsld_table2[chan] <> 0) then effect_table2[chan] := glfsld_table2[chan]
+      else effect_table2[chan] := effect_table2[chan] AND $0ff00;
       ftune_table[chan] := 0;
 
       If (event.note = BYTE_NULL) then
@@ -1215,7 +1237,9 @@ begin
       else event_new[chan] := FALSE;
 
       If (event.note <> 0) or
-         (event.instr_def <> 0) then
+         (event.instr_def <> 0) or
+         (event.effect_def+event.effect <> 0) or
+         (event.effect_def2+event.effect2 <> 0) then
         begin
           event_table[chan].effect_def := event.effect_def;
           event_table[chan].effect := event.effect;
@@ -1359,6 +1383,38 @@ begin
             fslide_table[chan] := event.effect;
           end;
 
+        ef_GlobalFSlideUp,
+        ef_GlobalFSlideDown:
+          begin
+            If (event.effect_def = ef_GlobalFSlideUp) then
+              begin
+                If (event.effect_def2 = ef_Extended) and
+                   (event.effect2 = ef_ex_ExtendedCmd*16+ef_ex_cmd_FTrm_XFGFS) then
+                  effect_table[chan] := concw(ef_extended2+ef_fix2+ef_ex2_FreqSlideUpXF,
+                                              event.effect)
+                else If (event.effect_def2 = ef_Extended) and
+                        (event.effect2 = ef_ex_ExtendedCmd*16+ef_ex_cmd_FVib_FGFS) then
+                       effect_table[chan] := concw(ef_FSlideUpFine,event.effect)
+                     else effect_table[chan] := concw(ef_FSlideUp,event.effect);
+              end
+            else
+              begin
+                If (event.effect_def2 = ef_Extended) and
+                   (event.effect2 = ef_ex_ExtendedCmd*16+ef_ex_cmd_FTrm_XFGFS) then
+                  effect_table[chan] := concw(ef_extended2+ef_fix2+ef_ex2_FreqSlideDnXF,
+                                              event.effect)
+                else If (event.effect_def2 = ef_Extended) and
+                        (event.effect2 = ef_ex_ExtendedCmd*16+ef_ex_cmd_FVib_FGFS) then
+                       effect_table[chan] := concw(ef_FSlideDownFine,event.effect)
+                     else effect_table[chan] := concw(ef_FSlideDown,event.effect);
+              end;
+            For idx := chan to songdata.nm_tracks do
+              begin
+                fslide_table[idx] := event.effect;
+                glfsld_table[idx] := effect_table[chan];
+              end;
+          end;
+
         ef_FSlideUpVSlide,
         ef_FSlUpVSlF,
         ef_FSlideDownVSlide,
@@ -1421,7 +1477,7 @@ begin
                  else effect_table[chan] := event.effect_def;
 
             If (event.effect_def2 = ef_Extended) and
-               (event.effect2 = ef_ex_ExtendedCmd*16+ef_ex_cmd_FineVibr) then
+               (event.effect2 = ef_ex_ExtendedCmd*16+ef_ex_cmd_FVib_FGFS) then
               vibr_table[chan].fine := TRUE;
 
             vibr_table[chan].speed := HI(effect_table[chan]) DIV 16;
@@ -1439,7 +1495,7 @@ begin
                  else effect_table[chan] := event.effect_def;
 
             If (event.effect_def2 = ef_Extended) and
-               (event.effect2 = ef_ex_ExtendedCmd*16+ef_ex_cmd_FineTrem) then
+               (event.effect2 = ef_ex_ExtendedCmd*16+ef_ex_cmd_FTrm_XFGFS) then
               trem_table[chan].fine := TRUE;
 
             trem_table[chan].speed := HI(effect_table[chan]) DIV 16;
@@ -1457,7 +1513,7 @@ begin
                  else effect_table[chan] := effect_table[chan] AND $0ff00;
 
             If (event.effect_def2 = ef_Extended) and
-               (event.effect2 = ef_ex_ExtendedCmd*16+ef_ex_cmd_FineVibr) then
+               (event.effect2 = ef_ex_ExtendedCmd*16+ef_ex_cmd_FVib_FGFS) then
               vibr_table[chan].fine := TRUE;
           end;
 
@@ -1900,6 +1956,38 @@ begin
             fslide_table2[chan] := event.effect2;
           end;
 
+        ef_GlobalFSlideUp,
+        ef_GlobalFSlideDown:
+          begin
+            If (event.effect_def2 = ef_GlobalFSlideUp) then
+              begin
+                If (event.effect_def = ef_Extended) and
+                   (event.effect = ef_ex_ExtendedCmd*16+ef_ex_cmd_FTrm_XFGFS) then
+                  effect_table2[chan] := concw(ef_extended2+ef_fix2+ef_ex2_FreqSlideUpXF,
+                                               event.effect2)
+                else If (event.effect_def = ef_Extended) and
+                        (event.effect = ef_ex_ExtendedCmd*16+ef_ex_cmd_FVib_FGFS) then
+                       effect_table2[chan] := concw(ef_FSlideUpFine,event.effect2)
+                     else effect_table2[chan] := concw(ef_FSlideUp,event.effect2);
+              end
+            else
+              begin
+                If (event.effect_def = ef_Extended) and
+                   (event.effect = ef_ex_ExtendedCmd*16+ef_ex_cmd_FTrm_XFGFS) then
+                  effect_table2[chan] := concw(ef_extended2+ef_fix2+ef_ex2_FreqSlideDnXF,
+                                               event.effect2)
+                else If (event.effect_def = ef_Extended) and
+                        (event.effect = ef_ex_ExtendedCmd*16+ef_ex_cmd_FVib_FGFS) then
+                       effect_table2[chan] := concw(ef_FSlideDownFine,event.effect2)
+                     else effect_table2[chan] := concw(ef_FSlideDown,event.effect2);
+              end;
+            For idx := chan to songdata.nm_tracks do
+              begin
+                fslide_table2[idx] := event.effect2;
+                glfsld_table2[idx] := effect_table2[chan];
+              end;
+          end;
+
         ef_FSlideUpVSlide,
         ef_FSlUpVSlF,
         ef_FSlideDownVSlide,
@@ -1962,7 +2050,7 @@ begin
                  else effect_table2[chan] := event.effect_def2;
 
             If (event.effect_def = ef_Extended) and
-               (event.effect = ef_ex_ExtendedCmd*16+ef_ex_cmd_FineVibr) then
+               (event.effect = ef_ex_ExtendedCmd*16+ef_ex_cmd_FVib_FGFS) then
               vibr_table2[chan].fine := TRUE;
 
             vibr_table2[chan].speed := HI(effect_table2[chan]) DIV 16;
@@ -1980,7 +2068,7 @@ begin
                  else effect_table2[chan] := event.effect_def2;
 
             If (event.effect_def = ef_Extended) and
-               (event.effect = ef_ex_ExtendedCmd*16+ef_ex_cmd_FineTrem) then
+               (event.effect = ef_ex_ExtendedCmd*16+ef_ex_cmd_FTrm_XFGFS) then
               trem_table2[chan].fine := TRUE;
 
             trem_table2[chan].speed := HI(effect_table2[chan]) DIV 16;
@@ -1998,7 +2086,7 @@ begin
                  else effect_table2[chan] := effect_table2[chan] AND $0ff00;
 
             If (event.effect_def = ef_Extended) and
-               (event.effect = ef_ex_ExtendedCmd*16+ef_ex_cmd_FineVibr) then
+               (event.effect = ef_ex_ExtendedCmd*16+ef_ex_cmd_FVib_FGFS) then
               vibr_table2[chan].fine := TRUE;
           end;
 
@@ -2378,13 +2466,15 @@ begin
           end;
       end;
 
-      If (event.effect_def+event.effect = 0) then effect_table[chan] := 0
+      If (event.effect_def+event.effect = 0) then
+        If (glfsld_table[chan] = 0) then effect_table[chan] := 0
       else begin
              event_table[chan].effect_def := event.effect_def;
              event_table[chan].effect := event.effect;
            end;
 
-      If (event.effect_def2+event.effect2 = 0) then effect_table2[chan] := 0
+      If (event.effect_def2+event.effect2 = 0) then
+        If (glfsld_table2[chan] = 0) then effect_table2[chan] := 0
       else begin
              event_table[chan].effect_def2 := event.effect_def2;
              event_table[chan].effect2 := event.effect2;
@@ -2410,11 +2500,11 @@ begin
                      (event.effect2 DIV 16 = ef_ex_ExtendedCmd) and
                      (event.effect2 MOD 16 = ef_ex_cmd_NoRestart)) then
                If NOT ignore_note_once[chan] then
-			     output_note(event.note,voice_table[chan],chan,TRUE)
-			   else
+                 output_note(event.note,voice_table[chan],chan,TRUE)
+               else
              else output_note_NR(event.note,voice_table[chan],chan,TRUE)
           else If (event.note <> 0) and
-                  (event_table[chan].note = event_table[chan].note OR keyoff_flag) and                  
+                  (event_table[chan].note = event_table[chan].note OR keyoff_flag) and
                   ((event.effect_def in [ef_TonePortamento,
                                          ef_TPortamVolSlide,
                                          ef_TPortamVSlideFine]) or
@@ -2533,27 +2623,13 @@ begin
 
   If pattern_delay then
     begin
-      If NOT rewind then
-        begin
-          time_playing := time_playing+1/tempo*tickD;
-          If (time_playing > 3600-1) then time_playing := 0;
-        end
-      else If (current_line <> 0) then
-             If (time_playing > 1/tempo*tickD) then
-               time_playing := time_playing-1/tempo*tickD
-             else time_playing := 0;
+      time_playing := time_playing+1/tempo*tickD;
+      If (time_playing > 3600-1) then time_playing := 0;
     end
-  else If NOT rewind then
-         begin
-           time_playing := time_playing+1/tempo*speed;
-           If (time_playing > 3600-1) then time_playing := 0;
-         end
-       else If (current_line <> 0) then
-              If (time_playing > 1/tempo*speed) then
-                time_playing := time_playing-1/tempo*speed
-              else time_playing := 0;
-  
-  For chan := 1 to 20 do ignore_note_once[chan] := FALSE;
+  else begin
+         time_playing := time_playing+1/tempo*speed;
+         If (time_playing > 3600-1) then time_playing := 0;
+       end;
 end;
 
 procedure portamento_up(chan: Byte; slide: Word; limit: Word);
@@ -3452,6 +3528,10 @@ var
   temp: Byte;
 
 begin
+  For temp := 9 downto 2 do
+    play_pos_buf[temp] := play_pos_buf[temp-1];
+  play_pos_buf[1] := (current_pattern SHL 8)+current_line;
+
   If NOT rewind then
     begin
       If (current_line < PRED(songdata.patt_len)) and NOT pattern_break then Inc(current_line)
@@ -3506,6 +3586,13 @@ begin
   else
     If (current_line > 0) then Dec(current_line);
 
+  For temp := 1 to 20 do
+    begin
+      ignore_note_once[temp] := FALSE;
+      glfsld_table[temp] := 0;
+      glfsld_table2[temp] := 0;
+    end;
+
   If NOT play_single_patt then
     If (current_line = 0) and
        (current_order = calc_following_order(0)) and speed_update then
@@ -3521,14 +3608,16 @@ procedure poll_proc;
 var
   temp: Byte;
   chunk: tCHUNK;
-
-var
+{$IFDEF __TMT__}
   _debug_str_bak_: String;
+{$ENDIF}
 
 begin
+{$IFDEF __TMT__}
   _debug_str_bak_ := _debug_str_;
   _debug_str_ := 'ADT2UNIT.PAS:_poll_proc';
-  
+{$ENDIF}
+
   If track_notes and scankey(SC_BACKSPACE) then
     For temp := 1 to nm_track_chan do
       If channel_flag[track_chan_start+temp-1] then
@@ -3544,7 +3633,7 @@ begin
     begin
       If debugging and
          NOT single_play and NOT pattern_break and
-         (NOT space_pressed or _no_step_debugging) then EXIT;
+         (NOT space_pressed or no_step_debugging) then EXIT;
 
       If NOT single_play and
          NOT play_single_patt then
@@ -3578,15 +3667,23 @@ begin
           pattern_delay := FALSE;
         end;
 
-      If fast_forward then fast_forward := FALSE;
-      If rewind then rewind := FALSE;
+      If fast_forward or rewind then
+        If (Abs(time_playing-time_playing0) > 0.5) or
+           NOT ((tracing and (scankey(SC_UP) or scankey(SC_DOWN))) or
+                (NOT tracing and ctrl_pressed and (scankey(SC_LEFT) or scankey(SC_RIGHT)))) then
+          begin
+            fast_forward := FALSE;
+            rewind := FALSE;
+            time_playing0 := time_playing;
+            synchronize_song_timer;
+          end;
     end
   else
     begin
       update_effects;
       Inc(ticks);
 
-      If NOT (debugging and NOT single_play and (NOT space_pressed or _no_step_debugging)) then
+      If NOT (debugging and NOT single_play and (NOT space_pressed or no_step_debugging)) then
         If pattern_delay and (tickD > 1) then Dec(tickD)
         else begin
                If pattern_delay and NOT single_play then
@@ -3604,7 +3701,9 @@ begin
       update_extra_fine_effects;
       Dec(tickXF,4);
     end;
+{$IFDEF __TMT__}
   _debug_str_ := _debug_str_bak_;
+{$ENDIF}
 end;
 
 procedure macro_poll_proc;
@@ -3618,8 +3717,10 @@ var
   finished_flag: Word;
 
 var
-  _debug_str_bak_: String;
   _force_macro_key_on: Boolean;
+{$IFDEF __TMT__}
+  _debug_str_bak_: String;
+{$ENDIF}
 
 function _ins_adsr_data_empty(ins: Byte): Boolean;
 begin
@@ -3635,8 +3736,10 @@ begin
 end;
 
 begin
+{$IFDEF __TMT__}
   _debug_str_bak_ := _debug_str_;
   _debug_str_ := 'ADT2UNIT.PAS:macro_poll_proc';
+{$ENDIF}
   For chan := 1 to 20 do
     begin
       If NOT keyoff_loop[chan] then finished_flag := FINISHED
@@ -3870,7 +3973,9 @@ begin
               else Inc(vib_count);
         end;
     end;
+{$IFDEF __TMT__}
   _debug_str_ := _debug_str_bak_;
+{$ENDIF}
 end;
 
 procedure set_global_volume;
@@ -3889,11 +3994,33 @@ end;
 
 procedure synchronize_screen;
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2UNIT.PAS:synchronize_screen';
+  If (scr_scroll_x <> old_scr_scroll_x) or
+     (scr_scroll_y <> old_scr_scroll_y) then
+    begin
+      old_scr_scroll_x := scr_scroll_x;
+      old_scr_scroll_y := scr_scroll_y;
+
+      If (scr_scroll_x > scr_font_width*MaxCol-scr_font_width*hard_maxcol) then
+        scr_scroll_x := scr_font_width*MaxCol-scr_font_width*hard_maxcol;
+
+      If (scr_scroll_y > scr_font_height*MaxLn-scr_font_height*hard_maxln) then
+        scr_scroll_y := scr_font_height*MaxLn-scr_font_height*hard_maxln;
+
+      WaitRetrace;
+      If (program_screen_mode < 3) or
+         ((program_screen_mode = 3) and (comp_text_mode < 2)) then
+        SetTextDisp(scr_scroll_x,scr_scroll_y)
+      else virtual_screen__first_row := scr_scroll_y*800;
+    end;
+{$ELSE}
   If (program_screen_mode <> 0) then EXIT;
   If (screen_scroll_offset > 16*MaxLn-16*hard_maxln) then
     screen_scroll_offset := 16*MaxLn-16*hard_maxln;
-  virtual_screen__first_row := screen_scroll_offset*FB_xres
+  virtual_screen__first_row := screen_scroll_offset*SCREEN_RES_X;
+{$ENDIF}
 end;
 
 function _macro_speedup: Word; assembler;
@@ -3907,20 +4034,55 @@ end;
 
 procedure timer_poll_proc;
 
+{$IFDEF __TMT__}
 var
   _debug_str_bak_: String;
+{$ENDIF}
 
 begin
+
+{$IFDEF __TMT__}
+
   _debug_str_bak_ := _debug_str_;
   _debug_str_ := 'ADT2UNIT.PAS:timer_poll_proc';
+  If (timer_determinator < IRQ_freq) then Inc(timer_determinator)
+  else begin
+         timer_determinator := 1;
+         Inc(seconds_counter);
+       end;
 
-  If (current_order = 0) and (current_line = 0) and
-     (tick0 = ticks) then
+  If (timer_det2 < IRQ_freq DIV 100) then Inc(timer_det2)
+  else begin
+         timer_det2 := 1;
+         Inc(hundereds_counter);
+         Inc(_cursor_blink_pending_frames);
+         Inc(_screen_refresh_pending_frames);
+       end;
+
+  vchg_ticks := vchg_ticks+1/IRQ_freq*100;
+  If (vchg_ticks > overall_volume DIV 10) then
     begin
-      song_timer := 0;
-      timer_temp := 0;
-      song_timer_tenths := 0;
+      If alt_pressed then
+        begin
+          If scankey(SC_PLUS) then
+            If (overall_volume < 63) then
+              begin
+                Inc(overall_volume);
+                set_global_volume;
+              end
+            else
+          else
+            If scankey(SC_MINUS2) then
+              If (overall_volume > 0) then
+                begin
+                  Dec(overall_volume);
+                  set_global_volume;
+                end;
+        end;
+      vchg_ticks := 0;
     end;
+
+{$ENDIF}
 
   If (Random(2222) = 1111) then
     do_slide := TRUE;
@@ -3930,6 +4092,59 @@ begin
          slide_ticks := 0;
          reset_slide_ticks := FALSE;
        end;
+
+{$IFDEF __TMT__}
+
+  If NOT reset_gfx_ticks then Inc(gfx_ticks)
+  else begin
+         gfx_ticks := 0;
+         reset_gfx_ticks := FALSE;
+       end;
+
+  scroll_ticks := scroll_ticks+1/IRQ_freq*100;
+  If (scroll_ticks > 0.2) then
+    begin
+      If ctrl_tab_pressed then
+        begin
+          If scankey(SC_UP) then
+            If (scr_scroll_y > 0) then
+              Dec(scr_scroll_y);
+
+          If scankey(SC_DOWN) then
+            If (scr_scroll_y < scr_font_height*MaxLn-scr_font_height*hard_maxln) then
+              Inc(scr_scroll_y);
+
+          If scankey(SC_PAGEUP) then
+            scr_scroll_y := 0;
+          If scankey(SC_PAGEDOWN) then
+            scr_scroll_y := scr_font_height*MaxLn-scr_font_height*hard_maxln;
+          If scankey(SC_HOME) then
+            scr_scroll_x := 0;
+          If scankey(SC_END) then
+            scr_scroll_x := scr_font_width*MaxCol-scr_font_width*hard_maxcol;
+
+          If scankey(SC_LEFT) then
+            If (scr_scroll_x > 0) then
+              Dec(scr_scroll_x);
+
+          If scankey(SC_RIGHT) then
+            If (scr_scroll_x < scr_font_width*MaxCol-scr_font_width*hard_maxcol) then
+              Inc(scr_scroll_x);
+        end;
+      scroll_ticks := 0;
+    end;
+
+  If ctrl_pressed then
+    If scankey(SC_1) then current_octave := 1
+    else If scankey(SC_2) then current_octave := 2
+         else If scankey(SC_3) then current_octave := 3
+              else If scankey(SC_4) then current_octave := 4
+                   else If scankey(SC_5) then current_octave := 5
+                        else If scankey(SC_6) then current_octave := 6
+                             else If scankey(SC_7) then current_octave := 7
+                                  else If scankey(SC_8) then current_octave := 8;
+
+{$ELSE}
 
   Inc(blink_ticks);
   If ((fast_forward or rewind or (space_pressed and debugging) or
@@ -3941,18 +4156,46 @@ begin
       blink_ticks := 0;
     end;
 
-  If (play_status = isPlaying) and
-     NOT (debugging and (NOT space_pressed or _no_step_debugging)) then
+  If ctrl_tab_pressed then
     begin
+      If scankey(SC_UP) then
+        If (screen_scroll_offset > 0) then
+          Dec(screen_scroll_offset,2);
+
+      If scankey(SC_DOWN) then
+        If (screen_scroll_offset < 16*MaxLn-16*hard_maxln) then
+          Inc(screen_scroll_offset,2);
+      keyboard_reset_buffer;
+
+      If scankey(SC_PAGEUP) then
+        screen_scroll_offset := 0;
+
+      If scankey(SC_PAGEDOWN) then
+        screen_scroll_offset := 16*MaxLn-16*hard_maxln;
+    end;
+
+{$ENDIF}
+
+  If (play_status = isPlaying) and
+     NOT (debugging and (NOT space_pressed or no_step_debugging)) then
+    begin
+{$IFDEF __TMT__}
+      song_timer_tenths := Trunc(100/IRQ_freq*timer_temp);
+{$ELSE}
       song_timer_tenths := timer_temp;
+{$ENDIF}
       If (song_timer_tenths >= 100) then song_timer_tenths := 0;
+{$IFDEF __TMT__}
+      If (timer_temp < IRQ_freq) then Inc(timer_temp)
+{$ELSE}
       If (timer_temp < 100) then Inc(timer_temp)
+{$ENDIF}
       else begin
              Inc(song_timer);
              timer_temp := 1;
            end;
     end
-  else If debugging and (NOT space_pressed or _no_step_debugging) then
+  else If debugging and (NOT space_pressed or no_step_debugging) then
          If NOT pattern_delay then synchronize_song_timer;
 
   If (song_timer > 3600-1) then
@@ -3962,23 +4205,38 @@ begin
       song_timer_tenths := 0;
     end;
 
-  If (scankey(SC_LCTRL) or scankey(SC_RCTRL)) and scankey(SC_TAB) then
-    begin
-      If scankey(SC_UP) then
-        If (screen_scroll_offset > 0) then
-          Dec(screen_scroll_offset,2);
-      If scankey(SC_DOWN) then
-        If (screen_scroll_offset < 16*MaxLn-16*hard_maxln) then
-          Inc(screen_scroll_offset,2);
-      keyboard_reset_buffer;
-    end;
+{$IFDEF __TMT__}
+
+  If (ticklooper > 0) then
+    If (fast_forward or rewind) and NOT replay_forbidden then
+      poll_proc
+    else
+  else If NOT replay_forbidden then
+         poll_proc;
+
+  If (macro_ticklooper = 0) then
+    macro_poll_proc;
+
+  Inc(ticklooper);
+  If (ticklooper >= IRQ_freq DIV tempo) then
+    ticklooper := 0;
+
+  Inc(macro_ticklooper);
+  If (macro_ticklooper >= IRQ_freq DIV (tempo*_macro_speedup)) then
+    macro_ticklooper := 0;
 
   _debug_str_ := _debug_str_bak_;
+{$ENDIF}
 end;
 
 procedure init_timer_proc;
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2UNIT.PAS:init_timer_proc';
+  vchg_ticks := 0;
+  scroll_ticks := 0;
+{$ENDIF}
   Randomize;
   If timer_initialized then EXIT;
   timer_initialized := TRUE;
@@ -3988,7 +4246,10 @@ end;
 
 procedure done_timer_proc;
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2UNIT.PAS:done_timer_proc';
+{$ENDIF}
   If NOT timer_initialized then EXIT;
   timer_initialized := FALSE;
   TimerDone;
@@ -4002,7 +4263,10 @@ var
   jump_count,pattern_pos: Byte;
 
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2UNIT.PAS:calc_pattern_pos';
+{$ENDIF}
   pattern_pos := BYTE_NULL;
   jump_count := 0;
   index := calc_following_order(0);
@@ -4041,14 +4305,18 @@ var
   temp: Byte;
 
 begin
-  If _debug_ then
-    _debug_str_ := 'ADT2UNIT.PAS:calibrate_player:update_status';
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
+  _debug_str_ := 'ADT2UNIT.PAS:calibrate_player:update_status';
+{$ENDIF}
   temp := songdata.pattern_order[current_order];
   If NOT (temp <= $7f) then temp := 0;
   show_str(17,03,byte2hex(current_order),pattern_bckg+status_dynamic_txt);
   show_str(20,03,byte2hex(temp),pattern_bckg+status_dynamic_txt);
   show_str(17,04,'--',pattern_bckg+status_dynamic_txt);
+{$IFNDEF __TMT__}
   _emulate_screen_without_delay := TRUE;
+{$ENDIF}
   emulate_screen;
 end;
 
@@ -4057,7 +4325,10 @@ var
   _pattord_hpos,_pattord_vpos: Byte;
 
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2UNIT.PAS:calibrate_player';
+{$ENDIF}
   If (calc_following_order(0) = -1) then EXIT;
   calibrating := TRUE;
   status_backup.replay_forbidden := replay_forbidden;
@@ -4107,7 +4378,9 @@ begin
   If NOT no_sync_playing then
     begin
       show_str(13,07,' --:--.- ',status_background+status_border);
+{$IFNDEF __TMT__}
       _emulate_screen_without_delay := TRUE;
+{$ENDIF}
       emulate_screen;
     end;
 
@@ -4121,7 +4394,7 @@ begin
     While (current_line <> line) or
           (current_order <> order) do
       begin
-        If scankey(1) { ESC } then BREAK;
+        If scankey(SC_ESCAPE) then BREAK;
         If NOT ((previous_order = current_order) and
                 (previous_line >= current_line) and NOT (pattern_break and
                 (next_line AND $0f0 = pattern_loop_flag))) then loop_count := 0
@@ -4219,7 +4492,10 @@ var
   temp: Byte;
 
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2UNIT.PAS:init_buffers';
+{$ENDIF}
   FillChar(fmpar_table,SizeOf(fmpar_table),0);
   FillChar(pan_lock,SizeOf(pan_lock),BYTE(panlock));
   FillChar(volume_table,SizeOf(volume_table),63);
@@ -4234,6 +4510,8 @@ begin
   FillChar(effect_table2,SizeOf(effect_table2),0);
   FillChar(fslide_table,SizeOf(fslide_table),0);
   FillChar(fslide_table2,SizeOf(fslide_table2),0);
+  FillChar(glfsld_table,SizeOf(glfsld_table),0);
+  FillChar(glfsld_table2,SizeOf(glfsld_table2),0);
   FillChar(porta_table,SizeOf(porta_table),0);
   FillChar(porta_table2,SizeOf(porta_table2),0);
   FillChar(arpgg_table,SizeOf(arpgg_table),0);
@@ -4281,9 +4559,14 @@ var
   temp: Byte;
 
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2UNIT.PAS:init_player';
+{$ELSE}
   opl3_init;
   If opl3_channel_recording_mode then renew_wav_files_flag := TRUE;
+{$ENDIF}
+
   FillChar(ai_table,SizeOf(ai_table),0);
   opl2out($01,0);
 
@@ -4327,8 +4610,10 @@ var
   temp: Byte;
 
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2UNIT.PAS:reset_player';
-  opl3_init;
+{$ENDIF}
   opl2out($01,0);
 
   For temp := 1 to 20 do opl2out($0b0+_chan_n[temp],0);
@@ -4352,7 +4637,10 @@ end;
 
 procedure start_playing;
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2UNIT.PAS:start_playing';
+{$ENDIF}
   init_player;
   If (start_pattern = BYTE_NULL) then current_order := 0
   else If (start_order = BYTE_NULL) then
@@ -4403,6 +4691,7 @@ begin
   update_timer(songdata.tempo);
   no_status_refresh := FALSE;
   really_no_status_refresh := FALSE;
+  FillChar(play_pos_buf,SizeOf(play_pos_buf),0);
 end;
 
 procedure stop_playing;
@@ -4411,8 +4700,14 @@ var
   temp: Byte;
 
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2UNIT.PAS:stop_playing';
+{$ELSE}
   flush_WAV_data;
+{$ENDIF}
+  tracing := FALSE;
+  trace_update_proc := NIL;
   replay_forbidden := TRUE;
   play_status := isStopped;
   fade_out_volume := 63;
@@ -4485,7 +4780,7 @@ begin
       If (size-2-1 < 10) then show_str(x+1+temp,y,'²',atr2)
       else show_str(x+1+temp,y,'²²²',atr2);
     end
-  else show_str(x,y,''+ExpStrL('',size-2,'±')+'',atr1);
+  else show_Str(x,y,''+ExpStrL('',size-2,'±')+'',atr1);
   hscroll_bar := pos;
 end;
 
@@ -4519,13 +4814,13 @@ begin
 end;
 
 procedure centered_frame(var xstart,ystart: Byte; hsize,vsize: Byte;
-                             name: String; atr1,atr2: Byte; border: String);
+                         name: String; atr1,atr2: Byte; border: String);
 begin
   xstart := (work_MaxCol-hsize) DIV 2;
   ystart := (work_MaxLn -vsize) DIV 2+(work_MaxLn-vsize) MOD 2;
 
-  Frame(centered_frame_vdest^,xstart,ystart,xstart+hsize,ystart+vsize,
-                              atr1,name,atr2,border);
+  Frame(centered_frame_vdest,xstart,ystart,xstart+hsize,ystart+vsize,
+        atr1,name,atr2,border);
 end;
 
 procedure get_chunk(pattern,line,channel: Byte;
@@ -4723,7 +5018,10 @@ var
   index2: Byte;
 
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2UNIT.PAS:count_order';
+{$ENDIF}
   index := 0;
   index2 := 0;
 
@@ -4751,7 +5049,10 @@ var
   temp1: Byte;
 
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2UNIT.PAS:count_patterns';
+{$ENDIF}
   patterns := 0;
   For temp1 := 0 to PRED(max_patterns) do
     begin
@@ -4763,14 +5064,14 @@ end;
 
 procedure count_instruments(var instruments: Byte);
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2UNIT.PAS:count_instruments';
+{$ENDIF}
   instruments := 255;
   While (instruments > 0) and
         Empty(songdata.instr_data[instruments],INSTRUMENT_SIZE) do
-    begin
-      realtime_gfx_poll_proc;
-      Dec(instruments);
-    end;
+    Dec(instruments);
 end;
 
 function calc_max_speedup(tempo: Byte): Word;
@@ -4780,7 +5081,10 @@ var
   result: Word;
 
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2UNIT.PAS:calc_max_speedup';
+{$ENDIF}
   result := MAX_IRQ_FREQ DIV tempo;
   Repeat
     If (tempo = 18) and timer_fix then temp := TRUNC((tempo+0.2)*20)
@@ -4797,7 +5101,10 @@ var
   temp: Byte;
 
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2UNIT.PAS:init_songdata';
+{$ENDIF}
   If (play_status <> isStopped) then
     begin
       fade_out_playback(FALSE);
@@ -5004,13 +5311,33 @@ begin
                  (y0 >= block_y0) and (y0 <= block_y1);
 end;
 
-procedure fade_out_playback(fade_screen: Boolean);
+procedure fade_out_playback(fade_screen: Boolean); // fade_screen is relevant in SDL version only
 
 var
-  temp,temp2,temp3: Byte;
+  temp: Byte;
+{$IFNDEF __TMT__}
+  temp2,temp3: Byte;
   factor: Byte;
+{$ENDIF}
 
 begin
+
+{$IFDEF __TMT__}
+
+  _last_debug_str_ := _debug_str_;
+  _debug_str_ := 'ADT2UNIT.PAS:fade_out_playback';
+
+  If (play_status <> isStopped) then
+    For fade_out_volume := 63 downto 0 do
+      begin
+        set_global_volume;
+        Delay(fade_out_volume DIV 32);
+        realtime_gfx_poll_proc;
+        keyboard_reset_buffer;
+      end;
+
+{$ELSE}
+
   If fade_screen then factor := 255
   else factor := 63;
 
@@ -5038,11 +5365,11 @@ begin
         If fade_screen then
           begin
             vid_FadeOut;
-	  {$IFDEF UNIX}
-	    SDL_Delay(1);
-	  {$ELSE}
+      {$IFDEF UNIX}
+        SDL_Delay(1);
+      {$ELSE}
             Delay(1);
-	  {$ENDIF}
+      {$ENDIF}
           end;
       end
   else
@@ -5050,52 +5377,81 @@ begin
       If fade_screen then
         begin
           vid_FadeOut;
-	{$IFDEF UNIX}
-	  SDL_Delay(1);
-	{$ELSE}
+    {$IFDEF UNIX}
+      SDL_Delay(1);
+    {$ELSE}
           Delay(1);
-	{$ENDIF}
+    {$ENDIF}
         end;
+
+{$ENDIF}
+
 end;
 
 procedure realtime_gfx_poll_proc;
 begin
   If _realtime_gfx_no_update then EXIT;
-  If blink_flag then
+
+{$IFDEF __TMT__}
+  If NOT reset_gfx_ticks and
+     (gfx_ticks > (IRQ_freq DIV 100)*SUCC(fps_down_factor)) then
     begin
-      If debugging and (play_status = isStopped) then status_layout[isStopped][9] := #9
-      else status_layout[isStopped][9] := ' ';
-      If NOT debugging then status_layout[isPlaying][9] := ''
-      else status_layout[isPlaying][9] := #9;
-      status_layout[isPaused][8] := #8;
-      If (@macro_preview_indic_proc <> NIL) then
-        macro_preview_indic_proc(1);
-    end
-  else
-    begin
-      status_layout[isPlaying][9] := ' ';
-      status_layout[isPaused] [8] := ' ';
-      status_layout[isStopped][9] := ' ';
-      If (@macro_preview_indic_proc <> NIL) then
-        macro_preview_indic_proc(2);
+      Inc(blink_ticks);
+      If (blink_ticks = 40) then
+        begin
+          _generic_blink_event_flag := NOT _generic_blink_event_flag;
+          blink_flag := NOT blink_flag;
+          blink_ticks := 0;
+        end;
+{$ENDIF}
+
+      If blink_flag then
+        begin
+          If debugging and (play_status = isStopped) then status_layout[isStopped][9] := #9
+          else status_layout[isStopped][9] := ' ';
+          If NOT debugging then status_layout[isPlaying][9] := ''
+          else status_layout[isPlaying][9] := #9;
+          status_layout[isPaused][8] := #8;
+          If (@macro_preview_indic_proc <> NIL) then
+            macro_preview_indic_proc(1);
+        end
+      else
+        begin
+          status_layout[isPlaying][9] := ' ';
+          status_layout[isPaused] [8] := ' ';
+          status_layout[isStopped][9] := ' ';
+          If (@macro_preview_indic_proc <> NIL) then
+            macro_preview_indic_proc(2);
+        end;
+
+      decay_bars_refresh;
+{$IFNDEF __TMT__}
+      If opl3_channel_recording_mode then update_recorded_channels;
+{$ENDIF}
+      If do_synchronize then synchronize_screen;
+{$IFNDEF __TMT__}
+      If (_name_scrl_pending_frames > 0) then Dec(_name_scrl_pending_frames);
+      Inc(_cursor_blink_pending_frames);
+{$ENDIF}
+      status_refresh;
+      STATUS_LINE_refresh;
+{$IFDEF __TMT__}
+      reset_gfx_ticks := TRUE;
+{$ENDIF}
+
+      If tracing and (@trace_update_proc <> NIL) then trace_update_proc
+      else If (play_status = isPlaying) then update_without_trace;
+
+      If (@mn_environment.ext_proc_rt <> NIL) then
+        mn_environment.ext_proc_rt;
+{$IFDEF __TMT__}
     end;
 
-  decay_bars_refresh;
-  If opl3_channel_recording_mode then update_recorded_channels;
-  If do_synchronize then synchronize_screen;
-  If (_name_scrl_pending_frames > 0) then Dec(_name_scrl_pending_frames);
-  Inc(_cursor_blink_pending_frames);
-  status_refresh;
-  STATUS_LINE_refresh;
-
-  If tracing and (@trace_update_proc <> NIL) then trace_update_proc
-  else If (play_status = isPlaying) then update_without_trace;
-
-  If (@mn_environment.ext_proc_rt <> NIL) then
-    mn_environment.ext_proc_rt;
-
-  If NOT reset_slide_ticks and
-     (slide_ticks > 2) and do_slide then
+  If NOT reset_slide_ticks and do_slide and
+     (slide_ticks > (IRQ_freq DIV 50)*SUCC(fps_down_factor)) then
+{$ELSE}
+  If NOT reset_slide_ticks and (slide_ticks > 2) and do_slide then
+{$ENDIF}
     begin
       slide_show;
       reset_slide_ticks := TRUE;

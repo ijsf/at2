@@ -74,7 +74,7 @@ type
                  end;
 type
   tARP_VIB_MACRO_TABLE = array[1..255] of tMACRO_TABLE;
-  
+
 type
   tFM_PARAMETER_TABLE = Record
                           adsrw_car,
@@ -150,13 +150,6 @@ type
   tPATTERN_DATA = array[0..15] of tVARIABLE_DATA;
 
 type
-  tBACKUP = Record
-              cursor: Longint;
-              oldx:   Byte;
-              oldy:   Byte;
-              screen: array[1..180*60*SizeOf(WORD)] of Byte;
-            end;
-type
   tDUMMY_BUFF = array[0..PRED(655350)] of Byte;
 
 type
@@ -206,7 +199,11 @@ type
   tPLAY_STATUS = (isPlaying,isPaused,isStopped);
 
 type
+{$IFDEF __TMT__}
+  tRGB = Record r,g,b: Byte end;
+{$ELSE}
   tRGB = Record r,g,b,a: Byte end;
+{$ENDIF}
 
 const
   INSTRUMENT_SIZE = SizeOf(tADTRACK2_INS);
@@ -218,12 +215,14 @@ const
                                                       'PAUSED    ',
                                                       'STOPPED   ');
 
-{$IFDEF WINDOWS}
-const PATHSEP: Char = '\';
-const WILDCARD_ASTERISK: String = '*.*';
+{$IFDEF UNIX}
+const
+  PATHSEP: Char = '/';
+  WILDCARD_ASTERISK: String = '*';
 {$ELSE}
-const PATHSEP: Char = '/';
-const WILDCARD_ASTERISK: String = '*';
+const
+  PATHSEP: Char = '\';
+  WILDCARD_ASTERISK: String = '*.*';
 {$ENDIF}
 
 const
@@ -265,98 +264,104 @@ const
   kSlashR = $2b5c; kCtrlF9 = $6600; kAltB   = $3000;
 
 const
-    SC_ESCAPE   = $01;
-    SC_1        = $02;
-    SC_2        = $03;
-    SC_3        = $04;
-    SC_4        = $05;
-    SC_5        = $06;
-    SC_6        = $07;
-    SC_7        = $08;
-    SC_8        = $09;
-    SC_9        = $0A;
-    SC_0        = $0B;
-    SC_MINUS    = $0C;
-    SC_EQUALS   = $0D;
-    SC_BACKSPACE = $0E;
-    SC_TAB      = $0F;
-    SC_Q        = $10;
-    SC_W        = $11;
-    SC_E        = $12;
-    SC_R        = $13;
-    SC_T        = $14;
-    SC_Y        = $15;
-    SC_U        = $16;
-    SC_I        = $17;
-    SC_O        = $18;
-    SC_P        = $19;
-    SC_LEFTBRACKET = $1A;
+    SC_ESCAPE       = $01;
+    SC_1            = $02;
+    SC_2            = $03;
+    SC_3            = $04;
+    SC_4            = $05;
+    SC_5            = $06;
+    SC_6            = $07;
+    SC_7            = $08;
+    SC_8            = $09;
+    SC_9            = $0A;
+    SC_0            = $0B;
+    SC_MINUS        = $0C;
+    SC_EQUALS       = $0D;
+    SC_BACKSPACE    = $0E;
+    SC_TAB          = $0F;
+    SC_Q            = $10;
+    SC_W            = $11;
+    SC_E            = $12;
+    SC_R            = $13;
+    SC_T            = $14;
+    SC_Y            = $15;
+    SC_U            = $16;
+    SC_I            = $17;
+    SC_O            = $18;
+    SC_P            = $19;
+    SC_LEFTBRACKET  = $1A;
     SC_RIGHTBRACKET = $1B;
-    SC_ENTER    = $1C;
-//  SC_CONTROL  = $1D;
-    SC_A        = $1E;
-    SC_S        = $1F;
-    SC_D        = $20;
-    SC_F        = $21;
-    SC_G        = $22;
-    SC_H        = $23;
-    SC_J        = $24;
-    SC_K        = $25;
-    SC_L        = $26;
-    SC_SEMICOLON = $27;
-    SC_QUOTE    = $28;
-    SC_TILDE    = $29;
-    SC_LSHIFT   = $2A;
-    SC_BACKSLASH = $2B;
-    SC_Z        = $2C;
-    SC_X        = $2D;
-    SC_C        = $2E;
-    SC_V        = $2F;
-    SC_B        = $30;
-    SC_N        = $31;
-    SC_M        = $32;
-    SC_COMMA    = $33;
-    SC_PERIOD   = $34;
-    SC_SLASH    = $35;
-    SC_RSHIFT   = $36;
-    SC_MULTIPLY = $37;
-//  SC_ALT      = $38;
-    SC_SPACE    = $39;
-    SC_CAPSLOCK = $3A;
-    SC_F1       = $3B;
-    SC_F2       = $3C;
-    SC_F3       = $3D;
-    SC_F4       = $3E;
-    SC_F5       = $3F;
-    SC_F6       = $40;
-    SC_F7       = $41;
-    SC_F8       = $42;
-    SC_F9       = $43;
-    SC_F10      = $44;
-    SC_NUMLOCK  = $45;
-    SC_SCROLLLOCK = $46;
-    SC_HOME     = $47;
-    SC_UP       = $48;
-    SC_PAGEUP   = $49;
-    SC_MINUS2   = $4A;
-    SC_LEFT     = $4B;
-    SC_RIGHT    = $4D;
-    SC_PLUS     = $4E;
-    SC_END      = $4F;
-    SC_DOWN     = $50;
-    SC_PAGEDOWN = $51;
-    SC_INSERT   = $52;
-    SC_DELETE   = $53;
-    SC_F11      = $57;
-    SC_F12      = $58;
-    SC_LWIN     = $7D;
-    SC_RWIN     = $7E;
-    SC_MENU     = $7F;
+    SC_ENTER        = $1C;
+{$IFDEF __TMT__}
+    SC_CTRL         = $1D;
+{$ENDIF}
+    SC_A            = $1E;
+    SC_S            = $1F;
+    SC_D            = $20;
+    SC_F            = $21;
+    SC_G            = $22;
+    SC_H            = $23;
+    SC_J            = $24;
+    SC_K            = $25;
+    SC_L            = $26;
+    SC_SEMICOLON    = $27;
+    SC_QUOTE        = $28;
+    SC_TILDE        = $29;
+    SC_LSHIFT       = $2A;
+    SC_BACKSLASH    = $2B;
+    SC_Z            = $2C;
+    SC_X            = $2D;
+    SC_C            = $2E;
+    SC_V            = $2F;
+    SC_B            = $30;
+    SC_N            = $31;
+    SC_M            = $32;
+    SC_COMMA        = $33;
+    SC_PERIOD       = $34;
+    SC_SLASH        = $35;
+    SC_RSHIFT       = $36;
+    SC_MULTIPLY     = $37;
+{$IFDEF __TMT__}
+    SC_ALT          = $38;
+{$ENDIF}
+    SC_SPACE        = $39;
+    SC_CAPSLOCK     = $3A;
+    SC_F1           = $3B;
+    SC_F2           = $3C;
+    SC_F3           = $3D;
+    SC_F4           = $3E;
+    SC_F5           = $3F;
+    SC_F6           = $40;
+    SC_F7           = $41;
+    SC_F8           = $42;
+    SC_F9           = $43;
+    SC_F10          = $44;
+    SC_NUMLOCK      = $45;
+    SC_SCROLLLOCK   = $46;
+    SC_HOME         = $47;
+    SC_UP           = $48;
+    SC_PAGEUP       = $49;
+    SC_MINUS2       = $4A;
+    SC_LEFT         = $4B;
+    SC_RIGHT        = $4D;
+    SC_PLUS         = $4E;
+    SC_END          = $4F;
+    SC_DOWN         = $50;
+    SC_PAGEDOWN     = $51;
+    SC_INSERT       = $52;
+    SC_DELETE       = $53;
+    SC_F11          = $57;
+    SC_F12          = $58;
+    SC_LWIN         = $7D;
+    SC_RWIN         = $7E;
+    SC_MENU         = $7F;
+{$IFNDEF __TMT__}
 { Fictive scan codes }
-    SC_LALT     = $FC;  { Left ALT }
-    SC_RALT     = $FD;  { Right ALT }
-    SC_LCTRL    = $FE;  { Left CTRL }
-    SC_RCTRL    = $FF;  { Right CTRL }
+    SC_LALT         = $FC;  { Left ALT }
+    SC_RALT         = $FD;  { Right ALT }
+    SC_LCTRL        = $FE;  { Left CTRL }
+    SC_RCTRL        = $FF;  { Right CTRL }
+{$ENDIF}
 
 const
   patt_win_tracks: array[0..2,1..5] of String[176] = (
@@ -449,7 +454,7 @@ const
     $10,$03,$11,$04,$12,$13,$06,$14,$07,$15,$08,$16,$17,$0a,$18,$0b,$19);
 
 const
-  fx_digits: array[0..45] of Char = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ&%!@=#$~^`';
+  fx_digits: array[0..47] of Char = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ&%!@=#$~^`><';
   NM_FX_DIGITS = SizeOf(fx_digits);
 
 const
@@ -464,9 +469,9 @@ const
   { ^   ^  ^   ^     }
 
   pos3: array[1..44] of Byte = (+00,+04,+07,+11,      {1}
-                                +15,+19,+22,+26,      {2}
-                                +30,+34,+37,+41,      {3}
-                                +45,+49,+52,+56,      {4}
+                                +15,+19,+22,+26,  {2}
+                                +30,+34,+37,+41,  {3}
+                                +45,+49,+52,+56,  {4}
                                 +60,+64,+67,+71,      {5}
                                 +75,+79,+82,+86,      {6}
                                 +90,+94,+97,+101,     {7}
@@ -479,9 +484,9 @@ const
   { ^ ^ ^^ ^^^ ^^^   }
 
   pos4: array[1..110] of Byte = (+00,+02,+04,+05,+07,+08,+09,+11,+12,+13,            {1}
-                                 +15,+17,+19,+20,+22,+23,+24,+26,+27,+28,            {2}
-                                 +30,+32,+34,+35,+37,+38,+39,+41,+42,+43,            {3}
-                                 +45,+47,+49,+50,+52,+53,+54,+56,+57,+58,            {4}
+                                +15,+17,+19,+20,+22,+23,+24,+26,+27,+28,  {2}
+                                +30,+32,+34,+35,+37,+38,+39,+41,+42,+43,  {3}
+                                +45,+47,+49,+50,+52,+53,+54,+56,+57,+58,  {4}
                                  +60,+62,+64,+65,+67,+68,+69,+71,+72,+73,            {5}
                                  +75,+77,+79,+80,+82,+83,+84,+86,+87,+88,            {6}
                                  +90,+92,+94,+95,+97,+98,+99,+101,+102,+103,         {7}
@@ -663,6 +668,8 @@ const
   ef_ExtraFineVibrato  = 43;
   ef_ExtraFineTremolo  = 44;
   ef_SetCustomSpeedTab = 45;
+  ef_GlobalFSlideUp    = 46;
+  ef_GlobalFSlideDown  = 47;
   ef_ex_SetTremDepth   = 0;
   ef_ex_SetVibDepth    = 1;
   ef_ex_SetAttckRateM  = 2;
@@ -692,8 +699,8 @@ const
   ef_ex_cmd_UnlockPan  = 10;
   ef_ex_cmd_VibrOff    = 11;
   ef_ex_cmd_TremOff    = 12;
-  ef_ex_cmd_FineVibr   = 13;
-  ef_ex_cmd_FineTrem   = 14;
+  ef_ex_cmd_FVib_FGFS  = 13;
+  ef_ex_cmd_FTrm_XFGFS = 14;
   ef_ex_cmd_NoRestart  = 15;
   ef_ex2_PatDelayFrame = 0;
   ef_ex2_PatDelayRow   = 1;
@@ -730,16 +737,24 @@ const
   ef_fix2 = $90;
 
 const
-  a2m_default_path:    String  = '';
-  a2t_default_path:    String  = '';
-  a2i_default_path:    String  = '';
-  a2f_default_path:    String  = '';
-  a2p_default_path:    String  = '';
-  a2b_default_path:    String  = '';
-  a2w_default_path:    String  = '';
+  home_dir_path:      String  = '';
+  a2m_default_path:   String  = '';
+  a2t_default_path:   String  = '';
+  a2i_default_path:   String  = '';
+  a2f_default_path:   String  = '';
+  a2p_default_path:   String  = '';
+  a2b_default_path:   String  = '';
+  a2w_default_path:   String  = '';
+{$IFDEF __TMT__}
+  screen_mode:        Byte    = 0;
+  comp_text_mode:     Byte    = 0;
+  fps_down_factor:    Byte    = 0;
+  typematic_rate:     Byte    = 0;
+  typematic_delay:    Byte    = 0;
+{$ELSE}
   sdl_screen_mode:     Byte = 0;
   sdl_opl3_emulator:   Byte = 0;
-{$IFDEF WINDOWS}
+{$IFNDEF UNIX}
   sdl_wav_directory:   String  = 'wav_files\';
 {$ELSE}
   sdl_wav_directory:   String  = 'wav_files/';
@@ -749,225 +764,247 @@ const
   sdl_frame_rate:      Byte    = 100;
   sdl_typematic_delay: Longint = 250;
   sdl_typematic_rate:  Longint = 30;
-  init_tempo:          Byte    = 50;
-  init_speed:          Byte    = 6;
-  init_macro_speedup:  Word    = 1;
-  midiboard:           Boolean = TRUE;
-  midisynth:           Boolean = FALSE;
-  default_octave:      Byte    = 4;
-  patt_len:            Word    = 64;
-  nm_tracks:           Byte    = 18;
-  mod_description:     Boolean = FALSE;
-  highlight_controls:  Boolean = TRUE;
-  use_H_for_B:         Boolean = FALSE;
-  linefeed:            Boolean = TRUE;
-  update_ins:          Boolean = FALSE;
-  cycle_pattern:       Boolean = TRUE;
-  command_typing:      Byte    = 1;
-  backspace_dir:       Byte    = 1;
-  mark_line:           Byte    = 4;
-  scroll_bars:         Boolean = TRUE;
-  ssaver_time:         Longint = 300;
-  timer_fix:           Boolean = TRUE;
-  decay_bar_rise:      Real    = 3.00;
-  decay_bar_fall:      Real    = 0.30;
-  force_ins:           Byte    = 0;
-  pattern_layout:      Byte    = 0;
-  trace_by_default:    Boolean = TRUE;
-  nosync_by_default:   Boolean = FALSE;
-  keep_position:       Boolean = TRUE;
-  alt_ins_name:        Boolean = TRUE;
-  adjust_tracks:       Boolean = TRUE;
-  mark_lines:          Boolean = FALSE;
-  accurate_conv:       Boolean = FALSE;
-  fix_c_note_bug:      Boolean = TRUE;
-  analyzer_bckg:       Byte    = $010;
-  analyzer:            Byte    = $03;
-  analyzer_ovrllvol:   Byte    = $03;
-  analyzer_volumelvl:  Byte    = $07;
-  analyzer_modulator:  Byte    = $02;
-  analyzer_carrier:    Byte    = $03;
-  pattern_bckg:        Byte    = $010;
-  pattern_border:      Byte    = $0f;
-  pattern_pos_indic:   Byte    = $0b;
-  pattern_pan_indic:   Byte    = $03;
-  pattern_gpan_indic:  Byte    = $0f;
-  pattern_lock_indic:  Byte    = $07;
-  pattern_4op_indic:   Byte    = $0e;
-  pattern_perc_indic:  Byte    = $0f;
-  pattern_chan_indic:  Byte    = $0e;
-  pattern_row_bckg:    Byte    = $050;
-  pattern_row_bckg_p:  Byte    = $0c0;
-  pattern_row_bckg_m:  Byte    = $0b0;
-  pattern_block_bckg:  Byte    = $020;
-  pattern_line:        Byte    = $03;
-  pattern_line_p:      Byte    = $00;
-  pattern_line_m:      Byte    = $0b;
-  pattern_hi_line:     Byte    = $0b;
-  pattern_hi_line_m:   Byte    = $03;
-  pattern_note:        Byte    = $07;
-  pattern_hi_note:     Byte    = $0f;
-  pattern_note0:       Byte    = $03;
-  pattern_hi_note0:    Byte    = $0c;
-  pattern_note_hid:    Byte    = $09;
-  pattern_hi_note_h:   Byte    = $07;
-  pattern_inst:        Byte    = $02;
-  pattern_hi_inst:     Byte    = $0a;
-  pattern_inst0:       Byte    = $02;
-  pattern_hi_inst0:    Byte    = $0a;
-  pattern_cmnd:        Byte    = $07;
-  pattern_hi_cmnd:     Byte    = $0f;
-  pattern_cmnd0:       Byte    = $03;
-  pattern_hi_cmnd0:    Byte    = $0b;
-  pattern_note_m:      Byte    = $09;
-  pattern_note0_m:     Byte    = $09;
-  pattern_note_hid_m:  Byte    = $0d;
-  pattern_inst_m:      Byte    = $02;
-  pattern_inst0_m:     Byte    = $02;
-  pattern_cmnd_m:      Byte    = $09;
-  pattern_cmnd0_m:     Byte    = $09;
-  pattern_note_b:      Byte    = $0f;
-  pattern_note0_b:     Byte    = $0b;
-  pattern_note_hid_b:  Byte    = $05;
-  pattern_inst_b:      Byte    = $0a;
-  pattern_inst0_b:     Byte    = $0a;
-  pattern_cmnd_b:      Byte    = $0f;
-  pattern_cmnd0_b:     Byte    = $0b;
-  pattern_fix_note:    Byte    = $0b;
-  pattern_hi_fx_note:  Byte    = $0e;
-  pattern_fix_note_m:  Byte    = $0e;
-  pattern_fix_note_b:  Byte    = $0e;
-  pattern_cmnd_ctrl:   Byte    = $0d;
-  pattern_input_bckg:  Byte    = $0b0;
-  pattern_input:       Byte    = $00;
-  pattern_input_warn:  Byte    = $080;
-  debug_info_bckg:     Byte    = $040;
-  debug_info_bckg2:    Byte    = $090;
-  debug_info_border:   Byte    = $05;
-  debug_info_border2:  Byte    = $0f;
-  debug_info_title:    Byte    = $0b;
-  debug_info_topic:    Byte    = $0e;
-  debug_info_txt:      Byte    = $07;
-  debug_info_hi_txt:   Byte    = $0f;
-  debug_info_txt_hid:  Byte    = $06;
-  debug_info_mod:      Byte    = $02;
-  debug_info_hi_mod:   Byte    = $0a;
-  debug_info_car:      Byte    = $03;
-  debug_info_hi_car:   Byte    = $0b;
-  debug_info_4op:      Byte    = $08;
-  debug_info_perc:     Byte    = $08;
-  help_background:     Byte    = $040;
-  help_title:          Byte    = $0b;
-  help_border:         Byte    = $0f;
-  help_topic:          Byte    = $0c;
-  help_text:           Byte    = $07;
-  help_hi_text:        Byte    = $0c;
-  help_keys:           Byte    = $0f;
-  help_indicators:     Byte    = $0e;
-  dialog_background:   Byte    = $040;
-  dialog_title:        Byte    = $0b;
-  dialog_border:       Byte    = $0f;
-  dialog_text:         Byte    = $0d;
-  dialog_hi_text:      Byte    = $0e;
-  dialog_hid:          Byte    = $06;
-  dialog_item:         Byte    = $0f;
-  dialog_short:        Byte    = $0e;
-  dialog_item_dis:     Byte    = $07;
-  dialog_sel_itm_bck:  Byte    = $070;
-  dialog_sel_itm:      Byte    = $00;
-  dialog_sel_short:    Byte    = $04;
-  dialog_context:      Byte    = $0e;
-  dialog_context_dis:  Byte    = $07;
-  dialog_contxt_dis2:  Byte    = $09;
-  dialog_input_bckg:   Byte    = $070;
-  dialog_input:        Byte    = $00;
-  dialog_def_bckg:     Byte    = $0c0;
-  dialog_def:          Byte    = $00;
-  dialog_prog_bar1:    Byte    = $09;
-  dialog_prog_bar2:    Byte    = $0b;
-  dialog_topic:        Byte    = $0d;
-  dialog_hi_topic:     Byte    = $0e;
-  dialog_mod_text:     Byte    = $0a;
-  dialog_car_text:     Byte    = $0b;
-  macro_background:    Byte    = $040;
-  macro_title:         Byte    = $0b;
-  macro_border:        Byte    = $0f;
-  macro_topic:         Byte    = $0c;
-  macro_topic2:        Byte    = $0d;
-  macro_hi_topic:      Byte    = $0e;
-  macro_text:          Byte    = $0d;
-  macro_hi_text:       Byte    = $0e;
-  macro_text_dis:      Byte    = $06;
-  macro_text_loop:     Byte    = $0c;
-  macro_text_keyoff:   Byte    = $03;
-  macro_current_bckg:  Byte    = $050;
-  macro_current:       Byte    = $0d;
-  macro_current_dis:   Byte    = $00;
-  macro_current_loop:  Byte    = $0c;
-  macro_current_koff:  Byte    = $0b;
-  macro_input_bckg:    Byte    = $070;
-  macro_input:         Byte    = $00;
-  macro_def_bckg:      Byte    = $0c0;
-  macro_def:           Byte    = $00;
-  macro_scrbar_bckg:   Byte    = $070;
-  macro_scrbar_text:   Byte    = $00;
-  macro_scrbar_mark:   Byte    = $0f;
-  macro_hint:          Byte    = $07;
-  macro_item:          Byte    = $0f;
-  macro_short:         Byte    = $0e;
-  macro_item_dis:      Byte    = $07;
-  macro_sel_itm_bck:   Byte    = $070;
-  macro_sel_itm:       Byte    = $00;
-  macro_sel_short:     Byte    = $04;
-  macro_context:       Byte    = $0e;
-  macro_context_dis:   Byte    = $07;
-  scrollbar_bckg:      Byte    = $030;
-  scrollbar_text:      Byte    = $00;
-  scrollbar_mark:      Byte    = $0b;
-  scrollbar_2nd_mark:  Byte    = $0f;
-  main_background:     Byte    = $010;
-  main_title:          Byte    = $0b;
-  main_border:         Byte    = $0b;
-  main_stat_line:      Byte    = $03;
-  main_hi_stat_line:   Byte    = $0b;
-  main_behavior:       Byte    = $0d;
-  status_background:   Byte    = $010;
-  status_border:       Byte    = $0e;
-  status_static_txt:   Byte    = $0b;
-  status_dynamic_txt:  Byte    = $0f;
-  status_play_state:   Byte    = $07;
-  status_text_dis:     Byte    = $05;
-  order_background:    Byte    = $010;
-  order_hi_bckg:       Byte    = $050;
-  order_border:        Byte    = $0a;
-  order_entry:         Byte    = $03;
-  order_hi_entry:      Byte    = $0b;
-  order_pattn:         Byte    = $07;
-  order_pattn_jump:    Byte    = $02;
-  order_hi_pattn:      Byte    = $0f;
-  order_played_b:      Byte    = $0c0;
-  order_played:        Byte    = $00;
-  order_input_bckg:    Byte    = $0b0;
-  order_input:         Byte    = $00;
-  order_input_warn:    Byte    = $0c0;
-  instrument_bckg:     Byte    = $040;
-  instrument_title:    Byte    = $0b;
-  instrument_border:   Byte    = $0f;
-  instrument_text:     Byte    = $07;
-  instrument_hi_text:  Byte    = $0f;
-  instrument_glob:     Byte    = $0d;
-  instrument_hi_glob:  Byte    = $0f;
-  instrument_hid:      Byte    = $06;
-  instrument_mod:      Byte    = $02;
-  instrument_car:      Byte    = $03;
-  instrument_hi_mod:   Byte    = $0a;
-  instrument_hi_car:   Byte    = $0b;
-  instrument_context:  Byte    = $0e;
-  instrument_adsr:     Byte    = $10;
-  instrument_ai_off:   Byte    = $06;
-  instrument_ai_on:    Byte    = $0d;
-  instrument_ai_trig:  Byte    = $0e;
+{$ENDIF}
+  init_tempo:         Byte    = 50;
+  init_speed:         Byte    = 6;
+  init_macro_speedup: Word    = 1;
+  midiboard:          Boolean = TRUE;
+  default_octave:     Byte    = 4;
+  patt_len:           Word    = 64;
+  nm_tracks:          Byte    = 18;
+  mod_description:    Boolean = FALSE;
+  highlight_controls: Boolean = TRUE;
+  use_H_for_B:        Boolean = FALSE;
+  linefeed:           Boolean = TRUE;
+  update_ins:         Boolean = FALSE;
+  cycle_pattern:      Boolean = TRUE;
+  command_typing:     Byte    = 1;
+  backspace_dir:      Byte    = 1;
+  mark_line:          Byte    = 4;
+  scroll_bars:        Boolean = TRUE;
+  ssaver_time:        Longint = 300;
+  timer_fix:          Boolean = TRUE;
+  decay_bar_rise:     Real    = 3.00;
+  decay_bar_fall:     Real    = 0.30;
+  force_ins:          Byte    = 0;
+  pattern_layout:     Byte    = 0;
+  trace_by_default:   Boolean = TRUE;
+  nosync_by_default:  Boolean = FALSE;
+  keep_position:      Boolean = TRUE;
+  alt_ins_name:       Boolean = TRUE;
+  adjust_tracks:      Boolean = TRUE;
+  mark_lines:         Boolean = FALSE;
+  accurate_conv:      Boolean = FALSE;
+  fix_c_note_bug:     Boolean = TRUE;
+  analyzer_bckg:      Byte    = $010;
+  analyzer:           Byte    = $03;
+  analyzer_ovrllvol:  Byte    = $03;
+  analyzer_volumelvl: Byte    = $07;
+  analyzer_modulator: Byte    = $02;
+  analyzer_carrier:   Byte    = $03;
+  pattern_bckg:       Byte    = $010;
+  pattern_border:     Byte    = $0f;
+  pattern_pos_indic:  Byte    = $0b;
+  pattern_pan_indic:  Byte    = $03;
+  pattern_gpan_indic: Byte    = $0f;
+  pattern_lock_indic: Byte    = $07;
+  pattern_4op_indic:  Byte    = $0e;
+  pattern_perc_indic: Byte    = $0f;
+  pattern_chan_indic: Byte    = $0e;
+  pattern_row_bckg:   Byte    = $050;
+  pattern_row_bckg_p: Byte    = $0c0;
+  pattern_row_bckg_m: Byte    = $0b0;
+  pattern_block_bckg: Byte    = $020;
+  pattern_line:       Byte    = $03;
+  pattern_line_p:     Byte    = $00;
+  pattern_line_m:     Byte    = $0b;
+  pattern_hi_line:    Byte    = $0b;
+  pattern_hi_line_m:  Byte    = $03;
+  pattern_note:       Byte    = $07;
+  pattern_hi_note:    Byte    = $0f;
+  pattern_note0:      Byte    = $03;
+  pattern_hi_note0:   Byte    = $0c;
+  pattern_note_hid:   Byte    = $09;
+  pattern_hi_note_h:  Byte    = $07;
+  pattern_inst:       Byte    = $02;
+  pattern_hi_inst:    Byte    = $0a;
+  pattern_inst0:      Byte    = $02;
+  pattern_hi_inst0:   Byte    = $0a;
+  pattern_cmnd:       Byte    = $07;
+  pattern_hi_cmnd:    Byte    = $0f;
+  pattern_cmnd0:      Byte    = $03;
+  pattern_hi_cmnd0:   Byte    = $0b;
+  pattern_note_m:     Byte    = $09;
+  pattern_note0_m:    Byte    = $09;
+  pattern_note_hid_m: Byte    = $0d;
+  pattern_inst_m:     Byte    = $02;
+  pattern_inst0_m:    Byte    = $02;
+  pattern_cmnd_m:     Byte    = $09;
+  pattern_cmnd0_m:    Byte    = $09;
+  pattern_note_b:     Byte    = $0f;
+  pattern_note0_b:    Byte    = $0b;
+  pattern_note_hid_b: Byte    = $05;
+  pattern_inst_b:     Byte    = $0a;
+  pattern_inst0_b:    Byte    = $0a;
+  pattern_cmnd_b:     Byte    = $0f;
+  pattern_cmnd0_b:    Byte    = $0b;
+  pattern_fix_note:   Byte    = $0b;
+  pattern_hi_fx_note: Byte    = $0e;
+  pattern_fix_note_m: Byte    = $0e;
+  pattern_fix_note_b: Byte    = $0e;
+  pattern_cmnd_ctrl:  Byte    = $0d;
+  pattern_input_bckg: Byte    = $0b0;
+  pattern_input:      Byte    = $00;
+  pattern_input_warn: Byte    = $080;
+  debug_info_bckg:    Byte    = $040;
+  debug_info_bckg2:   Byte    = $090;
+  debug_info_border:  Byte    = $05;
+  debug_info_border2: Byte    = $0f;
+  debug_info_title:   Byte    = $0b;
+  debug_info_topic:   Byte    = $0e;
+  debug_info_txt:     Byte    = $07;
+  debug_info_hi_txt:  Byte    = $0f;
+  debug_info_txt_hid: Byte    = $06;
+  debug_info_mod:     Byte    = $02;
+  debug_info_hi_mod:  Byte    = $0a;
+  debug_info_car:     Byte    = $03;
+  debug_info_hi_car:  Byte    = $0b;
+  debug_info_4op:     Byte    = $08;
+  debug_info_perc:    Byte    = $08;
+  help_background:    Byte    = $040;
+  help_title:         Byte    = $0b;
+  help_border:        Byte    = $0f;
+  help_topic:         Byte    = $0c;
+  help_text:          Byte    = $07;
+  help_hi_text:       Byte    = $0c;
+  help_keys:          Byte    = $0f;
+  help_indicators:    Byte    = $0e;
+  dialog_background:  Byte    = $040;
+  dialog_title:       Byte    = $0b;
+  dialog_border:      Byte    = $0f;
+  dialog_text:        Byte    = $0d;
+  dialog_hi_text:     Byte    = $0e;
+  dialog_hid:         Byte    = $06;
+  dialog_item:        Byte    = $0f;
+  dialog_short:       Byte    = $0e;
+  dialog_item_dis:    Byte    = $05;
+  dialog_sel_itm_bck: Byte    = $070;
+  dialog_sel_itm:     Byte    = $00;
+  dialog_sel_short:   Byte    = $04;
+  dialog_context:     Byte    = $0e;
+  dialog_context_dis: Byte    = $07;
+  dialog_contxt_dis2: Byte    = $09;
+  dialog_input_bckg:  Byte    = $070;
+  dialog_input:       Byte    = $00;
+  dialog_def_bckg:    Byte    = $0c0;
+  dialog_def:         Byte    = $00;
+  dialog_prog_bar1:   Byte    = $09;
+  dialog_prog_bar2:   Byte    = $0b;
+  dialog_topic:       Byte    = $0d;
+  dialog_hi_topic:    Byte    = $0e;
+  dialog_mod_text:    Byte    = $0a;
+  dialog_car_text:    Byte    = $0b;
+  macro_background:   Byte    = $040;
+  macro_title:        Byte    = $0b;
+  macro_border:       Byte    = $0f;
+  macro_topic:        Byte    = $0c;
+  macro_topic2:       Byte    = $0d;
+  macro_hi_topic:     Byte    = $0e;
+  macro_text:         Byte    = $0d;
+  macro_hi_text:      Byte    = $0e;
+  macro_text_dis:     Byte    = $06;
+  macro_text_loop:    Byte    = $0c;
+  macro_text_keyoff:  Byte    = $03;
+  macro_current_bckg: Byte    = $050;
+  macro_current:      Byte    = $0d;
+  macro_current_dis:  Byte    = $00;
+  macro_current_loop: Byte    = $0c;
+  macro_current_koff: Byte    = $0b;
+  macro_input_bckg:   Byte    = $070;
+  macro_input:        Byte    = $00;
+  macro_def_bckg:     Byte    = $0c0;
+  macro_def:          Byte    = $00;
+  macro_scrbar_bckg:  Byte    = $070;
+  macro_scrbar_text:  Byte    = $00;
+  macro_scrbar_mark:  Byte    = $0f;
+  macro_hint:         Byte    = $07;
+  macro_item:         Byte    = $0f;
+  macro_short:        Byte    = $0e;
+  macro_item_dis:     Byte    = $07;
+  macro_sel_itm_bck:  Byte    = $070;
+  macro_sel_itm:      Byte    = $00;
+  macro_sel_short:    Byte    = $04;
+  macro_context:      Byte    = $0e;
+  macro_context_dis:  Byte    = $07;
+  scrollbar_bckg:     Byte    = $030;
+  scrollbar_text:     Byte    = $00;
+  scrollbar_mark:     Byte    = $0b;
+  scrollbar_2nd_mark: Byte    = $0f;
+  main_background:    Byte    = $010;
+  main_title:         Byte    = $0b;
+  main_border:        Byte    = $0b;
+  main_stat_line:     Byte    = $03;
+  main_hi_stat_line:  Byte    = $0b;
+  main_dis_stat_line: Byte    = $05;
+  main_behavior:      Byte    = $0d;
+  main_behavior_dis:  Byte    = $05;
+  status_background:  Byte    = $010;
+  status_border:      Byte    = $0e;
+  status_static_txt:  Byte    = $0b;
+  status_dynamic_txt: Byte    = $0f;
+  status_play_state:  Byte    = $07;
+  status_text_dis:    Byte    = $05;
+  order_background:   Byte    = $010;
+  order_hi_bckg:      Byte    = $050;
+  order_border:       Byte    = $0a;
+  order_entry:        Byte    = $03;
+  order_hi_entry:     Byte    = $0b;
+  order_pattn:        Byte    = $07;
+  order_pattn_jump:   Byte    = $02;
+  order_hi_pattn:     Byte    = $0f;
+  order_played_b:     Byte    = $0c0;
+  order_played:       Byte    = $00;
+  order_input_bckg:   Byte    = $0b0;
+  order_input:        Byte    = $00;
+  order_input_warn:   Byte    = $0c0;
+  instrument_bckg:    Byte    = $040;
+  instrument_title:   Byte    = $0b;
+  instrument_border:  Byte    = $0f;
+  instrument_text:    Byte    = $07;
+  instrument_hi_text: Byte    = $0f;
+  instrument_glob:    Byte    = $0d;
+  instrument_hi_glob: Byte    = $0f;
+  instrument_hid:     Byte    = $06;
+  instrument_mod:     Byte    = $02;
+  instrument_car:     Byte    = $03;
+  instrument_hi_mod:  Byte    = $0a;
+  instrument_hi_car:  Byte    = $0b;
+  instrument_context: Byte    = $0e;
+  instrument_adsr:    Byte    = $10;
+  instrument_ai_off:  Byte    = $06;
+  instrument_ai_on:   Byte    = $0d;
+  instrument_ai_trig: Byte    = $0e;
 
+{$IFDEF __TMT__}
+const
+  rgb_color: array[0..15] of tRGB = (
+    (r: 00; g: 00; b: 00),
+    (r: 05; g: 10; b: 30),
+    (r: 00; g: 30; b: 30),
+    (r: 00; g: 30; b: 40),
+    (r: 00; g: 00; b: 20),
+    (r: 15; g: 25; b: 35),
+    (r: 00; g: 10; b: 25),
+    (r: 20; g: 30; b: 40),
+    (r: 45; g: 35; b: 50),
+    (r: 10; g: 20; b: 30),
+    (r: 20; g: 40; b: 40),
+    (r: 20; g: 40; b: 50),
+    (r: 25; g: 35; b: 50),
+    (r: 30; g: 35; b: 45),
+    (r: 35; g: 60; b: 60),
+    (r: 40; g: 50; b: 55));
+{$ELSE}
 const
   rgb_color: array[0..15] of tRGB = (
     (r: 00 SHL 2; g: 00 SHL 2; b: 00 SHL 2; a: 00),
@@ -1013,6 +1050,7 @@ const
     3,3,3,3,3,3,3,3,3,3,3,
     4,4,4,4,4,4,4,
     5,5,5,5);
+{$ENDIF}
 
 const
   macro_table_hint_str: array[1..20+35] of String[77] = (

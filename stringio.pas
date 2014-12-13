@@ -1,5 +1,9 @@
 unit StringIO;
+{$IFDEF __TMT__}
+{$S-,Q-,R-,V-,B-,X+}
+{$ELSE}
 {$PACKRECORDS 1}
+{$ENDIF}
 interface
 
 type
@@ -28,7 +32,7 @@ type
                          insert_mode,
                          replace_enabled,
                          append_enabled:  Boolean;
-						 char_filter,
+                         char_filter,
                          character_set,
                          valid_chars,
                          word_characters: characters;
@@ -67,13 +71,14 @@ function PathOnly(path: String): String;
 function NameOnly(path: String): String;
 function BaseNameOnly(path: String): String;
 function ExtOnly(path: String): String;
-function ExtOnlyNoLower(path: String): String;
+
+procedure StringIO_Init;
 
 implementation
 
 uses
   DOS,
-  AdT2sys,AdT2keyb,Adt2vscr,AdT2unit,
+  AdT2unit,AdT2sys,AdT2keyb,
   TxtScrIO;
 
 function byte2hex(value: Byte): String; assembler;
@@ -81,7 +86,7 @@ function byte2hex(value: Byte): String; assembler;
 const
   data: array[0..15] of char = '0123456789ABCDEF';
 
-asm
+  asm
         push    ecx
         push    esi
         push    edi
@@ -596,7 +601,10 @@ end;
 label _end;
 
 begin { InputStr }
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'STRINGIO.PAS:InputStr';
+{$ENDIF}
   s := Copy(s,1,ln);
   If (is_environment.locate_pos > ln1) then
     is_environment.locate_pos := ln1;
@@ -615,8 +623,8 @@ begin { InputStr }
   s1 := s;
   If (BYTE(s1[0]) > ln1) then s1[0] := CHR(ln1);
 
-  ShowStr(screen_ptr^,xint,y,ExpStrR('',ln1,' '),atr1);
-  ShowStr(screen_ptr^,xint,y,FilterStr2(s1,is_setting.char_filter,'_'),atr2);
+  ShowStr(screen_ptr,xint,y,ExpStrR('',ln1,' '),atr1);
+  ShowStr(screen_ptr,xint,y,FilterStr2(s1,is_setting.char_filter,'_'),atr2);
   for1st := TRUE;
 
   Repeat
@@ -629,28 +637,28 @@ begin { InputStr }
 
     If appn and for1st then
       begin
-        ShowStr(screen_ptr^,xint,y,ExpStrR(FilterStr2(s1,is_setting.char_filter,'_'),ln1,' '),atr1);
+        ShowStr(screen_ptr,xint,y,ExpStrR(FilterStr2(s1,is_setting.char_filter,'_'),ln1,' '),atr1);
         for1st := FALSE;
       end;
 
     If (s2 <> s1) then
-      ShowStr(screen_ptr^,xint,y,ExpStrR(FilterStr2(s1,is_setting.char_filter,'_'),ln1,' '),atr1);
+      ShowStr(screen_ptr,xint,y,ExpStrR(FilterStr2(s1,is_setting.char_filter,'_'),ln1,' '),atr1);
 
     If (ln1 < ln) then
       If (cloc-xloc > 0) and (Length(s) > 0) then
-        ShowStr(screen_ptr^,xint,y,'',(attr AND $0f0)+$0f)
+        ShowStr(screen_ptr,xint,y,'',(attr AND $0f0)+$0f)
       else If (cloc-xloc = 0) and (Length(s) <> 0) then
-             ShowStr(screen_ptr^,xint,y,s[1],attr)
+             ShowStr(screen_ptr,xint,y,s[1],attr)
            else
-             ShowStr(screen_ptr^,xint,y,' ',atr1);
+             ShowStr(screen_ptr,xint,y,' ',atr1);
 
     If (ln1 < ln) then
       If (cloc-xloc+ln1 < Length(s)) then
-        ShowStr(screen_ptr^,xint+ln1-1,y,'',(attr AND $0f0)+$0f)
+        ShowStr(screen_ptr,xint+ln1-1,y,'',(attr AND $0f0)+$0f)
       else If (cloc-xloc+ln1 = Length(s)) then
-             ShowStr(screen_ptr^,xint+ln1-1,y,FilterStr2(s[Length(s)],is_setting.char_filter,'_'),attr)
+             ShowStr(screen_ptr,xint+ln1-1,y,FilterStr2(s[Length(s)],is_setting.char_filter,'_'),attr)
            else
-             ShowStr(screen_ptr^,xint+ln1-1,y,' ',atr1);
+             ShowStr(screen_ptr,xint+ln1-1,y,' ',atr1);
 
     GotoXY(x+xloc,y);
     If keypressed then key := getkey else GOTO _end;
@@ -794,8 +802,13 @@ begin { InputStr }
                end;
       end;
 _end:
-    emulate_screen;
-    // keyboard_reset_buffer;
+{$IFDEF __TMT__}
+      // emulate_screen;
+      keyboard_reset_buffer_alt;
+{$ELSE}
+      emulate_screen;
+      // keyboard_reset_buffer;
+{$ENDIF}
   until qflg;
 
   If (cloc = 0) then is_environment.locate_pos := 1
@@ -806,8 +819,8 @@ end;
 
 function SameName(str1,str2: String): Boolean; assembler;
 
-const
-  LastW: Word = 0;
+var
+  LastW: Word;
 
 asm
         push    ebx
@@ -815,7 +828,7 @@ asm
         push    edx
         push    esi
         push    edi
-        mov     [LastW],0 { FPC doesn't clean this up }
+        mov     [LastW],0
         xor     eax,eax
         xor     ecx,ecx
         xor     ebx,ebx
@@ -963,18 +976,16 @@ end;
 
 function ExtOnly(path: String): String;
 begin
-  ExtOnly := Lower(ExtOnlyNoLower(path));
-end;
-
-function ExtOnlyNoLower(path: String): String;
-begin
   FSplit(path,dir,name,ext);
   Delete(ext,1,1);
-  ExtOnlyNoLower := ext;
+  ExtOnly := Lower_filename(ext);
 end;
 
+procedure StringIO_Init;
 begin
   is_environment.locate_pos := 1;
   is_setting.char_filter := _valid_characters;
   is_setting.valid_chars := _valid_characters;
+end;
+
 end.

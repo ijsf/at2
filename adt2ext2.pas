@@ -1,5 +1,9 @@
 unit AdT2ext2;
+{$IFDEF __TMT__}
+{$S-,Q-,R-,V-,B-,X+}
+{$ELSE}
 {$PACKRECORDS 1}
+{$ENDIF}
 interface
 
 const
@@ -12,9 +16,11 @@ const
   old_block_patt_hpos: Byte = 1;
   old_block_patt_page: Byte = 0;
 
+{$IFNDEF __TMT__}
 procedure process_global_keys;
-procedure PROGRAM_SCREEN_init;
+{$ENDIF}
 
+procedure PROGRAM_SCREEN_init;
 function  INSTRUMENT_CONTROL_alt(instr: Byte; title: String): Byte;
 
 procedure INSTRUMENT_test(instr,instr2,chan: Byte; fkey: Word;
@@ -23,6 +29,7 @@ procedure INSTRUMENT_test(instr,instr2,chan: Byte; fkey: Word;
 procedure INSTRUMENT_CONTROL_page_refresh(page: Byte);
 procedure INSTRUMENT_CONTROL_edit;
 
+procedure update_trace;
 procedure update_without_trace;
 procedure PATTERN_ORDER_page_refresh(page: Byte);
 procedure PATTERN_ORDER_edit(var page,hpos,vpos: Byte);
@@ -49,13 +56,17 @@ uses
 {$IFNDEF UNIX}
   CRT,
 {$ENDIF}
+{$IFNDEF __TMT__}
   SDL_Timer,
-  AdT2sys,AdT2vid,AdT2vscr,AdT2keyb,AdT2opl3,AdT2unit,AdT2extn,AdT2text,AdT2apak,
-  StringIO,DialogIO,ParserIO,TxtScrIO;
+{$ENDIF}
+  AdT2opl3,AdT2unit,AdT2sys,AdT2extn,AdT2ext4,AdT2text,AdT2apak,AdT2keyb,
+  TxtScrIO,StringIO,DialogIO,ParserIO;
 
 {$i instedit.inc}
 {$i ipattord.inc}
 {$i ipattern.inc}
+
+{$IFNDEF __TMT__}
 
 procedure FADE_OUT_RECORDING;
 
@@ -74,7 +85,7 @@ begin
   If (progress_new_value <> progress_old_value) then
     begin
       progress_old_value := progress_new_value;
-      ShowCStr(screen_ptr^,
+      ShowCStr(screen_ptr,
                progress_xstart,progress_ystart,
                '~'+ExpStrL('',progress_new_value,'€')+'~'+
                ExpStrL('',40-progress_new_value,'€'),
@@ -93,23 +104,20 @@ begin
       EXIT;
     end;
 
-  Move(screen_ptr^,backup.screen,SizeOf(backup.screen));
-  backup.cursor := GetCursor;
-  backup.oldx   := WhereX;
-  backup.oldy   := WhereY;
+  ScreenMemCopy(screen_ptr,ptr_screen_backup);
   HideCursor;
 
-  dl_environment.context := ' ESC ƒ STOP '; 
+  dl_environment.context := ' ESC ƒ STOP ';
   centered_frame(xstart,ystart,43,3,' WAV RECORDER ',
                  dialog_background+dialog_border,
                  dialog_background+dialog_title,double);
-  ShowStr(screen_ptr^,xstart+43-Length(dl_environment.context),ystart+3,
+  ShowStr(screen_ptr,xstart+43-Length(dl_environment.context),ystart+3,
           dl_environment.context,
           dialog_background+dialog_border);
   dl_environment.context := '';
 
-  show_progress(40); 
-  ShowStr(screen_ptr^,xstart+2,ystart+1,
+  show_progress(40);
+  ShowStr(screen_ptr,xstart+2,ystart+1,
           'FADiNG OUT WAV RECORDiNG...',
           dialog_background+dialog_text);
 
@@ -123,9 +131,9 @@ begin
       If scankey(1) then GOTO _jmp1;
       fade_out_volume := temp;
       set_global_volume;
-      ShowStr(screen_ptr^,xstart+30,ystart+1,
+      ShowStr(screen_ptr,xstart+30,ystart+1,
               Num2Str(Round(100/63*temp),10)+'%  ',
-              dialog_background+dialog_hi_text);        
+              dialog_background+dialog_hi_text);
       show_progress(temp);
       For temp2 := 1 to 10 do
         begin
@@ -134,11 +142,11 @@ begin
           actual_frame_end := SDL_GetTicks;
           frame_end := frame_start+fade_delay_tab[temp];
           If (actual_frame_end+fade_delay_tab[temp] > frame_end) then
-		    begin
-			  frame_end := actual_frame_end;
+            begin
+              frame_end := actual_frame_end;
               _emulate_screen_without_delay := TRUE;
               emulate_screen;
-			end;
+            end;
           SDL_Delay(frame_end-actual_frame_end);
           frame_start := SDL_GetTicks;
         end;
@@ -149,22 +157,22 @@ begin
  _jmp1:
 
   show_progress(0);
-  ShowStr(screen_ptr^,xstart+2,ystart+1,
+  ShowStr(screen_ptr,xstart+2,ystart+1,
           'FADiNG iN SONG PLAYBACK... ',
           dialog_background+dialog_text);
 
   flush_WAV_data;
   sdl_opl3_emulator := 0;
   opl3_channel_recording_mode := FALSE;
-  
+
   For temp := 0 to 63 do
     begin
       If scankey(1) then GOTO _end;
       fade_out_volume := temp;
       set_global_volume;
-      ShowStr(screen_ptr^,xstart+30,ystart+1,
+      ShowStr(screen_ptr,xstart+30,ystart+1,
               Num2Str(Round(100/63*temp),10)+'%  ',
-              dialog_background+dialog_hi_text);        
+              dialog_background+dialog_hi_text);
       show_progress(temp);
       If scankey(1) then GOTO _end;
       _emulate_screen_without_delay := TRUE;
@@ -181,11 +189,11 @@ _end:
 
   flush_WAV_data;
   sdl_opl3_emulator := 0;
-  opl3_channel_recording_mode := FALSE;  
+  opl3_channel_recording_mode := FALSE;
   fade_out_volume := 63;
   set_global_volume;
 
-  move_to_screen_data := Addr(backup.screen);
+  move_to_screen_data := ptr_screen_backup;
   move_to_screen_area[1] := xstart;
   move_to_screen_area[2] := ystart;
   move_to_screen_area[3] := xstart+43+2+1;
@@ -211,7 +219,7 @@ begin
   If (progress_new_value <> progress_old_value) then
     begin
       progress_old_value := progress_new_value;
-      ShowCStr(screen_ptr^,
+      ShowCStr(screen_ptr,
                progress_xstart,progress_ystart,
                '~'+ExpStrL('',progress_new_value,'€')+'~'+
                ExpStrL('',40-progress_new_value,'€'),
@@ -223,21 +231,18 @@ end;
 label _end;
 
 begin
-  If (sdl_opl3_emulator = 1) then EXIT;
+  If (sdl_opl3_emulator = 1) or (calc_following_order(0) = -1) then EXIT;
   If (play_status = isStopped) then smooth_fadeOut := FALSE
   else smooth_fadeOut := TRUE;
 
-  Move(screen_ptr^,backup.screen,SizeOf(backup.screen));
-  backup.cursor := GetCursor;
-  backup.oldx   := WhereX;
-  backup.oldy   := WhereY;
+  ScreenMemCopy(screen_ptr,ptr_screen_backup);
   HideCursor;
 
   dl_environment.context := ' ESC ƒ STOP ';
   centered_frame(xstart,ystart,43,3,' WAV RECORDER ',
                  dialog_background+dialog_border,
                  dialog_background+dialog_title,double);
-  ShowStr(screen_ptr^,xstart+43-Length(dl_environment.context),ystart+3,
+  ShowStr(screen_ptr,xstart+43-Length(dl_environment.context),ystart+3,
           dl_environment.context,
           dialog_background+dialog_border);
   dl_environment.context := '';
@@ -250,18 +255,18 @@ begin
   If smooth_fadeOut then
     begin
       show_progress(40);
-      ShowStr(screen_ptr^,xstart+2,ystart+1,
+      ShowStr(screen_ptr,xstart+2,ystart+1,
               'FADiNG OUT SONG PLAYBACK...',
-              dialog_background+dialog_text);   
-      
+              dialog_background+dialog_text);
+
       For temp := 63 downto 0 do
         begin
           If scankey(1) then GOTO _end;
           fade_out_volume := temp;
           set_global_volume;
-          ShowStr(screen_ptr^,xstart+30,ystart+1,
+          ShowStr(screen_ptr,xstart+30,ystart+1,
                   Num2Str(Round(100/63*temp),10)+'%  ',
-                  dialog_background+dialog_hi_text);        
+                  dialog_background+dialog_hi_text);
           show_progress(temp);
           _emulate_screen_without_delay := TRUE;
           emulate_screen;
@@ -277,11 +282,11 @@ begin
   else
     SDL_Delay(100);
 
-  show_progress(0); 
-  ShowStr(screen_ptr^,xstart+2,ystart+1,
+  show_progress(0);
+  ShowStr(screen_ptr,xstart+2,ystart+1,
           'FADiNG iN WAV RECORDiNG... ',
-          dialog_background+dialog_text);   
-    
+          dialog_background+dialog_text);
+
   Case play_status of
     isStopped: begin
                  If trace_by_default then
@@ -305,11 +310,11 @@ begin
       If scankey(1) then GOTO _end;
       fade_out_volume := temp;
       set_global_volume;
-      ShowStr(screen_ptr^,xstart+30,ystart+1,
+      ShowStr(screen_ptr,xstart+30,ystart+1,
               Num2Str(Round(100/63*temp),10)+'%  ',
-              dialog_background+dialog_hi_text);        
+              dialog_background+dialog_hi_text);
       show_progress(temp);
-      _emulate_screen_without_delay := TRUE;      
+      _emulate_screen_without_delay := TRUE;
       emulate_screen;
 
       For temp2 := 1 to 10 do
@@ -319,11 +324,11 @@ begin
           actual_frame_end := SDL_GetTicks;
           frame_end := frame_start+fade_delay_tab[temp];
           If (actual_frame_end+fade_delay_tab[temp] > frame_end) then
-		    begin
-			  frame_end := actual_frame_end;
+            begin
+              frame_end := actual_frame_end;
               _emulate_screen_without_delay := TRUE;
               emulate_screen;
-			end;
+            end;
           SDL_Delay(frame_end-actual_frame_end);
           frame_start := SDL_GetTicks;
         end;
@@ -332,12 +337,12 @@ begin
     end;
 
 _end:
-  
+
   sdl_opl3_emulator := 1;
   fade_out_volume := 63;
   set_global_volume;
-  
-  move_to_screen_data := Addr(backup.screen);
+
+  move_to_screen_data := ptr_screen_backup;
   move_to_screen_area[1] := xstart;
   move_to_screen_area[2] := ystart;
   move_to_screen_area[3] := xstart+43+2+1;
@@ -391,39 +396,21 @@ begin
                end;
            end;
 
-    If (command_typing <> 0) then
-      begin
-        If scankey(SC_F11) and
-           NOT ctrl_pressed and NOT alt_pressed then
-          begin
-            command_typing := 1;
-            If NOT shift_pressed then cycle_pattern := TRUE
-            else cycle_pattern := FALSE;
-          end;
-
-        If scankey(SC_F12) and
-           NOT ctrl_pressed and NOT alt_pressed and NOT shift_pressed then
-          begin
-            command_typing := 2;
-            cycle_pattern := FALSE;
-          end;
-      end;
-
   If scankey(SC_F11) and
      ((alt_pressed and NOT ctrl_pressed) or
       (ctrl_pressed and NOT alt_pressed)) then
     begin
       If ctrl_pressed and
          ((sdl_opl3_emulator = 0) or (play_status = isStopped)) then
-	    begin
+        begin
           opl3_channel_recording_mode := TRUE;
           track_notes := FALSE;
           If shift_pressed then sdl_opl3_emulator := 0;
-		end;
+        end;
       If NOT shift_pressed then sdl_opl3_emulator := 1
       else FADE_IN_RECORDING;
-	  keyboard_reset_buffer;
-    end;  
+      keyboard_reset_buffer;
+    end;
 
   If scankey(SC_F12) and
      ((alt_pressed and NOT ctrl_pressed) or
@@ -434,11 +421,13 @@ begin
           flush_WAV_data;
           sdl_opl3_emulator := 0;
           opl3_channel_recording_mode := FALSE;
-        end          
+        end
       else FADE_OUT_RECORDING;
-      keyboard_reset_buffer;	  
+      keyboard_reset_buffer;
     end;
 end;
+
+{$ENDIF}
 
 procedure PROGRAM_SCREEN_init;
 
@@ -446,17 +435,21 @@ var
   temp: Byte;
 
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
+  _debug_str_ := 'ADT2EXT2.PAS:PROGRAM_SCREEN_init';
+{$ENDIF}
   fr_setting.shadow_enabled := FALSE;
-  Frame(screen_ptr^,01,MAX_PATTERN_ROWS+12,MAX_COLUMNS,MAX_PATTERN_ROWS+22,
+  Frame(screen_ptr,01,MAX_PATTERN_ROWS+12,MAX_COLUMNS,MAX_PATTERN_ROWS+22,
         main_background+main_border,'',
         main_background+main_title,double);
-  Frame(screen_ptr^,01,01,MAX_COLUMNS,MAX_PATTERN_ROWS+12,
+  Frame(screen_ptr,01,01,MAX_COLUMNS,MAX_PATTERN_ROWS+12,
         main_background+main_border,'-'+ExpStrL('',20,' ')+'-',
         main_background+main_border,single);
-  Frame(screen_ptr^,02,02,24,07,
+  Frame(screen_ptr,02,02,24,07,
         status_background+status_border,' STATUS ',
         status_background+status_border,double);
-  Frame(screen_ptr^,25,02,25+MAX_ORDER_COLS*7-1+PATTORD_xshift*2,07,
+  Frame(screen_ptr,25,02,25+MAX_ORDER_COLS*7-1+PATTORD_xshift*2,07,
         order_background+order_border,' PATTERN ORDER (  ) ',
         order_background+order_border,double);
 
@@ -466,46 +459,46 @@ begin
   area_x2 := 0;
   area_y2 := 0;
 
-  ShowVStr(screen_ptr^,02,MAX_PATTERN_ROWS+13,ExpStrL('',9,' '),analyzer_bckg+analyzer);
-  ShowVStr(screen_ptr^,03,MAX_PATTERN_ROWS+13,'MAX   MiN',analyzer_bckg+analyzer);
+  ShowVStr(screen_ptr,02,MAX_PATTERN_ROWS+13,ExpStrL('',9,' '),analyzer_bckg+analyzer);
+  ShowVStr(screen_ptr,03,MAX_PATTERN_ROWS+13,'MAX   MiN',analyzer_bckg+analyzer);
 
   For temp := 05 to MAX_COLUMNS-6 do
-    ShowVStr(screen_ptr^,temp,MAX_PATTERN_ROWS+13,'Ú‡‡‡‡‡‡‡Û',analyzer_bckg+analyzer);
+    ShowVStr(screen_ptr,temp,MAX_PATTERN_ROWS+13,'Ú‡‡‡‡‡‡‡Û',analyzer_bckg+analyzer);
 
-  ShowVStr(screen_ptr^,04,MAX_PATTERN_ROWS+13,ExpStrL('',9,' '),analyzer_bckg+analyzer);
-  ShowVStr(screen_ptr^,MAX_COLUMNS-5,MAX_PATTERN_ROWS+13,ExpStrL('',9,' '),analyzer_bckg+analyzer);
-  ShowVStr(screen_ptr^,MAX_COLUMNS-4,MAX_PATTERN_ROWS+13,ExpStrL('',9,' '),analyzer_bckg+analyzer);
-  ShowVStr(screen_ptr^,MAX_COLUMNS-3,MAX_PATTERN_ROWS+13,ExpStrL('',9,' '),analyzer_bckg+analyzer);
-  ShowVStr(screen_ptr^,MAX_COLUMNS-2,MAX_PATTERN_ROWS+13,ExpStrL('',9,' '),analyzer_bckg+analyzer);
-  ShowVStr(screen_ptr^,MAX_COLUMNS-1,MAX_PATTERN_ROWS+13,ExpStrL('',9,' '),analyzer_bckg+analyzer);
+  ShowVStr(screen_ptr,04,MAX_PATTERN_ROWS+13,ExpStrL('',9,' '),analyzer_bckg+analyzer);
+  ShowVStr(screen_ptr,MAX_COLUMNS-5,MAX_PATTERN_ROWS+13,ExpStrL('',9,' '),analyzer_bckg+analyzer);
+  ShowVStr(screen_ptr,MAX_COLUMNS-4,MAX_PATTERN_ROWS+13,ExpStrL('',9,' '),analyzer_bckg+analyzer);
+  ShowVStr(screen_ptr,MAX_COLUMNS-3,MAX_PATTERN_ROWS+13,ExpStrL('',9,' '),analyzer_bckg+analyzer);
+  ShowVStr(screen_ptr,MAX_COLUMNS-2,MAX_PATTERN_ROWS+13,ExpStrL('',9,' '),analyzer_bckg+analyzer);
+  ShowVStr(screen_ptr,MAX_COLUMNS-1,MAX_PATTERN_ROWS+13,ExpStrL('',9,' '),analyzer_bckg+analyzer);
 
-  ShowStr(screen_ptr^,MAX_COLUMNS-4,MAX_PATTERN_ROWS+13,'dB', analyzer_bckg+analyzer);
-  ShowStr(screen_ptr^,MAX_COLUMNS-4,MAX_PATTERN_ROWS+14,'‡47',analyzer_bckg+analyzer);
-  ShowStr(screen_ptr^,MAX_COLUMNS-4,MAX_PATTERN_ROWS+15,'‡',  analyzer_bckg+analyzer);
-  ShowStr(screen_ptr^,MAX_COLUMNS-4,MAX_PATTERN_ROWS+16,'‡23',analyzer_bckg+analyzer);
-  ShowStr(screen_ptr^,MAX_COLUMNS-4,MAX_PATTERN_ROWS+17,'‡',  analyzer_bckg+analyzer);
-  ShowStr(screen_ptr^,MAX_COLUMNS-4,MAX_PATTERN_ROWS+18,'‡12',analyzer_bckg+analyzer);
-  ShowStr(screen_ptr^,MAX_COLUMNS-4,MAX_PATTERN_ROWS+19,'‡4', analyzer_bckg+analyzer);
-  ShowStr(screen_ptr^,MAX_COLUMNS-4,MAX_PATTERN_ROWS+20,'‡2', analyzer_bckg+analyzer);
+  ShowStr(screen_ptr,MAX_COLUMNS-4,MAX_PATTERN_ROWS+13,'dB', analyzer_bckg+analyzer);
+  ShowStr(screen_ptr,MAX_COLUMNS-4,MAX_PATTERN_ROWS+14,'‡47',analyzer_bckg+analyzer);
+  ShowStr(screen_ptr,MAX_COLUMNS-4,MAX_PATTERN_ROWS+15,'‡',  analyzer_bckg+analyzer);
+  ShowStr(screen_ptr,MAX_COLUMNS-4,MAX_PATTERN_ROWS+16,'‡23',analyzer_bckg+analyzer);
+  ShowStr(screen_ptr,MAX_COLUMNS-4,MAX_PATTERN_ROWS+17,'‡',  analyzer_bckg+analyzer);
+  ShowStr(screen_ptr,MAX_COLUMNS-4,MAX_PATTERN_ROWS+18,'‡12',analyzer_bckg+analyzer);
+  ShowStr(screen_ptr,MAX_COLUMNS-4,MAX_PATTERN_ROWS+19,'‡4', analyzer_bckg+analyzer);
+  ShowStr(screen_ptr,MAX_COLUMNS-4,MAX_PATTERN_ROWS+20,'‡2', analyzer_bckg+analyzer);
 
-  ShowCStr(screen_ptr^,03,03,'~ORDER/PATTERN ~  /',
+  ShowCStr(screen_ptr,03,03,'~ORDER/PATTERN ~  /',
            status_background+status_dynamic_txt,
            status_background+status_static_txt);
-  ShowCStr(screen_ptr^,03,04,'~ROW           ~',
+  ShowCStr(screen_ptr,03,04,'~ROW           ~',
            status_background+status_dynamic_txt,
            status_background+status_static_txt);
-  ShowCStr(screen_ptr^,03,05,'~SPEED/TEMPO   ~  /',
+  ShowCStr(screen_ptr,03,05,'~SPEED/TEMPO   ~  /',
            status_background+status_dynamic_txt,
            status_background+status_static_txt);
 
-  ShowStr(screen_ptr^,02,08,patt_win[1],pattern_bckg+pattern_border);
-  ShowStr(screen_ptr^,02,09,patt_win[2],pattern_bckg+pattern_border);
-  ShowStr(screen_ptr^,02,10,patt_win[3],pattern_bckg+pattern_border);
+  ShowStr(screen_ptr,02,08,patt_win[1],pattern_bckg+pattern_border);
+  ShowStr(screen_ptr,02,09,patt_win[2],pattern_bckg+pattern_border);
+  ShowStr(screen_ptr,02,10,patt_win[3],pattern_bckg+pattern_border);
 
   For temp := 11 to 11+MAX_PATTERN_ROWS-1 do
-    ShowStr(screen_ptr^,02,temp,patt_win[4],pattern_bckg+pattern_border);
+    ShowStr(screen_ptr,02,temp,patt_win[4],pattern_bckg+pattern_border);
 
-  ShowStr(screen_ptr^,02,11+MAX_PATTERN_ROWS,patt_win[5],pattern_bckg+pattern_border);
+  ShowStr(screen_ptr,02,11+MAX_PATTERN_ROWS,patt_win[5],pattern_bckg+pattern_border);
 end;
 
 procedure process_config_file;
@@ -521,6 +514,10 @@ var
   result: Longint;
 
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
+  _debug_str_ := 'ADT2EXT2.PAS:check_number';
+{$ENDIF}
   result := default;
 
   temp2 := 1000000000; // 10**9
@@ -530,7 +527,7 @@ begin
         begin
           temp := idx;
           BREAK;
-        end;    
+        end;
       temp2 := temp2 DIV 10;
     end;
 
@@ -567,8 +564,10 @@ var
   result: Boolean;
 
 begin
-  If _debug_ then
-    _debug_str_ := 'ADT2EXT2.PAS:process_config_file:check_boolean';
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
+  _debug_str_ := 'ADT2EXT2.PAS:process_config_file:check_boolean';
+{$ENDIF}
   result := default;
   If SameName(str+'=???',data) and
      (Length(data) < Length(str)+5) then
@@ -585,15 +584,22 @@ var
   result: tRGB;
 
 begin
-  If _debug_ then
-    _debug_str_ := 'ADT2EXT2.PAS:process_config_file:check_rgb';
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
+  _debug_str_ := 'ADT2EXT2.PAS:process_config_file:check_rgb';
+{$ENDIF}
   If SameName(str+'=??,??,??',data) and
      (Length(data) < Length(str)+10) then
     begin
+{$IFDEF __TMT__}
+      result.r := Str2num(Copy(data,Length(str)+2,2),10);
+      result.g := Str2num(Copy(data,Length(str)+5,2),10);
+      result.b := Str2num(Copy(data,Length(str)+8,2),10);
+{$ELSE}
       result.r := Str2num(Copy(data,Length(str)+2,2),10) SHL 2;
       result.g := Str2num(Copy(data,Length(str)+5,2),10) SHL 2;
       result.b := Str2num(Copy(data,Length(str)+8,2),10) SHL 2;
-
+{$ENDIF}
       If (result.r <= 63) and (result.g <= 63) and (result.b <= 63) then
         default := result;
     end;
@@ -606,6 +612,68 @@ var
   temp_str: String;
 
 begin
+
+{$IFDEF __TMT__}
+
+  _last_debug_str_ := _debug_str_;
+  _debug_str_ := 'ADT2EXT2.PAS:check_option_data';
+
+  opl3port :=
+    check_number('adlib_port',16,1,$0ffff,opl3port);
+
+  typematic_rate :=
+    check_number('typematic_rate',10,0,31,typematic_rate);
+
+  typematic_delay:=
+    check_number('typematic_delay',10,0,3,typematic_delay);
+
+  screen_mode :=
+    check_number('screen_mode',10,0,5,screen_mode);
+
+  comp_text_mode :=
+    check_number('comp_text_mode',10,0,2,comp_text_mode);
+
+  opl_latency :=
+    check_number('opl_latency',10,0,1,opl_latency);
+
+  fps_down_factor :=
+    check_number('fps_down_factor',10,0,10,fps_down_factor);
+
+{$ELSE}
+
+  sdl_screen_mode :=
+    check_number('sdl_screen_mode',10,0,2,sdl_screen_mode);
+
+  sdl_frame_rate :=
+    check_number('sdl_frame_rate',10,50,200,sdl_frame_rate);
+
+  sdl_typematic_rate :=
+    check_number('sdl_typematic_rate',10,1,100,sdl_typematic_rate);
+
+  sdl_typematic_delay :=
+    check_number('sdl_typematic_delay',10,0,2000,sdl_typematic_delay);
+
+  If (Copy(data,1,18) = 'sdl_wav_directory=') and
+     (Length(data) > 18) then
+    begin
+      temp_str := Copy(data,19,Length(data)-18);
+      If (temp_str[1] = PATHSEP) then Delete(temp_str,1,1);
+      If (temp_str <> '') then
+        begin
+          If (Length(temp_str) > 4) then
+            If NOT (Lower(Copy(temp_str,Length(temp_str)-3,4)) = '.wav') then
+                               temp_str := temp_str+PATHSEP
+            else opl3_flushmode := TRUE
+           else If (temp_str[Length(temp_str)] <> PATHSEP) then
+                  temp_str := temp_str+PATHSEP;
+         end;
+      sdl_wav_directory := temp_str;
+      If NOT (Pos(':',sdl_wav_directory) <> 0) then
+        sdl_wav_directory := PathOnly(ParamStr(0))+PATHSEP+sdl_wav_directory;
+    end;
+
+{$ENDIF}
+
   init_tempo :=
     check_number('init_tempo',10,1,255,Round(init_tempo));
 
@@ -890,7 +958,7 @@ begin
 
   debug_info_border2 :=
     check_number('debug_info_border2',10,0,15,debug_info_border2);
-    
+
   debug_info_topic :=
     check_number('debug_info_topic',10,0,15,debug_info_topic);
 
@@ -953,7 +1021,7 @@ begin
 
   dialog_border :=
     check_number('dialog_border',10,0,15,dialog_border);
-   
+
   dialog_text :=
     check_number('dialog_text',10,0,15,dialog_text);
 
@@ -1143,8 +1211,14 @@ begin
   main_hi_stat_line :=
     check_number('main_hi_stat_line',10,0,15,main_hi_stat_line);
 
+  main_dis_stat_line :=
+    check_number('main_dis_stat_line',10,0,15,main_dis_stat_line);
+
   main_behavior :=
     check_number('main_behavior',10,0,15,main_behavior);
+
+  main_behavior_dis :=
+    check_number('main_behavior_dis',10,0,15,main_behavior_dis);
 
   status_background :=
     check_number('status_background',10,0,15,status_background SHR 4) SHL 4;
@@ -1257,41 +1331,13 @@ begin
   instrument_ai_trig :=
     check_number('instrument_ai_trig',10,0,15,instrument_ai_trig);
 
-  sdl_screen_mode :=
-    check_number('sdl_screen_mode',10,0,2,sdl_screen_mode);
-
-  sdl_sample_rate :=
-    check_number('sdl_sample_rate',10,8000,48000,sdl_sample_rate);
-
-  sdl_sample_buffer :=
-    check_number('sdl_sample_buffer',10,512,32768,sdl_sample_buffer);
-
-  sdl_frame_rate :=
-    check_number('sdl_frame_rate',10,50,200,sdl_frame_rate);
-
-  sdl_typematic_rate :=
-    check_number('sdl_typematic_rate',10,1,100,sdl_typematic_rate);
-
-  sdl_typematic_delay :=
-    check_number('sdl_typematic_delay',10,0,2000,sdl_typematic_delay);
-
-  If (Copy(data,1,18) = 'sdl_wav_directory=') and
-     (Length(data) > 18) then
+  If (Copy(data,1,14) = 'home_dir_path=') and
+     (Length(data) > 14) then
     begin
-      temp_str := Copy(data,19,Length(data)-18);
-      If (temp_str[1] = PATHSEP) then Delete(temp_str,1,1);
-      If (temp_str <> '') then
-        begin
-          If (Length(temp_str) > 4) then
-            If NOT (Lower(Copy(temp_str,Length(temp_str)-3,4)) = '.wav') then
-                               temp_str := temp_str+PATHSEP
-            else opl3_flushmode := TRUE
-           else If (temp_str[Length(temp_str)] <> PATHSEP) then
-                  temp_str := temp_str+PATHSEP;
-         end;
-      sdl_wav_directory := temp_str;
-      If NOT (Pos(':',sdl_wav_directory) <> 0) then
-        sdl_wav_directory := PathOnly(ParamStr(0))+PATHSEP+sdl_wav_directory;
+      home_dir_path := Copy(data,15,Length(data)-14);
+      If (home_dir_path <> '') and
+         (home_dir_path[Length(home_dir_path)] <> PATHSEP) then
+        home_dir_path := home_dir_path+PATHSEP;
     end;
 
   If (Copy(data,1,17) = 'a2m_default_path=') and
@@ -1312,7 +1358,7 @@ begin
         a2t_default_path := a2t_default_path+PATHSEP;
     end;
 
-  If (Copy(data,1,16) = 'a2i_default_path') and
+  If (Copy(data,1,17) = 'a2i_default_path=') and
      (Length(data) > 17) then
     begin
       a2i_default_path := Copy(data,18,Length(data)-17);
@@ -1321,7 +1367,7 @@ begin
         a2i_default_path := a2i_default_path+PATHSEP;
     end;
 
-  If (Copy(data,1,16) = 'a2f_default_path') and
+  If (Copy(data,1,17) = 'a2f_default_path=') and
      (Length(data) > 17) then
     begin
       a2f_default_path := Copy(data,18,Length(data)-17);
@@ -1339,7 +1385,7 @@ begin
         a2p_default_path := a2p_default_path+PATHSEP;
     end;
 
-  If (Copy(data,1,16) = 'a2b_default_path') and
+  If (Copy(data,1,17) = 'a2b_default_path=') and
      (Length(data) > 17) then
     begin
       a2b_default_path := Copy(data,18,Length(data)-17);
@@ -1348,7 +1394,7 @@ begin
         a2b_default_path := a2b_default_path+PATHSEP;
     end;
 
-  If (Copy(data,1,16) = 'a2w_default_path') and
+  If (Copy(data,1,17) = 'a2w_default_path=') and
      (Length(data) > 17) then
     begin
       a2w_default_path := Copy(data,18,Length(data)-17);
@@ -1365,9 +1411,12 @@ var
   txtf: Text;
   idx: Byte;
   config_found_flag: Boolean;
-  
+
 begin { process_config_file }
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2EXT2.PAS:process_config_file';
+{$ENDIF}
   config_found_flag := FALSE;
   Write('Reading configuration file ... ');
   {$i-}
@@ -1384,12 +1433,12 @@ begin { process_config_file }
       else begin
              config_found_flag := TRUE;
              WriteLn('ok');
-           end;
+        end;
     end
   else begin
          config_found_flag := TRUE;
          WriteLn('ok');
-       end;  
+       end;
 
   If config_found_flag then
     begin
@@ -1417,19 +1466,19 @@ begin { process_config_file }
       {$i-}
       Close(txtf);
       {$i+}
-      If (IOresult <> 0) then ;      
+      If (IOresult <> 0) then ;
     end;
-    
+
   If (ParamCount <> 0) then
     For idx := 1 to ParamCount do
       begin
-        data := CutStr(Lower(ParamStr(idx)));        
+        data := CutStr(Lower(ParamStr(idx)));
         If (Copy(data,1,5) = '/cfg:') then
           begin
             Delete(data,1,5);
             check_option_data;
-          end;  
-      end;     
+          end;
+      end;
 end;
 
 end.

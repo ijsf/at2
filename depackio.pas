@@ -1,5 +1,9 @@
 unit DepackIO;
-
+{$IFDEF __TMT__}
+{$S-,Q-,R-,V-,B-,X+}
+{$ELSE}
+{$PACKRECORDS 1}
+{$ENDIF}
 interface
 
 function RDC_decompress(var source,dest; size: Word): Word;

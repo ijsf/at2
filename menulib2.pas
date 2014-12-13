@@ -1,10 +1,15 @@
 unit MenuLib2;
+{$IFDEF __TMT__}
+{$S-,Q-,R-,V-,B-,X+}
+{$ELSE}
 {$PACKRECORDS 1}
+{$ENDIF}
 interface
 
 uses
-  AdT2sys,Adt2vscr,AdT2unit,AdT2keyb,AdT2ext2,
-  DialogIO,StringIO,TxtScrIO;
+  DOS,
+  AdT2unit,AdT2sys,AdT2keyb,AdT2ext2,
+  DialogIO,TxtScrIO,StringIO,ParserIO;
 
 const
   MenuLib2_mn_setting: Record
@@ -59,7 +64,7 @@ const
                       $0000,$0000,$0000,$0000,$0000));
 var
   MenuLib2_mn_environment: Record
-                             v_dest:     Pointer;
+                             v_dest:     tSCREEN_MEM_PTR;
                              keystroke:  Word;
                              context:    String;
                              unpolite:   Boolean;
@@ -92,13 +97,6 @@ type
                                  key: Char;
                                  use: Boolean;
                                end;
-type
-  tBACKUP = Record
-              cursor: Longint;
-              oldx,
-              oldy:   Byte;
-              screen: array[1..8000] of Byte
-            end;
 var
   i,k,m,max,
   len2b,page,first,last,temp,temp2,opage,opos: Word;
@@ -108,7 +106,6 @@ var
   qflg:   Boolean;
   mbuf:   tMBUFFR;
   contxt: String;
-  backup: tBACKUP;
 
 var
   mnu_x,mnu_y,mnu_len,mnu_len2: Byte;
@@ -157,8 +154,10 @@ var
   temp: String;
 
 begin
-  If _debug_ then
-    _debug_str_ := 'MenuLib2.PAS:pstr';
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
+  _debug_str_ := 'MenuLib2.PAS:pstr';
+{$ENDIF}
   Move(POINTER(Ptr(0,Ofs(mnu_data^)+(item-1)*(mnu_len+1)))^,temp,mnu_len+1);
   If NOT solid then pstr := ExpStrR(temp,mnu_len-2,' ')
   else pstr := ExpStrR(temp,mnu_len,' ');
@@ -170,8 +169,10 @@ var
   temp: String;
 
 begin
-  If _debug_ then
-    _debug_str_ := 'MenuLib2.PAS:pdes';
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
+  _debug_str_ := 'MenuLib2.PAS:pdes';
+{$ENDIF}
   If mn_environment.descr <> NIL then
     Move(POINTER(Ptr(0,Ofs(mn_environment.descr^)+
       (item-1)*(mn_environment.descr_len+1)))^,temp,mn_environment.descr_len+1)
@@ -181,15 +182,17 @@ end;
 
 procedure refresh;
 
-procedure ShowCStr_clone(var dest; x,y: Byte; str: String;
-                                   atr1,atr2,atr3,atr4: Byte);
+procedure ShowCStr_clone(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String;
+                         atr1,atr2,atr3,atr4: Byte);
 var
   temp,len: Byte;
   highlighted: Boolean;
 
 begin
-  If _debug_ then
-    _debug_str_ := 'MenuLib2.PAS:refresh:ShowCStr_clone';
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
+  _debug_str_ := 'MenuLib2.PAS:refresh:ShowCStr_clone';
+{$ENDIF}
   If NOT (MenuLib2_mn_setting.fixed_len <> 0) then
     begin
       ShowCStr(dest,x,y,str,atr1,atr2);
@@ -217,8 +220,10 @@ begin
 end;
 
 begin
-  If _debug_ then
-    _debug_str_ := 'MenuLib2.PAS:refresh';
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
+  _debug_str_ := 'MenuLib2.PAS:refresh';
+{$ENDIF}
   If (page = opage) and (k = opos) and NOT MenuLib2_mn_environment.do_refresh then EXIT
   else begin
          opage := page;
@@ -228,7 +233,7 @@ begin
 
   For i := page to mnu_len2+page-1 do
     If (i = k+page-1) then
-      ShowCStr_clone(MenuLib2_mn_environment.v_dest^,mnu_x+1,mnu_y+k,
+      ShowCStr_clone(MenuLib2_mn_environment.v_dest,mnu_x+1,mnu_y+k,
                      ExpStrR(pstr(k+page-1)+pdes(k+page-1),
                      max+(Length(pstr(k+page-1))+Length(pdes(k+page-1))-
                      CStrLen(pstr(k+page-1)+pdes(k+page-1))),' '),
@@ -236,20 +241,20 @@ begin
                      MenuLib2_mn_setting.text_attr,MenuLib2_mn_setting.short_attr)
     else
       If mbuf[i].use then
-        ShowCStr(MenuLib2_mn_environment.v_dest^,mnu_x+1,mnu_y+i-page+1,
+        ShowCStr(MenuLib2_mn_environment.v_dest,mnu_x+1,mnu_y+i-page+1,
                  ExpStrR(pstr(i)+pdes(i),
                  max+(Length(pstr(i))+Length(pdes(k+page-1))-
                  CStrLen(pstr(i)+pdes(i))),' '),
                  MenuLib2_mn_setting.text_attr,MenuLib2_mn_setting.short_attr)
       else
-        ShowCStr(MenuLib2_mn_environment.v_dest^,mnu_x+1,mnu_y+i-page+1,
+        ShowCStr(MenuLib2_mn_environment.v_dest,mnu_x+1,mnu_y+i-page+1,
                  ExpStrR(pstr(i)+pdes(i),
                  max+(Length(pstr(i))+Length(pdes(k+page-1))-
                  CStrLen(pstr(i)+pdes(i))),' '),
                  MenuLib2_mn_setting.disbld_attr,MenuLib2_mn_setting.disbld_attr);
 
   vscrollbar_pos :=
-    VScrollBar(MenuLib2_mn_environment.v_dest^,mnu_x+max+1,mnu_y+1,temp2,mnu_count,k+page-1,
+    VScrollBar(MenuLib2_mn_environment.v_dest,mnu_x+max+1,mnu_y+1,temp2,mnu_count,k+page-1,
                vscrollbar_pos,MenuLib2_mn_setting.menu_attr,MenuLib2_mn_setting.menu_attr);
 end;
 
@@ -302,7 +307,10 @@ var
   temp: String;
 
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'MenuLib2.PAS:MenuLib2_Menu:edit_contents';
+{$ENDIF}
   is_setting.append_enabled := TRUE;
   is_setting.character_set  := [#$20..#$ff];
   is_environment.locate_pos := 1;
@@ -328,25 +336,23 @@ begin
       Move(temp,POINTER(Ptr(0,Ofs(data)+(item-1)*(len+1)))^,len+1);
     end;
 
-  ShowCStr(MenuLib2_mn_environment.v_dest^,x+1,y+k,
+  ShowCStr(MenuLib2_mn_environment.v_dest,x+1,y+k,
            ExpStrR(pstr(item),max+(Length(pstr(item)))-
            CStrLen(pstr(item)),' '),
            MenuLib2_mn_setting.text2_attr,MenuLib2_mn_setting.short2_attr);
 end;
 
 begin { MenuLib2_Menu }
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'MenuLib2.PAS:MenuLib2_Menu';
+{$ENDIF}
   If count = 0 then begin MenuLib2_Menu := 0; EXIT; end;
   max := Length(title);
   mnu_data := Addr(data); mnu_count := count; mnu_len := len;
 
   If NOT MenuLib2_mn_environment.unpolite then
-    begin
-      Move(MenuLib2_mn_environment.v_dest^,backup.screen,SizeOf(backup.screen));
-      backup.cursor := GetCursor;
-      backup.oldx   := WhereX;
-      backup.oldy   := WhereY;
-    end;
+    ScreenMemCopy(MenuLib2_mn_environment.v_dest,ptr_scr_backup);
 
   If (count < 1) then EXIT;
   vscrollbar_pos := BYTE_NULL;
@@ -387,14 +393,14 @@ begin { MenuLib2_Menu }
       old_fr_shadow_enabled := fr_setting.shadow_enabled;
       fr_setting.shadow_enabled := MenuLib2_mn_setting.shadow_enabled;
       fr_setting.update_area := FALSE;
-      Frame(MenuLib2_mn_environment.v_dest^,x,y,x+max+1,y+len2+1,MenuLib2_mn_setting.menu_attr,
+      Frame(MenuLib2_mn_environment.v_dest,x,y,x+max+1,y+len2+1,MenuLib2_mn_setting.menu_attr,
             title,MenuLib2_mn_setting.title_attr,MenuLib2_mn_setting.frame_type);
       fr_setting.update_area := TRUE;
       fr_setting.shadow_enabled := old_fr_shadow_enabled;
 
       contxt := DietStr(MenuLib2_mn_environment.context,max+
         (Length(MenuLib2_mn_environment.context)-CStrLen(MenuLib2_mn_environment.context)));
-      ShowCStr(MenuLib2_mn_environment.v_dest^,x+max+1-CStrLen(contxt),y+len2+1,
+      ShowCStr(MenuLib2_mn_environment.v_dest,x+max+1-CStrLen(contxt),y+len2+1,
                contxt,MenuLib2_mn_setting.contxt_attr,MenuLib2_mn_setting.contxt2_attr);
 
       temp2 := len2;
@@ -417,7 +423,7 @@ begin { MenuLib2_Menu }
   MenuLib2_mn_environment.curr_pos := k+page-1;
   MenuLib2_mn_environment.keystroke := WORD_NULL;
   If (Addr(MenuLib2_mn_environment.ext_proc) <> NIL) then MenuLib2_mn_environment.ext_proc;
-    
+
   qflg := FALSE;
   If MenuLib2_mn_environment.preview then
     begin
@@ -484,15 +490,20 @@ begin { MenuLib2_Menu }
       refresh;
       MenuLib2_mn_environment.keystroke := key;
       If (Addr(MenuLib2_mn_environment.ext_proc) <> NIL) then MenuLib2_mn_environment.ext_proc;
+{$IFDEF __TMT__}
+      // emulate_screen;
+      keyboard_reset_buffer_alt;
+{$ELSE}
       emulate_screen;
       // keyboard_reset_buffer;
+{$ENDIF}
     until qflg or _force_program_quit;
 
   If MenuLib2_mn_environment.winshade and NOT MenuLib2_mn_environment.unpolite then
     begin
       If Addr(move_to_screen_routine) <> NIL then
         begin
-          move_to_screen_data := Addr(backup.screen);
+          move_to_screen_data := ptr_scr_backup;
           move_to_screen_area[1] := x;
           move_to_screen_area[2] := y;
           move_to_screen_area[3] := x+max+1+2;
@@ -500,7 +511,7 @@ begin { MenuLib2_Menu }
           move_to_screen_routine;
          end
       else
-        Move(backup.screen,MenuLib2_mn_environment.v_dest^,SizeOf(backup.screen));
+        ScreenMemCopy(ptr_scr_backup,MenuLib2_mn_environment.v_dest);
     end;
 
   MenuLib2_Menu := k+page-1;
@@ -508,38 +519,43 @@ end;
 
 procedure MenuLib2_Init;
 begin
-    MenuLib2_mn_setting.frame_type     := single;
-    MenuLib2_mn_setting.center_box     := FALSE;
-    MenuLib2_mn_setting.shadow_enabled := FALSE;
-    MenuLib2_mn_setting.cycle_moves    := FALSE;
-    MenuLib2_mn_setting.title_attr     := dialog_background+dialog_title;
-    MenuLib2_mn_setting.menu_attr      := dialog_background+dialog_text;
-    MenuLib2_mn_setting.text_attr      := dialog_background+dialog_item;
-    MenuLib2_mn_setting.text2_attr     := dialog_sel_itm_bck+dialog_sel_itm;
-    MenuLib2_mn_setting.default_attr   := dialog_def_bckg+dialog_def;
-    MenuLib2_mn_setting.short_attr     := dialog_background+dialog_short;
-    MenuLib2_mn_setting.short2_attr    := dialog_sel_itm_bck+dialog_sel_short;
-    MenuLib2_mn_setting.disbld_attr    := dialog_background+dialog_item_dis;
-    MenuLib2_mn_setting.contxt_attr    := dialog_background+dialog_context;
-    MenuLib2_mn_setting.contxt2_attr   := dialog_background+dialog_context_dis;
-    MenuLib2_mn_setting.terminate_keys[3] := kTAB;
-    MenuLib2_mn_setting.terminate_keys[4] := kLEFT;
-    MenuLib2_mn_setting.terminate_keys[5] := kRIGHT;
-    MenuLib2_mn_setting.terminate_keys[6] := kCtrlO;
-    MenuLib2_mn_setting.terminate_keys[7] := kF1;
-    MenuLib2_mn_setting.terminate_keys[8] := kShTAB;
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
+  _debug_str_ := 'MENULIB1.PAS:MenuLib1_Init';
+{$ENDIF}
 
-    MenuLib2_mn_environment.v_dest     := screen_ptr;
-    MenuLib2_mn_environment.keystroke  := $0000;
-    MenuLib2_mn_environment.context    := '';
-    MenuLib2_mn_environment.unpolite   := FALSE;
-    MenuLib2_mn_environment.winshade   := TRUE;
-    MenuLib2_mn_environment.ext_proc   := NIL;
-    MenuLib2_mn_environment.refresh    := NIL;
-    MenuLib2_mn_environment.do_refresh := FALSE;
-    MenuLib2_mn_environment.preview    := FALSE;
-    MenuLib2_mn_environment.descr_len  := 0;
-    MenuLib2_mn_environment.descr      := NIL;
+  MenuLib2_mn_setting.frame_type     := single;
+  MenuLib2_mn_setting.center_box     := FALSE;
+  MenuLib2_mn_setting.shadow_enabled := FALSE;
+  MenuLib2_mn_setting.cycle_moves    := FALSE;
+  MenuLib2_mn_setting.title_attr     := dialog_background+dialog_title;
+  MenuLib2_mn_setting.menu_attr      := dialog_background+dialog_text;
+  MenuLib2_mn_setting.text_attr      := dialog_background+dialog_item;
+  MenuLib2_mn_setting.text2_attr     := dialog_sel_itm_bck+dialog_sel_itm;
+  MenuLib2_mn_setting.default_attr   := dialog_def_bckg+dialog_def;
+  MenuLib2_mn_setting.short_attr     := dialog_background+dialog_short;
+  MenuLib2_mn_setting.short2_attr    := dialog_sel_itm_bck+dialog_sel_short;
+  MenuLib2_mn_setting.disbld_attr    := dialog_background+dialog_item_dis;
+  MenuLib2_mn_setting.contxt_attr    := dialog_background+dialog_context;
+  MenuLib2_mn_setting.contxt2_attr   := dialog_background+dialog_context_dis;
+  MenuLib2_mn_setting.terminate_keys[3] := kTAB;
+  MenuLib2_mn_setting.terminate_keys[4] := kLEFT;
+  MenuLib2_mn_setting.terminate_keys[5] := kRIGHT;
+  MenuLib2_mn_setting.terminate_keys[6] := kCtrlO;
+  MenuLib2_mn_setting.terminate_keys[7] := kF1;
+  MenuLib2_mn_setting.terminate_keys[8] := kShTAB;
+
+  MenuLib2_mn_environment.v_dest     := screen_ptr;
+  MenuLib2_mn_environment.keystroke  := $0000;
+  MenuLib2_mn_environment.context    := '';
+  MenuLib2_mn_environment.unpolite   := FALSE;
+  MenuLib2_mn_environment.winshade   := TRUE;
+  MenuLib2_mn_environment.ext_proc   := NIL;
+  MenuLib2_mn_environment.refresh    := NIL;
+  MenuLib2_mn_environment.do_refresh := FALSE;
+  MenuLib2_mn_environment.preview    := FALSE;
+  MenuLib2_mn_environment.descr_len  := 0;
+  MenuLib2_mn_environment.descr      := NIL;
 end;
 
 end.

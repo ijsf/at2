@@ -1,14 +1,22 @@
 unit DialogIO;
+{$IFDEF __TMT__}
+{$S-,Q-,R-,V-,B-,X+}
+{$ELSE}
 {$PACKRECORDS 1}
+{$ENDIF}
 interface
 
 uses
+{$IFDEF __TMT__}
+  DOS,DPMI,
+{$ELSE}
   DOS,
-  {$IFDEF WINDOWS}
-  Windows,
-  {$ENDIF}
-  AdT2sys,AdT2vscr,AdT2unit,AdT2keyb,AdT2ext2,AdT2text,
-  StringIO,ParserIO,TxtScrIO;
+{$IFDEF WINDOWS}
+  WINDOWS,
+{$ENDIF}
+{$ENDIF}
+  AdT2unit,AdT2sys,AdT2keyb,AdT2text,
+  TxtScrIO,StringIO,ParserIO;
 
 type
   tDIALOG_SETTING = Record
@@ -70,7 +78,7 @@ type
                         end;
 type
   tMENU_ENVIRONMENT = Record
-                        v_dest:      Pointer;
+                        v_dest:      tSCREEN_MEM_PTR;
                         keystroke:   Word;
                         context:     String;
                         unpolite:    Boolean;
@@ -84,6 +92,7 @@ type
                         ext_proc_rt: procedure;
                         refresh:     procedure;
                         do_refresh:  Boolean;
+                        own_refresh: Boolean;
                         preview:     Boolean;
                         fixed_start: Byte;
                         descr_len:   Byte;
@@ -95,9 +104,15 @@ type
                       end;
 
 const
+{$IFDEF __TMT__}
+  FILENAME_SIZE = 12;
+  DIR_SIZE = 80;
+  PATH_SIZE = 80;
+{$ELSE}
   FILENAME_SIZE = 80;
   DIR_SIZE = 170;
   PATH_SIZE = 255;
+{$ENDIF}
 
 type
   tFSELECT_ENVIRONMENT = Record
@@ -186,15 +201,11 @@ function Dialog(text,keys,title: String; spos: Byte): Byte;
 function Menu(var data; x,y: Byte; spos: Word;
               len,len2: Byte; count: Word; title: String): Word;
 function Fselect(mask: String): String;
-function HScrollBar(var dest; x,y: Byte; size: Byte; len1,len2,pos: Word;
+function HScrollBar(dest: tSCREEN_MEM_PTR; x,y: Byte; size: Byte; len1,len2,pos: Word;
                     atr1,atr2: Byte): Word;
-function VScrollBar(var dest; x,y: Byte; size: Byte; len1,len2,pos: Word;
+function VScrollBar(dest: tSCREEN_MEM_PTR; x,y: Byte; size: Byte; len1,len2,pos: Word;
                     atr1,atr2: Byte): Word;
 procedure DialogIO_Init;
-
-function Lower_file(s: String) : String;
-function Upper_file(s: String) : String;
-function iCASE_file(s: String) : String;
 
 implementation
 
@@ -210,13 +221,6 @@ type
                                  key: Char;
                                  use: Boolean;
                                end;
-type
-  tBACKUP = Record
-              cursor: Longint;
-              oldx,
-              oldy:   Byte;
-              screen: array[1..180*60*SizeOf(WORD)] of Byte;
-            end;
 var
   i,k,l,m,pos,max,mx2,num,nm2,xstart,ystart,count,
   ln,ln1,len2b,atr1,atr2,page,first,last,temp,temp2,opage,opos: Word;
@@ -228,40 +232,6 @@ var
   dbuf:   tDBUFFR;
   mbuf:   tMBUFFR;
   contxt: String;
-  backup: tBACKUP;
-
-function iCASE_file(s: String) : String;
-
-begin
-{$ifdef UNIX}
-  iCASE_file := s;
-{$else}
-  iCASE_file := iCASE(s);
-{$endif}
-end;
-
-
-function Lower_file(s: String) : String;
-
-begin
-{$ifdef UNIX}
-  Lower_file := s;
-{$else}
-  Lower_file := Lower(s);
-{$endif}
-end;
-
-function Upper_file(s: String) : String;
-
-begin
-{$ifdef UNIX}
-  Upper_file := s;
-{$else}
-  Upper_file := Upper(s);
-{$endif}
-end;
-
-
 
 function OutStr(var queue; len: Byte; order: Word): String; assembler;
 asm
@@ -362,10 +332,10 @@ procedure ShowItem;
 begin
   If k = 0 then EXIT;
   If k <> l then
-    ShowCStr(screen_ptr^,dbuf[l].pos,ystart+num+1,dbuf[l].str,
+    ShowCStr(screen_ptr,dbuf[l].pos,ystart+num+1,dbuf[l].str,
              dl_setting.keys_attr,dl_setting.short_attr);
 
-    ShowCStr(screen_ptr^,dbuf[k].pos,ystart+num+1,dbuf[k].str,
+    ShowCStr(screen_ptr,dbuf[k].pos,ystart+num+1,dbuf[k].str,
              dl_setting.keys2_attr,dl_setting.short2_attr);
   l := k;
 end;
@@ -395,17 +365,17 @@ begin
 end;
 
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'DIALOGIO.PAS:Dialog';
+{$ENDIF}
   pos := 1;
   max := Length(title);
   num := 0;
 
-  Move(screen_ptr^,backup.screen,SizeOf(backup.screen));
-  backup.cursor := GetCursor;
-  backup.oldx   := WhereX;
-  backup.oldy   := WhereY;
-
+  ScreenMemCopy(screen_ptr,ptr_scr_backup);
   HideCursor;
+
   Repeat
     str := ReadChunk(text,pos);
     Inc(pos,Length(str)+1);
@@ -482,7 +452,10 @@ begin
 
   old_fr_shadow_enabled := fr_setting.shadow_enabled;
   fr_setting.shadow_enabled := dl_setting.shadow_enabled;
-  Frame(screen_ptr^,xstart,ystart,xstart+max+3,ystart+num+2,
+{$IFDEF __TMT__}
+  toggle_waitretrace := TRUE;
+{$ENDIF}
+  Frame(screen_ptr,xstart,ystart,xstart+max+3,ystart+num+2,
         dl_setting.box_attr,title,dl_setting.title_attr,
         dl_setting.frame_type);
   fr_setting.shadow_enabled := old_fr_shadow_enabled;
@@ -490,7 +463,7 @@ begin
   pos := 1;
   contxt := DietStr(dl_environment.context,max+
     (Length(dl_environment.context)-CStrLen(dl_environment.context)));
-  ShowCStr(screen_ptr^,xstart+max+3-CStrLen(contxt),ystart+num+2,
+  ShowCStr(screen_ptr,xstart+max+3-CStrLen(contxt),ystart+num+2,
            contxt,dl_setting.contxt_attr,dl_setting.contxt2_attr);
 
   For i := 1 to num do
@@ -498,11 +471,11 @@ begin
       str := ReadChunk(text,pos);
       Inc(pos,Length(str)+1);
       If dl_setting.center_text then
-        ShowCStr(screen_ptr^,xstart+2,ystart+i,
+        ShowCStr(screen_ptr,xstart+2,ystart+i,
                  ExpStrL(str,Length(str)+(max-CStrLen(str)) DIV 2,' '),
                  dl_setting.text_attr,dl_setting.text2_attr)
       else
-        ShowCStr(screen_ptr^,xstart+2,ystart+i,
+        ShowCStr(screen_ptr,xstart+2,ystart+i,
                  str,dl_setting.text_attr,dl_setting.text2_attr);
     end;
 
@@ -521,10 +494,10 @@ begin
         begin
           Inc(dbuf[i].pos,xstart+(max-mx2) DIV 2+1);
           If dbuf[i].use then
-            ShowCStr(screen_ptr^,dbuf[i].pos,ystart+num+1,
+            ShowCStr(screen_ptr,dbuf[i].pos,ystart+num+1,
                      dbuf[i].str,dl_setting.keys_attr,dl_setting.short_attr)
           else
-            ShowCStr(screen_ptr^,dbuf[i].pos,ystart+num+1,
+            ShowCStr(screen_ptr,dbuf[i].pos,ystart+num+1,
                      dbuf[i].str,dl_setting.disbld_attr,dl_setting.disbld_attr);
         end;
 
@@ -588,15 +561,17 @@ begin
                           end;
                    end;
 
-            $20..$0ff:
-              begin
-                RetKey(LO(key),m);
-                If m <> 0 then begin qflg := TRUE; k := m; end;
-              end;
-          end;
+          $20..$0ff:
+            begin
+              RetKey(LO(key),m);
+              If m <> 0 then begin qflg := TRUE; k := m; end;
+            end;
+        end;
 
         ShowItem;
+{$IFNDEF __TMT__}
         emulate_screen;
+{$ENDIF}
       until qflg or _force_program_quit;
 
       Dialog := k;
@@ -605,7 +580,7 @@ begin
 
   If Addr(move_to_screen_routine) <> NIL then
     begin
-      move_to_screen_data := Addr(backup.screen);
+      move_to_screen_data := ptr_scr_backup;
       move_to_screen_area[1] := xstart;
       move_to_screen_area[2] := ystart;
       move_to_screen_area[3] := xstart+max+3+2;
@@ -613,7 +588,7 @@ begin
       move_to_screen_routine;
     end
   else
-    Move(backup.screen,screen_ptr^,SizeOf(backup.screen));
+    ScreenMemCopy(ptr_scr_backup,screen_ptr);
 end;
 
 var
@@ -630,8 +605,10 @@ var
   temp: String;
 
 begin
-  If _debug_ then
-    _debug_str_ := 'DIALOGIO.PAS:pstr';
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
+  _debug_str_ := 'DIALOGIO.PAS:pstr';
+{$ENDIF}
   If (item <= mnu_count) then
     Move(POINTER(Ptr(0,Ofs(mnu_data^)+(item-1)*(mnu_len+1)))^,temp,mnu_len+1)
   else temp := '';
@@ -668,8 +645,10 @@ var
   temp: String;
 
 begin
-  If _debug_ then
-    _debug_str_ := 'DIALOGIO.PAS:pdes';
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
+  _debug_str_ := 'DIALOGIO.PAS:pdes';
+{$ENDIF}
   If (mn_environment.descr <> NIL) and (item <= mnu_count) then
     Move(POINTER(Ptr(0,Ofs(mn_environment.descr^)+
       (item-1)*(mn_environment.descr_len+1)))^,temp,mn_environment.descr_len+1)
@@ -679,16 +658,18 @@ end;
 
 procedure refresh;
 
-procedure ShowCStr_clone(var dest; x,y: Byte; str: String;
-                                   atr1,atr2,atr3,atr4: Byte);
+procedure ShowCStr_clone(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String;
+                         atr1,atr2,atr3,atr4: Byte);
 var
   temp,
   len,len2: Byte;
   highlighted: Boolean;
 
 begin
-  If _debug_ then
-    _debug_str_ := 'DIALOGIO.PAS:refresh:ShowCStr_clone';
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
+  _debug_str_ := 'DIALOGIO.PAS:refresh:ShowCStr_clone';
+{$ENDIF}
   If NOT (mn_setting.fixed_len <> 0) then
     begin
       ShowC3Str(dest,x,y,str,atr1,atr2,atr1 AND $0f0+mn_setting.topic_attr AND $0f);
@@ -720,8 +701,10 @@ begin
 end;
 
 begin { refresh }
-  If _debug_ then
-    _debug_str_ := 'DIALOGIO.PAS:refresh';
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
+  _debug_str_ := 'DIALOGIO.PAS:refresh';
+{$ENDIF}
   If (page = opage) and (k = opos) and NOT mn_environment.do_refresh then EXIT
   else begin
          opage := page;
@@ -729,44 +712,45 @@ begin { refresh }
          mn_environment.do_refresh := FALSE;
        end;
 
-  For i := page to mnu_len2+page-1 do
-    If (i = k+page-1) then
-      ShowCStr_clone(mn_environment.v_dest^,mnu_x+1,mnu_y+k,
-                     ExpStrR(pstr2(k+page-1)+pdes(k+page-1),
-                     max+(Length(pstr2(k+page-1))+Length(pdes(k+page-1))-
-                     (C3StrLen(pstr2(k+page-1))+CStrLen(pdes(k+page-1)))),' '),
-                     mn_setting.text2_attr,
-                     mn_setting.short2_attr,
-                     mn_setting.text_attr,
-                     mn_setting.short_attr)
-    else
-      If (i-page+1 <= mnu_topic_len) then
-        ShowCStr(mn_environment.v_dest^,mnu_x+1,mnu_y+i-page+1,
-                 ExpStrR(pstr(i-page+1)+pdes(i-page+1),
-                 max+(Length(pstr(i-page+1))+Length(pdes(k+page-1))-
-                 CStrLen(pstr(i-page+1)+pdes(i-page+1))),' '),
-                 mn_setting.topic_attr,
-                 mn_setting.hi_topic_attr)
+  If NOT mn_environment.own_refresh then
+    For i := page to mnu_len2+page-1 do
+      If (i = k+page-1) then
+        ShowCStr_clone(mn_environment.v_dest,mnu_x+1,mnu_y+k,
+                       ExpStrR(pstr2(k+page-1)+pdes(k+page-1),
+                       max+(Length(pstr2(k+page-1))+Length(pdes(k+page-1))-
+                       (C3StrLen(pstr2(k+page-1))+CStrLen(pdes(k+page-1)))),' '),
+                       mn_setting.text2_attr,
+                       mn_setting.short2_attr,
+                       mn_setting.text_attr,
+                       mn_setting.short_attr)
       else
-        If mbuf[i].use then
-          ShowC3Str(mn_environment.v_dest^,mnu_x+1,mnu_y+i-page+1,
-                    ExpStrR(pstr2(i)+pdes(i),
-                    max+(Length(pstr2(i))+Length(pdes(k+page-1))-
-                    (C3StrLen(pstr2(i))+CStrLen(pdes(i)))),' '),
-                    mn_setting.text_attr,
-                    mn_setting.short_attr,
-                    mn_setting.topic_attr)
+        If (i-page+1 <= mnu_topic_len) then
+          ShowCStr(mn_environment.v_dest,mnu_x+1,mnu_y+i-page+1,
+                   ExpStrR(pstr(i-page+1)+pdes(i-page+1),
+                   max+(Length(pstr(i-page+1))+Length(pdes(k+page-1))-
+                   CStrLen(pstr(i-page+1)+pdes(i-page+1))),' '),
+                   mn_setting.topic_attr,
+                   mn_setting.hi_topic_attr)
         else
-          ShowCStr(mn_environment.v_dest^,mnu_x+1,mnu_y+i-page+1,
-                   ExpStrR(pstr(i)+pdes(i),
-                   max+(Length(pstr(i))+Length(pdes(k+page-1))-
-                   CStrLen(pstr(i)+pdes(i))),' '),
-                   mn_setting.disbld_attr,
-                   mn_setting.disbld_attr);
+          If mbuf[i].use then
+            ShowC3Str(mn_environment.v_dest,mnu_x+1,mnu_y+i-page+1,
+                      ExpStrR(pstr2(i)+pdes(i),
+                      max+(Length(pstr2(i))+Length(pdes(k+page-1))-
+                      (C3StrLen(pstr2(i))+CStrLen(pdes(i)))),' '),
+                      mn_setting.text_attr,
+                      mn_setting.short_attr,
+                      mn_setting.topic_attr)
+          else
+            ShowCStr(mn_environment.v_dest,mnu_x+1,mnu_y+i-page+1,
+                     ExpStrR(pstr(i)+pdes(i),
+                     max+(Length(pstr(i))+Length(pdes(k+page-1))-
+                     CStrLen(pstr(i)+pdes(i))),' '),
+                     mn_setting.disbld_attr,
+                     mn_setting.disbld_attr);
 
   If mn_setting.show_scrollbar then
     vscrollbar_pos :=
-      VScrollBar(mn_environment.v_dest^,mnu_x+max+1,mnu_y+1-mn_setting.topic_len,
+      VScrollBar(mn_environment.v_dest,mnu_x+max+1,mnu_y+1-mn_setting.topic_len,
                  temp2,mnu_count,k+page-1,
                  vscrollbar_pos,mn_setting.menu_attr,mn_setting.menu_attr);
 end;
@@ -820,7 +804,10 @@ var
   temp: String;
 
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'DIALOGIO.PAS:Menu:edit_contents';
+{$ENDIF}
   is_setting.append_enabled := TRUE;
   is_setting.character_set  := [#$20..#$7d,#$7f..#$ff];
   is_environment.locate_pos := 1;
@@ -854,18 +841,16 @@ begin
 end;
 
 begin { Menu }
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'DIALOGIO.PAS:Menu';
+{$ENDIF}
   If count = 0 then begin Menu := 0; EXIT; end;
   max := Length(title);
   mnu_data := Addr(data); mnu_count := count; mnu_len := len;
 
   If NOT mn_environment.unpolite then
-    begin
-      Move(mn_environment.v_dest^,backup.screen,SizeOf(backup.screen));
-      backup.cursor := GetCursor;
-      backup.oldx   := WhereX;
-      backup.oldy   := WhereY;
-    end;
+    ScreenMemCopy(mn_environment.v_dest,ptr_scr_backup2);
 
   If (count < 1) then EXIT;
   vscrollbar_pos := WORD_NULL;
@@ -913,8 +898,13 @@ begin { Menu }
       If mn_environment.intact_area then
         fr_setting.update_area := FALSE;
       If mn_setting.frame_enabled then
-        Frame(mn_environment.v_dest^,x,y,x+max+1,y+len2+1,mn_setting.menu_attr,
-              title,mn_setting.title_attr,mn_setting.frame_type);
+        begin
+{$IFDEF __TMT__}
+          toggle_waitretrace := TRUE;
+{$ENDIF}
+          Frame(mn_environment.v_dest,x,y,x+max+1,y+len2+1,mn_setting.menu_attr,
+                title,mn_setting.title_attr,mn_setting.frame_type);
+        end;
       If mn_environment.intact_area then
         fr_setting.update_area := TRUE;
       fr_setting.shadow_enabled := old_fr_shadow_enabled;
@@ -922,7 +912,7 @@ begin { Menu }
       contxt := DietStr(mn_environment.context,max+
         (Length(mn_environment.context)-CStrLen(mn_environment.context)));
       If mn_setting.frame_enabled then
-        ShowC3Str(mn_environment.v_dest^,x+1,y+len2+1,
+        ShowC3Str(mn_environment.v_dest,x+1,y+len2+1,
                   '`'+ExpStrL('',max-CStrLen(contxt),
                               mn_setting.frame_type[2])+'`'+
                   contxt,
@@ -1068,8 +1058,9 @@ begin { Menu }
         refresh;
         mn_environment.keystroke := key;
         If (Addr(mn_environment.ext_proc) <> NIL) then mn_environment.ext_proc;
+{$IFNDEF __TMT__}
         emulate_screen;
-        // keyboard_reset_buffer;
+{$ENDIF}
       until qflg or _force_program_quit;
     end;
 
@@ -1077,7 +1068,7 @@ begin { Menu }
     begin
       If Addr(move_to_screen_routine) <> NIL then
         begin
-          move_to_screen_data := Addr(backup.screen);
+          move_to_screen_data := ptr_scr_backup2;
           move_to_screen_area[1] := x;
           move_to_screen_area[2] := y;
           move_to_screen_area[3] := x+max+1+2;
@@ -1085,7 +1076,7 @@ begin { Menu }
           move_to_screen_routine;
          end
       else
-        Move(backup.screen,mn_environment.v_dest^,SizeOf(backup.screen));
+        ScreenMemCopy(ptr_scr_backup2,mn_environment.v_dest);
     end;
 
   Menu := k+page-1;
@@ -1094,10 +1085,10 @@ end;
 const
   MAX_FILES = 4096;
   UPDIR_STR = 'updir';
-{$IFDEF WINDOWS}
-  DRIVE_DIVIDER = 1;
-{$ELSE}
+{$IFDEF UNIX}
   DRIVE_DIVIDER = 0;
+{$ELSE}
+  DRIVE_DIVIDER = 1;
 {$ENDIF}
 
 type
@@ -1115,7 +1106,11 @@ type
               match_count: Word;
             end;
 type
+{$IFDEF __TMT__}
+  tMNUDAT = array[1..MAX_FILES] of String[1+12+1];
+{$ELSE}
   tMNUDAT = array[1..MAX_FILES] of String[1+23+1];
+{$ENDIF}
 
 type
   tDSCDAT = array[1..MAX_FILES] of String[20];
@@ -1125,7 +1120,9 @@ var
   descr: tDSCDAT;
   masks: array[1..20] of String;
   fstream: tSTREAM;
+{$IFNDEF __TMT__}
   drive_list: array[0..128] of Char;
+{$ENDIF}
 
 function LookUpMask(filename: String): Boolean;
 
@@ -1136,13 +1133,70 @@ var
 begin
   okay := FALSE;
   For temp := 1 to count do
+{$IFDEF __TMT__}
+    If SameName(Upper(masks[temp]),Upper(filename)) then
+{$ELSE}
     If (Upper(Copy(masks[temp],3,Length(masks[temp]))) = Upper(ExtOnly(filename))) then
+{$ENDIF}
       begin
         okay := TRUE;
         BREAK;
       end;
   LookUpMask := okay;
 end;
+
+{$IFDEF __TMT__}
+
+function valid_drive(drive: Char): Boolean;
+
+function phantom_drive(drive: Char): Boolean;
+
+var
+  regs: tRmRegs;
+  IsPhantom : Boolean;
+  DriveNum : Byte;
+
+begin
+  _last_debug_str_ := _debug_str_;
+  _debug_str_ := 'DIALOGIO.PAS:phantom_drive';
+
+  ClearRmRegs(regs);
+  regs.ax := $440e;
+  regs.bl := BYTE(UpCase(drive))-$40;
+  RealModeInt($21,regs);
+
+  If Odd(regs.flags) then phantom_drive := FALSE
+  else If (regs.al = 0) then phantom_drive := FALSE
+       else phantom_drive := (regs.al <> BYTE(UpCase(drive))-$40);
+end;
+
+var
+  regs: tRmRegs;
+  fcb: array[0..36] of Byte;
+  dos_seg: Word;
+
+begin
+  _last_debug_str_ := _debug_str_;
+  _debug_str_ := 'DIALOGIO.PAS:valid_drive';
+
+  dos_seg := DosMemoryAlloc(40);
+  MEM[dos_seg:0] := BYTE(UpCase(drive));
+  MEM[dos_seg:1] := BYTE(':');
+  MEM[dos_seg:2] := 0;
+
+  ClearRmRegs(regs);
+  regs.ax  := $2906;
+  regs.si  := 0;
+  regs.di  := 3;
+  regs.ds  := dos_seg;
+  regs.es  := dos_seg;
+  RealModeInt($21,regs);
+
+  DosMemoryFree(dos_seg);
+  valid_drive := (regs.al <> BYTE_NULL) and NOT phantom_drive(drive);
+end;
+
+{$ELSE}
 
 function valid_drive(drive: Char; var info: String): Boolean;
 
@@ -1152,7 +1206,7 @@ var
 begin
   valid_drive := FALSE;
   info := '';
-  {$IFDEF WINDOWS}
+  {$IFNDEF UNIX}
   idx := 0;
   For idx := 0 to 128 do
     If (drive_list[idx] = drive) then
@@ -1164,12 +1218,16 @@ begin
   If (info <> '') then valid_drive := TRUE;
 end;
 
+{$ENDIF}
+
 procedure make_stream(path,mask: String; var stream: tSTREAM);
 
 var
   search: SearchRec;
   count1,count2: Word;
   drive: Char;
+
+{$IFNDEF __TMT__}
 
 type
   tCOMPARE_STR_RESULT = (isLess,isMore,isEqual);
@@ -1218,6 +1276,8 @@ begin
   CompareStr := result;
 end;
 
+{$ENDIF}
+
 procedure QuickSort(l,r: Word);
 
 var
@@ -1232,13 +1292,19 @@ begin
   j := r;
 
   Repeat
+{$IFDEF __TMT__}
+    While (i < r) and (stream.stuff[i].name < cmp) do
+      Inc(i);
+    While (j > l) and (stream.stuff[j].name > cmp) do
+      Dec(j);
+{$ELSE}
     While (i < r) and
           (CompareStr(stream.stuff[i].name,cmp) = isLess) do
       Inc(i);
-
     While (j > l) and
           (CompareStr(stream.stuff[j].name,cmp) = isMore) do
       Dec(j);
+{$ENDIF}
 
     If (i <= j) then
       begin
@@ -1246,7 +1312,7 @@ begin
         stream.stuff[i] := stream.stuff[j];
         stream.stuff[j] := tmp;
         Inc(i);
-        Dec(j);
+                Dec(j);
       end;
   until (i > j);
 
@@ -1255,13 +1321,22 @@ begin
 end;
 
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'DIALOGIO.PAS:make_stream';
-  {$IFDEF WINDOWS}
+{$ELSE}
+{$IFNDEF UNIX}
   GetLogicalDriveStrings(SizeOf(drive_list),drive_list);
-  {$ENDIF}
+{$ENDIF}
+{$ENDIF}
+
   count1 := 0;
   For drive := 'A' to 'Z' do
+{$IFDEF __TMT__}
+    If valid_drive(drive) then
+{$ELSE}
     If valid_drive(drive,stream.stuff[SUCC(count1)].info) then
+{$ENDIF}
       begin
         Inc(count1);
         stream.stuff[count1].name := drive;
@@ -1275,49 +1350,60 @@ begin
 
   count2 := 0;
   stream.drive_count := count1;
-  FindFirst(path+WILDCARD_ASTERISK,anyfile-volumeid,search);
-  While (DOSerror = 0) and (count1 < MAX_FILES) do
-    begin
-      If (search.attr AND directory <> 0) and (search.name = '.') then
-        begin
-          FindNext(search);
-          CONTINUE;
-        end
-      else If (search.attr AND directory <> 0) and
-              NOT ((search.name = '..') and (Length(path) = 3)) then
-             begin
-               If (search.name <> '..') then search.name := search.name
-               else search.name := UPDIR_STR;
-               Inc(count1);
-               stream.stuff[count1].name := search.name;
-               stream.stuff[count1].attr := search.attr;
-             end;
-      FindNext(search);
-    end;
 
+{$IFDEF __TMT__}
+  If (DiskSize(ORD(UpCase(path[1]))-ORD('A')+1) > 0) then
+    begin
+{$ENDIF}
+      FindFirst(path+WILDCARD_ASTERISK,anyfile-volumeid,search);
+      While (DOSerror = 0) and (count1 < MAX_FILES) do
+        begin
+          If (search.attr AND directory <> 0) and (search.name = '.') then
+            begin
+              FindNext(search);
+              CONTINUE;
+            end
+          else If (search.attr AND directory <> 0) and
+                  NOT ((search.name = '..') and (Length(path) = 3)) then
+                 begin
+                   If (search.name <> '..') then search.name := search.name
+                   else search.name := UPDIR_STR;
+                   Inc(count1);
+                   stream.stuff[count1].name := search.name;
+                   stream.stuff[count1].attr := search.attr;
+                 end;
+          FindNext(search);
+        end;
+
+{$IFNDEF __TMT__}
   If (Length(path) > 3) and (count1 = stream.drive_count) then
     begin
       Inc(count1);
       stream.stuff[count1].name := UPDIR_STR;
       stream.stuff[count1].attr := search.attr;
     end;
+{$ENDIF}
 
-  FindFirst(path+WILDCARD_ASTERISK,anyfile-volumeid-directory,search);
-  While (DOSerror = 0) and (count1+count2 < MAX_FILES) do
-    begin
-      If LookUpMask(search.name) then
+      FindFirst(path+WILDCARD_ASTERISK,anyfile-volumeid-directory,search);
+      While (DOSerror = 0) and (count1+count2 < MAX_FILES) do
         begin
-          search.name := Lower_file(search.name);
-          Inc(count2);
-          stream.stuff[count1+count2].name := search.name;
-          stream.stuff[count1+count2].attr := search.attr;
-          stream.stuff[count1+count2].size := search.size;
+          If LookUpMask(search.name) then
+            begin
+          search.name := Lower_filename(search.name);
+              Inc(count2);
+              stream.stuff[count1+count2].name := search.name;
+              stream.stuff[count1+count2].attr := search.attr;
+              stream.stuff[count1+count2].size := search.size;
+            end;
+          FindNext(search);
         end;
-      FindNext(search);
+{$IFDEF __TMT__}
     end;
+{$ENDIF}
 
   QuickSort(stream.drive_count+DRIVE_DIVIDER,count1);
   QuickSort(count1+DRIVE_DIVIDER,count1+count2);
+
   stream.count := count1+count2;
   stream.match_count := count2;
 end;
@@ -1339,22 +1425,25 @@ var
   temp3,temp4: String;
   temp5: Longint;
   temp6,temp7: String;
+  temps: String;
   temp8: Longint;
   lastp: Longint;
   idx: Byte;
-  backup: tBACKUP;
 
 function path_filter(path: String): String;
 begin
   If (Length(path) > 3) and (path[Length(path)] = PATHSEP) then
     Delete(path,Length(path),1);
-  path_filter := Upper_File(path);
+  path_filter := Upper_filename(path);
 end;
 
 label _jmp1;
 
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'DIALOGIO.PAS:Fselect';
+{$ENDIF}
 
 _jmp1:
 
@@ -1404,15 +1493,57 @@ _jmp1:
   mn_environment.descr_len := 20;
   mn_environment.descr := Addr(descr);
   mn_environment.winshade := FALSE;
-
-  Move(screen_ptr^,backup.screen,SizeOf(backup.screen));
-  backup.cursor := GetCursor;
-  backup.oldx   := WhereX;
-  backup.oldy   := WhereY;
+  ScreenMemCopy(screen_ptr,ptr_scr_backup);
 
   Repeat
     path[SUCC(ORD(UpCase(temp3[1]))-ORD('A'))] := path_filter(temp3);
     make_stream(temp3,mask,fstream);
+
+{$IFDEF __TMT__}
+
+    For temp2 := 1 to fstream.count do
+      If (fstream.stuff[temp2].name <> UPDIR_STR) then
+        begin
+          menudat[temp2] := ' '+ExpStrR(BaseNameOnly(
+                                   FilterStr2(fstream.stuff[temp2].name,_valid_characters,'_')),8,' ')+' '+
+                                 ExpStrR(ExtOnly(
+                                   fstream.stuff[temp2].name),3,' ')+' ';
+          If (fstream.stuff[temp2].attr AND directory <> 0) then
+            menudat[temp2] := iCASE(menudat[temp2]);
+        end
+      else
+        begin
+          menudat[temp2] := ExpStrR(' ..',mn_environment.descr_len,' ');
+          fstream.stuff[temp2].name := '..';
+        end;
+
+    For temp2 := 1 to fstream.count do
+      If (fstream.stuff[temp2].attr = volumeid) then
+        begin
+          If (fstream.stuff[temp2].name = '~'+#$ff+'~') then descr[temp2] := ''
+          else
+            descr[temp2] := '[~DRiVE~]';
+        end
+      else If (fstream.stuff[temp2].attr AND directory <> 0) then
+             begin
+               If fstream.stuff[temp2].name = '..' then
+                 descr[temp2] := ExpStrL('[UP-DiR]',mn_environment.descr_len-1,' ')
+               else
+                 descr[temp2] := ExpStrL('[DiR]',mn_environment.descr_len-1,' ')
+             end
+           else
+             begin
+               temp7 := Num2str(fstream.stuff[temp2].size,10);
+               descr[temp2] := '';
+               For temp8 := 1 to Length(temp7) do
+                 If (temp8 MOD 3 <> 0) or (temp8 = Length(temp7)) then
+                   descr[temp2] := temp7[Length(temp7)-temp8+1]+descr[temp2]
+                 else
+                   descr[temp2] := ','+temp7[Length(temp7)-temp8+1]+descr[temp2];
+               descr[temp2] := ExpStrL(descr[temp2],mn_environment.descr_len-1,' ');
+             end;
+
+{$ELSE}
 
     For temp2 := 1 to fstream.count do
       If (fstream.stuff[temp2].attr AND directory <> 0) then
@@ -1420,12 +1551,13 @@ _jmp1:
           begin
             menudat[temp2] := ' '+ExpStrR('..',24,' ')+' ';
             descr[temp2] := ExpStrL('[UP-DiR]',mn_environment.descr_len-1,' ');
+
             fstream.stuff[temp2].name := '..';
           end
         else
           begin
             temp1 := 24+(mn_environment.descr_len-1-10);
-            temp7 := iCASE_file(DietStr(FilterStr2(fstream.stuff[temp2].name,_valid_characters_fname,'_'),temp1));
+            temp7 := iCASE_filename(DietStr(FilterStr2(fstream.stuff[temp2].name,_valid_characters_fname,'_'),temp1));
             If (Length(temp7) < 24) then
               begin
                 menudat[temp2] := ' '+ExpStrR(temp7,24,' ')+' ';
@@ -1433,7 +1565,7 @@ _jmp1:
               end
             else
               begin
-                menudat[temp2] := ' '+iCASE_file(ExpStrR(Copy(temp7,1,24),24,' '));
+                menudat[temp2] := ' '+iCASE_filename(ExpStrR(Copy(temp7,1,24),24,' '));
                 descr[temp2] := ExpStrR(Copy(temp7,25,Length(temp7)-23),mn_environment.descr_len-1-10,' ');
               end;
             descr[temp2] := descr[temp2]+ExpStrL('[DiR]',10,' ');
@@ -1463,6 +1595,8 @@ _jmp1:
                                          mn_environment.descr_len-1-4,' ');
              end;
 
+{$ENDIF}
+
     For temp2 := 1 to fstream.count do
       If (SYSTEM.Pos('~',fstream.stuff[temp2].name) <> 0) and
          (fstream.stuff[temp2].name <> '~'+#$ff+'~') then
@@ -1475,14 +1609,14 @@ _jmp1:
     If (temp5 > fstream.count) then temp5 := 1;
 
     For temp2 := 1 to fstream.count do
-      If (Lower_file(fstream.stuff[temp2].name) = fs_environment.last_file) and
+      If (Lower_filename(fstream.stuff[temp2].name) = fs_environment.last_file) and
          NOT (fstream.stuff[temp2].attr AND volumeid <> 0) then
         begin
           lastp := temp2;
           BREAK;
         end;
 
-    If (Lower_file(fstream.stuff[temp2].name) <> fs_environment.last_file) then
+    If (Lower_filename(fstream.stuff[temp2].name) <> fs_environment.last_file) then
       lastp := 0;
 
     If (lastp = 0) or
@@ -1491,10 +1625,10 @@ _jmp1:
     mn_setting.reverse_use := TRUE;
     mn_environment.context := ' ~'+Num2str(fstream.match_count,10)+' FiLES FOUND~ ';
     mn_setting.terminate_keys[3] := kBkSPC;
-{$IFDEF WINDOWS}
-    mn_setting.terminate_keys[4] := kSlashR;
-{$ELSE}
+{$IFDEF UNIX}
     mn_setting.terminate_keys[4] := kSlash;
+{$ELSE}
+    mn_setting.terminate_keys[4] := kSlashR;
 {$ENDIF}
     mn_setting.terminate_keys[5] := kF1;
     old_fselect_external_proc := mn_environment.ext_proc;
@@ -1504,11 +1638,23 @@ _jmp1:
     While (temp < fstream.count) and (SYSTEM.Pos('[UP-DiR]',descr[temp]) = 0) do Inc(temp);
     If (temp < fstream.count) then mn_setting.homing_pos := temp
     else mn_setting.homing_pos := fstream.drive_count+DRIVE_DIVIDER;
-{$IFNDEF WINDOWS}
+
+{$IFDEF UNIX}
     Dec(fstream.count);
 {$ENDIF}
 
+{$IFDEF __TMT__}
+    If NOT (program_screen_mode in [1,2]) then
+      temp2 := Menu(menudat,01,01,lastp,
+                    1+12+1,work_MaxLn-7,fstream.count,' '+
+                    iCASE(DietStr(path_filter(temp3),28)+' '))
+    else
+      temp2 := Menu(menudat,01,01,lastp,
+                    1+12+1,work_MaxLn-15,fstream.count,' '+
+                    iCASE(DietStr(path_filter(temp3),28)+' '));
+{$ELSE}
     If (program_screen_mode = 0) then
+
       temp2 := Menu(menudat,01,01,lastp,
                     1+23+1,work_MaxLn-5,fstream.count,' '+
                     iCASE(DietStr(FilterStr2(path_filter(temp3),_valid_characters_fname,'_'),38))+' ')
@@ -1516,6 +1662,7 @@ _jmp1:
       temp2 := Menu(menudat,01,01,lastp,
                     1+23+1,work_MaxLn-15,fstream.count,' '+
                     iCASE(DietStr(FilterStr2(path_filter(temp3),_valid_characters_fname,'_'),38))+' ');
+{$ENDIF}
 
     mn_environment.ext_proc := old_fselect_external_proc;
     mn_setting.reverse_use := FALSE;
@@ -1535,7 +1682,7 @@ _jmp1:
             temp4 := NameOnly(temp3);
             While (temp3[Length(temp3)] <> PATHSEP) do
               Delete(temp3,Length(temp3),1);
-            fs_environment.last_file := Lower_file(temp4);
+            fs_environment.last_file := Lower_filename(temp4);
           end
         else
           begin
@@ -1567,23 +1714,46 @@ _jmp1:
              temp4 := '';
              fs_environment.last_file := temp4;
            end
-         else If (mn_environment.keystroke = kBkSPC) and
-                 (SYSTEM.Pos(PATHSEP,Copy(temp3,3,Length(temp3)-3)) <> 0) then
-                begin
-                  Delete(temp3,Length(temp3),1);
-                  temp4 := NameOnly(temp3);
-                  While (temp3[Length(temp3)] <> PATHSEP) do
-                    Delete(temp3,Length(temp3),1);
-                  fs_environment.last_file := Lower_file(temp4);
-                  {$i-}
-                  ChDir(Copy(temp3,1,Length(temp3)-1));
-                  {$i+}
-                  If (IOresult <> 0) then ;
-                end
-{$IFDEF WINDOWS}
-              else If (mn_environment.keystroke = kSlashR) then
-{$ELSE}
+         else If (mn_environment.keystroke = kBkSPC) then
+                If shift_pressed then
+                  begin
+                    If (home_dir_path <> '') then
+                      temps := home_dir_path
+                    else temps := PathOnly(ParamStr(0));
+                    If (temps[Length(temps)] <> PATHSEP) then
+                      temps := temps+'\';
+                    {$i-}
+                    ChDir(Copy(temps,1,Length(temps)-1));
+                    {$i+}
+                    If (IOresult = 0) then
+                      begin
+                        temp3 := temps;
+                        temp4 := '..';
+                      end
+                    else begin
+                           {$i-}
+                           ChDir(temp3);
+                           {$i+}
+                           If (IOresult <> 0) then ;
+                         end;
+                  end
+                else If (SYSTEM.Pos(PATHSEP,Copy(temp3,3,Length(temp3)-3)) <> 0) then
+                       begin
+                         Delete(temp3,Length(temp3),1);
+                         temp4 := NameOnly(temp3);
+                         While (temp3[Length(temp3)] <> PATHSEP) do
+                           Delete(temp3,Length(temp3),1);
+                         fs_environment.last_file := Lower_filename(temp4);
+                         {$i-}
+                         ChDir(Copy(temp3,1,Length(temp3)-1));
+                         {$i+}
+                         If (IOresult <> 0) then ;
+                       end
+                     else
+{$IFDEF UNIX}
               else If (mn_environment.keystroke = kSlash) then
+{$ELSE}
+              else If (mn_environment.keystroke = kSlashR) then
 {$ENDIF}
                      begin
                        temp3 := Copy(temp3,1,3);
@@ -1594,7 +1764,7 @@ _jmp1:
                        {$i+}
                        If (IOresult <> 0) then ;
                      end
-                   else fs_environment.last_file := Lower_file(fstream.stuff[temp2].name);
+                   else fs_environment.last_file := Lower_filename(fstream.stuff[temp2].name);
   until (mn_environment.keystroke = kENTER) or
         (mn_environment.keystroke = kESC) or
         (mn_environment.keystroke = kF1);
@@ -1606,7 +1776,7 @@ _jmp1:
   mn_setting.shadow_enabled := TRUE;
   mn_setting.homing_pos := 0;
 
-  move_to_screen_data := Addr(backup.screen);
+  move_to_screen_data := ptr_scr_backup;
   move_to_screen_area[1] := mn_environment.xpos;
   move_to_screen_area[2] := mn_environment.ypos;
   move_to_screen_area[3] := mn_environment.xpos+mn_environment.xsize+2+1;
@@ -1646,13 +1816,16 @@ begin
   _partial := temp3;
 end;
 
-function HScrollBar(var dest; x,y: Byte; size: Byte; len1,len2,pos: Word;
-                   atr1,atr2: Byte): Word;
+function HScrollBar(dest: tSCREEN_MEM_PTR; x,y: Byte; size: Byte; len1,len2,pos: Word;
+                    atr1,atr2: Byte): Word;
 var
   temp: Word;
 
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'DIALOGIO.PAS:HScrollBar';
+{$ENDIF}
   If (size > work_MaxCol-x) then size := work_MaxCol-x;
   If (size < 5) then size := 5;
 
@@ -1676,13 +1849,16 @@ begin
   HScrollBar := pos;
 end;
 
-function VScrollBar(var dest; x,y: Byte; size: Byte; len1,len2,pos: Word;
-                   atr1,atr2: Byte): Word;
+function VScrollBar(dest: tSCREEN_MEM_PTR; x,y: Byte; size: Byte; len1,len2,pos: Word;
+                    atr1,atr2: Byte): Word;
 var
   temp: Word;
 
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'DIALOGIO.PAS:VScrollBar';
+{$ENDIF}
   If (size > work_MaxLn-y) then size := work_MaxLn-y;
   If (size < 5) then size := 5;
 
@@ -1712,6 +1888,11 @@ var
   index: Byte;
 
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
+  _debug_str_ := 'DIALOGIO.PAS:DialogIO_Init';
+{$ENDIF}
+
   dl_setting.frame_type      := double;
   dl_setting.title_attr      := dialog_background+dialog_title;
   dl_setting.box_attr        := dialog_background+dialog_border;
@@ -1753,6 +1934,7 @@ begin
   mn_environment.ext_proc_rt := NIL;
   mn_environment.refresh     := NIL;
   mn_environment.do_refresh  := FALSE;
+  mn_environment.own_refresh := FALSE;
   mn_environment.preview     := FALSE;
   mn_environment.fixed_start := 0;
   mn_environment.descr_len   := 0;

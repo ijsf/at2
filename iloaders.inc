@@ -45,20 +45,6 @@
         procedure import_sa2_effect(effect,def1,def2: Byte;
                                     var out1,out2: Byte);
         procedure sa2_file_loader;
-        procedure a2i_file_loader;
-        procedure a2f_file_loader;
-        procedure a2b_file_loader(bankSelector: Boolean; loadBankPossible: Boolean);
-        procedure a2w_file_loader(loadFromFile: Boolean; loadMacros: Boolean; bankSelector: Boolean; loadBankPossible: Boolean);
-        procedure cif_file_loader;
-        procedure fin_file_loader;
-        procedure ins_file_loader;
-        procedure sbi_file_loader;
-        procedure import_sgi_instrument(inst: Byte; var data);
-        procedure sgi_file_loader;
-        procedure bnk_file_loader;
-        procedure fib_file_loader;
-        procedure ibk_file_loader;
-
 }
 
 function asciiz_string(str: String): String;
@@ -595,6 +581,7 @@ begin
   import_old_flags;
 end;
 
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
 procedure import_old_instruments(old_songdata: tOLD_FIXED_SONGDATA; var new_songdata: tFIXED_SONGDATA;
                                  instr,count: Byte);
 var
@@ -621,6 +608,7 @@ begin
   songdata.instr_data[pos].fine_tune := old_songdata.instr_data[instr].fine_tune;
   songdata.instr_data[pos].perc_voice := 0;
 end;
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
 
 procedure a2m_file_loader;
 
@@ -666,7 +654,10 @@ var
 
 begin
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADERS.INC:a2m_file_loader';
+{$ENDIF}
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
   {$i-}
   Assign(f,songdata_source);
@@ -683,7 +674,7 @@ begin
       EXIT;
     end;
 
-  FillChar(buffer,SizeOf(buffer),0);
+  FillChar(buf1,SizeOf(buf1),0);
   BlockReadF(f,header,SizeOf(header),temp);
   If NOT ((temp = SizeOf(header)) and (header.ident = id)) then
     begin
@@ -708,6 +699,14 @@ begin
       EXIT;
     end;
 
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+  If (play_status <> isStopped) then
+    begin
+      fade_out_playback(FALSE);
+      stop_playing;
+    end;
+
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
   init_old_songdata;
   If (header.ffver in [1..4]) then
     begin
@@ -742,7 +741,7 @@ begin
         end;
 
       crc := DWORD_NULL;
-      BlockReadF(f,buffer,header2.b0len,temp);
+      BlockReadF(f,buf1,header2.b0len,temp);
       If NOT (temp = header2.b0len) then
         begin
           CloseF(f);
@@ -754,8 +753,8 @@ begin
           EXIT;
         end;
 
-      crc := Update32(buffer,temp,crc);
-      BlockReadF(f,buffer,header2.b1len,temp);
+      crc := Update32(buf1,temp,crc);
+      BlockReadF(f,buf1,header2.b1len,temp);
       If NOT (temp = header2.b1len) then
         begin
           CloseF(f);
@@ -767,11 +766,11 @@ begin
           EXIT;
         end;
 
-      crc := Update32(buffer,temp,crc);
+      crc := Update32(buf1,temp,crc);
       For temp2 := 0 to 2 do
         If ((header2.patts-1) DIV 16 > temp2) then
           begin
-            BlockReadF(f,buffer,xlen[temp2],temp);
+            BlockReadF(f,buf1,xlen[temp2],temp);
             If NOT (temp = xlen[temp2]) then
               begin
                 CloseF(f);
@@ -782,7 +781,7 @@ begin
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
                 EXIT;
               end;
-            crc := Update32(buffer,temp,crc);
+            crc := Update32(buf1,temp,crc);
           end;
 
       crc := Update32(header2.b0len,2,crc);
@@ -821,7 +820,7 @@ begin
           EXIT;
         end;
 
-      BlockReadF(f,buffer,header2.b0len,temp);
+      BlockReadF(f,buf1,header2.b0len,temp);
       If NOT (temp = header2.b0len) then
         begin
           CloseF(f);
@@ -834,16 +833,16 @@ begin
         end;
 
       Case header2.ffver of
-        4: Move(buffer,old_songdata,header2.b0len);
-        3: LZSS_decompress(buffer,old_songdata,header2.b0len);
-        2: LZW_decompress(buffer,old_songdata);
-        1: SIXPACK_decompress(buffer,old_songdata,header2.b0len);
+        4: Move(buf1,old_songdata,header2.b0len);
+        3: LZSS_decompress(buf1,old_songdata,header2.b0len);
+        2: LZW_decompress(buf1,old_songdata);
+        1: SIXPACK_decompress(buf1,old_songdata,header2.b0len);
       end;
 
       For temp := 1 to 250 do
         old_songdata.instr_data[temp].panning := 0;
 
-      BlockReadF(f,buffer,header2.b1len,temp);
+      BlockReadF(f,buf1,header2.b1len,temp);
       If NOT (temp = header2.b1len) then
         begin
           CloseF(f);
@@ -856,17 +855,17 @@ begin
         end;
 
       Case header2.ffver of
-        4: Move(buffer,old_hash_buffer,header2.b1len);
-        3: LZSS_decompress(buffer,old_hash_buffer,header2.b1len);
-        2: LZW_decompress(buffer,old_hash_buffer);
-        1: SIXPACK_decompress(buffer,old_hash_buffer,header2.b1len);
+        4: Move(buf1,old_hash_buffer,header2.b1len);
+        3: LZSS_decompress(buf1,old_hash_buffer,header2.b1len);
+        2: LZW_decompress(buf1,old_hash_buffer);
+        1: SIXPACK_decompress(buf1,old_hash_buffer,header2.b1len);
       end;
       import_old_a2m_patterns1(0,16);
 
       For temp2 := 0 to 2 do
         If ((header2.patts-1) DIV 16 > temp2) then
           begin
-            BlockReadF(f,buffer,xlen[temp2],temp);
+            BlockReadF(f,buf1,xlen[temp2],temp);
             If NOT (temp = xlen[temp2]) then
               begin
                 CloseF(f);
@@ -879,10 +878,10 @@ begin
               end;
 
             Case header2.ffver of
-              4: Move(buffer,old_hash_buffer,xlen[temp2]);
-              3: LZSS_decompress(buffer,old_hash_buffer,xlen[temp2]);
-              2: LZW_decompress(buffer,old_hash_buffer);
-              1: SIXPACK_decompress(buffer,old_hash_buffer,xlen[temp2]);
+              4: Move(buf1,old_hash_buffer,xlen[temp2]);
+              3: LZSS_decompress(buf1,old_hash_buffer,xlen[temp2]);
+              2: LZW_decompress(buf1,old_hash_buffer);
+              1: SIXPACK_decompress(buf1,old_hash_buffer,xlen[temp2]);
             end;
             import_old_a2m_patterns1(SUCC(temp2),16);
           end;
@@ -915,7 +914,7 @@ begin
       xlen[6] := header2.b8len;
 
       crc := DWORD_NULL;
-      BlockReadF(f,buffer,header2.b0len,temp);
+      BlockReadF(f,buf1,header2.b0len,temp);
       If NOT (temp = header2.b0len) then
         begin
           CloseF(f);
@@ -927,8 +926,8 @@ begin
           EXIT;
         end;
 
-      crc := Update32(buffer,temp,crc);
-      BlockReadF(f,buffer,header2.b1len,temp);
+      crc := Update32(buf1,temp,crc);
+      BlockReadF(f,buf1,header2.b1len,temp);
       If NOT (temp = header2.b1len) then
         begin
           CloseF(f);
@@ -940,11 +939,11 @@ begin
           EXIT;
         end;
 
-      crc := Update32(buffer,temp,crc);
+      crc := Update32(buf1,temp,crc);
       For temp2 := 0 to 6 do
         If ((header2.patts-1) DIV 8 > temp2) then
           begin
-            BlockReadF(f,buffer,xlen[temp2],temp);
+            BlockReadF(f,buf1,xlen[temp2],temp);
             If NOT (temp = xlen[temp2]) then
               begin
                 CloseF(f);
@@ -955,7 +954,7 @@ begin
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
                 EXIT;
               end;
-            crc := Update32(buffer,temp,crc);
+            crc := Update32(buf1,temp,crc);
           end;
 
       crc := Update32(header2.b0len,2,crc);
@@ -994,7 +993,7 @@ begin
           EXIT;
         end;
 
-      BlockReadF(f,buffer,header2.b0len,temp);
+      BlockReadF(f,buf1,header2.b0len,temp);
       If NOT (temp = header2.b0len) then
         begin
           CloseF(f);
@@ -1007,13 +1006,13 @@ begin
         end;
 
       Case header2.ffver of
-        8: Move(buffer,old_songdata,header2.b0len);
-        7: LZSS_decompress(buffer,old_songdata,header2.b0len);
-        6: LZW_decompress(buffer,old_songdata);
-        5: SIXPACK_decompress(buffer,old_songdata,header2.b0len);
+        8: Move(buf1,old_songdata,header2.b0len);
+        7: LZSS_decompress(buf1,old_songdata,header2.b0len);
+        6: LZW_decompress(buf1,old_songdata);
+        5: SIXPACK_decompress(buf1,old_songdata,header2.b0len);
       end;
 
-      BlockReadF(f,buffer,header2.b1len,temp);
+      BlockReadF(f,buf1,header2.b1len,temp);
       If NOT (temp = header2.b1len) then
         begin
           CloseF(f);
@@ -1026,17 +1025,17 @@ begin
         end;
 
       Case header2.ffver of
-        8: Move(buffer,hash_buffer,header2.b1len);
-        7: LZSS_decompress(buffer,hash_buffer,header2.b1len);
-        6: LZW_decompress(buffer,hash_buffer);
-        5: SIXPACK_decompress(buffer,hash_buffer,header2.b1len);
+        8: Move(buf1,hash_buffer,header2.b1len);
+        7: LZSS_decompress(buf1,hash_buffer,header2.b1len);
+        6: LZW_decompress(buf1,hash_buffer);
+        5: SIXPACK_decompress(buf1,hash_buffer,header2.b1len);
       end;
       import_old_a2m_patterns2(0,8);
 
       For temp2 := 0 to 6 do
         If ((header2.patts-1) DIV 8 > temp2) then
           begin
-            BlockReadF(f,buffer,xlen[temp2],temp);
+            BlockReadF(f,buf1,xlen[temp2],temp);
             If NOT (temp = xlen[temp2]) then
               begin
                 CloseF(f);
@@ -1049,10 +1048,10 @@ begin
               end;
 
             Case header2.ffver of
-              8: Move(buffer,hash_buffer,header2.b2len);
-              7: LZSS_decompress(buffer,hash_buffer,header2.b2len);
-              6: LZW_decompress(buffer,hash_buffer);
-              5: SIXPACK_decompress(buffer,hash_buffer,header2.b2len);
+              8: Move(buf1,hash_buffer,header2.b2len);
+              7: LZSS_decompress(buf1,hash_buffer,header2.b2len);
+              6: LZW_decompress(buf1,hash_buffer);
+              5: SIXPACK_decompress(buf1,hash_buffer,header2.b2len);
             end;
             import_old_a2m_patterns2(SUCC(temp2),8);
           end;
@@ -1062,7 +1061,7 @@ begin
   If (header.ffver in [9,10,11]) then
     begin
       crc := DWORD_NULL;
-      BlockReadF(f,buffer,header.b0len,temp);
+      BlockReadF(f,buf1,header.b0len,temp);
       If NOT (temp = header.b0len) then
         begin
           CloseF(f);
@@ -1074,8 +1073,8 @@ begin
           EXIT;
         end;
 
-      crc := Update32(buffer,temp,crc);
-      BlockReadF(f,buffer,header.b1len[0],temp);
+      crc := Update32(buf1,temp,crc);
+      BlockReadF(f,buf1,header.b1len[0],temp);
       If NOT (temp = header.b1len[0]) then
         begin
           CloseF(f);
@@ -1087,11 +1086,11 @@ begin
           EXIT;
         end;
 
-      crc := Update32(buffer,temp,crc);
+      crc := Update32(buf1,temp,crc);
       For temp2 := 1 to 15 do
         If ((header.patts-1) DIV 8 > PRED(temp2)) then
           begin
-            BlockReadF(f,buffer,header.b1len[temp2],temp);
+            BlockReadF(f,buf1,header.b1len[temp2],temp);
             If NOT (temp = header.b1len[temp2]) then
               begin
                 CloseF(f);
@@ -1102,7 +1101,7 @@ begin
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
                 EXIT;
               end;
-            crc := Update32(buffer,temp,crc);
+            crc := Update32(buf1,temp,crc);
           end;
 
       crc := Update32(header.b0len,2,crc);
@@ -1135,7 +1134,7 @@ begin
           EXIT;
         end;
 
-      BlockReadF(f,buffer,header.b0len,temp);
+      BlockReadF(f,buf1,header.b0len,temp);
       If NOT (temp = header.b0len) then
         begin
           CloseF(f);
@@ -1147,8 +1146,8 @@ begin
           EXIT;
         end;
 
-      APACK_decompress(buffer,songdata);
-      BlockReadF(f,buffer,header.b1len[0],temp);
+      APACK_decompress(buf1,songdata);
+      BlockReadF(f,buf1,header.b1len[0],temp);
       If NOT (temp = header.b1len[0]) then
         begin
           CloseF(f);
@@ -1176,11 +1175,11 @@ begin
                  songdata.pattern_names[temp],1);
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
 
-      APACK_decompress(buffer,pattdata^[0]);
+      APACK_decompress(buf1,pattdata^[0]);
       For temp2 := 1 to 15 do
         If ((header.patts-1) DIV 8 > PRED(temp2)) then
           begin
-            BlockReadF(f,buffer,header.b1len[temp2],temp);
+            BlockReadF(f,buf1,header.b1len[temp2],temp);
             If NOT (temp = header.b1len[temp2]) then
               begin
                 CloseF(f);
@@ -1193,7 +1192,7 @@ begin
               end;
 
             If (temp2*8+8 <= max_patterns) then
-              APACK_decompress(buffer,pattdata^[temp2])
+              APACK_decompress(buf1,pattdata^[temp2])
             else limit_exceeded := TRUE;
           end;
     end;
@@ -1333,7 +1332,10 @@ var
 
 begin
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADERS.INC:a2t_file_loader';
+{$ENDIF}
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
   {$i-}
   Assign(f,songdata_source);
@@ -1350,7 +1352,7 @@ begin
       EXIT;
     end;
 
-  FillChar(buffer,SizeOf(buffer),0);
+  FillChar(buf1,SizeOf(buf1),0);
   BlockReadF(f,header,SizeOf(header),temp);
   If NOT ((temp = SizeOf(header)) and (header.ident = id)) then
     begin
@@ -1397,7 +1399,7 @@ begin
       xlen[2] := header2.b5len;
 
       crc := DWORD_NULL;
-      BlockReadF(f,buffer,header2.b0len,temp);
+      BlockReadF(f,buf1,header2.b0len,temp);
       If NOT (temp = header2.b0len) then
         begin
           CloseF(f);
@@ -1409,8 +1411,8 @@ begin
           EXIT;
         end;
 
-      crc := Update32(buffer,temp,crc);
-      BlockReadF(f,buffer,header2.b1len,temp);
+      crc := Update32(buf1,temp,crc);
+      BlockReadF(f,buf1,header2.b1len,temp);
       If NOT (temp = header2.b1len) then
         begin
           CloseF(f);
@@ -1422,8 +1424,8 @@ begin
           EXIT;
         end;
 
-      crc := Update32(buffer,temp,crc);
-      BlockReadF(f,buffer,header2.b2len,temp);
+      crc := Update32(buf1,temp,crc);
+      BlockReadF(f,buf1,header2.b2len,temp);
       If NOT (temp = header2.b2len) then
         begin
           CloseF(f);
@@ -1435,11 +1437,11 @@ begin
           EXIT;
         end;
 
-      crc := Update32(buffer,temp,crc);
+      crc := Update32(buf1,temp,crc);
       For temp2 := 0 to 2 do
         If ((header2.patts-1) DIV 16 > temp2) then
           begin
-            BlockReadF(f,buffer,xlen[temp2],temp);
+            BlockReadF(f,buf1,xlen[temp2],temp);
             If NOT (temp = xlen[temp2]) then
               begin
                 CloseF(f);
@@ -1450,7 +1452,7 @@ begin
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
                 EXIT;
               end;
-            crc := Update32(buffer,temp,crc);
+            crc := Update32(buf1,temp,crc);
           end;
 
       crc := Update32(header2.b0len,2,crc);
@@ -1490,7 +1492,7 @@ begin
           EXIT;
         end;
 
-      BlockReadF(f,buffer,header2.b0len,temp);
+      BlockReadF(f,buf1,header2.b0len,temp);
       If NOT (temp = header2.b0len) then
         begin
           CloseF(f);
@@ -1506,16 +1508,16 @@ begin
       old_songdata.speed := header2.speed;
 
       Case header2.ffver of
-        4: Move(buffer,old_songdata.instr_data,header2.b0len);
-        3: LZSS_decompress(buffer,old_songdata.instr_data,header2.b0len);
-        2: LZW_decompress(buffer,old_songdata.instr_data);
-        1: SIXPACK_decompress(buffer,old_songdata.instr_data,header2.b0len);
+        4: Move(buf1,old_songdata.instr_data,header2.b0len);
+        3: LZSS_decompress(buf1,old_songdata.instr_data,header2.b0len);
+        2: LZW_decompress(buf1,old_songdata.instr_data);
+        1: SIXPACK_decompress(buf1,old_songdata.instr_data,header2.b0len);
       end;
 
       For temp := 1 to 250 do
         old_songdata.instr_data[temp].panning := 0;
 
-      BlockReadF(f,buffer,header2.b1len,temp);
+      BlockReadF(f,buf1,header2.b1len,temp);
       If NOT (temp = header2.b1len) then
         begin
           CloseF(f);
@@ -1528,13 +1530,13 @@ begin
         end;
 
       Case header2.ffver of
-        4: Move(buffer,old_songdata.pattern_order,header2.b1len);
-        3: LZSS_decompress(buffer,old_songdata.pattern_order,header2.b1len);
-        2: LZW_decompress(buffer,old_songdata.pattern_order);
-        1: SIXPACK_decompress(buffer,old_songdata.pattern_order,header2.b1len);
+        4: Move(buf1,old_songdata.pattern_order,header2.b1len);
+        3: LZSS_decompress(buf1,old_songdata.pattern_order,header2.b1len);
+        2: LZW_decompress(buf1,old_songdata.pattern_order);
+        1: SIXPACK_decompress(buf1,old_songdata.pattern_order,header2.b1len);
       end;
 
-      BlockReadF(f,buffer,header2.b2len,temp);
+      BlockReadF(f,buf1,header2.b2len,temp);
       If NOT (temp = header2.b2len) then
         begin
           CloseF(f);
@@ -1548,17 +1550,17 @@ begin
 
       FillChar(old_hash_buffer,SizeOf(old_hash_buffer),0);
       Case header2.ffver of
-        4: Move(buffer,old_hash_buffer,header2.b2len);
-        3: LZSS_decompress(buffer,old_hash_buffer,header2.b2len);
-        2: LZW_decompress(buffer,old_hash_buffer);
-        1: SIXPACK_decompress(buffer,old_hash_buffer,header2.b2len);
+        4: Move(buf1,old_hash_buffer,header2.b2len);
+        3: LZSS_decompress(buf1,old_hash_buffer,header2.b2len);
+        2: LZW_decompress(buf1,old_hash_buffer);
+        1: SIXPACK_decompress(buf1,old_hash_buffer,header2.b2len);
       end;
       import_old_a2m_patterns1(0,16);
 
       For temp2 := 0 to 2 do
         If ((header2.patts-1) DIV 16 > temp2) then
           begin
-            BlockReadF(f,buffer,xlen[temp2],temp);
+            BlockReadF(f,buf1,xlen[temp2],temp);
             If NOT (temp = xlen[temp2]) then
               begin
                 CloseF(f);
@@ -1572,10 +1574,10 @@ begin
 
             FillChar(old_hash_buffer,SizeOf(old_hash_buffer),0);
             Case header2.ffver of
-              4: Move(buffer,old_hash_buffer,header2.b3len);
-              3: LZSS_decompress(buffer,old_hash_buffer,header2.b3len);
-              2: LZW_decompress(buffer,old_hash_buffer);
-              1: SIXPACK_decompress(buffer,old_hash_buffer,header2.b3len);
+              4: Move(buf1,old_hash_buffer,header2.b3len);
+              3: LZSS_decompress(buf1,old_hash_buffer,header2.b3len);
+              2: LZW_decompress(buf1,old_hash_buffer);
+              1: SIXPACK_decompress(buf1,old_hash_buffer,header2.b3len);
             end;
             import_old_a2m_patterns1(SUCC(temp2),16);
           end;
@@ -1608,7 +1610,7 @@ begin
       xlen[6] := header3.b9len;
 
       crc := DWORD_NULL;
-      BlockReadF(f,buffer,header3.b0len,temp);
+      BlockReadF(f,buf1,header3.b0len,temp);
       If NOT (temp = header3.b0len) then
         begin
           CloseF(f);
@@ -1620,8 +1622,8 @@ begin
           EXIT;
         end;
 
-      crc := Update32(buffer,temp,crc);
-      BlockReadF(f,buffer,header3.b1len,temp);
+      crc := Update32(buf1,temp,crc);
+      BlockReadF(f,buf1,header3.b1len,temp);
       If NOT (temp = header3.b1len) then
         begin
           CloseF(f);
@@ -1633,8 +1635,8 @@ begin
           EXIT;
         end;
 
-      crc := Update32(buffer,temp,crc);
-      BlockReadF(f,buffer,header3.b2len,temp);
+      crc := Update32(buf1,temp,crc);
+      BlockReadF(f,buf1,header3.b2len,temp);
       If NOT (temp = header3.b2len) then
         begin
           CloseF(f);
@@ -1646,11 +1648,11 @@ begin
           EXIT;
         end;
 
-      crc := Update32(buffer,temp,crc);
+      crc := Update32(buf1,temp,crc);
       For temp2 := 0 to 6 do
         If ((header3.patts-1) DIV 8 > temp2) then
           begin
-            BlockReadF(f,buffer,xlen[temp2],temp);
+            BlockReadF(f,buf1,xlen[temp2],temp);
             If NOT (temp = xlen[temp2]) then
               begin
                 CloseF(f);
@@ -1661,7 +1663,7 @@ begin
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
                 EXIT;
               end;
-            crc := Update32(buffer,temp,crc);
+            crc := Update32(buf1,temp,crc);
           end;
 
       crc := Update32(header3.b0len,2,crc);
@@ -1701,7 +1703,7 @@ begin
           EXIT;
         end;
 
-      BlockReadF(f,buffer,header3.b0len,temp);
+      BlockReadF(f,buf1,header3.b0len,temp);
       If NOT (temp = header3.b0len) then
         begin
           CloseF(f);
@@ -1718,13 +1720,13 @@ begin
       old_songdata.common_flag := header3.cflag;
 
       Case header3.ffver of
-        8: Move(buffer,old_songdata.instr_data,header3.b0len);
-        7: LZSS_decompress(buffer,old_songdata.instr_data,header3.b0len);
-        6: LZW_decompress(buffer,old_songdata.instr_data);
-        5: SIXPACK_decompress(buffer,old_songdata.instr_data,header3.b0len);
+        8: Move(buf1,old_songdata.instr_data,header3.b0len);
+        7: LZSS_decompress(buf1,old_songdata.instr_data,header3.b0len);
+        6: LZW_decompress(buf1,old_songdata.instr_data);
+        5: SIXPACK_decompress(buf1,old_songdata.instr_data,header3.b0len);
       end;
 
-      BlockReadF(f,buffer,header3.b1len,temp);
+      BlockReadF(f,buf1,header3.b1len,temp);
       If NOT (temp = header3.b1len) then
         begin
           CloseF(f);
@@ -1737,13 +1739,13 @@ begin
         end;
 
       Case header3.ffver of
-        8: Move(buffer,old_songdata.pattern_order,header3.b1len);
-        7: LZSS_decompress(buffer,old_songdata.pattern_order,header3.b1len);
-        6: LZW_decompress(buffer,old_songdata.pattern_order);
-        5: SIXPACK_decompress(buffer,old_songdata.pattern_order,header3.b1len);
+        8: Move(buf1,old_songdata.pattern_order,header3.b1len);
+        7: LZSS_decompress(buf1,old_songdata.pattern_order,header3.b1len);
+        6: LZW_decompress(buf1,old_songdata.pattern_order);
+        5: SIXPACK_decompress(buf1,old_songdata.pattern_order,header3.b1len);
       end;
 
-      BlockReadF(f,buffer,header3.b2len,temp);
+      BlockReadF(f,buf1,header3.b2len,temp);
       If NOT (temp = header3.b2len) then
         begin
           CloseF(f);
@@ -1757,17 +1759,17 @@ begin
 
       FillChar(hash_buffer,SizeOf(hash_buffer),0);
       Case header3.ffver of
-        8: Move(buffer,hash_buffer,header3.b2len);
-        7: LZSS_decompress(buffer,hash_buffer,header3.b2len);
-        6: LZW_decompress(buffer,hash_buffer);
-        5: SIXPACK_decompress(buffer,hash_buffer,header3.b2len);
+        8: Move(buf1,hash_buffer,header3.b2len);
+        7: LZSS_decompress(buf1,hash_buffer,header3.b2len);
+        6: LZW_decompress(buf1,hash_buffer);
+        5: SIXPACK_decompress(buf1,hash_buffer,header3.b2len);
       end;
       import_old_a2m_patterns2(0,8);
 
       For temp2 := 0 to 6 do
         If ((header3.patts-1) DIV 8 > temp2) then
           begin
-            BlockReadF(f,buffer,xlen[temp2],temp);
+            BlockReadF(f,buf1,xlen[temp2],temp);
             If NOT (temp = xlen[temp2]) then
               begin
                 CloseF(f);
@@ -1781,10 +1783,10 @@ begin
 
             FillChar(hash_buffer,SizeOf(hash_buffer),0);
             Case header3.ffver of
-              8: Move(buffer,hash_buffer,header3.b3len);
-              7: LZSS_decompress(buffer,hash_buffer,header3.b3len);
-              6: LZW_decompress(buffer,hash_buffer);
-              5: SIXPACK_decompress(buffer,hash_buffer,header3.b3len);
+              8: Move(buf1,hash_buffer,header3.b3len);
+              7: LZSS_decompress(buf1,hash_buffer,header3.b3len);
+              6: LZW_decompress(buf1,hash_buffer);
+              5: SIXPACK_decompress(buf1,hash_buffer,header3.b3len);
             end;
             import_old_a2m_patterns2(SUCC(temp2),8);
           end;
@@ -1807,7 +1809,7 @@ begin
         end;
 
       crc := DWORD_NULL;
-      BlockReadF(f,buffer,header4.b0len,temp);
+      BlockReadF(f,buf1,header4.b0len,temp);
       If NOT (temp = header4.b0len) then
         begin
           CloseF(f);
@@ -1819,8 +1821,8 @@ begin
           EXIT;
         end;
 
-      crc := Update32(buffer,temp,crc);
-      BlockReadF(f,buffer,header4.b1len,temp);
+      crc := Update32(buf1,temp,crc);
+      BlockReadF(f,buf1,header4.b1len,temp);
       If NOT (temp = header4.b1len) then
         begin
           CloseF(f);
@@ -1832,8 +1834,8 @@ begin
           EXIT;
         end;
 
-      crc := Update32(buffer,temp,crc);
-      BlockReadF(f,buffer,header4.b2len,temp);
+      crc := Update32(buf1,temp,crc);
+      BlockReadF(f,buf1,header4.b2len,temp);
       If NOT (temp = header4.b2len) then
         begin
           CloseF(f);
@@ -1845,8 +1847,8 @@ begin
           EXIT;
         end;
 
-      crc := Update32(buffer,temp,crc);
-      BlockReadF(f,buffer,header4.b3len,temp);
+      crc := Update32(buf1,temp,crc);
+      BlockReadF(f,buf1,header4.b3len,temp);
       If NOT (temp = header4.b3len) then
         begin
           CloseF(f);
@@ -1858,8 +1860,8 @@ begin
           EXIT;
         end;
 
-      crc := Update32(buffer,temp,crc);
-      BlockReadF(f,buffer,header4.b4len[0],temp);
+      crc := Update32(buf1,temp,crc);
+      BlockReadF(f,buf1,header4.b4len[0],temp);
       If NOT (temp = header4.b4len[0]) then
         begin
           CloseF(f);
@@ -1871,11 +1873,11 @@ begin
           EXIT;
         end;
 
-      crc := Update32(buffer,temp,crc);
+      crc := Update32(buf1,temp,crc);
       For temp2 := 1 to 15 do
         If ((header4.patts-1) DIV 8 > PRED(temp2)) then
           begin
-            BlockReadF(f,buffer,header4.b4len[temp2],temp);
+            BlockReadF(f,buf1,header4.b4len[temp2],temp);
             If NOT (temp = header4.b4len[temp2]) then
               begin
                 CloseF(f);
@@ -1886,7 +1888,7 @@ begin
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
                 EXIT;
               end;
-            crc := Update32(buffer,temp,crc);
+            crc := Update32(buf1,temp,crc);
           end;
 
       crc := Update32(header4.b0len,2,crc);
@@ -1923,7 +1925,7 @@ begin
           EXIT;
         end;
 
-      BlockReadF(f,buffer,header4.b0len,temp);
+      BlockReadF(f,buf1,header4.b0len,temp);
       If NOT (temp = header4.b0len) then
         begin
           CloseF(f);
@@ -1935,8 +1937,8 @@ begin
           EXIT;
         end;
 
-      APACK_decompress(buffer,songdata.instr_data);
-      BlockReadF(f,buffer,header4.b1len,temp);
+      APACK_decompress(buf1,songdata.instr_data);
+      BlockReadF(f,buf1,header4.b1len,temp);
       If NOT (temp = header4.b1len) then
         begin
           CloseF(f);
@@ -1948,8 +1950,8 @@ begin
           EXIT;
         end;
 
-      APACK_decompress(buffer,songdata.instr_macros);
-      BlockReadF(f,buffer,header4.b2len,temp);
+      APACK_decompress(buf1,songdata.instr_macros);
+      BlockReadF(f,buf1,header4.b2len,temp);
       If NOT (temp = header4.b2len) then
         begin
           CloseF(f);
@@ -1961,8 +1963,8 @@ begin
           EXIT;
         end;
 
-      APACK_decompress(buffer,songdata.macro_table);
-      BlockReadF(f,buffer,header4.b3len,temp);
+      APACK_decompress(buf1,songdata.macro_table);
+      BlockReadF(f,buf1,header4.b3len,temp);
       If NOT (temp = header4.b3len) then
         begin
           CloseF(f);
@@ -1982,8 +1984,8 @@ begin
       songdata.macro_speedup := header4.mcspd;
       import_old_flags;
 
-      APACK_decompress(buffer,songdata.pattern_order);
-      BlockReadF(f,buffer,header4.b4len[0],temp);
+      APACK_decompress(buf1,songdata.pattern_order);
+      BlockReadF(f,buf1,header4.b4len[0],temp);
       If NOT (temp = header4.b4len[0]) then
         begin
           CloseF(f);
@@ -1995,11 +1997,11 @@ begin
           EXIT;
         end;
 
-      APACK_decompress(buffer,pattdata^[0]);
+      APACK_decompress(buf1,pattdata^[0]);
       For temp2 := 1 to 15 do
         If ((header4.patts-1) DIV 8 > PRED(temp2)) then
           begin
-            BlockReadF(f,buffer,header4.b4len[temp2],temp);
+            BlockReadF(f,buf1,header4.b4len[temp2],temp);
             If NOT (temp = header4.b4len[temp2]) then
               begin
                 CloseF(f);
@@ -2012,7 +2014,7 @@ begin
               end;
 
             If (temp2*8+8 <= max_patterns) then
-              APACK_decompress(buffer,pattdata^[temp2])
+              APACK_decompress(buf1,pattdata^[temp2])
             else limit_exceeded := TRUE;
           end;
     end;
@@ -2033,7 +2035,7 @@ begin
         end;
 
       crc := DWORD_NULL;
-      BlockReadF(f,buffer,header5.b0len,temp);
+      BlockReadF(f,buf1,header5.b0len,temp);
       If NOT (temp = header5.b0len) then
         begin
           CloseF(f);
@@ -2045,8 +2047,8 @@ begin
           EXIT;
         end;
 
-      crc := Update32(buffer,temp,crc);
-      BlockReadF(f,buffer,header5.b1len,temp);
+      crc := Update32(buf1,temp,crc);
+      BlockReadF(f,buf1,header5.b1len,temp);
       If NOT (temp = header5.b1len) then
         begin
           CloseF(f);
@@ -2058,8 +2060,8 @@ begin
           EXIT;
         end;
 
-      crc := Update32(buffer,temp,crc);
-      BlockReadF(f,buffer,header5.b2len,temp);
+      crc := Update32(buf1,temp,crc);
+      BlockReadF(f,buf1,header5.b2len,temp);
       If NOT (temp = header5.b2len) then
         begin
           CloseF(f);
@@ -2071,8 +2073,8 @@ begin
           EXIT;
         end;
 
-      crc := Update32(buffer,temp,crc);
-      BlockReadF(f,buffer,header5.b3len,temp);
+      crc := Update32(buf1,temp,crc);
+      BlockReadF(f,buf1,header5.b3len,temp);
       If NOT (temp = header5.b3len) then
         begin
           CloseF(f);
@@ -2084,8 +2086,8 @@ begin
           EXIT;
         end;
 
-      crc := Update32(buffer,temp,crc);
-      BlockReadF(f,buffer,header5.b4len[0],temp);
+      crc := Update32(buf1,temp,crc);
+      BlockReadF(f,buf1,header5.b4len[0],temp);
       If NOT (temp = header5.b4len[0]) then
         begin
           CloseF(f);
@@ -2097,11 +2099,11 @@ begin
           EXIT;
         end;
 
-      crc := Update32(buffer,temp,crc);
+      crc := Update32(buf1,temp,crc);
       For temp2 := 1 to 15 do
         If ((header5.patts-1) DIV 8 > PRED(temp2)) then
           begin
-            BlockReadF(f,buffer,header5.b4len[temp2],temp);
+            BlockReadF(f,buf1,header5.b4len[temp2],temp);
             If NOT (temp = header5.b4len[temp2]) then
               begin
                 CloseF(f);
@@ -2112,7 +2114,7 @@ begin
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
                 EXIT;
               end;
-            crc := Update32(buffer,temp,crc);
+            crc := Update32(buf1,temp,crc);
           end;
 
       crc := Update32(header5.b0len,2,crc);
@@ -2149,7 +2151,7 @@ begin
           EXIT;
         end;
 
-      BlockReadF(f,buffer,header5.b0len,temp);
+      BlockReadF(f,buf1,header5.b0len,temp);
       If NOT (temp = header5.b0len) then
         begin
           CloseF(f);
@@ -2161,8 +2163,8 @@ begin
           EXIT;
         end;
 
-      APACK_decompress(buffer,songdata.instr_data);
-      BlockReadF(f,buffer,header5.b1len,temp);
+      APACK_decompress(buf1,songdata.instr_data);
+      BlockReadF(f,buf1,header5.b1len,temp);
       If NOT (temp = header5.b1len) then
         begin
           CloseF(f);
@@ -2174,8 +2176,8 @@ begin
           EXIT;
         end;
 
-      APACK_decompress(buffer,songdata.instr_macros);
-      BlockReadF(f,buffer,header5.b2len,temp);
+      APACK_decompress(buf1,songdata.instr_macros);
+      BlockReadF(f,buf1,header5.b2len,temp);
       If NOT (temp = header5.b2len) then
         begin
           CloseF(f);
@@ -2187,8 +2189,8 @@ begin
           EXIT;
         end;
 
-      APACK_decompress(buffer,songdata.macro_table);
-      BlockReadF(f,buffer,header5.b3len,temp);
+      APACK_decompress(buf1,songdata.macro_table);
+      BlockReadF(f,buf1,header5.b3len,temp);
       If NOT (temp = header5.b3len) then
         begin
           CloseF(f);
@@ -2209,8 +2211,8 @@ begin
       songdata.flag_4op := header5.is4op;
       Move(header5.locks,songdata.lock_flags,SizeOf(songdata.lock_flags));
 
-      APACK_decompress(buffer,songdata.pattern_order);
-      BlockReadF(f,buffer,header5.b4len[0],temp);
+      APACK_decompress(buf1,songdata.pattern_order);
+      BlockReadF(f,buf1,header5.b4len[0],temp);
       If NOT (temp = header5.b4len[0]) then
         begin
           CloseF(f);
@@ -2222,11 +2224,11 @@ begin
           EXIT;
         end;
 
-      APACK_decompress(buffer,pattdata^[0]);
+      APACK_decompress(buf1,pattdata^[0]);
       For temp2 := 1 to 15 do
         If ((header5.patts-1) DIV 8 > PRED(temp2)) then
           begin
-            BlockReadF(f,buffer,header5.b4len[temp2],temp);
+            BlockReadF(f,buf1,header5.b4len[temp2],temp);
             If NOT (temp = header5.b4len[temp2]) then
               begin
                 CloseF(f);
@@ -2239,7 +2241,7 @@ begin
               end;
 
             If (temp2*8+8 <= max_patterns) then
-              APACK_decompress(buffer,pattdata^[temp2])
+              APACK_decompress(buf1,pattdata^[temp2])
             else limit_exceeded := TRUE;
           end;
     end;
@@ -2247,7 +2249,7 @@ begin
   If (header.ffver = 11) then
     begin
       crc := DWORD_NULL;
-      BlockReadF(f,buffer,header.b0len,temp);
+      BlockReadF(f,buf1,header.b0len,temp);
       If NOT (temp = header.b0len) then
         begin
           CloseF(f);
@@ -2259,8 +2261,8 @@ begin
           EXIT;
         end;
 
-      crc := Update32(buffer,temp,crc);
-      BlockReadF(f,buffer,header.b1len,temp);
+      crc := Update32(buf1,temp,crc);
+      BlockReadF(f,buf1,header.b1len,temp);
       If NOT (temp = header.b1len) then
         begin
           CloseF(f);
@@ -2272,8 +2274,8 @@ begin
           EXIT;
         end;
 
-      crc := Update32(buffer,temp,crc);
-      BlockReadF(f,buffer,header.b2len,temp);
+      crc := Update32(buf1,temp,crc);
+      BlockReadF(f,buf1,header.b2len,temp);
       If NOT (temp = header.b2len) then
         begin
           CloseF(f);
@@ -2285,8 +2287,8 @@ begin
           EXIT;
         end;
 
-      crc := Update32(buffer,temp,crc);
-      BlockReadF(f,buffer,header.b3len,temp);
+      crc := Update32(buf1,temp,crc);
+      BlockReadF(f,buf1,header.b3len,temp);
       If NOT (temp = header.b3len) then
         begin
           CloseF(f);
@@ -2298,8 +2300,8 @@ begin
           EXIT;
         end;
 
-      crc := Update32(buffer,temp,crc);
-      BlockReadF(f,buffer,header.b4len,temp);
+      crc := Update32(buf1,temp,crc);
+      BlockReadF(f,buf1,header.b4len,temp);
       If NOT (temp = header.b4len) then
         begin
           CloseF(f);
@@ -2311,8 +2313,8 @@ begin
           EXIT;
         end;
 
-      crc := Update32(buffer,temp,crc);
-      BlockReadF(f,buffer,header.b5len[0],temp);
+      crc := Update32(buf1,temp,crc);
+      BlockReadF(f,buf1,header.b5len[0],temp);
       If NOT (temp = header.b5len[0]) then
         begin
           CloseF(f);
@@ -2324,11 +2326,11 @@ begin
           EXIT;
         end;
 
-      crc := Update32(buffer,temp,crc);
+      crc := Update32(buf1,temp,crc);
       For temp2 := 1 to 15 do
         If ((header.patts-1) DIV 8 > PRED(temp2)) then
           begin
-            BlockReadF(f,buffer,header.b5len[temp2],temp);
+            BlockReadF(f,buf1,header.b5len[temp2],temp);
             If NOT (temp = header.b5len[temp2]) then
               begin
                 CloseF(f);
@@ -2339,7 +2341,7 @@ begin
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
                 EXIT;
               end;
-            crc := Update32(buffer,temp,crc);
+            crc := Update32(buf1,temp,crc);
           end;
 
       crc := Update32(header.b0len,2,crc);
@@ -2377,7 +2379,7 @@ begin
           EXIT;
         end;
 
-      BlockReadF(f,buffer,header.b0len,temp);
+      BlockReadF(f,buf1,header.b0len,temp);
       If NOT (temp = header.b0len) then
         begin
           CloseF(f);
@@ -2389,8 +2391,8 @@ begin
           EXIT;
         end;
 
-      APACK_decompress(buffer,songdata.instr_data);
-      BlockReadF(f,buffer,header.b1len,temp);
+      APACK_decompress(buf1,songdata.instr_data);
+      BlockReadF(f,buf1,header.b1len,temp);
       If NOT (temp = header.b1len) then
         begin
           CloseF(f);
@@ -2402,8 +2404,8 @@ begin
           EXIT;
         end;
 
-      APACK_decompress(buffer,songdata.instr_macros);
-      BlockReadF(f,buffer,header.b2len,temp);
+      APACK_decompress(buf1,songdata.instr_macros);
+      BlockReadF(f,buf1,header.b2len,temp);
       If NOT (temp = header.b2len) then
         begin
           CloseF(f);
@@ -2415,8 +2417,8 @@ begin
           EXIT;
         end;
 
-      APACK_decompress(buffer,songdata.macro_table);
-      BlockReadF(f,buffer,header.b3len,temp);
+      APACK_decompress(buf1,songdata.macro_table);
+      BlockReadF(f,buf1,header.b3len,temp);
       If NOT (temp = header.b3len) then
         begin
           CloseF(f);
@@ -2428,8 +2430,8 @@ begin
           EXIT;
         end;
 
-      APACK_decompress(buffer,songdata.dis_fmreg_col);
-      BlockReadF(f,buffer,header.b4len,temp);
+      APACK_decompress(buf1,songdata.dis_fmreg_col);
+      BlockReadF(f,buf1,header.b4len,temp);
       If NOT (temp = header.b4len) then
         begin
           CloseF(f);
@@ -2450,8 +2452,8 @@ begin
       songdata.flag_4op := header.is4op;
       Move(header.locks,songdata.lock_flags,SizeOf(songdata.lock_flags));
 
-      APACK_decompress(buffer,songdata.pattern_order);
-      BlockReadF(f,buffer,header.b5len[0],temp);
+      APACK_decompress(buf1,songdata.pattern_order);
+      BlockReadF(f,buf1,header.b5len[0],temp);
       If NOT (temp = header.b5len[0]) then
         begin
           CloseF(f);
@@ -2463,11 +2465,11 @@ begin
           EXIT;
         end;
 
-      APACK_decompress(buffer,pattdata^[0]);
+      APACK_decompress(buf1,pattdata^[0]);
       For temp2 := 1 to 15 do
         If ((header.patts-1) DIV 8 > PRED(temp2)) then
           begin
-            BlockReadF(f,buffer,header.b5len[temp2],temp);
+            BlockReadF(f,buf1,header.b5len[temp2],temp);
             If NOT (temp = header.b5len[temp2]) then
               begin
                 CloseF(f);
@@ -2480,7 +2482,7 @@ begin
               end;
 
             If (temp2*8+8 <= max_patterns) then
-              APACK_decompress(buffer,pattdata^[temp2])
+              APACK_decompress(buf1,pattdata^[temp2])
             else limit_exceeded := TRUE;
           end;
     end;
@@ -2546,7 +2548,10 @@ var
   _pattern: Byte;
 
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADERS.INC:a2p_file_loader';
+{$ENDIF}
   If (pattern2use <> BYTE_NULL) then _pattern := pattern2use
   else _pattern := pattern_patt;
 
@@ -2563,7 +2568,7 @@ begin
       EXIT;
     end;
 
-  FillChar(buffer,SizeOf(buffer),0);
+  FillChar(buf1,SizeOf(buf1),0);
   BlockReadF(f,header,SizeOf(header),temp);
   If NOT ((temp = SizeOf(header)) and (header.ident = id)) then
     begin
@@ -2583,12 +2588,18 @@ begin
       EXIT;
     end;
 
+  If (play_status <> isStopped) then
+    begin
+      fade_out_playback(FALSE);
+      stop_playing;
+    end;
+
   init_old_songdata;
   If (header.ffver in [1..4]) then
     begin
       FillChar(adsr_carrier,SizeOf(adsr_carrier),BYTE(FALSE));
       crc := DWORD_NULL;
-      BlockReadF(f,buffer,header.b0len,temp);
+      BlockReadF(f,buf1,header.b0len,temp);
       If NOT (temp = header.b0len) then
         begin
           CloseF(f);
@@ -2598,7 +2609,7 @@ begin
           EXIT;
         end;
 
-      crc := Update32(buffer,temp,crc);
+      crc := Update32(buf1,temp,crc);
       crc := Update32(header.b0len,2,crc);
 
       If (crc <> header.crc32) then
@@ -2610,17 +2621,11 @@ begin
           EXIT;
         end;
 
-      If (play_status <> isStopped) then
-        begin
-          fade_out_playback(FALSE);
-          stop_playing;
-        end;
-
       Case header.ffver of
-        4: Move(buffer,old_hash_buffer,header.b0len);
-        3: LZSS_decompress(buffer,old_hash_buffer,header.b0len);
-        2: LZW_decompress(buffer,old_hash_buffer);
-        1: SIXPACK_decompress(buffer,old_hash_buffer,header.b0len);
+        4: Move(buf1,old_hash_buffer,header.b0len);
+        3: LZSS_decompress(buf1,old_hash_buffer,header.b0len);
+        2: LZW_decompress(buf1,old_hash_buffer);
+        1: SIXPACK_decompress(buf1,old_hash_buffer,header.b0len);
       end;
 
       If (pattern2use <> BYTE_NULL) and (_patts_marked <> 0) then
@@ -2650,7 +2655,7 @@ begin
   If (header.ffver in [5..8]) then
     begin
       crc := DWORD_NULL;
-      BlockReadF(f,buffer,header.b0len,temp);
+      BlockReadF(f,buf1,header.b0len,temp);
       If NOT (temp = header.b0len) then
         begin
           CloseF(f);
@@ -2660,7 +2665,7 @@ begin
           EXIT;
         end;
 
-      crc := Update32(buffer,temp,crc);
+      crc := Update32(buf1,temp,crc);
       crc := Update32(header.b0len,2,crc);
 
       If (crc <> header.crc32) then
@@ -2672,17 +2677,11 @@ begin
           EXIT;
         end;
 
-      If (play_status <> isStopped) then
-        begin
-          fade_out_playback(FALSE);
-          stop_playing;
-        end;
-
       Case header.ffver of
-        8: Move(buffer,hash_buffer[0],header.b0len);
-        7: LZSS_decompress(buffer,hash_buffer[0],header.b0len);
-        6: LZW_decompress(buffer,hash_buffer[0]);
-        5: SIXPACK_decompress(buffer,hash_buffer[0],header.b0len);
+        8: Move(buf1,hash_buffer[0],header.b0len);
+        7: LZSS_decompress(buf1,hash_buffer[0],header.b0len);
+        6: LZW_decompress(buf1,hash_buffer[0]);
+        5: SIXPACK_decompress(buf1,hash_buffer[0],header.b0len);
       end;
 
       If (pattern2use <> BYTE_NULL) and (_patts_marked <> 0) then
@@ -2723,7 +2722,7 @@ begin
         end;
 
       crc := DWORD_NULL;
-      BlockReadF(f,buffer,header2.b0len,temp);
+      BlockReadF(f,buf1,header2.b0len,temp);
       If NOT (temp = header2.b0len) then
         begin
           CloseF(f);
@@ -2733,7 +2732,7 @@ begin
           EXIT;
         end;
 
-      crc := Update32(buffer,temp,crc);
+      crc := Update32(buf1,temp,crc);
       crc := Update32(header2.b0len,2,crc);
 
       If (crc <> header2.crc32) then
@@ -2745,23 +2744,17 @@ begin
           EXIT;
         end;
 
-      If (play_status <> isStopped) then
-        begin
-          fade_out_playback(FALSE);
-          stop_playing;
-        end;
-
       If (pattern2use <> BYTE_NULL) and (_patts_marked <> 0) then
         For temp := 0 to PRED(max_patterns) do
           begin
             If (songdata.pattern_names[temp][1] <> ' ') then
-              APACK_decompress(buffer,pattdata^[temp DIV 8][temp MOD 8]);
+              APACK_decompress(buf1,pattdata^[temp DIV 8][temp MOD 8]);
             songdata.pattern_names[temp] :=
               Copy(songdata.pattern_names[temp],1,11)+
               Lower(NameOnly(songdata_source));
           end
       else begin
-             APACK_decompress(buffer,pattdata^[_pattern DIV 8][_pattern MOD 8]);
+             APACK_decompress(buf1,pattdata^[_pattern DIV 8][_pattern MOD 8]);
              songdata.pattern_names[_pattern] :=
                Copy(songdata.pattern_names[_pattern],1,11)+
                Lower(NameOnly(songdata_source));
@@ -2782,7 +2775,7 @@ begin
         end;
 
       crc := DWORD_NULL;
-      BlockReadF(f,buffer,header2.b0len,temp);
+      BlockReadF(f,buf1,header2.b0len,temp);
       If NOT (temp = header2.b0len) then
         begin
           CloseF(f);
@@ -2792,7 +2785,7 @@ begin
           EXIT;
         end;
 
-      crc := Update32(buffer,temp,crc);
+      crc := Update32(buf1,temp,crc);
       crc := Update32(header2.b0len,2,crc);
 
       If (crc <> header2.crc32) then
@@ -2804,18 +2797,12 @@ begin
           EXIT;
         end;
 
-      If (play_status <> isStopped) then
-        begin
-          fade_out_playback(FALSE);
-          stop_playing;
-        end;
-
       If (pattern2use <> BYTE_NULL) and (_patts_marked <> 0) then
         For temp := 0 to PRED(max_patterns) do
           begin
             If (songdata.pattern_names[temp][1] <> ' ') then
               begin
-                APACK_decompress(buffer,buf2);
+                APACK_decompress(buf1,buf2);
                 Move(buf2,pattdata^[temp DIV 8][temp MOD 8],PATTERN_SIZE);
                 Move(buf2[PATTERN_SIZE],temp_str,buf2[PATTERN_SIZE]+1);
 
@@ -2830,7 +2817,7 @@ begin
               end;
           end
       else begin
-             APACK_decompress(buffer,buf2);
+             APACK_decompress(buf1,buf2);
              Move(buf2,pattdata^[_pattern DIV 8][_pattern MOD 8],PATTERN_SIZE);
              Move(buf2[PATTERN_SIZE],temp_str,buf2[PATTERN_SIZE]+1);
 
@@ -3123,18 +3110,21 @@ end;
 
 function get_byte(var pos: Longint): Byte;
 begin
-  If (pos = SizeOf(buffer)) then
+  If (pos = SizeOf(buf1)) then
     begin
-      Move(buf2,buffer,SizeOf(buf2));
+      Move(buf3,buf1,SizeOf(buf3));
       pos := 0;
     end;
-  get_byte := buffer[pos];
+  get_byte := buf1[pos];
   Inc(pos);
 end;
 
 begin
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADERS.INC:amd_file_loader';
+{$ENDIF}
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
   {$i-}
   Assign(f,songdata_source);
@@ -3176,8 +3166,16 @@ begin
       EXIT;
     end;
 
-  FillChar(buffer,SizeOf(buffer),0);
-  BlockReadF(f,buffer,SizeOf(buffer),temp);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+  If (play_status <> isStopped) then
+    begin
+      fade_out_playback(FALSE);
+      stop_playing;
+    end;
+
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
+  FillChar(buf1,SizeOf(buf1),0);
+  BlockReadF(f,buf1,SizeOf(buf1),temp);
   If (IOresult <> 0) then
     begin
       CloseF(f);
@@ -3190,10 +3188,10 @@ begin
     end;
 
   tmp2 := WORD_NULL;
-  If (temp = SizeOf(buffer)) then
+  If (temp = SizeOf(buf1)) then
     begin
-      FillChar(buf2,SizeOf(buf2),0);
-      BlockReadF(f,buf2,SizeOf(buf2),tmp2);
+      FillChar(buf3,SizeOf(buf3),0);
+      BlockReadF(f,buf3,SizeOf(buf3),tmp2);
       If (IOresult <> 0) then
         begin
           CloseF(f);
@@ -3243,7 +3241,7 @@ begin
             import_amd_event(temp2,temp3,temp4,byte1,byte2,byte3);
           end
   else
-    import_amd_packed_patterns(buffer,header.nopat);
+    import_amd_packed_patterns(buf1,header.nopat);
 
   songdata.common_flag := songdata.common_flag OR $80;
   songdata.songname := CutStr(asciiz_string(header.sname));
@@ -3400,6 +3398,13 @@ var
   patt_break: Byte;
   patts: String;
 
+function _empty_event(var data): Boolean;
+begin
+  _empty_event := (tDUMMY_BUFF(data)[0] = 0) and
+                  (tDUMMY_BUFF(data)[1] = 0) and
+                  (tDUMMY_BUFF(data)[2] = 0);
+end;
+
 begin
   patts := '';
   FillChar(arpgg,SizeOf(arpgg),0);
@@ -3410,7 +3415,7 @@ begin
   For temp := 0 to $24 do
     For temp2 := 0 to $3f do
       For temp3 := 1 to 9 do
-        If NOT Empty(tPATDAT(data)[temp][temp2][temp3],3) then
+        If NOT _empty_event(tPATDAT(data)[temp][temp2][temp3]) then
           import_cff_event(temp,temp2,temp3,tPATDAT(data)[temp][temp2][temp3][0],
                                             tPATDAT(data)[temp][temp2][temp3][1],
                                             tPATDAT(data)[temp][temp2][temp3][2]);
@@ -3709,7 +3714,10 @@ end;
 
 begin
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADERS.INC:cff_file_loader';
+{$ENDIF}
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
   {$i-}
   Assign(f,songdata_source);
@@ -3728,7 +3736,7 @@ begin
 
   BlockReadF(f,header,SizeOf(header),temp);
   If NOT ((temp = SizeOf(header)) and (header.ident = id)) or
-     (FileSize(f) > SizeOf(buffer)) then
+     (FileSize(f) > SizeOf(buf1)) then
     begin
       CloseF(f);
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
@@ -3739,12 +3747,20 @@ begin
       EXIT;
     end;
 
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+  If (play_status <> isStopped) then
+    begin
+      fade_out_playback(FALSE);
+      stop_playing;
+    end;
+
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
 {@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  load_flag := $7f;}
   If (header.cflag = 1) then
     begin
-      FillChar(buffer,SizeOf(buffer),0);
+      FillChar(buf1,SizeOf(buf1),0);
       ResetF(f);
-      BlockReadF(f,buffer,SizeOf(buffer),temp);
+      BlockReadF(f,buf1,SizeOf(buf1),temp);
       If (IOresult <> 0) then
         begin
           CloseF(f);
@@ -3757,7 +3773,7 @@ begin
         end;
 
       CloseF(f);
-      temp := LZTYR_decompress(buffer[$30],hash_buffer);
+      temp := LZTYR_decompress(buf1[$30],hash_buffer);
       out_size := temp;
 
       offs := SensitiveScan(hash_buffer,0,temp,ascii_blab);
@@ -3771,10 +3787,9 @@ begin
           EXIT;
         end;
 
-      FillChar(buffer,SizeOf(buffer),0);
+      FillChar(buf1,SizeOf(buf1),0);
       Move(hash_buffer,headr2,SizeOf(headr2));
-      Move(POINTER(Ofs(hash_buffer)+SizeOf(headr2))^,buffer,out_size-SizeOf(headr2));
-
+      Move(POINTER(Ofs(hash_buffer)+SizeOf(headr2))^,buf1,out_size-SizeOf(headr2));
     end
   else
     begin
@@ -3790,8 +3805,8 @@ begin
           EXIT;
         end;
 
-      FillChar(buffer,SizeOf(buffer),0);
-      BlockReadF(f,buffer,SizeOf(buffer),temp);
+      FillChar(buf1,SizeOf(buf1),0);
+      BlockReadF(f,buf1,SizeOf(buf1),temp);
       If (IOresult <> 0) then
         begin
           CloseF(f);
@@ -3836,7 +3851,7 @@ begin
   songdata.composer := CutStr(headr2.writr);
   import_old_flags;
 
-  import_cff_patterns(buffer,headr2.nopat);
+  import_cff_patterns(buf1,headr2.nopat);
   songdata_title := NameOnly(songdata_source);
 {@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  load_flag := 7;}
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
@@ -3982,7 +3997,10 @@ end;
 
 begin
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADERS.INC:dfm_file_loader';
+{$ENDIF}
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
   {$i-}
   Assign(f,songdata_source);
@@ -4011,9 +4029,17 @@ begin
       EXIT;
     end;
 
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+  If (play_status <> isStopped) then
+    begin
+      fade_out_playback(FALSE);
+      stop_playing;
+    end;
+
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
 {@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  load_flag := $7f;}
-  FillChar(buffer,SizeOf(buffer),0);
-  BlockReadF(f,buffer,SizeOf(buffer),temp);
+  FillChar(buf1,SizeOf(buf1),0);
+  BlockReadF(f,buf1,SizeOf(buf1),temp);
   If (IOresult <> 0) then
     begin
       CloseF(f);
@@ -4066,7 +4092,7 @@ begin
   temp2 := 0;
   temp3 := 0;
   Repeat
-    pattern := buffer[temp2];
+    pattern := buf1[temp2];
     If (pattern > 127) then
       begin
         CloseF(f);
@@ -4084,7 +4110,7 @@ begin
     For line := 0 to $3f do
       For channel := 1 to 9 do
         begin
-          byte1 := buffer[temp2];
+          byte1 := buf1[temp2];
           If (temp2 >= temp) then
             begin
               CloseF(f);
@@ -4099,7 +4125,7 @@ begin
 
           If (byte1 OR $80 <> byte1) then byte2 := 0
           else begin
-                 byte2 := buffer[temp2];
+                 byte2 := buf1[temp2];
                  Inc(temp2);
                end;
           import_dfm_event(pattern,line,channel,byte1,byte2);
@@ -4340,7 +4366,10 @@ var
 
 begin
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADERS.INC:hsc_file_loader';
+{$ENDIF}
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
 {@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  If (Lower(ExtOnly(songdata_source)) <> 'hsc') then}
 {@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>    begin}
@@ -4363,6 +4392,14 @@ begin
       EXIT;
     end;
 
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+  If (play_status <> isStopped) then
+    begin
+      fade_out_playback(FALSE);
+      stop_playing;
+    end;
+
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
   FillChar(hscbuf,SizeOf(hscbuf),0);
   BlockReadF(f,hscbuf,SizeOf(hscbuf),temp);
   If (temp < SizeOf(hscbuf.instr)+SizeOf(hscbuf.order)) then
@@ -4473,7 +4510,10 @@ var
           end;
 begin
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADERS.INC:mtk_file_loader';
+{$ENDIF}
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
   {$i-}
   Assign(f,songdata_source);
@@ -4502,12 +4542,20 @@ begin
       EXIT;
     end;
 
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+  If (play_status <> isStopped) then
+    begin
+      fade_out_playback(FALSE);
+      stop_playing;
+    end;
+
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
 {@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  load_flag := $7f;}
-  FillChar(buffer,SizeOf(buffer),0);
-  BlockReadF(f,buffer,SizeOf(buffer),temp);
+  FillChar(buf1,SizeOf(buf1),0);
+  BlockReadF(f,buf1,SizeOf(buf1),temp);
 
   crc := 0;
-  crc := Update16(buffer,temp,crc);
+  crc := Update16(buf1,temp,crc);
   If (crc <> header.crc_16bit) then
     begin
       CloseF(f);
@@ -4520,7 +4568,7 @@ begin
     end;
 
   FillChar(buffer2,SizeOf(buffer2),0);
-  temp2 := RDC_decompress(buffer,buffer2,temp);
+  temp2 := RDC_decompress(buf1,buffer2,temp);
   If NOT (temp2 = header.data_size) then
     begin
       CloseF(f);
@@ -4748,27 +4796,23 @@ begin
     If (truncate_string(desc[temp]) <> '') then Inc(temp2);
   If (temp2 = 0) then EXIT;
 
-  Move(screen_ptr^,backup.screen,SizeOf(backup.screen));
-  backup.cursor := GetCursor;
-  backup.oldx   := WhereX;
-  backup.oldy   := WhereY;
-
+  ScreenMemCopy(screen_ptr,ptr_screen_backup);
   centered_frame(xstart,ystart,81,24,' RAD DESCRiPTiON ',
                  dialog_background+dialog_border,
                  dialog_background+dialog_title,
                  double);
   For temp := 1 to 22 do
-    ShowStr(screen_ptr^,xstart+1,ystart+temp,FilterStr2(desc[temp],_valid_characters,'_'),
+    ShowStr(screen_ptr,xstart+1,ystart+temp,FilterStr2(desc[temp],_valid_characters,'_'),
             dialog_background+dialog_context_dis);
 
-  ShowCStr(screen_ptr^,xstart+36,ystart+23,' ~C~ONTiNUE ',
+  ShowCStr(screen_ptr,xstart+36,ystart+23,' ~C~ONTiNUE ',
            dialog_sel_itm_bck+dialog_sel_itm,
            dialog_sel_itm_bck+dialog_sel_short);
 
   Repeat fkey := getkey;
   until (fkey = kESC) or (fkey = kENTER) or (HI(fkey) = $2e);
 
-  move_to_screen_data := Addr(backup.screen);
+  move_to_screen_data := ptr_screen_backup;
   move_to_screen_area[1] := xstart;
   move_to_screen_area[2] := ystart;
   move_to_screen_area[3] := xstart+81+2;
@@ -4780,7 +4824,10 @@ end;
 
 begin
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADERS.INC:rad_file_loader';
+{$ENDIF}
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
   {$i-}
   Assign(f,songdata_source);
@@ -4809,9 +4856,17 @@ begin
       EXIT;
     end;
 
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+  If (play_status <> isStopped) then
+    begin
+      fade_out_playback(FALSE);
+      stop_playing;
+    end;
+
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
 {@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  load_flag := $7f;}
-  FillChar(buffer,SizeOf(buffer),0);
-  BlockReadF(f,buffer,SizeOf(buffer),temp);
+  FillChar(buf1,SizeOf(buf1),0);
+  BlockReadF(f,buf1,SizeOf(buf1),temp);
   If (IOresult <> 0) then
     begin
       CloseF(f);
@@ -4828,7 +4883,7 @@ begin
 
   If (header.xbyte OR $80 = header.xbyte) then
     begin
-      While (temp2 < temp) and (buffer[temp2] <> 0) do Inc(temp2);
+      While (temp2 < temp) and (buf1[temp2] <> 0) do Inc(temp2);
       If (temp2 >= temp) then
         begin
           CloseF(f);
@@ -4842,8 +4897,8 @@ begin
 
       Inc(offs0,temp2+1);
       Dec(temp,temp2+1);
-      Move(buffer,dscbuf,temp2+1);
-      Move(buffer[temp2+1],buffer,temp);
+      Move(buf1,dscbuf,temp2+1);
+      Move(buf1[temp2+1],buf1,temp);
     end;
 
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
@@ -4870,11 +4925,11 @@ begin
 
   temp2 := 0;
   Repeat
-    temp3 := buffer[temp2];
+    temp3 := buf1[temp2];
     Inc(temp2);
     If (temp3 <> 0) and (temp2+11 < temp) then
       begin
-        import_hsc_instrument(temp3,buffer[temp2]);
+        import_hsc_instrument(temp3,buf1[temp2]);
         songdata.instr_data[temp3].fine_tune := 0;
         Inc(temp2,11);
       end;
@@ -4882,17 +4937,17 @@ begin
 
   Inc(offs0,temp2);
   Dec(temp,temp2);
-  Move(buffer[temp2],buffer,temp);
+  Move(buf1[temp2],buf1,temp);
 
-  Inc(offs0,buffer[0]+1);
-  If (buffer[0] <> 0) then
-    Move(buffer[1],songdata.pattern_order,buffer[0]);
+  Inc(offs0,buf1[0]+1);
+  If (buf1[0] <> 0) then
+    Move(buf1[1],songdata.pattern_order,buf1[0]);
 
   Inc(offs0,32*SizeOf(WORD));
-  Dec(temp,buffer[0]+1+32*SizeOf(WORD));
+  Dec(temp,buf1[0]+1+32*SizeOf(WORD));
 
-  Move(buffer[buffer[0]+1],pattoffs,32*SizeOf(WORD));
-  Move(buffer[buffer[0]+32*SizeOf(WORD)+1],buffer,temp);
+  Move(buf1[buf1[0]+1],pattoffs,32*SizeOf(WORD));
+  Move(buf1[buf1[0]+32*SizeOf(WORD)+1],buf1,temp);
 
   temp5 := temp;
   For temp := 0 to 31 do
@@ -4902,24 +4957,24 @@ begin
       If (pattoffs[temp] <> 0) and
          (pattoffs[temp] <= FileSize(f)) then
         Repeat
-          temp2 := buffer[pattoffs[temp]-offs0+temp3];
+          temp2 := buf1[pattoffs[temp]-offs0+temp3];
           Repeat
             Inc(temp3);
-            temp4 := buffer[pattoffs[temp]-offs0+temp3];
-            If (buffer[pattoffs[temp]-offs0+temp3+2] AND $0f <> 0) then
+            temp4 := buf1[pattoffs[temp]-offs0+temp3];
+            If (buf1[pattoffs[temp]-offs0+temp3+2] AND $0f <> 0) then
               begin
                 If (temp4 AND $0f in [0..8]) then
                   import_rad_event(temp,temp2 AND $3f,temp4 AND $0f,
-                                   buffer[pattoffs[temp]-offs0+temp3+1],
-                                   buffer[pattoffs[temp]-offs0+temp3+2],
-                                   buffer[pattoffs[temp]-offs0+temp3+3]);
+                                   buf1[pattoffs[temp]-offs0+temp3+1],
+                                   buf1[pattoffs[temp]-offs0+temp3+2],
+                                   buf1[pattoffs[temp]-offs0+temp3+3]);
                 Inc(temp3,3);
               end
             else begin
                    If (temp4 AND $0f in [0..8]) then
                      import_rad_event(temp,temp2 AND $3f,temp4 AND $0f,
-                                      buffer[pattoffs[temp]-offs0+temp3+1],
-                                      buffer[pattoffs[temp]-offs0+temp3+2],
+                                      buf1[pattoffs[temp]-offs0+temp3+1],
+                                      buf1[pattoffs[temp]-offs0+temp3+2],
                                       0);
                    Inc(temp3,2);
                  end;
@@ -5098,7 +5153,7 @@ begin
                      chunk.effect := arpg_cache[temp3];
                      put_chunk(patt,temp2,temp3,chunk);
                    end;
-                   
+
             If (chunk.effect_def in [ef_FSlideDown,ef_FSlideDownFine,
                                      ef_FSlideUp,ef_FSlideUpFine,
                                      ef_TonePortamento]) then
@@ -5710,7 +5765,10 @@ end;
 
 begin
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADERS.INC:s3m_file_loader';
+{$ENDIF}
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
   {$i-}
   Assign(f,songdata_source);
@@ -5751,6 +5809,14 @@ begin
       EXIT;
     end;
 
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+  If (play_status <> isStopped) then
+    begin
+      fade_out_playback(FALSE);
+      stop_playing;
+    end;
+
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
   BlockReadF(f,order_list,header.ordnum,temp);
   If (IOresult <> 0) or (temp <> header.ordnum) then
     begin
@@ -5907,43 +5973,43 @@ begin
         end;
 
       If (patlen = 0) then CONTINUE;
-      FillChar(buffer,SizeOf(buffer),0);
-      BlockReadF(f,buffer,patlen-2,temp2);
+      FillChar(buf1,SizeOf(buf1),0);
+      BlockReadF(f,buf1,patlen-2,temp2);
 
       index := 0;
       row := 0;
 
       Repeat
-        If (buffer[index] <> 0) then
+        If (buf1[index] <> 0) then
           begin
             note := BYTE_NULL;
             ins  := 0;
             vol  := BYTE_NULL;
             cmd  := 0;
             info := 0;
-            temp := buffer[index];
+            temp := buf1[index];
             Inc(index);
 
             chan := SUCC(temp AND 31);
             If (temp OR $20 = temp) then
               begin
-                note := buffer[index];
+                note := buf1[index];
                 Inc(index);
-                ins := buffer[index];
+                ins := buf1[index];
                 Inc(index);
               end;
 
             If (temp OR $40 = temp) then
               begin
-                vol := buffer[index];
+                vol := buf1[index];
                 Inc(index);
               end;
 
             If (temp OR $80 = temp) then
               begin
-                cmd := buffer[index];
+                cmd := buf1[index];
                 Inc(index);
-                info := buffer[index];
+                info := buf1[index];
                 Inc(index);
               end;
 
@@ -6022,10 +6088,10 @@ begin
                      _speed_table_fixed[patt] := TRUE;
                    end;
             If _speed_table_fixed[patt] then BREAK;
-          end;         
+          end;
         If _speed_table_fixed[patt] then BREAK;
-      end;         
-  
+      end;
+
   For temp2 := 0 to $3f do
     For temp3 := 1 to 20 do
       begin
@@ -6109,7 +6175,7 @@ begin
                      chunk.effect := arpg_cache[temp3];
                      put_chunk(patt,temp2,temp3,chunk);
                    end;
-   
+
             If (chunk.effect_def in [ef_FSlideDown,ef_FSlideDownFine,
                                      ef_FSlideUp,ef_FSlideUpFine,
                                      ef_TonePortamento]) then
@@ -6118,7 +6184,7 @@ begin
                      chunk.effect := slide_cache[temp3];
                      put_chunk(patt,temp2,temp3,chunk);
                    end;
-                   
+
             If (chunk.effect_def = ef_Extended2) and
                (chunk.effect DIV 16 in [ef_ex2_FreqSlideDnXF,ef_ex2_FreqSlideUpXF]) then
               If (chunk.effect MOD 16 <> 0) then slide_cache[temp3] := chunk.effect MOD 16
@@ -6257,12 +6323,12 @@ begin { fix_fmk_commands }
 
   patts := '';
   order := 0; patt := BYTE_NULL;
-    
+
   Repeat
     If (songdata.pattern_order[order] >= $80) then Inc(order)
     else
       begin
-        patt := songdata.pattern_order[order];        
+        patt := songdata.pattern_order[order];
         fix_single_pattern(patt);
         Inc(order);
         patts := patts+CHR(patt);
@@ -6375,27 +6441,24 @@ begin
     If (truncate_string(desc[temp]) <> '') then Inc(temp2);
   If (temp2 = 0) then EXIT;
 
-  Move(screen_ptr^,backup.screen,SizeOf(backup.screen));
-  backup.cursor := GetCursor;
-  backup.oldx   := WhereX;
-  backup.oldy   := WhereY;
-
+  ScreenMemCopy(screen_ptr,ptr_screen_backup);
   centered_frame(xstart,ystart,21,26,' FMK DESCRiPTiON ',
                  dialog_background+dialog_border,
                  dialog_background+dialog_title,
                  double);
+
   For temp := 1 to rows do
-    ShowStr(screen_ptr^,xstart+1,ystart+temp,FilterStr2(desc[temp],_valid_characters,'_'),
+    ShowStr(screen_ptr,xstart+1,ystart+temp,FilterStr2(desc[temp],_valid_characters,'_'),
             dialog_background+dialog_context_dis);
 
-  ShowCStr(screen_ptr^,xstart+6,ystart+25,' ~C~ONTiNUE ',
+  ShowCStr(screen_ptr,xstart+6,ystart+25,' ~C~ONTiNUE ',
            dialog_sel_itm_bck+dialog_sel_itm,
            dialog_sel_itm_bck+dialog_sel_short);
 
   Repeat fkey := getkey;
   until (fkey = kESC) or (fkey = kENTER) or (HI(fkey) = $2e);
 
-  move_to_screen_data := Addr(backup.screen);
+  move_to_screen_data := ptr_screen_backup;
   move_to_screen_area[1] := xstart;
   move_to_screen_area[2] := ystart;
   move_to_screen_area[3] := xstart+21+2;
@@ -6522,7 +6585,7 @@ begin
            0..14: begin
                     chunk.effect_def := ef_FSlideDown;
                     chunk.effect := info;
-                  end;
+               end;
 
          { FINE }
            15: begin
@@ -6668,7 +6731,10 @@ end;
 
 begin
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADERS.INC:fmk_file_loader';
+{$ENDIF}
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
   {$i-}
   Assign(f,songdata_source);
@@ -6709,6 +6775,14 @@ begin
       EXIT;
     end;
 
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+  If (play_status <> isStopped) then
+    begin
+      fade_out_playback(FALSE);
+      stop_playing;
+    end;
+
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
   If (header.ftype = 2) then
     begin
       SeekF(f,SizeOf(header)-2);
@@ -6858,7 +6932,7 @@ begin
   songdata.common_flag := songdata.common_flag OR 1;
   songdata.common_flag := songdata.common_flag OR 2;
   songdata.common_flag := songdata.common_flag OR $80;
-  
+
   For temp := 18 downto 1 do
     If NOT (header.trk_set[temp] AND 7 = 7) then BREAK;
 
@@ -6981,43 +7055,43 @@ begin
         end;
 
       If (patlen = 0) then CONTINUE;
-      FillChar(buffer,SizeOf(buffer),0);
-      BlockReadF(f,buffer,patlen,temp2);
+      FillChar(buf1,SizeOf(buf1),0);
+      BlockReadF(f,buf1,patlen,temp2);
 
       index := 0;
       row := 0;
 
       Repeat
-        If (buffer[index] <> 0) then
+        If (buf1[index] <> 0) then
           begin
             note := BYTE_NULL;
             ins  := 0;
             vol  := BYTE_NULL;
             cmd  := 0;
             info := 0;
-            temp := buffer[index];
+            temp := buf1[index];
             Inc(index);
 
             chan := SUCC(temp AND 31);
             If (temp OR $20 = temp) then
               begin
-                note := buffer[index];
+                note := buf1[index];
                 Inc(index);
-                ins := buffer[index];
+                ins := buf1[index];
                 Inc(index);
               end;
 
             If (temp OR $40 = temp) then
               begin
-                vol := buffer[index];
+                vol := buf1[index];
                 Inc(index);
               end;
 
             If (temp OR $80 = temp) then
               begin
-                cmd := buffer[index];
+                cmd := buf1[index];
                 Inc(index);
-                info := buffer[index];
+                info := buf1[index];
                 Inc(index);
               end;
 
@@ -7163,20 +7237,23 @@ var
 
 function get_byte(var pos: Longint): Byte;
 begin
-  If (pos = SizeOf(buffer)-5) then
+  If (pos = SizeOf(buf1)-5) then
     begin
-      If NOT (absolute > SizeOf(buffer)-5) then Move(buf2,buffer,SizeOf(buf2)-5)
-      else Move(buf3,buffer,SizeOf(buf3)-5);
+      If NOT (absolute > SizeOf(buf1)-5) then Move(buf3,buf1,SizeOf(buf3)-5)
+      else Move(buf4,buf1,SizeOf(buf4)-5);
       pos := 0;
     end;
-  get_byte := buffer[pos];
+  get_byte := buf1[pos];
   Inc(pos);
   Inc(absolute);
 end;
 
 begin
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADERS.INC:sat_file_loader';
+{$ENDIF}
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
   {$i-}
   Assign(f,songdata_source);
@@ -7245,9 +7322,17 @@ begin
         end;
     end;
 
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+  If (play_status <> isStopped) then
+    begin
+      fade_out_playback(FALSE);
+      stop_playing;
+    end;
+
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
   temp5 := (FileSize(f)-temp) DIV (64*9*5);
-  FillChar(buffer,SizeOf(buffer),0);
-  BlockReadF(f,buffer,SizeOf(buffer)-5,temp);
+  FillChar(buf1,SizeOf(buf1),0);
+  BlockReadF(f,buf1,SizeOf(buf1)-5,temp);
   If (IOresult <> 0) then
     begin
       CloseF(f);
@@ -7260,10 +7345,10 @@ begin
     end;
 
   tmp2 := WORD_NULL;
-  If (temp = SizeOf(buffer)-5) then
+  If (temp = SizeOf(buf1)-5) then
     begin
-      FillChar(buf2,SizeOf(buf2),0);
-      BlockReadF(f,buf2,SizeOf(buf2)-5,tmp2);
+      FillChar(buf3,SizeOf(buf3),0);
+      BlockReadF(f,buf3,SizeOf(buf3)-5,tmp2);
       If (IOresult <> 0) then
         begin
           CloseF(f);
@@ -7277,10 +7362,10 @@ begin
     end;
 
   tmp3 := WORD_NULL;
-  If (tmp2 = SizeOf(buf2)-5) then
+  If (tmp2 = SizeOf(buf3)-5) then
     begin
-      FillChar(buf3,SizeOf(buf3),0);
-      BlockReadF(f,buf3,SizeOf(buf3)-5,tmp3);
+      FillChar(buf4,SizeOf(buf4),0);
+      BlockReadF(f,buf4,SizeOf(buf4)-5,tmp3);
       If (IOresult <> 0) then
         begin
           CloseF(f);
@@ -7583,7 +7668,10 @@ end;
 
 begin { sa2_file_loader }
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADERS.INC:sa2_file_loader';
+{$ENDIF}
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
   {$i-}
   Assign(f,songdata_source);
@@ -7623,6 +7711,14 @@ begin { sa2_file_loader }
       EXIT;
     end;
 
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+  If (play_status <> isStopped) then
+    begin
+      fade_out_playback(FALSE);
+      stop_playing;
+    end;
+
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
 {@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  load_flag := $7f;}
   If (header.vernm = 8) then
     begin
@@ -7639,8 +7735,8 @@ begin { sa2_file_loader }
         end;
     end;
 
-  FillChar(buffer,SizeOf(buffer),0);
-  BlockReadF(f,buffer,SizeOf(buffer)-3,temp);
+  FillChar(buf1,SizeOf(buf1),0);
+  BlockReadF(f,buf1,SizeOf(buf1)-3,temp);
   If (IOresult <> 0) then
     begin
       CloseF(f);
@@ -7688,9 +7784,9 @@ begin { sa2_file_loader }
     If (temp2 <= header.nopat-1) then
       begin
         temp5 := 64*3*(header.ordr2[temp2][temp4]-1)+temp3*3;
-        import_sa2_event(temp2,temp3,temp4,buffer[temp5],
-                                           buffer[temp5+1],
-                                           buffer[temp5+2]);
+        import_sa2_event(temp2,temp3,temp4,buf1[temp5],
+                                           buf1[temp5+1],
+                                           buf1[temp5+2]);
         Inc(temp3);
         If (temp3 > $3f) then
           begin
@@ -7720,4094 +7816,4 @@ begin { sa2_file_loader }
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
   load_flag := 1;
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
-end;
-
-{@ADT2PLAY_COMPILER_DIRECTIVE:EOF}
-procedure a2i_file_loader;
-
-type
-  tOLD_HEADER = Record
-                  ident: array[1..7] of Char;
-                  crc16: Word;
-                  ffver: Byte;
-                  b0len: Byte;
-                end;
-type
-  tHEADER = Record
-              ident: array[1..7] of Char;
-              crc16: Word;
-              ffver: Byte;
-              b0len: Word;
-            end;
-const
-  id = '_A2ins_';
-
-var
-  f: File;
-  header: tOLD_HEADER;
-  header2: tHEADER;
-  temp: Longint;
-  crc: Word;
-  temp_str: String;
-
-begin
-  _debug_str_ := 'ILOADERS.INC:a2i_file_loader';
-  {$i-}
-  Assign(f,instdata_source);
-  ResetF(f);
-  {$i+}
-  If (IOresult <> 0) then
-    begin
-      CloseF(f);
-      Dialog('ERROR READiNG DATA - DiSK ERROR?$'+
-             'LOADiNG STOPPED$',
-             '~O~KAY$',' A2i LOADER ',1);
-      EXIT;
-    end;
-
-  BlockReadF(f,header,SizeOf(header),temp);
-  If NOT ((temp = SizeOf(header)) and (header.ident = id)) then
-    begin
-      CloseF(f);
-      Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
-             'LOADiNG STOPPED$',
-             '~O~KAY$',' A2i LOADER ',1);
-      EXIT;
-    end;
-
-  If NOT (header.ffver in [1..9]) then
-    begin
-      CloseF(f);
-      Dialog('UNKNOWN FiLE FORMAT VERSiON$'+
-             'LOADiNG STOPPED$',
-             '~O~KAY$',' A2i LOADER ',1);
-      EXIT;
-    end;
-
-  init_old_songdata;
-  If (header.ffver in [1..4]) then
-    begin
-      BlockReadF(f,buf1,header.b0len,temp);
-      If NOT (temp = header.b0len) then
-        begin
-          CloseF(f);
-          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
-                 'LOADiNG STOPPED$',
-                 '~O~KAY$',' A2i LOADER ',1);
-          EXIT;
-        end;
-
-      crc := WORD_NULL;
-      crc := Update16(header.b0len,1,crc);
-      crc := Update16(buf1,header.b0len,crc);
-
-      If (crc <> header.crc16) then
-        begin
-          CloseF(f);
-          Dialog('CRC FAiLED - FiLE CORRUPTED$'+
-                 'LOADiNG STOPPED$',
-                 '~O~KAY$',' A2i LOADER ',1);
-          EXIT;
-        end;
-
-      Case header.ffver of
-        4: Move(buf1,buf2,header.b0len);
-        3: LZSS_decompress(buf1,buf2,header.b0len);
-        2: LZW_decompress(buf1,buf2);
-        1: SIXPACK_decompress(buf1,buf2,header.b0len);
-      end;
-
-      Move(buf2,
-           old_songdata.instr_data[1],
-           SizeOf(old_songdata.instr_data[1]));
-      Move(buf2[SizeOf(old_songdata.instr_data[1])],
-           temp_str,
-           buf2[SizeOf(old_songdata.instr_data[1])]+1);
-
-      old_songdata.instr_data[1].panning := 0;
-      If (temp_str = '') then temp_str := Lower(NameOnly(instdata_source));
-      old_songdata.instr_names[1] :=
-        Copy(old_songdata.instr_names[1],1,9)+truncate_string(temp_str);
-      import_single_old_instrument(old_songdata,current_inst,1);
-    end;
-
-  If (header.ffver in [5..8]) then
-    begin
-      BlockReadF(f,buf1,header.b0len,temp);
-      If NOT (temp = header.b0len) then
-        begin
-          CloseF(f);
-          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
-                 'LOADiNG STOPPED$',
-                 '~O~KAY$',' A2i LOADER ',1);
-          EXIT;
-        end;
-
-      crc := WORD_NULL;
-      crc := Update16(header.b0len,1,crc);
-      crc := Update16(buf1,header.b0len,crc);
-
-      If (crc <> header.crc16) then
-        begin
-          CloseF(f);
-          Dialog('CRC FAiLED - FiLE CORRUPTED$'+
-                 'LOADiNG STOPPED$',
-                 '~O~KAY$',' A2i LOADER ',1);
-          EXIT;
-        end;
-
-      Case header.ffver of
-        8: Move(buf1,buf2,header.b0len);
-        7: LZSS_decompress(buf1,buf2,header.b0len);
-        6: LZW_decompress(buf1,buf2);
-        5: SIXPACK_decompress(buf1,buf2,header.b0len);
-      end;
-
-      Move(buf2,
-           old_songdata.instr_data[1],
-           SizeOf(old_songdata.instr_data[1]));
-      Move(buf2[SizeOf(old_songdata.instr_data[1])],
-           temp_str,
-           buf2[SizeOf(old_songdata.instr_data[1])]+1);
-
-      If (temp_str = '') then temp_str := Lower(NameOnly(instdata_source));
-      old_songdata.instr_names[1] :=
-        Copy(old_songdata.instr_names[1],1,9)+truncate_string(temp_str);
-      import_single_old_instrument(old_songdata,current_inst,1);
-    end;
-
-  If (header.ffver = 9) then
-    begin
-      ResetF(f);
-      BlockReadF(f,header2,SizeOf(header2),temp);
-      If NOT ((temp = SizeOf(header2)) and (header2.ident = id)) then
-        begin
-          CloseF(f);
-          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
-                 'LOADiNG STOPPED$',
-                 '~O~KAY$',' A2i LOADER ',1);
-          EXIT;
-        end;
-
-      BlockReadF(f,buf1,header2.b0len,temp);
-      If NOT (temp = header2.b0len) then
-        begin
-          CloseF(f);
-          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
-                 'LOADiNG STOPPED$',
-                 '~O~KAY$',' A2i LOADER ',1);
-          EXIT;
-        end;
-
-      crc := WORD_NULL;
-      crc := Update16(header2.b0len,1,crc);
-      crc := Update16(buf1,header2.b0len,crc);
-
-      If (crc <> header2.crc16) then
-        begin
-          CloseF(f);
-          Dialog('CRC FAiLED - FiLE CORRUPTED$'+
-                 'LOADiNG STOPPED$',
-                 '~O~KAY$',' A2i LOADER ',1);
-          EXIT;
-        end;
-
-      APACK_decompress(buf1,buf2);
-      Move(buf2,
-           songdata.instr_data[current_inst],
-           SizeOf(songdata.instr_data[current_inst]));
-      Move(buf2[SizeOf(songdata.instr_data[current_inst])],
-           temp_str,
-           buf2[SizeOf(songdata.instr_data[current_inst])]+1);
-
-      If (temp_str = '') then temp_str := Lower(NameOnly(instdata_source));
-      songdata.instr_names[current_inst] :=
-        Copy(songdata.instr_names[current_inst],1,9)+truncate_string(temp_str);
-    end;
-
-  CloseF(f);
-  load_flag := 1;
-end;
-
-procedure a2f_file_loader;
-
-type
-  tHEADER = Record
-              ident: array[1..18] of Char;
-              crc32: Longint;
-              ffver: Byte;
-              b0len: Word;
-            end;
-const
-  id = '_a2ins_w/fm-macro_';
-
-var
-  f: File;
-  header: tHEADER;
-  crc,temp: Longint;
-  temp_str: String;
-
-begin
-  _debug_str_ := 'ILOADERS.INC:a2f_file_loader';
-  {$i-}
-  Assign(f,instdata_source);
-  ResetF(f);
-  {$i+}
-  If (IOresult <> 0) then
-    begin
-      CloseF(f);
-      Dialog('ERROR READiNG DATA - DiSK ERROR?$'+
-             'LOADiNG STOPPED$',
-             '~O~KAY$',' A2F LOADER ',1);
-      EXIT;
-    end;
-
-  BlockReadF(f,header,SizeOf(header),temp);
-  If NOT ((temp = SizeOf(header)) and (header.ident = id)) then
-    begin
-      CloseF(f);
-      Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
-             'LOADiNG STOPPED$',
-             '~O~KAY$',' A2F LOADER ',1);
-      EXIT;
-    end;
-
-  If NOT (header.ffver in [1]) then
-    begin
-      CloseF(f);
-      Dialog('UNKNOWN FiLE FORMAT VERSiON$'+
-             'LOADiNG STOPPED$',
-             '~O~KAY$',' A2F LOADER ',1);
-      EXIT;
-    end;
-
-  If (header.ffver = 1) then
-    begin
-      BlockReadF(f,buf1,header.b0len,temp);
-      If NOT (temp = header.b0len) then
-        begin
-          CloseF(f);
-          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
-                 'LOADiNG STOPPED$',
-                 '~O~KAY$',' A2F LOADER ',1);
-          EXIT;
-        end;
-
-      crc := DWORD_NULL;
-      crc := Update32(header.b0len,1,crc);
-      crc := Update32(buf1,header.b0len,crc);
-
-      If (crc <> header.crc32) then
-        begin
-          CloseF(f);
-          Dialog('CRC FAiLED - FiLE CORRUPTED$'+
-                 'LOADiNG STOPPED$',
-                 '~O~KAY$',' A2F LOADER ',1);
-          EXIT;
-        end;
-
-      APACK_decompress(buf1,buf2);
-      Move(buf2,
-           songdata.instr_data[current_inst],
-           SizeOf(songdata.instr_data[current_inst]));
-      Move(buf2[SizeOf(songdata.instr_data[current_inst])],
-           temp_str,
-           buf2[SizeOf(songdata.instr_data[current_inst])]+1);
-
-      If (temp_str = '') then temp_str := Lower(NameOnly(instdata_source));
-      songdata.instr_names[current_inst] :=
-        Copy(songdata.instr_names[current_inst],1,9)+truncate_string(temp_str);
-
-      Move(buf2[SizeOf(songdata.instr_data[current_inst])+
-                buf2[SizeOf(songdata.instr_data[current_inst])]+1],
-           songdata.instr_macros[current_inst],
-           SizeOf(songdata.instr_macros[current_inst]));
-
-      Move(buf2[SizeOf(songdata.instr_data[current_inst])+
-                buf2[SizeOf(songdata.instr_data[current_inst])]+1+
-                SizeOf(songdata.instr_macros[current_inst])],
-           songdata.dis_fmreg_col[current_inst],
-           SizeOf(songdata.dis_fmreg_col[current_inst]));
-    end;
-
-  CloseF(f);
-  load_flag := 1;
-end;
-
-procedure cif_file_loader;
-
-const
-  id = '<CUD-FM-Instrument>'+#26;
-
-type
-  tCIF_DATA = Record
-                ident: array[1..20] of Char;
-                idata: tFM_INST_DATA;
-                resrv: Byte;
-                iname: array[1..20] of Char;
-              end;
-var
-  f: File;
-  buffer: tCIF_DATA;
-  temp: Longint;
-  temp_str: String;
-
-const
-  MIN_CIF_SIZE = SizeOf(buffer.ident)+
-                 SizeOf(buffer.idata)+
-                 SizeOf(buffer.resrv);
-begin
-  _debug_str_ := 'ILOADERS.INC:cif_file_loader';
-  {$i-}
-  Assign(f,instdata_source);
-  ResetF(f);
-  {$i+}
-  If (IOresult <> 0) then
-    begin
-      CloseF(f);
-      Dialog('ERROR READiNG DATA - DiSK ERROR?$'+
-             'LOADiNG STOPPED$',
-             '~O~KAY$',' CiF LOADER ',1);
-      EXIT;
-    end;
-
-  BlockReadF(f,buffer,SizeOf(buffer),temp);
-  If NOT ((temp >= MIN_CIF_SIZE) and (buffer.ident = id)) then
-    begin
-      CloseF(f);
-      Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
-             'LOADiNG STOPPED$',
-             '~O~KAY$',' CiF LOADER ',1);
-      EXIT;
-    end;
-
-  import_hsc_instrument(current_inst,buffer.idata);
-  songdata.instr_data[current_inst].fine_tune := 0;
-
-  temp_str := truncate_string(buffer.iname);
-  If (temp_str = '') then temp_str := Lower(NameOnly(instdata_source));
-
-  songdata.instr_names[current_inst] :=
-    Copy(songdata.instr_names[current_inst],1,9)+temp_str;
-
-  CloseF(f);
-  load_flag := 1;
-end;
-
-procedure fin_file_loader;
-
-var
-  f: File;
-  buffer: tFIN_DATA;
-  temp: Longint;
-  temp_str: String;
-
-begin
-  _debug_str_ := 'ILOADERS.INC:fin_file_loader';
-  {$i-}
-  Assign(f,instdata_source);
-  ResetF(f);
-  {$i+}
-  If (IOresult <> 0) then
-    begin
-      CloseF(f);
-      Dialog('ERROR READiNG DATA - DiSK ERROR?$'+
-             'LOADiNG STOPPED$',
-             '~O~KAY$',' FiN LOADER ',1);
-      EXIT;
-    end;
-
-  BlockReadF(f,buffer,SizeOf(buffer),temp);
-  If (temp <> SizeOf(buffer)) then
-    begin
-      CloseF(f);
-      Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
-             'LOADiNG STOPPED$',
-             '~O~KAY$',' FiN LOADER ',1);
-      EXIT;
-    end;
-
-  import_fin_instrument(current_inst,buffer.idata);
-  If (Length(truncate_string(buffer.iname)) <= 32) then
-    temp_str := truncate_string(buffer.iname)
-  else temp_str := Lower(truncate_string(buffer.dname));
-  If (temp_str = '') then temp_str := Lower(NameOnly(instdata_source));
-
-  songdata.instr_names[current_inst] :=
-    Copy(songdata.instr_names[current_inst],1,9)+Copy(temp_str,1,32);
-
-  CloseF(f);
-  load_flag := 1;
-end;
-
-procedure ins_file_loader;
-
-type
-  tINS_DATA = Record
-                idata: tFM_INST_DATA;
-                slide: Byte;
-                _SAdT: array[0..18] of Byte;
-              end;
-var
-  f: File;
-  buffer: tINS_DATA;
-  temp: Longint;
-
-function correct_ins(var data): Boolean;
-
-var
-  result: Boolean;
-
-begin
-  result := TRUE;
-  If NOT (tADTRACK2_INS(data).fm_data.WAVEFORM_modulator in [0..3]) then
-    result := FALSE;
-  If NOT (tADTRACK2_INS(data).fm_data.WAVEFORM_carrier in [0..3]) then
-    result := FALSE;
-  If NOT (tADTRACK2_INS(data).fm_data.FEEDBACK_FM in [0..15]) then
-    result := FALSE;
-  correct_ins := result;
-end;
-
-begin { ins_file_loader }
-  _debug_str_ := 'ILOADERS.INC:ins_file_loader';
-  {$i-}
-  Assign(f,instdata_source);
-  ResetF(f);
-  {$i+}
-  If (IOresult <> 0) then
-    begin
-      CloseF(f);
-      Dialog('ERROR READiNG DATA - DiSK ERROR?$'+
-             'LOADiNG STOPPED$',
-             '~O~KAY$',' iNS LOADER ',1);
-      EXIT;
-    end;
-
-  If (FileSize(f) > SizeOf(buffer)) then
-    begin
-      CloseF(f);
-      Dialog('UNKNOWN FiLE FORMAT TYPE$'+
-             'LOADiNG STOPPED$',
-             '~O~KAY$',' iNS LOADER ',1);
-      EXIT;
-    end;
-
-  BlockReadF(f,buffer,FileSize(f),temp);
-  If (temp <> FileSize(f)) then
-    begin
-      CloseF(f);
-      Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
-             'LOADiNG STOPPED$',
-             '~O~KAY$',' iNS LOADER ',1);
-      EXIT;
-    end;
-
-  Case force_ins of
-    0: begin
-         If (temp = 12) then
-           import_standard_instrument(current_inst,buffer.idata);
-         If (temp = 12) and NOT correct_ins(buffer.idata) then
-           import_hsc_instrument(current_inst,buffer.idata)
-         else If (temp > 12) then
-                import_sat_instrument(current_inst,buffer.idata);
-       end;
-
-    1: import_hsc_instrument(current_inst,buffer.idata);
-    2: import_sat_instrument(current_inst,buffer.idata);
-    3: import_standard_instrument(current_inst,buffer.idata);
-  end;
-
-  songdata.instr_names[current_inst] :=
-    Copy(songdata.instr_names[current_inst],1,9)+
-    Lower(NameOnly(instdata_source));
-
-  CloseF(f);
-  load_flag := 1;
-end;
-
-procedure sbi_file_loader;
-
-const
-  id = 'SBI'+#26;
-
-type
-  tSBI_DATA = Record
-                ident: array[1..4]  of Char;
-                iname: array[1..32] of Char;
-                idata: tFM_INST_DATA;
-                dummy: array[1..5]  of Byte;
-              end;
-var
-  f: File;
-  buffer: tSBI_DATA;
-  temp: Longint;
-  temp_str: String;
-
-begin
-  _debug_str_ := 'ILOADERS.INC:sbi_file_loader';
-  {$i-}
-  Assign(f,instdata_source);
-  ResetF(f);
-  {$i+}
-  If (IOresult <> 0) then
-    begin
-      CloseF(f);
-      Dialog('ERROR READiNG DATA - DiSK ERROR?$'+
-             'LOADiNG STOPPED$',
-             '~O~KAY$',' SBi LOADER ',1);
-      EXIT;
-    end;
-
-  BlockReadF(f,buffer,SizeOf(buffer),temp);
-  If NOT ((temp = SizeOf(buffer)) and (buffer.ident = id)) then
-    begin
-      CloseF(f);
-      Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
-             'LOADiNG STOPPED$',
-             '~O~KAY$',' SBi LOADER ',1);
-      EXIT;
-    end;
-
-  import_standard_instrument(current_inst,buffer.idata);
-  temp_str := truncate_string(buffer.iname);
-  If (temp_str = '') then temp_str := Lower(NameOnly(instdata_source));
-
-  songdata.instr_names[current_inst] :=
-    Copy(songdata.instr_names[current_inst],1,9)+Copy(temp_str,1,32);
-
-  CloseF(f);
-  load_flag := 1;
-end;
-
-procedure import_sgi_instrument(inst: Byte; var data);
-begin
-  FillChar(songdata.instr_data[inst],
-           SizeOf(songdata.instr_data[inst]),0);
-
-  With songdata.instr_data[inst] do
-    begin
-      fm_data.ATTCK_DEC_modulator := (tDUMMY_BUFF(data)[1]  AND $0f)+
-                                     (tDUMMY_BUFF(data)[0]  AND $0f) SHL 4;
-      fm_data.SUSTN_REL_modulator := (tDUMMY_BUFF(data)[3]  AND $0f)+
-                                     (tDUMMY_BUFF(data)[2]  AND $0f) SHL 4;
-      fm_data.WAVEFORM_modulator  := (tDUMMY_BUFF(data)[4]  AND 3);
-      fm_data.KSL_VOLUM_modulator := (tDUMMY_BUFF(data)[7]  AND $3f)+
-                                     (tDUMMY_BUFF(data)[6]  AND 3) SHL 6;
-      fm_data.AM_VIB_EG_modulator := (tDUMMY_BUFF(data)[5]  AND $0f)+
-                                     (tDUMMY_BUFF(data)[8]  AND 1) SHL 4+
-                                     (tDUMMY_BUFF(data)[11] AND 1) SHL 5+
-                                     (tDUMMY_BUFF(data)[10] AND 1) SHL 6+
-                                     (tDUMMY_BUFF(data)[9]  AND 1) SHL 7;
-      fm_data.ATTCK_DEC_carrier   := (tDUMMY_BUFF(data)[13] AND $0f)+
-                                     (tDUMMY_BUFF(data)[12] AND $0f) SHL 4;
-      fm_data.SUSTN_REL_carrier   := (tDUMMY_BUFF(data)[15] AND $0f)+
-                                     (tDUMMY_BUFF(data)[14] AND $0f) SHL 4;
-      fm_data.WAVEFORM_carrier    := (tDUMMY_BUFF(data)[16] AND 3);
-      fm_data.KSL_VOLUM_carrier   := (tDUMMY_BUFF(data)[19] AND $3f)+
-                                     (tDUMMY_BUFF(data)[18] AND 3) SHL 6;
-      fm_data.AM_VIB_EG_carrier   := (tDUMMY_BUFF(data)[17] AND $0f)+
-                                     (tDUMMY_BUFF(data)[20] AND 1) SHL 4+
-                                     (tDUMMY_BUFF(data)[23] AND 1) SHL 5+
-                                     (tDUMMY_BUFF(data)[22] AND 1) SHL 6+
-                                     (tDUMMY_BUFF(data)[21] AND 1) SHL 7;
-      fm_data.FEEDBACK_FM         := (tDUMMY_BUFF(data)[25] AND 1)+
-                                     (tDUMMY_BUFF(data)[24] AND 7) SHL 1;
-    end;
-end;
-
-procedure sgi_file_loader;
-
-type
-  tSGI_DATA = Record
-           { 0} attack_m,
-           { 1} decay_m,
-           { 2} sustain_m,
-           { 3} release_m,
-           { 4} waveform_m,
-           { 5} mfmult_m,
-           { 6} ksl_m,
-           { 7} volume_m,
-           { 8} ksr_m,
-           { 9} tremolo_m,
-           {10} vibrato_m,
-           {11} eg_type_m,
-           {12} attack_c,
-           {13} decay_c,
-           {14} sustain_c,
-           {15} release_c,
-           {16} waveform_c,
-           {17} mfmult_c,
-           {18} ksl_c,
-           {19} volume_c,
-           {20} ksr_c,
-           {21} tremolo_c,
-           {22} vibrato_c,
-           {23} eg_type_c,
-           {24} feedback,
-           {25} fm:        Byte;
-              end;
-
-var
-  f: File;
-  buffer: tSGI_DATA;
-  temp: Longint;
-  temp_str: String;
-
-begin
-  _debug_str_ := 'ILOADERS.INC:sgi_file_loader';
-  {$i-}
-  Assign(f,instdata_source);
-  ResetF(f);
-  {$i+}
-  If (IOresult <> 0) then
-    begin
-      CloseF(f);
-      Dialog('ERROR READiNG DATA - DiSK ERROR?$'+
-             'LOADiNG STOPPED$',
-             '~O~KAY$',' SGi LOADER ',1);
-      EXIT;
-    end;
-
-  BlockReadF(f,buffer,SizeOf(buffer),temp);
-  If (temp <> SizeOf(buffer)) then
-    begin
-      CloseF(f);
-      Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
-             'LOADiNG STOPPED$',
-             '~O~KAY$',' SGi LOADER ',1);
-      EXIT;
-    end;
-
-  import_sgi_instrument(current_inst,buffer);
-  temp_str := Lower(NameOnly(instdata_source));
-  songdata.instr_names[current_inst] :=
-    Copy(songdata.instr_names[current_inst],1,9)+Copy(temp_str,1,32);
-
-  CloseF(f);
-  load_flag := 1;
-end;
-
-var
-  xstart,ystart: Byte;
-  window_xsize,window_ysize: Byte;
-  context_str: String;
-  context_str2: String;
-
-var
-  temp_marks: array[1..255] of Char;
-  a2b_queue: array[1..255+3] of String[74];
-  a2b_queue_more: array[1..255+3] of String[104];
-  a2w_queue: array[1..255+3] of String[72];
-  a2w_queue_more: array[1..255+3] of String[102];
-  a2w_queue_more2: array[1..255+3] of String[121];
-  a2w_queue_m: array[1..255+5] of String[72];
-  a2w_institle_pos: Byte;
-  update_current_inst: Boolean;
-  songdata_bak: tFIXED_SONGDATA;
-
-function count_instruments: Byte;
-
-var
-  result: Byte;
-
-begin
-  _debug_str_ := 'ILOADERS.INC:count_instruments';
-  result := 255;
-  While (result > 0) and
-        Empty(temp_songdata.instr_data[result],INSTRUMENT_SIZE) do
-    Dec(result);
-  count_instruments := result;
-end;
-
-function count_macros: Byte;
-
-var
-  result: Byte;
-
-begin
-  result := 255;
-  While (result > 0) and Empty(temp_songdata.macro_table[result].arpeggio,
-                               SizeOf(tARPEGGIO_TABLE))
-                     and Empty(temp_songdata.macro_table[result].vibrato,
-                               SizeOf(tVIBRATO_TABLE)) do
-    Dec(result);
-  count_macros := result;
-end;
-
-function get_free_arpeggio_table_idx(data: tARPEGGIO_TABLE): Byte;
-
-var
-  result: Byte;
-  free_flag: Boolean;
-
-begin
-  _debug_str_ := 'ILOADERS.INC:get_free_arpeggio_table_idx';
-  result := 0;
-  free_flag := FALSE;
-
-  // first try to find empty space or same macro for overwriting
-  Repeat
-    Inc(result);
-    If Empty(songdata.macro_table[result].arpeggio,
-             SizeOf(tARPEGGIO_TABLE)) or
-       Compare(songdata.macro_table[result].arpeggio,data,
-               SizeOf(tARPEGGIO_TABLE)) then
-      free_flag := TRUE;
-  until free_flag or (result = 255);
-
-  // next to find dummy macro (length=0) for overwriting
-  If NOT free_flag then
-    Repeat
-      If (temp_songdata.macro_table[result].arpeggio.length = 0) then
-        free_flag := TRUE
-      else Dec(result);
-    until free_flag or (result = 0);
-
-  get_free_arpeggio_table_idx := result;
-end;
-
-function get_free_vibrato_table_idx(data: tVIBRATO_TABLE): Byte;
-
-var
-  result: Byte;
-  free_flag: Boolean;
-
-begin
-  _debug_str_ := 'ILOADERS.INC:get_free_vibrato_table_idx';
-  result := 0;
-  free_flag := FALSE;
-
-  // first try to find empty space or same macro for overwriting
-  Repeat
-    Inc(result);
-    If Empty(songdata.macro_table[result].vibrato,
-             SizeOf(tViBRATO_TABLE)) or
-       Compare(songdata.macro_table[result].vibrato,data,
-               SizeOf(tVIBRATO_TABLE)) then
-      free_flag := TRUE;
-  until free_flag or (result = 255);
-
-  // next to find dummy macro (length=0) for overwriting
-  If NOT free_flag then
-    Repeat
-      If (temp_songdata.macro_table[result].vibrato.length = 0) then
-        free_flag := TRUE
-      else Dec(result);
-    until free_flag or (result = 0);
-
-  get_free_vibrato_table_idx := result;
-end;
-
-function _gfx_bar_str(value: Byte; neg: Boolean): String;
-
-var
-  result: String;
-
-begin
-  result := '';
-  If NOT neg then
-    Repeat
-      If (value > 15) then
-        begin
-          result := result+#219;
-          Dec(value,15);
-        end;
-      If (value <= 15) and (value <> 0) then
-        result := result+CHR(127+value)
-    until (value <= 15)
-  else Repeat
-         If (value > 15) then
-           begin
-             result := #219+result;
-             Dec(value,15);
-           end;
-         If (value <= 15) and (value <> 0) then
-           result := CHR(158-value)+result;
-       until (value <= 15);
-  _gfx_bar_str := flipstr(result);
-end;
-
-procedure a2b_file_loader(bankSelector: Boolean; loadBankPossible: Boolean);
-
-type
-  tOLD_HEADER = Record
-                  ident: array[1..11] of Char;
-                  crc32: Longint;
-                  ffver: Byte;
-                  b0len: Word;
-                end;
-type
-  tHEADER = Record
-              ident: array[1..11] of Char;
-              crc32: Longint;
-              ffver: Byte;
-              b0len: Longint;
-            end;
-const
-  id = '_A2insbank_';
-
-var
-  f: File;
-  header: tOLD_HEADER;
-  header2: tHEADER;
-  crc,temp: Longint;
-  old_external_proc: procedure;
-  old_topic_len: Byte;
-  old_cycle_moves: Boolean;
-  idx,index,nm_valid: Byte;
-  temp_str: String;
-
-const
-  new_keys: array[1..3] of Word = (kESC,kENTER,kCtENTR);
-
-var
-  old_keys: array[1..3] of Word;
-
-begin
-  _debug_str_ := 'ILOADERS.INC:a2b_file_loader';
-  {$i-}
-  Assign(f,instdata_source);
-  ResetF(f);
-  {$i+}
-  If (IOresult <> 0) then
-    begin
-      CloseF(f);
-      Dialog('ERROR READiNG DATA - DiSK ERROR?$'+
-             'LOADiNG STOPPED$',
-             '~O~KAY$',' A2B LOADER ',1);
-      EXIT;
-    end;
-
-  temp_songdata := songdata;
-  BlockReadF(f,header,SizeOf(header),temp);
-  If NOT ((temp = SizeOf(header)) and (header.ident = id)) then
-    begin
-      CloseF(f);
-      Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
-             'LOADiNG STOPPED$',
-             '~O~KAY$',' A2B LOADER ',1);
-      EXIT;
-    end;
-
-  If NOT (header.ffver in [1..9]) then
-    begin
-      CloseF(f);
-      Dialog('UNKNOWN FiLE FORMAT VERSiON$'+
-             'LOADiNG STOPPED$',
-             '~O~KAY$',' A2B LOADER ',1);
-      EXIT;
-    end;
-
-  init_old_songdata;
-  If (header.ffver in [1..4]) then
-    begin
-      FillChar(buffer,SizeOf(buffer),0);
-      BlockReadF(f,buffer,header.b0len,temp);
-      If NOT (temp = header.b0len) then
-        begin
-          CloseF(f);
-          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
-                 'LOADiNG STOPPED$',
-                 '~O~KAY$',' A2B LOADER ',1);
-          EXIT;
-        end;
-
-      crc := DWORD_NULL;
-      crc := Update32(header.b0len,2,crc);
-      crc := Update32(buffer,header.b0len,crc);
-
-      If (crc <> header.crc32) then
-        begin
-          CloseF(f);
-          Dialog('CRC FAiLED - FiLE CORRUPTED$'+
-                 'LOADiNG STOPPED$',
-                 '~O~KAY$',' A2B LOADER ',1);
-          EXIT;
-        end;
-
-      Case header.ffver of
-        4: Move(buffer,old_songdata.instr_names,header.b0len);
-        3: LZSS_decompress(buffer,old_songdata.instr_names,header.b0len);
-        2: LZW_decompress(buffer,old_songdata.instr_names);
-        1: SIXPACK_decompress(buffer,old_songdata.instr_names,header.b0len);
-      end;
-
-      For temp := 1 to 250 do
-        old_songdata.instr_data[temp].panning := 0;
-      import_old_instruments(old_songdata,temp_songdata,1,250);
-    end;
-
-  If (header.ffver in [5..8]) then
-    begin
-      FillChar(buffer,SizeOf(buffer),0);
-      BlockReadF(f,buffer,header.b0len,temp);
-      If NOT (temp = header.b0len) then
-        begin
-          CloseF(f);
-          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
-                 'LOADiNG STOPPED$',
-                 '~O~KAY$',' A2B LOADER ',1);
-          EXIT;
-        end;
-
-      crc := DWORD_NULL;
-      crc := Update32(header.b0len,2,crc);
-      crc := Update32(buffer,header.b0len,crc);
-
-      If (crc <> header.crc32) then
-        begin
-          CloseF(f);
-          Dialog('CRC FAiLED - FiLE CORRUPTED$'+
-                 'LOADiNG STOPPED$',
-                 '~O~KAY$',' A2B LOADER ',1);
-          EXIT;
-        end;
-
-      Case header.ffver of
-        8: Move(buffer,old_songdata.instr_names,header.b0len);
-        7: LZSS_decompress(buffer,old_songdata.instr_names,header.b0len);
-        6: LZW_decompress(buffer,old_songdata.instr_names);
-        5: SIXPACK_decompress(buffer,old_songdata.instr_names,header.b0len);
-      end;
-      import_old_instruments(old_songdata,temp_songdata,1,250);
-    end;
-
-  If (header.ffver = 9) then
-    begin
-      ResetF(f);
-      BlockReadF(f,header2,SizeOf(header2),temp);
-      If NOT ((temp = SizeOf(header2)) and (header2.ident = id)) then
-        begin
-          CloseF(f);
-          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
-                 'LOADiNG STOPPED$',
-                 '~O~KAY$',' A2B LOADER ',1);
-          EXIT;
-        end;
-
-      FillChar(buffer,SizeOf(buffer),0);
-      BlockReadF(f,buffer,header2.b0len,temp);
-      If NOT (temp = header2.b0len) then
-        begin
-          CloseF(f);
-          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
-                 'LOADiNG STOPPED$',
-                 '~O~KAY$',' A2B LOADER ',1);
-          EXIT;
-        end;
-
-      crc := DWORD_NULL;
-      crc := Update32(header2.b0len,2,crc);
-      crc := Update32(buffer,header2.b0len,crc);
-
-      If (crc <> header2.crc32) then
-        begin
-          CloseF(f);
-          Dialog('CRC FAiLED - FiLE CORRUPTED$'+
-                 'LOADiNG STOPPED$',
-                 '~O~KAY$',' A2B LOADER ',1);
-          EXIT;
-        end;
-
-      For temp := 1 to 255 do
-        temp_marks[temp] := temp_songdata.instr_names[temp][1];
-
-      APACK_decompress(buffer,temp_songdata.instr_names);
-      For temp := 1 to 255 do
-        Insert(temp_marks[temp]+
-               'iNS_'+byte2hex(temp)+'๗ ',
-               temp_songdata.instr_names[temp],1);
-    end;
-
-  FillChar(temp_songdata.dis_fmreg_col,SizeOf(temp_songdata.dis_fmreg_col),FALSE);
-  CloseF(f);
-
-  If NOT bankSelector then
-    begin
-      songdata.instr_names := temp_songdata.instr_names;
-      songdata.instr_data := temp_songdata.instr_data;
-      load_flag := 1;
-      EXIT;
-    end;
-
-  a2b_queue[1]       := ' iNSTRUMENT                                 PANNiNG            iNSTRUMENT ';
-  a2b_queue[2]       := ' NAME    DESCRiPTiON                        ฉ    ช   F.TUNE   VOiCE      ';
-  a2b_queue[3]       := 'ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ';
-  a2b_queue_more[1]  := ' iNSTRUMENT                                                               PANNiNG            iNSTRUMENT ';
-  a2b_queue_more[2]  := ' NAME    DESCRiPTiON                        ฺ20ฟ ฺ40ฟ ฺ60ฟ ฺ80ฟ ฺE0ฟ C0   ฉ    ช   F.TUNE   VOiCE      ';
-  a2b_queue_more[3]  := 'ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ';
-
-  nm_valid := count_instruments;
-  If (nm_valid = 0) then nm_valid := 1;
-
-  For idx := 1 to nm_valid do
-    begin
-      a2b_queue[3+idx] := '~'+ExpStrR(Copy(temp_songdata.instr_names[idx],1,9)+'~'+
-                          Copy(temp_songdata.instr_names[idx],10,32),45,' ');
-      a2b_queue_more[3+idx] := a2b_queue[3+idx];
-
-      With temp_songdata.instr_data[idx].fm_data do
-        begin
-          a2b_queue_more[3+idx] := a2b_queue_more[3+idx]+
-            byte2hex(AM_VIB_EG_carrier)+
-            byte2hex(AM_VIB_EG_modulator)+' '+
-            byte2hex(KSL_VOLUM_carrier)+
-            byte2hex(KSL_VOLUM_modulator)+' '+
-            byte2hex(ATTCK_DEC_carrier)+
-            byte2hex(ATTCK_DEC_modulator)+' '+
-            byte2hex(SUSTN_REL_carrier)+
-            byte2hex(SUSTN_REL_modulator)+' '+
-            byte2hex(WAVEFORM_carrier)+
-            byte2hex(WAVEFORM_modulator)+' '+
-            byte2hex(FEEDBACK_FM)+'   ';
-        end;
-
-      temp_str := '๚๚๚๚๚๚๚';
-      Case temp_songdata.instr_data[idx].panning of
-        0: temp_str := '๚๚๚๚';
-        1: temp_str := '๚๚๚๚';
-        2: temp_str := '๚๚๚๚';
-      end;
-
-      a2b_queue[3+idx] := a2b_queue[3+idx]+temp_str+'   ';
-          a2b_queue_more[3+idx] := a2b_queue_more[3+idx]+temp_str+'   ';
-      If (temp_songdata.instr_data[idx].fine_tune > 0) then
-        temp_str := '+'+ExpStrR(Num2str(temp_songdata.instr_data[idx].fine_tune,16),5,' ')
-      else If (temp_songdata.instr_data[idx].fine_tune < 0) then
-             temp_str := '-'+ExpStrR(Num2str(0-temp_songdata.instr_data[idx].fine_tune,16),5,' ')
-           else temp_str := ExpStrR('',6,' ');
-
-          a2b_queue[3+idx] := a2b_queue[3+idx]+temp_str+'   ';
-          a2b_queue_more[3+idx] := a2b_queue_more[3+idx]+temp_str+'   ';
-      temp_str := '       ';
-      Case temp_songdata.instr_data[idx].perc_voice of
-        0: temp_str := 'MELODiC';
-        1: temp_str := 'PERC:BD';
-        2: temp_str := 'PERC:SD';
-        3: temp_str := 'PERC:TT';
-        4: temp_str := 'PERC:TC';
-        5: temp_str := 'PERC:HH';
-      end;
-
-      a2b_queue[3+idx] := a2b_queue[3+idx]+temp_str;
-      a2b_queue_more[3+idx] := a2b_queue_more[3+idx]+temp_str;
-    end;
-
-  Move(mn_setting.terminate_keys,old_keys,SizeOf(old_keys));
-  old_external_proc := mn_environment.ext_proc;
-  old_topic_len := mn_setting.topic_len;
-  old_cycle_moves := mn_setting.cycle_moves;
-
-  Move(new_keys,mn_setting.terminate_keys,SizeOf(new_keys));
-  mn_environment.ext_proc := a2b_lister_external_proc;
-  mn_setting.topic_len := 3;
-  mn_setting.cycle_moves := FALSE;
-
-  If loadBankPossible then
-    mn_environment.context := ' ~[~'+Num2str(nm_valid,10)+'~/255]~ ^ENTER ฤ LOAD COMPLETE BANK '
-  else mn_environment.context := '~[~'+Num2str(nm_valid,10)+'~/255]~';
-
-  keyboard_reset_buffer;
-  If NOT _force_program_quit then
-    If (program_screen_mode = 0) then
-      index := Menu(a2b_queue,01,01,min(1,get_bank_position(instdata_source,nm_valid)),
-                    74,20,nm_valid+3,' '+iCASE(NameOnly(instdata_source))+' ')
-    else index := Menu(a2b_queue_more,01,01,min(1,get_bank_position(instdata_source,nm_valid)),
-                       104,30,nm_valid+3,' '+iCASE(NameOnly(instdata_source))+' ');
-
-  add_bank_position(instdata_source,nm_valid,index+3);
-  Move(old_keys,mn_setting.terminate_keys,SizeOf(old_keys));
-  mn_environment.ext_proc := old_external_proc;
-  mn_setting.topic_len := old_topic_len;
-  mn_setting.cycle_moves := old_cycle_moves;
-
-  If (mn_environment.keystroke = kENTER) or
-     (loadBankPossible and (mn_environment.keystroke = kCtENTR)) then
-    begin
-      If (mn_environment.keystroke = kENTER) then
-        begin
-          songdata.instr_data[current_inst] := temp_songdata.instr_data[index];
-          songdata.instr_names[current_inst] := Copy(songdata.instr_names[current_inst],1,9)+
-                                                Copy(temp_songdata.instr_names[index],10,32);
-        end
-      else
-        begin
-          songdata.instr_data := temp_songdata.instr_data;
-          For idx := 1 to 255 do
-            songdata.instr_names[idx] := Copy(songdata.instr_names[idx],1,9)+
-                                         Copy(temp_songdata.instr_names[idx],10,32);
-        end;
-      load_flag := 1;
-      load_flag_alt := BYTE_NULL;
-    end;
-  keyboard_reset_buffer;
-end;
-
-procedure _macro_preview_refresh;
-
-var
-  temp,max_value: Integer;
-  d_factor: Real;
-
-function arpeggio_def_attr(page: Byte): Word;
-
-var
-  attr,
-  attr2: Byte;
-
-begin
-  If (page <= temp_songdata.macro_table[arpeggio_table_idx].
-              arpeggio.length) then
-    If (page >= temp_songdata.macro_table[arpeggio_table_idx].
-                arpeggio.loop_begin) and
-       (page <= temp_songdata.macro_table[arpeggio_table_idx].
-                arpeggio.loop_begin+
-                PRED(temp_songdata.macro_table[arpeggio_table_idx].
-                     arpeggio.loop_length)) and
-       (temp_songdata.macro_table[arpeggio_table_idx].
-        arpeggio.loop_begin > 0) and
-       (temp_songdata.macro_table[arpeggio_table_idx].
-        arpeggio.loop_length > 0) then
-      begin
-        attr := macro_background+macro_text_loop;
-        attr2 := macro_current_bckg+macro_current_loop;
-      end
-    else If (page >= temp_songdata.macro_table[arpeggio_table_idx].
-                     arpeggio.keyoff_pos) and
-            (temp_songdata.macro_table[arpeggio_table_idx].
-             arpeggio.keyoff_pos > 0) then
-           begin
-             attr := macro_background+macro_text_keyoff;
-             attr2 := macro_current_bckg+macro_current_koff;
-           end
-         else begin
-                attr := macro_background+macro_text;
-                attr2 := macro_current_bckg+macro_current;
-              end
-  else begin
-         attr := macro_background+macro_text_dis;
-         attr2 := macro_current_bckg+macro_current_dis;
-       end;
-
-  arpeggio_def_attr := attr+attr2 SHL 8;
-end;
-
-function vibrato_def_attr(page: Byte): Word;
-
-var
-  attr,
-  attr2: Byte;
-
-begin
-  If (page <= temp_songdata.macro_table[vibrato_table_idx].
-              vibrato.length) then
-    If (page >= temp_songdata.macro_table[vibrato_table_idx].
-                vibrato.loop_begin) and
-       (page <= temp_songdata.macro_table[vibrato_table_idx].
-                vibrato.loop_begin+
-                PRED(temp_songdata.macro_table[vibrato_table_idx].
-                     vibrato.loop_length)) and
-       (temp_songdata.macro_table[vibrato_table_idx].
-        vibrato.loop_begin > 0) and
-       (temp_songdata.macro_table[vibrato_table_idx].
-        vibrato.loop_length > 0) then
-      begin
-        attr := macro_background+macro_text_loop;
-        attr2 := macro_current_bckg+macro_current_loop;
-      end
-    else If (page >= temp_songdata.macro_table[vibrato_table_idx].
-                     vibrato.keyoff_pos) and
-            (temp_songdata.macro_table[vibrato_table_idx].
-             vibrato.keyoff_pos > 0) then
-           begin
-             attr := macro_background+macro_text_keyoff;
-             attr2 := macro_current_bckg+macro_current_koff;
-           end
-         else begin
-                attr := macro_background+macro_text;
-                attr2 := macro_current_bckg+macro_current;
-              end
-  else begin
-         attr := macro_background+macro_text_dis;
-         attr2 := macro_current_bckg+macro_current_dis;
-       end;
-
-  vibrato_def_attr := attr+attr2 SHL 8;
-end;
-
-begin
-  _debug_str_ := 'ILOADERS.INC:_macro_preview_refresh';
-  // arpeggio preview
-  ShowStr(centered_frame_vdest^,xstart_arp+15,ystart_arp,
-          'ý',
-          macro_background+macro_topic2);
-  ShowStr(centered_frame_vdest^,xstart_arp+15,ystart_arp+7,
-          'ü',
-          macro_background+macro_topic2);
-  ShowVStr(centered_frame_vdest^,xstart_arp,ystart_arp+1,
-           'ณณณณณ',
-           macro_background+macro_text);
-  ShowVStr(centered_frame_vdest^,xstart_arp+30,ystart_arp+1,
-           'ณณณณณ',
-           macro_background+macro_text);
-
-  max_value := 0;
-  For temp := 1 to 255 do
-    If (temp_songdata.macro_table[arpeggio_table_idx].
-        arpeggio.data[temp] > max_value) then
-      If (temp_songdata.macro_table[arpeggio_table_idx].
-          arpeggio.data[temp] < $80) then
-        max_value := Abs(temp_songdata.macro_table[arpeggio_table_idx].
-                         arpeggio.data[temp]);
-
-  ShowStr(centered_frame_vdest^,xstart_arp+31,ystart_arp+1,
-          ExpStrR(Num2Str(max_value,10),3,' '),
-          macro_background+macro_topic);
-  ShowStr(centered_frame_vdest^,xstart_arp+31,ystart_arp+2,
-          '+',
-          macro_background+macro_topic);
-
-  d_factor := 90/min(max_value,1);
-  For temp := -14 to 14 do
-    If (arpeggio_table_pos+temp >= 1) and (arpeggio_table_pos+temp <= 255) then
-      If (temp_songdata.macro_table[arpeggio_table_idx].
-          arpeggio.data[arpeggio_table_pos+temp] < $80) then
-        ShowVStr(centered_frame_vdest^,xstart_arp+15+temp,ystart_arp+1,
-                 ExpStrL(_gfx_bar_str(Round(temp_songdata.macro_table[arpeggio_table_idx].
-                                            arpeggio.data[arpeggio_table_pos+temp]*d_factor),FALSE),6,' '),
-                 LO(arpeggio_def_attr(arpeggio_table_pos+temp)))
-      else ShowVStr(centered_frame_vdest^,xstart_arp+15+temp,ystart_arp+1,
-                    ExpStrL(FilterStr(note_layout[temp_songdata.macro_table[arpeggio_table_idx].
-                                                  arpeggio.data[arpeggio_table_pos+temp]-$80],'-','๑'),6,' '),
-                    LO(arpeggio_def_attr(arpeggio_table_pos+temp)))
-    else ShowVStr(centered_frame_vdest^,xstart_arp+15+temp,ystart_arp+1,
-                  ExpStrL('',6,' '),
-                  macro_background+macro_text);
-
-  // vibrato preview
-  ShowStr(centered_frame_vdest^,xstart_vib+15,ystart_vib,
-          'ý',
-          macro_background+macro_topic2);
-  ShowStr(centered_frame_vdest^,xstart_vib+15,ystart_vib+7,
-          'ü',
-          macro_background+macro_topic2);
-  ShowVStr(centered_frame_vdest^,xstart_vib,ystart_vib+1,
-           'ณณณณณ',
-           macro_background+macro_text);
-  ShowVStr(centered_frame_vdest^,xstart_vib+30,ystart_vib+1,
-           'ณณณณณ',
-           macro_background+macro_text);
-
-  max_value := 0;
-  For temp := 1 to 255 do
-    If (Abs(temp_songdata.macro_table[vibrato_table_idx].
-            vibrato.data[temp]) > max_value) then
-      max_value := Abs(temp_songdata.macro_table[vibrato_table_idx].
-                       vibrato.data[temp]);
-
-  ShowStr(centered_frame_vdest^,xstart_vib+31,ystart_vib+1,
-          ExpStrR(Num2Str(max_value,10),3,' '),
-          macro_background+macro_topic);
-  ShowStr(centered_frame_vdest^,xstart_vib+31,ystart_vib+2,
-          '+',
-          macro_background+macro_topic);
-  ShowStr(centered_frame_vdest^,xstart_vib+31,ystart_vib+5,
-          '-',
-          macro_background+macro_topic);
-  ShowStr(centered_frame_vdest^,xstart_vib+31,ystart_vib+6,
-          ExpStrR(Num2Str(max_value,10),3,' '),
-          macro_background+macro_topic);
-
-  d_factor := 45/min(max_value,1);
-  For temp := -14 to 14 do
-    If (vibrato_table_pos+temp >= 1) and (vibrato_table_pos+temp <= 255) then
-      If (Round(temp_songdata.macro_table[vibrato_table_idx].
-                vibrato.data[vibrato_table_pos+temp]*d_factor) >= 0) then
-        ShowVStr(centered_frame_vdest^,xstart_vib+15+temp,ystart_vib+1,
-                 ExpStrR(ExpStrL(_gfx_bar_str(Round(temp_songdata.macro_table[vibrato_table_idx].
-                                                    vibrato.data[vibrato_table_pos+temp]*d_factor),FALSE),3,' '),6,' '),
-                 LO(vibrato_def_attr(vibrato_table_pos+temp)))
-      else ShowVStr(centered_frame_vdest^,xstart_vib+15+temp,ystart_vib+1,
-                    ExpStrL(ExpStrR(_gfx_bar_str(Round(Abs(temp_songdata.macro_table[vibrato_table_idx].
-                                                           vibrato.data[vibrato_table_pos+temp])*d_factor),TRUE),3,' '),6,' '),
-                    LO(vibrato_def_attr(vibrato_table_pos+temp)))
-    else ShowVStr(centered_frame_vdest^,xstart_vib+15+temp,ystart_vib+1,
-                  ExpStrR('',6,' '),
-                  macro_background+macro_text);
-end;
-
-procedure a2w_macro_lister_external_proc;
-
-var
-  idx,attr: Byte;
-  temps: String;
-
-begin
-  _debug_str_ := 'ILOADERS.INC:a2w_macro_lister_external_proc';
-  temps := Copy(mn_environment.curr_item,2,2);
-  idx := Str2num(temps,16);
-  If (idx = 0) then idx := 1;
-
-  VScrollBar(centered_frame_vdest^,scrollbar_xstart,scrollbar_ystart,
-             scrollbar_size,macro_table_size,idx,WORD_NULL,
-             macro_background+macro_border,
-             macro_background+macro_border);
-
-  arpeggio_table_idx := idx;
-  vibrato_table_idx := idx;
-
-  Case mn_environment.keystroke of
-    kSPACE:  begin
-               If shift_pressed then
-                 arp_tab_selected := NOT arp_tab_selected;
-               If ctrl_pressed then
-                 vib_tab_selected := NOT vib_tab_selected;
-             end;
-    kLEFT,
-    kShLEFT: If shift_pressed then
-               If (arpeggio_table_pos > 1) then
-                 Dec(arpeggio_table_pos);
-
-    kCtLEFT: begin
-               If shift_pressed then
-                 If (arpeggio_table_pos > 1) then
-                   Dec(arpeggio_table_pos);
-               If (vibrato_table_pos > 1) then
-                 Dec(vibrato_table_pos);
-             end;
-    kRIGHT,
-    kShRGHT: If shift_pressed then
-               If (arpeggio_table_pos < 255) then
-                 Inc(arpeggio_table_pos);
-
-    kCtRGHT: begin
-               If shift_pressed then
-                 If (arpeggio_table_pos < 255) then
-                   Inc(arpeggio_table_pos);
-               If (vibrato_table_pos < 255) then
-                 Inc(vibrato_table_pos);
-             end;
-
-    kPgUP:   If shift_pressed then
-               If (arpeggio_table_pos-18 > 1) then
-                 Dec(arpeggio_table_pos,18)
-               else arpeggio_table_pos := 1;
-
-    kCtPgUP: begin
-               If shift_pressed then
-                 If (arpeggio_table_pos-18 > 1) then
-                   Dec(arpeggio_table_pos,18)
-                 else arpeggio_table_pos := 1;
-               If (vibrato_table_pos-18 > 1) then
-                 Dec(vibrato_table_pos,18)
-               else vibrato_table_pos := 1;
-             end;
-
-    kPgDOWN: If shift_pressed then
-               If (arpeggio_table_pos+18 < 255) then
-                 Inc(arpeggio_table_pos,18)
-               else arpeggio_table_pos := 255;
-
-    kCtPgDN: begin
-               If shift_pressed then
-                 If (arpeggio_table_pos+18 < 255) then
-                   Inc(arpeggio_table_pos,18)
-                 else arpeggio_table_pos := 255;
-               If (vibrato_table_pos+18 < 255) then
-                 Inc(vibrato_table_pos,18)
-               else vibrato_table_pos := 255;
-             end;
-
-    kHOME:   If shift_pressed then
-               If (arpeggio_table_pos > temp_songdata.macro_table[idx].arpeggio.length) then
-                 arpeggio_table_pos := min(1,temp_songdata.macro_table[idx].arpeggio.length)
-               else arpeggio_table_pos := 1;
-
-    kCtHOME: If (vibrato_table_pos > temp_songdata.macro_table[idx].vibrato.length) then
-               vibrato_table_pos := min(1,temp_songdata.macro_table[idx].vibrato.length)
-             else vibrato_table_pos := 1;
-
-    kEND:    If shift_pressed then
-               If (arpeggio_table_pos < temp_songdata.macro_table[idx].arpeggio.length) then
-                 arpeggio_table_pos := temp_songdata.macro_table[idx].arpeggio.length
-               else arpeggio_table_pos := 255;
-
-    kCtEND:  If (vibrato_table_pos < temp_songdata.macro_table[idx].vibrato.length) then
-                 vibrato_table_pos := temp_songdata.macro_table[idx].vibrato.length
-             else vibrato_table_pos := 255;
-
-    kCtLbr:  If shift_pressed then
-               begin
-                 If (songdata.macro_speedup > 1) then
-                   Dec(songdata.macro_speedup);
-                 macro_speedup := songdata.macro_speedup;
-                 keyboard_reset_buffer;
-               end
-             else If (_4op_to_test = 0) then
-                    If (current_inst > 1) and update_current_inst then
-                      begin
-                        Dec(current_inst);
-                        instrum_page := current_inst;
-                        STATUS_LINE_refresh;
-                        keyboard_reset_buffer;
-                      end;
-
-    kCtRbr:  If shift_pressed then
-               begin
-                 Inc(songdata.macro_speedup);
-                 If (calc_max_speedup(tempo) < songdata.macro_speedup) then
-                   songdata.macro_speedup := calc_max_speedup(tempo);
-                 macro_speedup := songdata.macro_speedup;
-                 keyboard_reset_buffer;
-               end
-             else If (_4op_to_test = 0) then
-                    If (current_inst < 255) and update_current_inst then
-                      begin
-                        Inc(current_inst);
-                        instrum_page := current_inst;
-                        STATUS_LINE_refresh;
-                        keyboard_reset_buffer;
-                      end;
-   end;
-
-  If arp_tab_selected then
-    attr := macro_hi_text SHL 4+macro_background SHR 4
-  else attr := macro_background+macro_hi_text;
-  ShowStr(centered_frame_vdest^,xstart_arp-1,ystart_arp+8,'['+#251+']',attr);
-
-  If vib_tab_selected then
-    attr := macro_hi_text SHL 4+macro_background SHR 4
-  else attr := macro_background+macro_hi_text;
-  ShowStr(centered_frame_vdest^,xstart_vib-1,ystart_vib+8,'['+#251+']',attr);
-
-  If (arpeggio_table_pos > 15) then
-    ShowStr(centered_frame_vdest^,xstart_arp+6,ystart_arp+8,'',
-            macro_background+macro_text)
-  else ShowStr(centered_frame_vdest^,xstart_arp+6,ystart_arp+8,'',
-               macro_background+macro_text_dis);
-
-  If (arpeggio_table_pos < temp_songdata.macro_table[idx].arpeggio.length-15+1) then
-    ShowStr(centered_frame_vdest^,xstart_arp+25,ystart_arp+8,'',
-            macro_background+macro_text)
-  else ShowStr(centered_frame_vdest^,xstart_arp+25,ystart_arp+8,'',
-               macro_background+macro_text_dis);
-
-  If (vibrato_table_pos > 15) then
-    ShowStr(centered_frame_vdest^,xstart_vib+6,ystart_vib+8,'',
-            macro_background+macro_text)
-  else ShowStr(centered_frame_vdest^,xstart_vib+6,ystart_vib+8,'',
-               macro_background+macro_text_dis);
-
-  If (vibrato_table_pos < temp_songdata.macro_table[idx].vibrato.length-15+1) then
-    ShowStr(centered_frame_vdest^,xstart_vib+24,ystart_vib+8,'',
-            macro_background+macro_text)
-  else ShowStr(centered_frame_vdest^,xstart_vib+24,ystart_vib+8,'',
-               macro_background+macro_text_dis);
-
-  ShowCStr(centered_frame_vdest^,xstart_arp+10,ystart_vib+8,
-           'ARPEGGiO (~'+byte2hex(arpeggio_table_pos)+'~)',
-           macro_background+macro_text,
-           macro_background+macro_hi_text);
-  ShowCStr(centered_frame_vdest^,xstart_vib+10,ystart_vib+8,
-           'ViBRATO (~'+byte2hex(vibrato_table_pos)+'~)',
-           macro_background+macro_text,
-           macro_background+macro_hi_text);
-
-  temps := '`'+ExpStrL('`'+context_str2+context_str+' [SPEED:'+Num2str(tempo*songdata.macro_speedup,10)+#3+'] ',40,'อ');
-  ShowC3Str(centered_frame_vdest^,xstart+window_xsize-C3StrLen(temps),ystart+window_ysize,
-            temps,
-            macro_background+macro_context,
-            macro_background+macro_context_dis,
-            macro_background+macro_border);
-
-  If (a2w_institle_pos <> 0) then
-    ShowStr(centered_frame_vdest^,mn_environment.xpos+a2w_institle_pos,mn_environment.ypos,
-            byte2hex(current_inst),
-            macro_background+macro_title);
-
-  arpvib_arpeggio_table := arpeggio_table_idx;
-  arpvib_vibrato_table := vibrato_table_idx;
-
-  _macro_preview_refresh;
-  a2w_macro_lister_external_proc_callback;
-end;
-
-const
-  _panning: array[0..2] of Char = '๑<>';
-  _hex: array[0..15] of Char = '0123456789ABCDEF';
-  _fmreg_add_prev_size: Byte = 0;
-
-var
-  fmreg_cursor_pos: Byte;
-  fmreg_left_margin: Byte;
-  fmreg_hpos: Byte;
-  fmreg_vpos: Byte;
-  fmreg_instr: Byte;
-  fmreg_page: Byte;
-  fmreg_str: String;
-  fmreg_scrlbar_size: Byte;
-  fmreg_scrlbar_items: Byte;
-
-function min0(number: Integer; flag: Integer): Integer;
-begin
-  If (number > 0) then min0 := number
-  else min0 := flag;
-end;
-
-function fmreg_def_attr(page: Byte): Word;
-
-var
-  attr,
-  attr2: Byte;
-
-begin
-  If (page <= temp_songdata.instr_macros[fmreg_instr].length) then
-    If (page >= temp_songdata.instr_macros[fmreg_instr].loop_begin) and
-       (page <= temp_songdata.instr_macros[fmreg_instr].loop_begin+
-                PRED(temp_songdata.instr_macros[fmreg_instr].loop_length)) and
-       (temp_songdata.instr_macros[fmreg_instr].loop_begin > 0) and
-       (temp_songdata.instr_macros[fmreg_instr].loop_length > 0) then
-      begin
-        attr := macro_background+macro_text_loop;
-        attr2 := macro_current_bckg+macro_current_loop;
-      end
-    else If (page >= temp_songdata.instr_macros[fmreg_instr].keyoff_pos) and
-            (temp_songdata.instr_macros[fmreg_instr].keyoff_pos > 0) then
-           begin
-             attr := macro_background+macro_text_keyoff;
-             attr2 := macro_current_bckg+macro_current_koff;
-           end
-         else
-           begin
-             attr := macro_background+macro_text;
-             attr2 := macro_current_bckg+macro_current;
-           end
-  else
-    begin
-      attr := macro_background+macro_text_dis;
-      attr2 := macro_current_bckg+macro_current_dis;
-    end;
-
-  fmreg_def_attr := attr+attr2 SHL 8;
-end;
-
-function _fmreg_str(page: Byte): String;
-
-var
-  fmreg_str: String;
-
-begin
-  With temp_songdata.instr_macros[fmreg_instr].data[page].fm_data do
-    begin
-      fmreg_str := _hex[ATTCK_DEC_modulator SHR 4]+' '+
-                   _hex[ATTCK_DEC_modulator AND $0f]+' '+
-                   _hex[SUSTN_REL_modulator SHR 4]+' '+
-                   _hex[SUSTN_REL_modulator AND $0f]+' '+
-                   _hex[WAVEFORM_modulator AND 7]+' '+
-                   byte2hex(KSL_VOLUM_modulator AND $3f)+' '+
-                   _hex[KSL_VOLUM_modulator SHR 6]+' '+
-                   _hex[AM_VIB_EG_modulator AND $0f]+' ';
-
-      If (AM_VIB_EG_modulator SHR 7 = 0) then fmreg_str := fmreg_str+'๚'
-      else fmreg_str := fmreg_str+'T';
-
-      If (AM_VIB_EG_modulator SHR 6 AND 1 = 0) then fmreg_str := fmreg_str+'๚'
-      else fmreg_str := fmreg_str+'V';
-
-      If (AM_VIB_EG_modulator SHR 4 AND 1 = 0) then fmreg_str := fmreg_str+'๚'
-      else fmreg_str := fmreg_str+'K';
-
-      If (AM_VIB_EG_modulator SHR 5 AND 1 = 0) then fmreg_str := fmreg_str+'๚ '
-      else fmreg_str := fmreg_str+'S ';
-
-      fmreg_str := fmreg_str+
-                   _hex[ATTCK_DEC_carrier SHR 4]+' '+
-                   _hex[ATTCK_DEC_carrier AND $0f]+' '+
-                   _hex[SUSTN_REL_carrier SHR 4]+' '+
-                   _hex[SUSTN_REL_carrier AND $0f]+' '+
-                   _hex[WAVEFORM_carrier AND 7]+' '+
-                   byte2hex(KSL_VOLUM_carrier AND $3f)+' '+
-                   _hex[KSL_VOLUM_carrier SHR 6]+' '+
-                   _hex[AM_VIB_EG_carrier AND $0f]+' ';
-
-      If (AM_VIB_EG_carrier SHR 7 = 0) then fmreg_str := fmreg_str+'๚'
-      else fmreg_str := fmreg_str+'T';
-
-      If (AM_VIB_EG_carrier SHR 6 AND 1 = 0) then fmreg_str := fmreg_str+'๚'
-      else fmreg_str := fmreg_str+'V';
-
-      If (AM_VIB_EG_carrier SHR 4 AND 1 = 0) then fmreg_str := fmreg_str+'๚'
-      else fmreg_str := fmreg_str+'K';
-
-      If (AM_VIB_EG_carrier SHR 5 AND 1 = 0) then fmreg_str := fmreg_str+'๚ '
-      else fmreg_str := fmreg_str+'S ';
-
-      fmreg_str := fmreg_str+_hex[FEEDBACK_FM AND 1]+' ';
-      fmreg_str := fmreg_str+_hex[FEEDBACK_FM SHR 1 AND 7]+' ';
-    end;
-
-  With temp_songdata.instr_macros[fmreg_instr].data[page] do
-    begin
-      If (freq_slide < 0) then fmreg_str := fmreg_str+'-'+ExpStrL(Num2str(Abs(freq_slide),16),3,'0')+' '
-      else fmreg_str := fmreg_str+'+'+ExpStrL(Num2str(Abs(freq_slide),16),3,'0')+' ';
-
-      fmreg_str := fmreg_str+
-                   _panning[panning]+' '+
-                   byte2hex(duration);
-    end;
-
-  _fmreg_str := fmreg_str;
-end;
-
-function _dis_fmreg_col(fmreg_col: Byte): Boolean;
-
-var
-  result: Boolean;
-
-begin
-  result := FALSE;
-  Case fmreg_col of
-    1,2,3,4,
-    5: If temp_songdata.dis_fmreg_col[fmreg_instr][fmreg_col-1] then
-         result := TRUE;
-    6,
-    7: If temp_songdata.dis_fmreg_col[fmreg_instr][5] then
-         result := TRUE;
-
-    8,9,10,11,12,13,
-    14,15,16,17,
-    18: If temp_songdata.dis_fmreg_col[fmreg_instr][fmreg_col-2] then
-          result := TRUE;
-    19,
-    20: If temp_songdata.dis_fmreg_col[fmreg_instr][17] then
-          result := TRUE;
-
-    21,22,23,24,
-    25,26,27,
-    28: If temp_songdata.dis_fmreg_col[fmreg_instr][fmreg_col-3] then
-          result := TRUE;
-
-    29,30,31,
-    32: If temp_songdata.dis_fmreg_col[fmreg_instr][26] then
-          result := TRUE;
-
-    33: If temp_songdata.dis_fmreg_col[fmreg_instr][27] then
-          result := TRUE;
-  end;
-
-  If (fmreg_col in [14..28]) and
-     (temp_songdata.instr_data[current_inst].perc_voice in [2..5]) then
-    result := TRUE;
-
-    _dis_fmreg_col := result;
-end;
-
-function _str1(def_chr: Char): String;
-
-const
-  _on_off: array[BOOLEAN] of Char = ('อ','þ');
-
-var
-  temp: Byte;
-  temp_str: String;
-
-begin
-  temp_str := '';
-  _on_off[FALSE] := def_chr;
-
-  For temp := 0 to 4 do
-    temp_str := temp_str+
-                _on_off[temp_songdata.dis_fmreg_col[fmreg_instr][temp]]+def_chr;
-
-  temp_str := temp_str+
-              _on_off[temp_songdata.dis_fmreg_col[fmreg_instr][5]]+
-              _on_off[temp_songdata.dis_fmreg_col[fmreg_instr][5]]+def_chr;
-
-  temp_str := temp_str+
-              _on_off[temp_songdata.dis_fmreg_col[fmreg_instr][6]]+
-              def_chr+
-              _on_off[temp_songdata.dis_fmreg_col[fmreg_instr][7]]+def_chr;
-
-  temp_str := temp_str+
-              _on_off[temp_songdata.dis_fmreg_col[fmreg_instr][8]]+
-              _on_off[temp_songdata.dis_fmreg_col[fmreg_instr][9]]+
-              _on_off[temp_songdata.dis_fmreg_col[fmreg_instr][10]]+
-              _on_off[temp_songdata.dis_fmreg_col[fmreg_instr][11]]+def_chr;
-
-  For temp := 12 to 16 do
-    temp_str := temp_str+
-                _on_off[temp_songdata.dis_fmreg_col[fmreg_instr][temp]]+def_chr;
-
-  temp_str := temp_str+
-              _on_off[temp_songdata.dis_fmreg_col[fmreg_instr][17]]+
-              _on_off[temp_songdata.dis_fmreg_col[fmreg_instr][17]]+def_chr;
-
-  temp_str := temp_str+
-              _on_off[temp_songdata.dis_fmreg_col[fmreg_instr][18]]+def_chr+
-              _on_off[temp_songdata.dis_fmreg_col[fmreg_instr][19]]+def_chr;
-
-  temp_str := temp_str+
-              _on_off[temp_songdata.dis_fmreg_col[fmreg_instr][20]]+
-              _on_off[temp_songdata.dis_fmreg_col[fmreg_instr][21]]+
-              _on_off[temp_songdata.dis_fmreg_col[fmreg_instr][22]]+
-              _on_off[temp_songdata.dis_fmreg_col[fmreg_instr][23]]+def_chr;
-
-  For temp := 24 to 25 do
-    temp_str := temp_str+
-                _on_off[temp_songdata.dis_fmreg_col[fmreg_instr][temp]]+def_chr;
-
-  temp_str := temp_str+
-              _on_off[temp_songdata.dis_fmreg_col[fmreg_instr][26]]+
-              _on_off[temp_songdata.dis_fmreg_col[fmreg_instr][26]]+
-              _on_off[temp_songdata.dis_fmreg_col[fmreg_instr][26]]+
-              _on_off[temp_songdata.dis_fmreg_col[fmreg_instr][26]]+def_chr;
-
-  temp_str := temp_str+
-              _on_off[temp_songdata.dis_fmreg_col[fmreg_instr][27]];
-
-  _str1 := temp_str;
-end;
-
-function _str2(str: String; len: Byte): String; assembler;
-asm
-        push    ebx
-        push    ecx
-        push    edx
-        push    esi
-        push    edi
-        mov     esi,[str]
-        mov     edi,@result
-        movzx   ebx,len
-        xor     edx,edx
-        push    edi
-        lodsb
-        inc     edi
-        xor     ecx,ecx
-        mov     ecx,ebx
-        jecxz   @@3
-        movzx   ecx,al
-        jecxz   @@3
-@@1:    cmp     edx,ebx
-        jae     @@3
-        lodsb
-        stosb
-        cmp     al,'`'
-        jz      @@2
-        inc     edx
-@@2:    loop    @@1
-@@3:    pop     edi
-        mov     eax,esi
-        sub     eax,[str]
-        dec     eax
-        stosb
-        pop     edi
-        pop     esi
-        pop     edx
-        pop     ecx
-        pop     ebx
-end;
-
-procedure fmreg_page_refresh(xpos,ypos: Byte; page: Word);
-
-var
-  attr: Byte;
-  temps,fmreg_str2: String;
-  fmreg_col,index,
-  index2: Byte;
-  dummy_str: String;
-
-begin
-  _debug_str_ := 'ILOADERS.INC:fmreg_page_refresh';
-  attr := LO(fmreg_def_attr(page AND $0fff));
-  fmreg_str := _fmreg_str(page AND $0fff);
-  fmreg_str2 := fmreg_str;
-
-  index := 0;
-  index2 := 0;
-
-  For fmreg_col := 1 to 35-1 do
-    If _dis_fmreg_col(fmreg_col) then
-      begin
-        Insert('`',fmreg_str2,pos5[fmreg_col]+index);
-        Insert('`',fmreg_str2,pos5[fmreg_col]+index+2);
-        If (pos5[fmreg_col] < fmreg_left_margin) then Inc(index2,2);
-        Inc(index,2);
-      end;
-
-  temps := Copy(fmreg_str2,fmreg_left_margin+index2,
-                Length(fmreg_str2)-fmreg_left_margin-index2+1);
-
-  If (temp_songdata.instr_macros[fmreg_instr].data[page AND $0ff].fm_data.
-      FEEDBACK_FM OR $80 <> temp_songdata.instr_macros[fmreg_instr].data[page AND $0ff].fm_data.
-                            FEEDBACK_FM) then
-    dummy_str := '`'+#$0d+'`'
-  else dummy_str := #$0d;
-
-  ShowC3Str(centered_frame_vdest^,xpos+3,ypos,
-            'ณ~'+dummy_str+'~๖~'+
-            _str2(temps,31+window_xsize-82-_fmreg_add_prev_size)+'~',
-            macro_background+macro_text,
-            attr,
-            macro_background+macro_text_dis)
-end;
-
-procedure _scroll_cur_left;
-begin
-  _debug_str_ := 'ILOADERS.INC:_scroll_cur_left';
-  Repeat
-    If (fmreg_cursor_pos > 1) then Dec(fmreg_cursor_pos)
-    else Dec(fmreg_left_margin);
-  until (fmreg_str[PRED(fmreg_left_margin+fmreg_cursor_pos-1)] = ' ') or
-        (fmreg_left_margin+fmreg_cursor_pos-1 = 1);
-  fmreg_cursor_pos := pos5[fmreg_hpos]-fmreg_left_margin+1;
-end;
-
-procedure _scroll_cur_right;
-begin
-  _debug_str_ := 'ILOADERS.INC:_scroll_cur_right';
-  Repeat
-    If (fmreg_cursor_pos < 31+window_xsize-82-_fmreg_add_prev_size) then Inc(fmreg_cursor_pos)
-    else Inc(fmreg_left_margin);
-  until (fmreg_str[SUCC(fmreg_left_margin+fmreg_cursor_pos-1)] = ' ') or
-        (fmreg_left_margin+fmreg_cursor_pos-1 = 57);
-  fmreg_cursor_pos := pos5[fmreg_hpos]-fmreg_left_margin+1;
-end;
-
-procedure _dec_fmreg_hpos;
-
-var
-  old_hpos_idx: Byte;
-  new_hpos_idx: Byte;
-
-begin
-  _debug_str_ := 'ILOADERS.INC:_dec_fmreg_hpos';
-  old_hpos_idx := pos5vw[fmreg_hpos];
-  Repeat
-    Dec(fmreg_hpos);
-    new_hpos_idx := pos5vw[fmreg_hpos];
-    _scroll_cur_left;
-  until (fmreg_hpos = 1) or (old_hpos_idx <> new_hpos_idx);
-  If (fmreg_hpos > 1) then
-    While (pos5vw[PRED(fmreg_hpos)] = pos5vw[fmreg_hpos]) do
-      begin
-        Dec(fmreg_hpos);
-        _scroll_cur_left;
-      end;
-end;
-
-procedure _inc_fmreg_hpos;
-
-var
-  old_hpos_idx: Byte;
-  new_hpos_idx: Byte;
-
-begin
-  _debug_str_ := 'ILOADERS.INC:_inc_fmreg_hpos';
-  old_hpos_idx := pos5vw[fmreg_hpos];
-  Repeat
-    Inc(fmreg_hpos);
-    new_hpos_idx := pos5vw[fmreg_hpos];
-    _scroll_cur_right;
-  until (fmreg_hpos = 35-1) or (old_hpos_idx <> new_hpos_idx);
-end;
-
-function _fmreg_param(page,fmreg_hpos: Byte): Integer;
-
-var
-  result: Integer;
-  fmreg_str: String;
-
-begin
-  fmreg_str := _fmreg_str(page);
-  Case fmreg_hpos of
-    {%n}
-    1,2,3,4,5,8,9,14,15,16,17,
-    18,21,22,27,28: result := Str2num(fmreg_str[pos5[fmreg_hpos]],16);
-
-    {%nn}
-    6,7:   result := Str2num(Copy(fmreg_str,pos5[6],2),16);
-    19,20: result := Str2num(Copy(fmreg_str,pos5[19],2),16);
-    34,35: result := Str2num(Copy(fmreg_str,pos5[34],2),16);
-
-    {sw}
-    10,11,12,13,23,24,
-    25,26: If (fmreg_str[pos5[fmreg_hpos]] = '๛') then result := 1
-              else result := 0;
-
-    {fsl}
-    29,30,31,32: begin
-                   result := Str2num(Copy(fmreg_str,pos5[30],3),16);
-                   If (fmreg_str[pos5[29]] = '-') then result := -result;
-                 end;
-    {pan}
-    33: Case SYSTEM.Pos(fmreg_str[pos5[33]],_panning) of
-          1: result := 0;
-          2: result := -1;
-          3: result := 1;
-        end;
-  end;
-  _fmreg_param := result;
-end;
-
-procedure _fmreg_macro_preview_refresh(xstart,ystart: Byte; page: Byte);
-
-var
-  temp,max_value: Integer;
-  d_factor: Real;
-
-begin
-  _debug_str_ := 'ILOADERS.INC:_fmreg_macro_preview_refresh';
-  ShowStr(centered_frame_vdest^,xstart+10+(_fmreg_add_prev_size DIV 2),ystart,
-          'ý',
-          macro_background+macro_topic2);
-  ShowStr(centered_frame_vdest^,xstart+10+(_fmreg_add_prev_size DIV 2),ystart+7,
-          'ü',
-          macro_background+macro_topic2);
-
-  If NOT (fmreg_hpos in [29..33]) then
-    begin
-      ShowVStr(centered_frame_vdest^,xstart,ystart+1,
-               'ณณณณณ',
-               macro_background+macro_text);
-      ShowVStr(centered_frame_vdest^,xstart+20+_fmreg_add_prev_size,ystart+1,
-               'ณณณณณ',
-               macro_background+macro_text);
-    end
-  else begin
-         ShowVStr(centered_frame_vdest^,xstart,ystart+1,
-                  'ณณณณณ',
-                  macro_background+macro_text);
-         ShowVStr(centered_frame_vdest^,xstart+20+_fmreg_add_prev_size,ystart+1,
-                  'ณณณณณ',
-                  macro_background+macro_text);
-       end;
-
-  max_value := 0;
-  For temp := 1 to 255 do
-    If (Abs(_fmreg_param(temp,fmreg_hpos)) > max_value) then
-      max_value := Abs(_fmreg_param(temp,fmreg_hpos));
-
-  If NOT (fmreg_hpos in [29..33]) then
-    begin
-      ShowStr(centered_frame_vdest^,xstart+20+_fmreg_add_prev_size+1,ystart+1,
-              ExpStrR(ExpStrL(Num2Str(max_value,16),2,'0'),3,' '),
-              macro_background+macro_topic);
-      ShowStr(centered_frame_vdest^,xstart+20+_fmreg_add_prev_size+1,ystart+2,
-              '+',
-              macro_background+macro_topic);
-      ShowStr(centered_frame_vdest^,xstart+20+_fmreg_add_prev_size+1,ystart+5,
-              ' ',
-              macro_background+macro_topic);
-      ShowStr(centered_frame_vdest^,xstart+20+_fmreg_add_prev_size+1,ystart+6,
-              ExpStrR('',3,' '),
-              macro_background+macro_topic);
-    end
-  else
-    begin
-      ShowStr(centered_frame_vdest^,xstart+20+_fmreg_add_prev_size+1,ystart+1,
-              ExpStrR(ExpStrL(Num2Str(max_value,16),2,'0'),3,' '),
-              macro_background+macro_topic);
-      ShowStr(centered_frame_vdest^,xstart+20+_fmreg_add_prev_size+1,ystart+2,
-              '+',
-              macro_background+macro_topic);
-      ShowStr(centered_frame_vdest^,xstart+20+_fmreg_add_prev_size+1,ystart+5,
-              '-',
-              macro_background+macro_topic);
-      ShowStr(centered_frame_vdest^,xstart+20+_fmreg_add_prev_size+1,ystart+6,
-              ExpStrR(ExpStrL(Num2Str(max_value,16),2,'0'),3,' '),
-              macro_background+macro_topic);
-    end;
-
-  If NOT (fmreg_hpos in [29..33]) then
-    d_factor := 90/min(max_value,1)
-  else d_factor := 45/min(max_value,1);
-
-  If NOT (fmreg_hpos in [29..33]) then
-    For temp := -9-(_fmreg_add_prev_size DIV 2) to 9+(_fmreg_add_prev_size DIV 2) do
-      If (page+temp >= 1) and (page+temp <= 255) then
-        If NOT _dis_fmreg_col(fmreg_hpos) then
-          ShowVStr(centered_frame_vdest^,xstart+10+temp+(_fmreg_add_prev_size DIV 2),ystart+1,
-                   ExpStrL(_gfx_bar_str(Round(_fmreg_param(page+temp,fmreg_hpos)*d_factor),FALSE),6,' '),
-                   LO(fmreg_def_attr(page+temp)))
-        else
-          ShowVStr(centered_frame_vdest^,xstart+10+temp+(_fmreg_add_prev_size DIV 2),ystart+1,
-                   ExpStrL(_gfx_bar_str(Round(_fmreg_param(page+temp,fmreg_hpos)*d_factor),FALSE),6,' '),
-                   macro_background+macro_text_dis)
-      else ShowVStr(centered_frame_vdest^,xstart+10+temp+(_fmreg_add_prev_size DIV 2),ystart+1,
-                    ExpStrL('',6,' '),
-                    macro_background+macro_text)
-  else For temp := -9-(_fmreg_add_prev_size DIV 2) to 9+(_fmreg_add_prev_size DIV 2) do
-         If (page+temp >= 1) and (page+temp <= 255) then
-           If (Round(_fmreg_param(page+temp,fmreg_hpos)*d_factor) >= 0) then
-             If NOT _dis_fmreg_col(fmreg_hpos) then
-               ShowVStr(centered_frame_vdest^,xstart+10+temp+(_fmreg_add_prev_size DIV 2),ystart+1,
-                        ExpStrR(ExpStrL(_gfx_bar_str(Round(_fmreg_param(page+temp,fmreg_hpos)*d_factor),FALSE),3,' '),6,' '),
-                        LO(fmreg_def_attr(page+temp)))
-             else
-               ShowVStr(centered_frame_vdest^,xstart+10+temp+(_fmreg_add_prev_size DIV 2),ystart+1,
-                        ExpStrR(ExpStrL(_gfx_bar_str(Round(_fmreg_param(page+temp,fmreg_hpos)*d_factor),FALSE),3,' '),6,' '),
-                        macro_background+macro_text_dis)
-           else If NOT _dis_fmreg_col(fmreg_hpos) then
-                  ShowVStr(centered_frame_vdest^,xstart+10+temp+(_fmreg_add_prev_size DIV 2),ystart+1,
-                           ExpStrL(ExpStrR(_gfx_bar_str(Round(Abs(_fmreg_param(page+temp,fmreg_hpos))*d_factor),TRUE),3,' '),6,' '),
-                           LO(fmreg_def_attr(page+temp)))
-                else
-                  ShowVStr(centered_frame_vdest^,xstart+10+temp+(_fmreg_add_prev_size DIV 2),ystart+1,
-                           ExpStrL(ExpStrR(_gfx_bar_str(Round(Abs(_fmreg_param(page+temp,fmreg_hpos))*d_factor),TRUE),3,' '),6,' '),
-                           macro_background+macro_text_dis)
-         else ShowVStr(centered_frame_vdest^,xstart+10+temp+(_fmreg_add_prev_size DIV 2),ystart+1,
-                       ExpStrL('',6,' '),
-                       macro_background+macro_text);
-end;
-
-procedure a2w_lister_external_proc;
-
-var
-  idx: Byte;
-  temps: String;
-
-begin
-  _debug_str_ := 'ILOADERS.INC:a2w_lister_external_proc';
-  Case mn_environment.keystroke of
-    kUP:     If shift_pressed then
-               If (fmreg_vpos > 1) then Dec(fmreg_vpos)
-               else If (fmreg_page > 1) then Dec(fmreg_page);
-
-    kDOWN:   If shift_pressed then
-               If (fmreg_vpos < 6) then Inc(fmreg_vpos)
-               else If (fmreg_page < 255-6+1) then Inc(fmreg_page);
-
-    kPgUP:   If shift_pressed then
-               If (fmreg_page > 6) then Dec(fmreg_page,6)
-               else If (fmreg_page > 1) then fmreg_page := 1
-                    else fmreg_vpos := 1;
-
-    kPgDOWN: If shift_pressed then
-               If (fmreg_page+6 < 255-6+1) then Inc(fmreg_page,6)
-               else If (fmreg_page < 255-6+1) then fmreg_page := 255-6+1
-                    else fmreg_vpos := 6;
-
-    kHOME:   If shift_pressed then
-               begin
-                 fmreg_page := 1;
-                 fmreg_vpos := 1;
-               end;
-
-    kEND:    If shift_pressed then
-               begin
-                 fmreg_page := 255-6+1;
-                 fmreg_vpos := 6;
-               end;
-
-    kCtHOME: begin
-               fmreg_hpos := 1;
-               fmreg_cursor_pos := 1;
-               fmreg_left_margin := 1;
-             end;
-
-    kCtEND:  begin
-               fmreg_hpos := 35-1;
-               fmreg_cursor_pos := max(pos5[fmreg_hpos],31+window_xsize-82-_fmreg_add_prev_size);
-               fmreg_left_margin := min(pos5[35]-(31+window_xsize-82-_fmreg_add_prev_size),1);
-               _dec_fmreg_hpos;
-               _inc_fmreg_hpos;
-             end;
-
-    kLEFT:   If shift_pressed then
-               If (fmreg_hpos > 1) then _dec_fmreg_hpos
-               else If cycle_pattern then
-                      begin
-                        fmreg_hpos := 35-1;
-                        fmreg_cursor_pos := max(pos5[fmreg_hpos],31+window_xsize-82-_fmreg_add_prev_size);
-                        fmreg_left_margin := min(pos5[35]-(31+window_xsize-82-_fmreg_add_prev_size),1);
-                        _dec_fmreg_hpos;
-                        _inc_fmreg_hpos;
-                      end;
-
-    kRIGHT:  If shift_pressed then
-               If (fmreg_hpos < 35-1) then _inc_fmreg_hpos
-                else If cycle_pattern then
-                       begin
-                         fmreg_hpos := 1;
-                         fmreg_cursor_pos := 1;
-                         fmreg_left_margin := 1;
-                       end;
-
-    kCtLbr:  If shift_pressed then
-               begin
-                 If (songdata.macro_speedup > 1) then
-                   Dec(songdata.macro_speedup);
-                 macro_speedup := songdata.macro_speedup;
-                 keyboard_reset_buffer;
-               end
-             else If (_4op_to_test = 0) then
-                    If (current_inst > 1) and update_current_inst then
-                      begin
-                        Dec(current_inst);
-                        instrum_page := current_inst;
-                        STATUS_LINE_refresh;
-                        keyboard_reset_buffer;
-                      end;
-
-    kCtRbr:  If shift_pressed then
-               begin
-                 Inc(songdata.macro_speedup);
-                 If (calc_max_speedup(tempo) < songdata.macro_speedup) then
-                   songdata.macro_speedup := calc_max_speedup(tempo);
-                 macro_speedup := songdata.macro_speedup;
-                 keyboard_reset_buffer;
-               end
-             else If (_4op_to_test = 0) then
-                    If (current_inst < 255) and update_current_inst then
-                      begin
-                        Inc(current_inst);
-                        instrum_page := current_inst;
-                        STATUS_LINE_refresh;
-                        keyboard_reset_buffer;
-                      end;
-   end;
-
-  fmreg_instr := Str2num(Copy(mn_environment.curr_item,7,2),16);
-  If update_current_inst then
-    begin
-      current_inst := fmreg_instr;
-      instrum_page := fmreg_instr;
-      STATUS_LINE_refresh;
-    end;
-
-  If (a2w_institle_pos <> 0) then
-    ShowStr(centered_frame_vdest^,mn_environment.xpos+a2w_institle_pos,mn_environment.ypos,
-            byte2hex(current_inst),
-            macro_background+macro_title);
-
-  temps := '`'+ExpStrL('`'+context_str2+context_str+' [SPEED:'+Num2str(tempo*songdata.macro_speedup,10)+#3+'] ',40,'อ');
-  ShowC3Str(centered_frame_vdest^,xstart+window_xsize-C3StrLen(temps),ystart+window_ysize,
-            temps,
-            macro_background+macro_context,
-            macro_background+macro_context_dis,
-            macro_background+macro_border);
-
-  ShowCStr(centered_frame_vdest^,xstart+2,ystart+window_ysize-10+2,
-           'LENGTH:    ~'+
-           byte2hex(temp_songdata.instr_macros[fmreg_instr].length)+' ~',
-           macro_background+macro_topic,
-           macro_background+macro_text);
-
-  ShowCStr(centered_frame_vdest^,xstart+2,ystart+window_ysize-10+3,
-           'LOOP BEG.: ~'+
-           byte2hex(temp_songdata.instr_macros[fmreg_instr].loop_begin)+' ~',
-           macro_background+macro_topic,
-           macro_background+macro_text);
-
-  ShowCStr(centered_frame_vdest^,xstart+2,ystart+window_ysize-10+4,
-           'LOOP LEN.: ~'+
-           byte2hex(temp_songdata.instr_macros[fmreg_instr].loop_length)+' ~',
-           macro_background+macro_topic,
-           macro_background+macro_text);
-
-  ShowCStr(centered_frame_vdest^,xstart+2,ystart+window_ysize-10+5,
-           'KEY-OFF:   ~'+
-           byte2hex(temp_songdata.instr_macros[fmreg_instr].keyoff_pos)+' ~',
-           macro_background+macro_topic,
-           macro_background+macro_text);
-
-  ShowCStr(centered_frame_vdest^,xstart+2,ystart+window_ysize-10+6,
-           'ARP.TABLE: ~'+
-           byte2hex(temp_songdata.instr_macros[fmreg_instr].arpeggio_table)+' ~',
-           macro_background+macro_topic,
-           macro_background+macro_text);
-
-  ShowCStr(centered_frame_vdest^,xstart+2,ystart+window_ysize-10+7,
-           'ViB.TABLE: ~'+
-           byte2hex(temp_songdata.instr_macros[fmreg_instr].vibrato_table)+' ~',
-           macro_background+macro_topic,
-           macro_background+macro_text);
-
-  VScrollBar(centered_frame_vdest^,xstart+window_xsize,ystart+3,
-             fmreg_scrlbar_size,fmreg_scrlbar_items,mn_environment.curr_pos,WORD_NULL,
-             macro_background+macro_border,
-             macro_background+macro_border);
-  VScrollBar(centered_frame_vdest^,xstart+window_xsize,ystart+window_ysize-10+1,
-             8,255-6,fmreg_page,WORD_NULL,
-             macro_background+macro_border,
-             macro_background+macro_border);
-
-  _fmreg_macro_preview_refresh(xstart+17,ystart+window_ysize-10+1,fmreg_page+fmreg_vpos-1);
-  ShowCStr(centered_frame_vdest^,xstart+49+_fmreg_add_prev_size,ystart+window_ysize-10+1,
-           ExpStrL('',fmreg_cursor_pos,'อ')+'~'+#31+'~'+
-           ExpStrL('',window_xsize-49-_fmreg_add_prev_size-fmreg_cursor_pos-1,'อ'),
-           macro_background+macro_topic2,
-           macro_background+macro_hi_text);
-  ShowCStr(centered_frame_vdest^,xstart+49+_fmreg_add_prev_size,ystart+window_ysize-2,
-           ExpStrL('',fmreg_cursor_pos,'อ')+'~'+#30+'~'+
-           ExpStrL('',window_xsize-49-_fmreg_add_prev_size-fmreg_cursor_pos-1,'อ'),
-           macro_background+macro_topic2,
-           macro_background+macro_hi_text);
-  ShowStr(centered_frame_vdest^,xstart+2,ystart+window_ysize-1,
-          ExpStrR(macro_table_hint_str[20+fmreg_hpos],window_xsize-2,' '),
-          macro_background+macro_hint);
-
-  For idx := 1 to 6 do
-    begin
-      If (idx = fmreg_vpos) then
-        ShowStr(centered_frame_vdest^,xstart+43+_fmreg_add_prev_size,ystart+window_ysize-10+1+idx,
-                #16+byte2hex(fmreg_page+idx-1)+#17,
-                macro_background+macro_hi_text)
-      else ShowStr(centered_frame_vdest^,xstart+43+_fmreg_add_prev_size,ystart+window_ysize-10+1+idx,
-                   ' '+byte2hex(fmreg_page+idx-1)+' ',
-                   macro_background+macro_topic);
-      fmreg_page_refresh(xstart+44+_fmreg_add_prev_size,ystart+window_ysize-10+1+idx,fmreg_page+idx-1);
-    end;
-  a2w_lister_external_proc_callback;
-end;
-
-procedure a2w_file_loader(loadFromFile: Boolean; loadMacros: Boolean; bankSelector: Boolean;
-                          loadBankPossible: Boolean; updateCurInstr: Boolean);
-type
-  tOLD_HEADER = Record
-                  ident: array[1..20] of Char;
-                  crc32: Longint;
-                  ffver: Byte;
-                  b0len: Longint;
-                  b1len: Longint;
-                end;
-type
-  tHEADER = Record
-              ident: array[1..20] of Char;
-              crc32: Longint;
-              ffver: Byte;
-              b0len: Longint;
-              b1len: Longint;
-              b2len: Longint;
-            end;
-const
-  id = '_A2insbank_w/macros_';
-
-var
-  f: File;
-  a2w_instdata_source: String;
-  header: tHEADER;
-  header2: tOLD_HEADER;
-  crc,temp: Longint;
-  idx,index,nm_valid: Byte;
-  idx1,idx2: Integer;
-  temp_str: String;
-  backup: tBACKUP;
-  arpvib_arpeggio_table_bak: Byte;
-  arpvib_vibrato_table_bak: Byte;
-
-  // backup of Menu settings / variables
-  old_external_proc: procedure;
-  old_topic_len: Byte;
-  old_cycle_moves: Boolean;
-  old_topic_mask_chr: Set of Char;
-  old_frame_enabled: Boolean;
-  old_shadow_enabled: Boolean;
-  old_winshade: Boolean;
-  old_center_box: Boolean;
-  old_show_scrollbar: Boolean;
-  old_text_attr,
-  old_text2_attr,
-  old_short_attr,
-  old_short2_attr,
-  old_disbld_attr,
-  old_contxt_attr,
-  old_contxt2_attr,
-  old_topic_attr,
-  old_hi_topic_attr: Byte;
-
-const
-  new_keys: array[1..5] of Word = (kESC,kENTER,kF1,kTAB,kCtENTR);
-
-var
-  old_keys: array[1..50] of Word;
-
-label _jmp1,_jmp1e,_jmp2,_jmp2e,_end;
-
-begin
-  _debug_str_ := 'ILOADERS.INC:a2w_file_loader';
-  songdata_bak := songdata;
-  arpvib_arpeggio_table_bak := arpvib_arpeggio_table;
-  arpvib_vibrato_table_bak := arpvib_vibrato_table;
-  temp_songdata := songdata_bak;
-  update_current_inst := updateCurInstr;
-
-  If NOT loadFromFile and bankSelector and
-     NOT loadBankPossible then
-    begin
-      a2w_instdata_source := '';
-      If loadMacros and _arp_vib_mode then
-        begin
-          arp_tab_selected := TRUE;
-          vib_tab_selected := TRUE;
-        end
-      else
-        begin
-          arp_tab_selected := songdata.instr_macros[current_inst].arpeggio_table <> 0;
-          vib_tab_selected := songdata.instr_macros[current_inst].vibrato_table <> 0;
-        end;
-
-      If loadMacros then
-        GOTO _jmp1 // Arpeggio/Vibrato Macro Browser
-      else GOTO _jmp2; // Instrument Macro Browser
-    end
-  else a2w_instdata_source := instdata_source;
-
-  {$i-}
-  Assign(f,a2w_instdata_source);
-  ResetF(f);
-  {$i+}
-  If (IOresult <> 0) then
-    begin
-      CloseF(f);
-      Dialog('ERROR READiNG DATA - DiSK ERROR?$'+
-             'LOADiNG STOPPED$',
-             '~O~KAY$',' A2W LOADER ',1);
-      EXIT;
-    end;
-
-  FillChar(buffer,SizeOf(buffer),0);
-  BlockReadF(f,header,SizeOf(header),temp);
-
-  If NOT ((temp = SizeOf(header)) and (header.ident = id)) then
-    begin
-      CloseF(f);
-      Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
-             'LOADiNG STOPPED$',
-             '~O~KAY$',' A2W LOADER ',1);
-      EXIT;
-    end;
-
-  If NOT (header.ffver in [1,2]) then
-    begin
-      CloseF(f);
-      Dialog('UNKNOWN FiLE FORMAT VERSiON$'+
-             'LOADiNG STOPPED$',
-             '~O~KAY$',' A2W LOADER ',1);
-      EXIT;
-    end;
-
-  If (header.ffver = 1) then
-    begin
-      ResetF(f);
-      BlockReadF(f,header2,SizeOf(header2),temp);
-      If NOT ((temp = SizeOf(header2)) and (header2.ident = id)) then
-        begin
-          CloseF(f);
-          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
-                 'LOADiNG STOPPED$',
-                 '~O~KAY$',' A2W LOADER ',1);
-          EXIT;
-        end;
-
-      crc := DWORD_NULL;
-      BlockReadF(f,buffer,header2.b0len,temp);
-      If NOT (temp = header2.b0len) then
-        begin
-          CloseF(f);
-          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
-                 'LOADiNG STOPPED$',
-                 '~O~KAY$',' A2W LOADER ',1);
-          EXIT;
-        end;
-
-      crc := Update32(buffer,temp,crc);
-      BlockReadF(f,buffer,header2.b1len,temp);
-      If NOT (temp = header2.b1len) then
-        begin
-          CloseF(f);
-          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
-                 'LOADiNG STOPPED$',
-                 '~O~KAY$',' A2W LOADER ',1);
-          EXIT;
-        end;
-
-      crc := Update32(buffer,temp,crc);
-      crc := Update32(header2.b0len,2,crc);
-      crc := Update32(header2.b1len,2,crc);
-
-      If (crc <> header2.crc32) then
-        begin
-          CloseF(f);
-          Dialog('CRC FAiLED - FiLE CORRUPTED$'+
-                 'LOADiNG STOPPED$',
-                 '~O~KAY$',' A2W LOADER ',1);
-          EXIT;
-        end;
-
-      SeekF(f,SizeOf(header2));
-      If (IOresult <> 0) then
-        begin
-          CloseF(f);
-          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
-                 'LOADiNG STOPPED$',
-                 '~O~KAY$',' A2W LOADER ',1);
-          EXIT;
-        end;
-
-      BlockReadF(f,buffer,header2.b0len,temp);
-      If NOT (temp = header2.b0len) then
-        begin
-          CloseF(f);
-          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
-                 'LOADiNG STOPPED$',
-                 '~O~KAY$',' A2W LOADER ',1);
-          EXIT;
-        end;
-
-      For temp := 1 to 255 do
-        temp_marks[temp] := temp_songdata.instr_names[temp][1];
-
-      APACK_decompress(buffer,temp_songdata.instr_names);
-      For temp := 1 to 255 do
-        Insert(temp_marks[temp]+
-               'iNS_'+byte2hex(temp)+'๗ ',
-               temp_songdata.instr_names[temp],1);
-
-      BlockReadF(f,buffer,header2.b1len,temp);
-      If NOT (temp = header2.b1len) then
-        begin
-          CloseF(f);
-          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
-                 'LOADiNG STOPPED$',
-                 '~O~KAY$',' A2W LOADER ',1);
-          EXIT;
-        end;
-
-      APACK_decompress(buffer,temp_songdata.macro_table);
-      FillChar(temp_songdata.dis_fmreg_col,SizeOf(temp_songdata.dis_fmreg_col),FALSE);
-    end;
-
-  If (header.ffver = 2) then
-    begin
-      crc := DWORD_NULL;
-      BlockReadF(f,buffer,header.b0len,temp);
-      If NOT (temp = header.b0len) then
-        begin
-          CloseF(f);
-          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
-                 'LOADiNG STOPPED$',
-                 '~O~KAY$',' A2W LOADER ',1);
-          EXIT;
-        end;
-
-      crc := Update32(buffer,temp,crc);
-      BlockReadF(f,buffer,header.b1len,temp);
-      If NOT (temp = header.b1len) then
-        begin
-          CloseF(f);
-          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
-                 'LOADiNG STOPPED$',
-                 '~O~KAY$',' A2W LOADER ',1);
-          EXIT;
-        end;
-
-      crc := Update32(buffer,temp,crc);
-      BlockReadF(f,buffer,header.b2len,temp);
-      If NOT (temp = header.b2len) then
-        begin
-          CloseF(f);
-          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
-                 'LOADiNG STOPPED$',
-                 '~O~KAY$',' A2W LOADER ',1);
-          EXIT;
-        end;
-
-      crc := Update32(buffer,temp,crc);
-      crc := Update32(header.b0len,2,crc);
-      crc := Update32(header.b1len,2,crc);
-      crc := Update32(header.b2len,2,crc);
-
-      If (crc <> header.crc32) then
-        begin
-          CloseF(f);
-          Dialog('CRC FAiLED - FiLE CORRUPTED$'+
-                 'LOADiNG STOPPED$',
-                 '~O~KAY$',' A2W LOADER ',1);
-          EXIT;
-        end;
-
-      SeekF(f,SizeOf(header));
-      If (IOresult <> 0) then
-        begin
-          CloseF(f);
-          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
-                 'LOADiNG STOPPED$',
-                 '~O~KAY$',' A2W LOADER ',1);
-          EXIT;
-        end;
-
-      BlockReadF(f,buffer,header.b0len,temp);
-      If NOT (temp = header.b0len) then
-        begin
-          CloseF(f);
-          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
-                 'LOADiNG STOPPED$',
-                 '~O~KAY$',' A2W LOADER ',1);
-          EXIT;
-        end;
-
-      For temp := 1 to 255 do
-        temp_marks[temp] := temp_songdata.instr_names[temp][1];
-
-      APACK_decompress(buffer,temp_songdata.instr_names);
-      For temp := 1 to 255 do
-        Insert(temp_marks[temp]+
-               'iNS_'+byte2hex(temp)+'๗ ',
-               temp_songdata.instr_names[temp],1);
-
-      BlockReadF(f,buffer,header.b1len,temp);
-      If NOT (temp = header.b1len) then
-        begin
-          CloseF(f);
-          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
-                 'LOADiNG STOPPED$',
-                 '~O~KAY$',' A2W LOADER ',1);
-          EXIT;
-        end;
-
-      APACK_decompress(buffer,temp_songdata.macro_table);
-      BlockReadF(f,buffer,header.b2len,temp);
-      If NOT (temp = header.b2len) then
-        begin
-          CloseF(f);
-          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
-                 'LOADiNG STOPPED$',
-                 '~O~KAY$',' A2W LOADER ',1);
-          EXIT;
-        end;
-
-      APACK_decompress(buffer,temp_songdata.dis_fmreg_col);
-    end;
-
-  CloseF(f);
-  If loadMacros then
-    begin
-_jmp1:
-      Move(screen_ptr^,backup.screen,SizeOf(backup.screen));
-      backup.cursor := GetCursor;
-      backup.oldx   := WhereX;
-      backup.oldy   := WhereY;
-
-      nm_valid := count_macros;
-      If (nm_valid = 0) then nm_valid := 1;
-
-      If NOT bankSelector then
-        begin
-          mn_environment.keystroke := kCtENTR;
-          arp_tab_selected := TRUE;
-          vib_tab_selected := TRUE;
-          GOTO _jmp1e;
-        end;
-
-      window_xsize := 73;
-      If (program_screen_mode = 0) then window_ysize := max(nm_valid+5,15)+10
-      else window_ysize := max(nm_valid+5,20)+10;
-      If (a2w_instdata_source <> '') theN temp_str := ' '+iCASE(NameOnly(a2w_instdata_source))+'  A/V MACROS '
-      else temp_str := ' ARPEGGiO/ViBRATO MACRO BROWSER ';
-
-      If update_current_inst then temp_str := temp_str + '(iNS_  ) '
-      else temp_str := temp_str + '[iNS_  ] ';
-      a2w_institle_pos := (window_xsize DIV 2)+(Length(temp_str) DIV 2)-3;
-
-      Move(screen_ptr^,vscreen,SizeOf(vscreen));
-      centered_frame_vdest := Addr(vscreen);
-      centered_frame(xstart,ystart,window_xsize,window_ysize,
-                     temp_str,
-                     macro_background+macro_border,
-                     macro_background+macro_title,double);
-
-      ShowStr(centered_frame_vdest^,xstart+1,ystart+window_ysize-10+1,
-              'ออออสอออออฯอออออฯอออออฯอออออฯออออออสอออออฯอออออฯอออออฯอออออฯอออออฯออออออ',
-              macro_background+macro_topic2);
-
-      ShowStr(centered_frame_vdest^,xstart+1,ystart+window_ysize-2,
-              ExpStrR('',72,'อ'),
-              macro_background+macro_topic2);
-
-      context_str := ' ~[~'+Num2str(nm_valid,10)+'~/255]~';
-      xstart_arp := xstart+3;
-      ystart_arp := ystart+window_ysize-10+1;
-      xstart_vib := xstart+38;
-      ystart_vib := ystart+window_ysize-10+1;
-      scrollbar_xstart := xstart+window_xsize;
-      scrollbar_ystart := ystart+1;
-      scrollbar_size := window_ysize-10+1;
-      macro_table_size := nm_valid;
-
-      If (a2w_instdata_source <> '') then temp_str := a2w_instdata_source
-      else temp_str := '?internal_instrument_data';
-
-      arpeggio_table_pos := min(1,get_bank_position(temp_str+'?macro_av?arp_pos',nm_valid));
-      vibrato_table_pos := min(1,get_bank_position(temp_str+'?macro_av?vib_pos',nm_valid));
-
-      a2w_queue_m[1] := 'ฤฤฤฤาฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤาฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ';
-      a2w_queue_m[2] := '    บ     ~ARPEGGiO MACRO TABLE~     บ        ~ViBRATO MACRO TABLE~';
-      a2w_queue_m[3] := '    วฤฤฤฤฤยฤฤฤฤฤยฤฤฤฤฤยฤฤฤฤฤยฤฤฤฤฤฤืฤฤฤฤฤยฤฤฤฤฤยฤฤฤฤฤยฤฤฤฤฤยฤฤฤฤฤยฤฤฤฤฤฤ';
-      a2w_queue_m[4] := ' NO.บLEN. ณSPEEDณL.BEGณL.LENณK.OFF บLEN. ณSPEEDณDELAYณL.BEGณL.LENณK.OFF ';
-      a2w_queue_m[5] := 'ออออฮอออออุอออออุอออออุอออออุออออออฮอออออุอออออุอออออุอออออุอออออุออออออ';
-
-      For idx := 1 to nm_valid do
-        begin
-          a2w_queue_m[5+idx] := ' ~'+byte2hex(idx)+'~ บ';
-          If Empty(temp_songdata.macro_table[idx].arpeggio,SizeOf(tARPEGGIO_TABLE)) then
-            a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' ๚๚  ณ'+
-                                                     ' ๚๚  ณ'+
-                                                     ' ๚๚  ณ'+
-                                                     ' ๚๚  ณ'+
-                                                     ' ๚๚   บ'
-          else
-            With temp_songdata.macro_table[idx].arpeggio do
-              begin
-                If (length > 0) then
-                  a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' '+byte2hex(length)+'  ณ'
-                else a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' ๙๙  ณ';
-                If (speed > 0) then
-                  a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' '+byte2hex(speed)+'  ณ'
-                else a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' ๙๙  ณ';
-                If (loop_begin > 0) then
-                  a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' '+byte2hex(loop_begin)+'  ณ'
-                else a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' ๙๙  ณ';
-                If (loop_length > 0) then
-                  a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' '+byte2hex(loop_length)+'  ณ'
-                else a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' ๙๙  ณ';
-                If (keyoff_pos > 0) then
-                  a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' '+byte2hex(keyoff_pos)+'   บ'
-                else a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' ๙๙   บ';
-              end;
-
-          If Empty(temp_songdata.macro_table[idx].vibrato,SizeOf(tViBRATO_TABLE)) then
-            a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' ๚๚  ณ'+
-                                                     ' ๚๚  ณ'+
-                                                     ' ๚๚  ณ'+
-                                                     ' ๚๚  ณ'+
-                                                     ' ๚๚  ณ'+
-                                                     ' ๚๚'
-          else
-            With temp_songdata.macro_table[idx].vibrato do
-              begin
-                If (length > 0) then
-                  a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' '+byte2hex(length)+'  ณ'
-                else a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' ๙๙  ณ';
-                If (speed > 0) then
-                  a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' '+byte2hex(speed)+'  ณ'
-                else a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' ๙๙  ณ';
-                If (delay > 0) then
-                  a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' '+byte2hex(delay)+'  ณ'
-                else a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' ๙๙  ณ';
-                If (loop_begin > 0) then
-                  a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' '+byte2hex(loop_begin)+'  ณ'
-                else a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' ๙๙  ณ';
-                If (loop_length > 0) then
-                  a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' '+byte2hex(loop_length)+'  ณ'
-                else a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' ๙๙  ณ';
-                If (keyoff_pos > 0) then
-                  a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' '+byte2hex(keyoff_pos)+'   บ'
-                else a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' ๙๙';
-              end;
-        end;
-
-      Move(mn_setting.terminate_keys,old_keys,SizeOf(old_keys));
-      old_external_proc := mn_environment.ext_proc;
-      old_topic_len := mn_setting.topic_len;
-      old_cycle_moves := mn_setting.cycle_moves;
-      old_topic_mask_chr := mn_setting.topic_mask_chr;
-      old_frame_enabled := mn_setting.frame_enabled;
-      old_shadow_enabled := mn_setting.shadow_enabled;
-      old_winshade := mn_environment.winshade;
-      old_center_box := mn_setting.center_box;
-      old_show_scrollbar := mn_setting.show_scrollbar;
-      old_text_attr := mn_setting.text_attr;
-      old_text2_attr := mn_setting.text2_attr;
-      old_short_attr := mn_setting.short_attr;
-      old_short2_attr := mn_setting.short2_attr;
-      old_disbld_attr := mn_setting.disbld_attr;
-      old_contxt_attr := mn_setting.contxt_attr;
-      old_contxt2_attr := mn_setting.contxt2_attr;
-      old_topic_attr := mn_setting.topic_attr;
-      old_hi_topic_attr := mn_setting.hi_topic_attr;
-
-      Move(new_keys,mn_setting.terminate_keys,SizeOf(new_keys));
-      mn_setting.terminate_keys[4] := 0; // TAB possible only in FM-Register bank browser
-      If NOT loadBankPossible then
-        mn_setting.terminate_keys[5] := 0; // ^ENTER possible only in Arpeggio/Vibrato Macro Editor
-
-      mn_environment.ext_proc := a2w_macro_lister_external_proc;
-      mn_setting.topic_len := 5;
-      mn_setting.cycle_moves := FALSE;
-      mn_setting.topic_mask_chr := ['ณ','บ'];
-      mn_setting.frame_enabled := FALSE;
-      mn_setting.shadow_enabled := FALSE;
-      mn_environment.winshade := FALSE;
-      mn_setting.center_box := FALSE;
-      mn_setting.show_scrollbar := FALSE;
-      mn_environment.unpolite := FALSE;
-      mn_environment.preview := TRUE;
-      mn_environment.v_dest := Addr(vscreen);
-      mn_setting.text_attr := macro_background+macro_item;
-      mn_setting.text2_attr := macro_sel_itm_bck+macro_sel_itm;
-      mn_setting.short_attr := macro_background+macro_short;
-      mn_setting.short2_attr := macro_sel_itm_bck+macro_sel_short;
-      mn_setting.disbld_attr := macro_background+macro_item_dis;
-      mn_setting.contxt_attr := macro_background+macro_context;
-      mn_setting.contxt2_attr := macro_background+macro_context_dis;
-      mn_setting.topic_attr := macro_background+macro_topic2;
-      mn_setting.hi_topic_attr := macro_background+macro_hi_topic;
-
-      If (a2w_instdata_source <> '') then temp_str := a2w_instdata_source
-      else temp_str := '?internal_instrument_data';
-
-      If (program_screen_mode = 0) then
-        Menu(a2w_queue_m,xstart,ystart,
-             min(1,get_bank_position(temp_str+'?macro_av?pos',nm_valid)),
-             72,max(nm_valid+5,15),nm_valid+5,'')
-      else Menu(a2w_queue_m,xstart,ystart,
-                    min(1,get_bank_position(temp_str+'?macro_av?pos',nm_valid)),
-                72,max(nm_valid+5,20),nm_valid+5,'');
-
-      move_to_screen_data := Addr(vscreen);
-      move_to_screen_area[1] := xstart;
-      move_to_screen_area[2] := ystart;
-      move_to_screen_area[3] := xstart+window_xsize+2+1;
-      move_to_screen_area[4] := ystart+window_ysize+1;
-      move2screen_alt;
-
-      mn_environment.unpolite := FALSE;
-      mn_environment.preview := FALSE;
-      mn_environment.v_dest := screen_ptr;
-      centered_frame_vdest := mn_environment.v_dest;
-
-      keyboard_reset_buffer;
-      If NOT _force_program_quit then
-        If (program_screen_mode = 0) then
-          index := Menu(a2w_queue_m,xstart,ystart,
-                        min(1,get_bank_position(temp_str+'?macro_av?pos',nm_valid)),
-                        72,max(nm_valid+5,15),nm_valid+5,'')
-        else index := Menu(a2w_queue_m,xstart,ystart,
-                           min(1,get_bank_position(temp_str+'?macro_av?pos',nm_valid)),
-                           72,max(nm_valid+5,20),nm_valid+5,'');
-
-      add_bank_position(temp_str+'?macro_av?pos',nm_valid,index+5);
-      add_bank_position(temp_str+'?macro_av?arp_pos',nm_valid,arpeggio_table_pos);
-      add_bank_position(temp_str+'?macro_av?vib_pos',nm_valid,vibrato_table_pos);
-
-      Move(old_keys,mn_setting.terminate_keys,SizeOf(old_keys));
-      mn_environment.ext_proc := old_external_proc;
-      mn_setting.topic_len := old_topic_len;
-      mn_setting.cycle_moves := old_cycle_moves;
-      mn_setting.topic_mask_chr := old_topic_mask_chr;
-      mn_setting.frame_enabled := old_frame_enabled;
-      mn_setting.shadow_enabled := old_shadow_enabled;
-      mn_environment.winshade := old_winshade;
-      mn_setting.center_box := old_center_box;
-      mn_setting.show_scrollbar := old_show_scrollbar;
-      mn_setting.text_attr := old_text_attr;
-      mn_setting.text2_attr := old_text2_attr;
-      mn_setting.short_attr := old_short_attr;
-      mn_setting.short2_attr := old_short2_attr;
-      mn_setting.disbld_attr := old_disbld_attr;
-      mn_setting.contxt_attr := old_contxt_attr;
-      mn_setting.contxt2_attr := old_contxt2_attr;
-      mn_setting.topic_attr := old_topic_attr;
-      mn_setting.hi_topic_attr := old_hi_topic_attr;
-
-      move_to_screen_data := Addr(backup.screen);
-      move_to_screen_area[1] := xstart;
-      move_to_screen_area[2] := ystart;
-      move_to_screen_area[3] := xstart+window_xsize+2+1;
-      move_to_screen_area[4] := ystart+window_ysize+1;
-      move2screen;
-
-      If (mn_environment.keystroke = kF1) then
-        begin
-          HELP('macro_browser_av');
-          If NOT _force_program_quit then GOTO _jmp1;
-        end;
-
-      If NOT loadMacros and (mn_environment.keystroke = kESC) then
-        begin
-          songdata := songdata_bak;
-          load_flag := BYTE_NULL;
-          load_flag_alt := BYTE_NULL;
-          GOTO _jmp2;
-        end;
-_jmp1e:
-      If (mn_environment.keystroke = kENTER) or
-         (loadBankPossible and (mn_environment.keystroke = kCtENTR)) then
-        begin
-          If (mn_environment.keystroke = kENTER) then
-            begin
-              If loadMacros or _arp_vib_loader then
-                begin
-                  arpvib_arpeggio_table := arpvib_arpeggio_table_bak;
-                  arpvib_vibrato_table := arpvib_vibrato_table_bak;
-                  If arp_tab_selected then
-                    songdata.macro_table[arpvib_arpeggio_table].arpeggio := temp_songdata.macro_table[index].arpeggio;
-                  If vib_tab_selected then
-                    songdata.macro_table[arpvib_vibrato_table].vibrato := temp_songdata.macro_table[index].vibrato;
-                end
-              else
-                begin
-                  idx1 := -1;
-                  idx2 := -1;
-                  If arp_tab_selected then
-                    idx1 := get_free_arpeggio_table_idx(temp_songdata.macro_table[index].arpeggio);
-                  If vib_tab_selected then
-                    idx2 := get_free_vibrato_table_idx(temp_songdata.macro_table[index].vibrato);
-
-                  temp_str := '';
-                  If (idx1 = 0) then
-                    If (idx2 = 0) then
-                      temp_str := '~ARPEGGiO/ViBRATO'
-                    else temp_str := '~ARPEGGiO'
-                  else If (idx2 = 0) then
-                         temp_str := '~ViBRATO';
-
-                  If NOT (temp_str <> '') then
-                    begin
-                      If (idx1 > 0) then
-                        begin
-                          songdata.macro_table[idx1].arpeggio := temp_songdata.macro_table[index].arpeggio;
-                          songdata.instr_macros[current_inst].arpeggio_table := idx1;
-                        end;
-                      If (idx2 > 0) then
-                        begin
-                          songdata.macro_table[idx2].vibrato := temp_songdata.macro_table[index].vibrato;
-                          songdata.instr_macros[current_inst].vibrato_table := idx2;
-                        end;
-                    end
-                  else begin
-                         Dialog('RELATED '+temp_str+' DATA~ WAS NOT LOADED!$'+
-                                'FREE SOME SPACE iN MACRO TABLES AND ~REPEAT THiS ACTiON~$',
-                                '~O~K$',' A2W LOADER ',1);
-                         GOTO _end;
-                       end;
-                end;
-              load_flag := 1;
-              load_flag_alt := BYTE_NULL;
-            end
-          else
-            begin
-              temp_str := '';
-              If arp_tab_selected then temp_str := 'ARPEGGiO';
-              If vib_tab_selected then
-                If (temp_str <> '') then temp_str := temp_str+'/ViBRATO'
-                else temp_str := 'ViBRATO';
-              If NOT (NOT arp_tab_selected and NOT vib_tab_selected) or (nm_valid < 2) then
-                begin
-                  If bankSelector then
-                    index := Dialog('ALL UNSAVED '+temp_str+' MACRO DATA WiLL BE LOST$'+
-                                    'DO YOU WiSH TO CONTiNUE?$',
-                                    '~Y~UP$~N~OPE$',' A2W LOADER ',1)
-                  else begin
-                         index := 1;
-                         dl_environment.keystroke := kENTER;
-                       end;
-                  If (dl_environment.keystroke <> kESC) and (index = 1) then
-                    begin
-                      For idx := 1 to 255 do
-                        If NOT (idx > nm_valid) then
-                          begin
-                            If arp_tab_selected then
-                              songdata.macro_table[idx].arpeggio := temp_songdata.macro_table[idx].arpeggio;
-                            If vib_tab_selected then
-                              songdata.macro_table[idx].vibrato := temp_songdata.macro_table[idx].vibrato;
-                          end
-                        else begin
-                               FillChar(songdata.macro_table[idx].arpeggio,SizeOf(songdata.macro_table[idx].arpeggio),0);
-                               FillChar(songdata.macro_table[idx].vibrato,SizeOf(songdata.macro_table[idx].vibrato),0);
-                             end;
-                      load_flag := 1;
-                      load_flag_alt := BYTE_NULL;
-                    end;
-                end;
-            end;
-        end;
-    end
-  else
-    begin
-_jmp2:
-      Move(screen_ptr^,backup.screen,SizeOf(backup.screen));
-      backup.cursor := GetCursor;
-      backup.oldx   := WhereX;
-      backup.oldy   := WhereY;
-
-      a2w_queue[1]       := ' iNSTRUMENT                                 iNSTRUMENT                  ';
-      a2w_queue[2]       := ' NAME    DESCRiPTiON                        VOiCE     MACROS            ';
-      a2w_queue[3]       := 'ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ';
-      a2w_queue_more[1]  := ' iNSTRUMENT                                                               iNSTRUMENT                  ';
-      a2w_queue_more[2]  := ' NAME    DESCRiPTiON                        ฺ20ฟ ฺ40ฟ ฺ60ฟ ฺ80ฟ ฺE0ฟ C0   VOiCE     MACROS            ';
-      a2w_queue_more[3]  := 'ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ';
-      a2w_queue_more2[1] := ' iNSTRUMENT                                                               PANNiNG            iNSTRUMENT                  ';
-      a2w_queue_more2[2] := ' NAME    DESCRiPTiON                        ฺ20ฟ ฺ40ฟ ฺ60ฟ ฺ80ฟ ฺE0ฟ C0   ฉ    ช   F.TUNE   VOiCE     MACROS            ';
-      a2w_queue_more2[3] := 'อออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ';
-
-      nm_valid := count_instruments;
-      If (nm_valid = 0) then nm_valid := 1;
-
-      If NOT bankSelector then
-        begin
-          mn_environment.keystroke := kCtENTR;
-          GOTO _jmp2e;
-        end;
-
-      context_str := '';
-      context_str2 := '';
-      If (a2w_instdata_source = '') then nm_valid := 255
-      else begin
-             context_str := ' ~[~'+Num2str(nm_valid,10)+'~/255]~';
-             If NOT loadBankPossible then context_str2 := ' ~[BANK]~'
-             else context_str2 := ' [BANK]';
-           end;
-
-      For idx := 1 to nm_valid do
-        begin
-          a2w_queue[3+idx] := '~'+ExpStrR(Copy(temp_songdata.instr_names[idx],1,9)+'~'+
-                              Copy(temp_songdata.instr_names[idx],10,32),45,' ');
-          a2w_queue_more[3+idx] := a2w_queue[3+idx];
-
-          With temp_songdata.instr_data[idx].fm_data do
-            begin
-              a2w_queue_more[3+idx] := a2w_queue_more[3+idx]+
-                byte2hex(AM_VIB_EG_carrier)+
-                byte2hex(AM_VIB_EG_modulator)+' '+
-                byte2hex(KSL_VOLUM_carrier)+
-                byte2hex(KSL_VOLUM_modulator)+' '+
-                byte2hex(ATTCK_DEC_carrier)+
-                byte2hex(ATTCK_DEC_modulator)+' '+
-                byte2hex(SUSTN_REL_carrier)+
-                byte2hex(SUSTN_REL_modulator)+' '+
-                byte2hex(WAVEFORM_carrier)+
-                byte2hex(WAVEFORM_modulator)+' '+
-                byte2hex(FEEDBACK_FM)+'   ';
-            end;
-
-          temp_str := '๚๚๚๚๚๚๚';
-          Case temp_songdata.instr_data[idx].panning of
-            0: temp_str := '๚๚๚๚';
-            1: temp_str := '๚๚๚๚';
-            2: temp_str := '๚๚๚๚';
-          end;
-
-          a2w_queue_more2[3+idx] := a2w_queue_more[3+idx]+temp_str+'   ';
-          If (temp_songdata.instr_data[idx].fine_tune > 0) then
-            temp_str := '+'+ExpStrR(Num2str(temp_songdata.instr_data[idx].fine_tune,16),5,' ')
-          else If (temp_songdata.instr_data[idx].fine_tune < 0) then
-                 temp_str := '-'+ExpStrR(Num2str(0-temp_songdata.instr_data[idx].fine_tune,16),5,' ')
-               else temp_str := ExpStrR('',6,' ');
-
-          a2w_queue_more2[3+idx] := a2w_queue_more2[3+idx]+temp_str+'   ';
-          temp_str := '       ';
-          Case temp_songdata.instr_data[idx].perc_voice of
-            0: temp_str := 'MELODiC';
-            1: temp_str := 'PERC:BD';
-            2: temp_str := 'PERC:SD';
-            3: temp_str := 'PERC:TT';
-            4: temp_str := 'PERC:TC';
-            5: temp_str := 'PERC:HH';
-          end;
-
-          a2w_queue[3+idx] := a2w_queue[3+idx]+temp_str;
-          a2w_queue_more[3+idx] := a2w_queue_more[3+idx]+temp_str;
-          a2w_queue_more2[3+idx] := a2w_queue_more2[3+idx]+temp_str;
-
-          If (temp_songdata.instr_macros[idx].length <> 0) then temp_str := ' MACRO:FM'
-          else temp_str := ' ';
-
-          With temp_songdata.macro_table[
-               temp_songdata.instr_macros[idx].arpeggio_table].arpeggio do
-            If (length <> 0) then // and (speed <> 0) then
-              If (temp_str <> ' ') then temp_str := temp_str+'+ARP'
-              else temp_str := temp_str+'MACRO:ARP';
-
-          With temp_songdata.macro_table[
-               temp_songdata.instr_macros[idx].vibrato_table].vibrato do
-            If (length <> 0) then // and (speed <> 0) then
-              If (temp_str <> ' ') then temp_str := temp_str+'+ViB'
-              else temp_str := temp_str+'MACRO:ViB';
-
-          a2w_queue[3+idx] := a2w_queue[3+idx]+'  '+ExpStrR(temp_str,18,' ');
-          a2w_queue_more[3+idx] := a2w_queue_more[3+idx]+'  '+ExpStrR(temp_str,18,' ');
-          a2w_queue_more2[3+idx] := a2w_queue_more2[3+idx]+'  '+ExpStrR(temp_str,18,' ');
-        end;
-
-      If (a2w_instdata_source <> '') then temp_str := a2w_instdata_source
-      else temp_str := '?internal_instrument_data';
-
-      idx := min(1,get_bank_position(temp_str+'?macro?pos',nm_valid));
-      fmreg_page := min(1,get_bank_position(temp_str+'?macro?fmreg_page',nm_valid));
-      fmreg_hpos := min(1,get_bank_position(temp_str+'?macro?fmreg_hpos',nm_valid));
-      fmreg_vpos := min(1,get_bank_position(temp_str+'?macro?fmreg_vpos',nm_valid));
-      fmreg_left_margin := min(1,get_bank_position(temp_str+'?macro?fmreg_left_margin',nm_valid));
-      fmreg_cursor_pos := min(1,get_bank_position(temp_str+'?macro?fmreg_cursor_pos',nm_valid));
-
-      If (a2w_instdata_source <> '') then temp_str := ' '+iCASE(NameOnly(a2w_instdata_source))+' '
-      else begin
-             If updateCurInstr then add_bank_position('?internal_instrument_data?pos',255,current_inst);
-             temp_str := ' iNSTRUMENT MACRO BROWSER ';
-           end;
-
-      Case program_screen_mode of
-        0,
-        3: begin
-             window_xsize := 73;
-             window_ysize := max(nm_valid+3,15)+10;
-           end;
-        1: begin
-             window_xsize := 103;
-             window_ysize := max(nm_valid+3,20)+10;
-           end;
-        2: begin
-             window_xsize := 122;
-             window_ysize := max(nm_valid+3,20)+10;
-           end;
-      end;
-
-      xstart := ((work_MaxCol-window_xsize) DIV 2);
-      ystart := ((work_MaxLn-window_ysize) DIV 2)+1;
-      fmreg_scrlbar_items := nm_valid;
-      fmreg_scrlbar_size := window_ysize-10-2;
-      If NOT (program_screen_mode = 0) then _fmreg_add_prev_size := 10
-      else _fmreg_add_prev_size := 0;
-
-      If update_current_inst then
-        begin
-          temp_str := temp_str + '(iNS_  ) ';
-          idx := current_inst;
-        end
-      else temp_str := temp_str + '[iNS_  ] ';
-      a2w_institle_pos := (window_xsize DIV 2)+(Length(temp_str) DIV 2)-3;
-
-      Move(screen_ptr^,vscreen,SizeOf(vscreen));
-      centered_frame_vdest := Addr(vscreen);
-      centered_frame(xstart,ystart,window_xsize,window_ysize,
-                     temp_str,
-                     macro_background+macro_border,
-                     macro_background+macro_title,double);
-
-      ShowStr(centered_frame_vdest^,xstart+1,ystart+window_ysize-10+1,
-              ExpStrR('',window_xsize-1,'อ'),
-              macro_background+macro_topic2);
-      ShowStr(centered_frame_vdest^,xstart+1,ystart+window_ysize-2,
-              ExpStrR('',window_xsize-1,'อ'),
-              macro_background+macro_topic2);
-      ShowVStr(centered_frame_vdest^,xstart+42+_fmreg_add_prev_size,ystart+window_ysize-10+1,
-               'หบบบบบบส',
-               macro_background+macro_topic2);
-
-      Move(mn_setting.terminate_keys,old_keys,SizeOf(old_keys));
-      old_external_proc := mn_environment.ext_proc;
-      old_topic_len := mn_setting.topic_len;
-      old_cycle_moves := mn_setting.cycle_moves;
-      old_topic_mask_chr := mn_setting.topic_mask_chr;
-      old_frame_enabled := mn_setting.frame_enabled;
-      old_shadow_enabled := mn_setting.shadow_enabled;
-      old_winshade := mn_environment.winshade;
-      old_center_box := mn_setting.center_box;
-      old_show_scrollbar := mn_setting.show_scrollbar;
-      old_text_attr := mn_setting.text_attr;
-      old_text2_attr := mn_setting.text2_attr;
-      old_short_attr := mn_setting.short_attr;
-      old_short2_attr := mn_setting.short2_attr;
-      old_disbld_attr := mn_setting.disbld_attr;
-      old_contxt_attr := mn_setting.contxt_attr;
-      old_contxt2_attr := mn_setting.contxt2_attr;
-      old_topic_attr := mn_setting.topic_attr;
-      old_hi_topic_attr := mn_setting.hi_topic_attr;
-
-      Move(new_keys,mn_setting.terminate_keys,SizeOf(new_keys));
-      If NOT loadBankPossible then
-        mn_setting.terminate_keys[5] := 0; // ^ENTER possible only in Instrument Control
-
-      mn_environment.ext_proc := a2w_lister_external_proc;
-      mn_setting.topic_len := 3;
-      mn_setting.cycle_moves := FALSE;
-      mn_setting.frame_enabled := FALSE;
-      mn_setting.shadow_enabled := FALSE;
-      mn_environment.winshade := FALSE;
-      mn_setting.center_box := FALSE;
-      mn_setting.show_scrollbar := FALSE;
-      mn_environment.unpolite := FALSE;
-      mn_environment.preview := TRUE;
-      mn_environment.v_dest := Addr(vscreen);
-      mn_setting.text_attr := macro_background+macro_item;
-      mn_setting.text2_attr := macro_sel_itm_bck+macro_sel_itm;
-      mn_setting.short_attr := macro_background+macro_short;
-      mn_setting.short2_attr := macro_sel_itm_bck+macro_sel_short;
-      mn_setting.disbld_attr := macro_background+macro_item_dis;
-      mn_setting.contxt_attr := macro_background+macro_context;
-      mn_setting.contxt2_attr := macro_background+macro_context_dis;
-      mn_setting.topic_attr := macro_background+macro_topic2;
-      mn_setting.hi_topic_attr := macro_background+macro_hi_topic;
-
-      If NOT _force_program_quit then
-        If (program_screen_mode = 0) then
-          index := Menu(a2w_queue,xstart,ystart,idx+3,72,max(nm_valid+3,15),nm_valid+3,temp_str)
-        else If (program_screen_mode = 1) then
-               index := Menu(a2w_queue_more,xstart,ystart,idx+3,102,max(nm_valid+3,20),nm_valid+3,temp_str)
-             else index := Menu(a2w_queue_more2,xstart,ystart,idx+3,121,max(nm_valid+3,20),nm_valid+3,temp_str);
-
-      move_to_screen_data := Addr(vscreen);
-      move_to_screen_area[1] := xstart;
-      move_to_screen_area[2] := ystart;
-      move_to_screen_area[3] := xstart+window_xsize+2+1;
-      move_to_screen_area[4] := ystart+window_ysize+1;
-      move2screen_alt;
-
-      mn_environment.unpolite := FALSE;
-      mn_environment.preview := FALSE;
-      mn_environment.v_dest := screen_ptr;
-      centered_frame_vdest := mn_environment.v_dest;
-
-      keyboard_reset_buffer;
-      If NOT _force_program_quit then
-        If (program_screen_mode = 0) then
-          index := Menu(a2w_queue,xstart,ystart,idx+3,72,max(nm_valid+3,15),nm_valid+3,temp_str)
-        else If (program_screen_mode = 1) then
-               index := Menu(a2w_queue_more,xstart,ystart,idx+3,102,max(nm_valid+3,20),nm_valid+3,temp_str)
-             else index := Menu(a2w_queue_more2,xstart,ystart,idx+3,121,max(nm_valid+3,20),nm_valid+3,temp_str);
-
-      If (a2w_instdata_source <> '') then temp_str := a2w_instdata_source
-      else temp_str := '?internal_instrument_data';
-
-      add_bank_position(temp_str+'?macro?pos',nm_valid,index);
-      add_bank_position(temp_str+'?macro?fmreg_page',nm_valid,fmreg_page);
-      add_bank_position(temp_str+'?macro?fmreg_hpos',nm_valid,fmreg_hpos);
-      add_bank_position(temp_str+'?macro?fmreg_vpos',nm_valid,fmreg_vpos);
-      add_bank_position(temp_str+'?macro?fmreg_left_margin',nm_valid,fmreg_left_margin);
-      add_bank_position(temp_str+'?macro?fmreg_cursor_pos',nm_valid,fmreg_cursor_pos);
-
-      Move(old_keys,mn_setting.terminate_keys,SizeOf(old_keys));
-      mn_environment.ext_proc := old_external_proc;
-      mn_setting.topic_len := old_topic_len;
-      mn_setting.cycle_moves := old_cycle_moves;
-      mn_setting.topic_mask_chr := old_topic_mask_chr;
-      mn_setting.frame_enabled := old_frame_enabled;
-      mn_setting.shadow_enabled := old_shadow_enabled;
-      mn_environment.winshade := old_winshade;
-      mn_setting.center_box := old_center_box;
-      mn_setting.show_scrollbar := old_show_scrollbar;
-      mn_setting.text_attr := old_text_attr;
-      mn_setting.text2_attr := old_text2_attr;
-      mn_setting.short_attr := old_short_attr;
-      mn_setting.short2_attr := old_short2_attr;
-      mn_setting.disbld_attr := old_disbld_attr;
-      mn_setting.contxt_attr := old_contxt_attr;
-      mn_setting.contxt2_attr := old_contxt2_attr;
-      mn_setting.topic_attr := old_topic_attr;
-      mn_setting.hi_topic_attr := old_hi_topic_attr;
-
-      move_to_screen_data := Addr(backup.screen);
-      move_to_screen_area[1] := xstart;
-      move_to_screen_area[2] := ystart;
-      move_to_screen_area[3] := xstart+window_xsize+2+1;
-      move_to_screen_area[4] := ystart+window_ysize+1;
-      move2screen;
-
-      centered_frame_vdest := screen_ptr;
-      If (mn_environment.keystroke = kESC) then
-        GOTO _end;
-
-      If (mn_environment.keystroke = kTAB) then
-        begin
-          songdata.instr_data[current_inst] := temp_songdata.instr_data[index];
-          songdata.instr_macros[current_inst] := temp_songdata.instr_macros[index];
-          songdata.dis_fmreg_col[current_inst] := temp_songdata.dis_fmreg_col[index];
-          songdata.instr_names[current_inst] := Copy(songdata.instr_names[current_inst],1,9)+
-                                                Copy(temp_songdata.instr_names[index],10,32);
-          arp_tab_selected := songdata.instr_macros[current_inst].arpeggio_table <> 0;
-          vib_tab_selected := songdata.instr_macros[current_inst].vibrato_table <> 0;
-          loadMacros := FALSE;
-          GOTO _jmp1;
-        end;
-
-      If (mn_environment.keystroke = kF1) then
-        begin
-          HELP('macro_browser');
-          If NOT _force_program_quit then GOTO _jmp2;
-        end;
-_jmp2e:
-      If (mn_environment.keystroke = kENTER) or
-         (loadBankPossible and (mn_environment.keystroke = kCtENTR)) then
-        begin
-          If (mn_environment.keystroke = kENTER) then
-            begin
-              songdata.instr_data[current_inst] := temp_songdata.instr_data[index];
-              songdata.instr_macros[current_inst] := temp_songdata.instr_macros[index];
-              songdata.dis_fmreg_col[current_inst] := temp_songdata.dis_fmreg_col[index];
-              songdata.instr_names[current_inst] := Copy(songdata.instr_names[current_inst],1,9)+
-                                                    Copy(temp_songdata.instr_names[index],10,32);
-              idx1 := -1;
-              idx2 := -1;
-              If (songdata.instr_macros[current_inst].arpeggio_table <> 0) then
-                idx1 := get_free_arpeggio_table_idx(temp_songdata.macro_table[
-                                                    songdata.instr_macros[current_inst].arpeggio_table].arpeggio);
-              If (songdata.instr_macros[current_inst].vibrato_table <> 0) then
-                idx2 := get_free_vibrato_table_idx(temp_songdata.macro_table[
-                                                   songdata.instr_macros[current_inst].vibrato_table].vibrato);
-              temp_str := '';
-              If (idx1 = 0) then
-                If (idx2 = 0) then
-                  temp_str := '~ARPEGGiO/ViBRATO'
-                else temp_str := '~ARPEGGiO'
-              else If (idx2 = 0) then
-                     temp_str := '~ViBRATO';
-
-              If NOT (temp_str <> '') then
-                begin
-                  If (idx1 > 0) then
-                    begin
-                      songdata.macro_table[idx1].arpeggio :=
-                      temp_songdata.macro_table[songdata.instr_macros[current_inst].arpeggio_table].arpeggio;
-                      songdata.instr_macros[current_inst].arpeggio_table := idx1;
-                    end;
-                  If (idx2 > 0) then
-                    begin
-                      songdata.macro_table[idx2].vibrato :=
-                      temp_songdata.macro_table[songdata.instr_macros[current_inst].vibrato_table].vibrato;
-                      songdata.instr_macros[current_inst].vibrato_table := idx2;
-                    end
-                end
-              else Dialog('RELATED '+temp_str+' DATA~ WAS NOT LOADED!$'+
-                          'FREE SOME SPACE iN MACRO TABLES AND ~REPEAT THiS ACTiON~$',
-                          '~O~K$',' A2W LOADER ',1);
-              load_flag := 1;
-              load_flag_alt := BYTE_NULL;
-            end
-          else
-            begin
-              If bankSelector then
-                index := Dialog('ALL UNSAVED iNSTRUMENT AND MACRO DATA WiLL BE LOST$'+
-                                'DO YOU WiSH TO CONTiNUE?$',
-                                '~Y~UP$~N~OPE$',' A2W LOADER ',1)
-              else begin
-                     index := 1;
-                     dl_environment.keystroke := kENTER;
-                   end;
-
-              If (dl_environment.keystroke <> kESC) and (index = 1) then
-                begin
-                  temp_str := '';
-                  For idx := 1 to 255 do
-                    If NOT (idx > nm_valid) then
-                      begin
-                        songdata.instr_data[idx] := temp_songdata.instr_data[idx];
-                        songdata.instr_macros[idx] := temp_songdata.instr_macros[idx];
-                        songdata.dis_fmreg_col[idx] := temp_songdata.dis_fmreg_col[idx];
-                        songdata.instr_names[idx] := Copy(songdata.instr_names[idx],1,9)+
-                                                     Copy(temp_songdata.instr_names[idx],10,32);
-
-                        idx1 := -1;
-                        idx2 := -1;
-                        If (songdata.instr_macros[idx].arpeggio_table <> 0) then
-                          idx1 := get_free_arpeggio_table_idx(temp_songdata.macro_table[
-                                                              songdata.instr_macros[idx].arpeggio_table].arpeggio);
-                        If (songdata.instr_macros[idx].vibrato_table <> 0) then
-                          idx2 := get_free_vibrato_table_idx(temp_songdata.macro_table[
-                                                             songdata.instr_macros[idx].vibrato_table].vibrato);
-                        If (temp_str = '') then
-                          If (idx1 = 0) then
-                            If (idx2 = 0) then
-                              temp_str := '~ARPEGGiO/ViBRATO'
-                            else temp_str := '~ARPEGGiO'
-                          else If (idx2 = 0) then
-                                 temp_str := '~ViBRATO';
-
-                        If (idx1 > 0) then
-                          begin
-                            songdata.macro_table[idx1].arpeggio :=
-                            temp_songdata.macro_table[songdata.instr_macros[idx].arpeggio_table].arpeggio;
-                            songdata.instr_macros[idx].arpeggio_table := idx1;
-                          end;
-                        If (idx2 > 0) then
-                          begin
-                            songdata.macro_table[idx2].vibrato :=
-                            temp_songdata.macro_table[songdata.instr_macros[idx].vibrato_table].vibrato;
-                            songdata.instr_macros[idx].vibrato_table := idx2;
-                          end;
-                      end
-                    else begin
-                           FillChar(songdata.instr_data[idx],SizeOf(songdata.instr_data[idx]),0);
-                           FillChar(songdata.instr_macros[idx],SizeOf(songdata.instr_macros[idx]),0);
-                           FillChar(songdata.dis_fmreg_col[idx],SizeOf(songdata.dis_fmreg_col[idx]),0);
-                           songdata.instr_names[idx] := Copy(songdata.instr_names[current_inst],1,9);
-                         end;
-
-                  If (temp_str <> '') then
-                    Dialog('RELATED '+temp_str+' DATA~ WAS NOT LOADED!$'+
-                           'FREE SOME SPACE iN MACRO TABLES AND ~REPEAT THiS ACTiON~$',
-                           '~O~K$',' A2W LOADER ',1);
-                  load_flag := 1;
-                  load_flag_alt := BYTE_NULL;
-                end;
-            end;
-        end;
-      end;
-_end:
-  arpvib_arpeggio_table := arpvib_arpeggio_table_bak;
-  arpvib_vibrato_table := arpvib_vibrato_table_bak;
-  // keyboard_reset_buffer;
-end;
-
-procedure bnk_file_loader;
-
-const
-  _perc_voice: array[1..5] of String[2] = ('BD','SD','TT','TC','HH');
-
-var
-  f: File;
-  header: tBNK_HEADER;
-  temp: Longint;
-  index: Word;
-  old_external_proc: procedure;
-  old_topic_len: Byte;
-  old_cycle_moves: Boolean;
-  xstart,ystart: Byte;
-  nm_valid: Word;
-
-procedure _restore;
-begin
-  _debug_str_ := 'ILOADERS.INC:bnk_file_loader:_restore';
-  move_to_screen_data := Addr(backup.screen);
-  move_to_screen_area[1] := xstart;
-  move_to_screen_area[2] := ystart;
-  move_to_screen_area[3] := xstart+43+2+1;
-  move_to_screen_area[4] := ystart+3+1;
-  move2screen;
-end;
-
-begin { bnk_file_loader }
-  _debug_str_ := 'ILOADERS.INC:bnk_file_loader';
-  {$i-}
-  Assign(f,instdata_source);
-  ResetF(f);
-  {$i+}
-  If (IOresult <> 0) then
-    begin
-      CloseF(f);
-      Dialog('ERROR READiNG DATA - DiSK ERROR?$'+
-             'LOADiNG STOPPED$',
-             '~O~KAY$',' BNK LOADER ',1);
-      EXIT;
-    end;
-
-  BlockReadF(f,header,SizeOf(header),temp);
-  If (temp <> SizeOf(header)) then
-    begin
-      CloseF(f);
-      Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
-             'LOADiNG STOPPED$',
-             '~O~KAY$',' BNK LOADER ',1);
-      EXIT;
-    end;
-
-  If NOT ((header.fver_major = 1) and (header.fver_minor = 0)) then
-    begin
-      CloseF(f);
-      Dialog('UNKNOWN FiLE FORMAT VERSiON$'+
-             'LOADiNG STOPPED$',
-             '~O~KAY$',' BNK LOADER ',1);
-      EXIT;
-    end;
-
-  If (header.signature <> bnk_id) or
-     (header.total_entries < header.entries_used) then
-    begin
-      CloseF(f);
-      Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
-             'LOADiNG STOPPED$',
-             '~O~KAY$',' BNK LOADER ',1);
-      EXIT;
-    end;
-
-  Move(screen_ptr^,backup.screen,SizeOf(backup.screen));
-  backup.cursor := GetCursor;
-  backup.oldx   := WhereX;
-  backup.oldy   := WhereY;
-
-  dl_environment.context := ' ESC ฤ STOP ';
-  centered_frame(xstart,ystart,43,3,' '+iCASE(NameOnly(instdata_source))+' ',
-                 dialog_background+dialog_border,
-                 dialog_background+dialog_title,double);
-  ShowStr(screen_ptr^,xstart+43-Length(dl_environment.context),ystart+3,
-          dl_environment.context,
-          dialog_background+dialog_border);
-  dl_environment.context := '';
-
-  bnk_queue[1] := ' iNSTRUMENT                                  MELODiC/                   ';
-  bnk_queue[2] := ' NAME         ฺ20ฟ ฺ40ฟ ฺ60ฟ ฺ80ฟ ฺE0ฟ C0    PERCUSSiON (VOiCE)         ';
-  bnk_queue[3] := 'ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ';
-
-  progress_old_value := BYTE_NULL;
-  progress_step := 40/max(header.total_entries,MAX_TIMBRES);
-  progress_xstart := xstart+2;
-  progress_ystart := ystart+2;
-
-  ShowCStr(screen_ptr^,xstart+2,ystart+1,
-           'LOADiNG CONTENTS [RECORD ~'+
-           ExpStrL(Num2str(0,10),5,'0')+'~ OF ~'+
-           ExpStrL(Num2str(max(header.total_entries,MAX_TIMBRES),10),5,'0')+'~]',
-           dialog_background+dialog_text,
-           dialog_background+dialog_hi_text);
-
-  show_progress(0);
-  nm_valid := 0;
-  bnk_skip := 0;
-
-  For index := 1 to max(header.total_entries,MAX_TIMBRES) do
-    begin
-      If keypressed and (index > 1) then
-        begin
-          fkey := getkey;
-          If (fkey = kESC) then
-            begin
-              Dec(index);
-              BREAK;
-            end;
-        end;
-
-      ShowCStr(screen_ptr^,xstart+2+25,ystart+1,
-               '~'+
-               ExpStrL(Num2str(index,10),5,'0')+'~ OF ~'+
-               ExpStrL(Num2str(max(header.total_entries,MAX_TIMBRES),10),5,'0')+'~]',
-               dialog_background+dialog_text,
-               dialog_background+dialog_hi_text);
-      show_progress(index);
-
-      SeekF(f,header.name_offset+PRED(index)*SizeOf(name_record));
-      If (IOresult <> 0) then
-        begin
-          CloseF(f);
-          _restore;
-          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
-                 'LOADiNG STOPPED$',
-                 '~O~KAY$',' BNK LOADER ',1);
-          EXIT;
-        end;
-
-      BlockReadF(f,name_record,SizeOf(name_record),temp);
-      If (temp <> SizeOf(name_record)) then
-        begin
-          CloseF(f);
-          _restore;
-          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
-                 'LOADiNG STOPPED$',
-                 '~O~KAY$',' BNK LOADER ',1);
-          EXIT;
-        end;
-
-      SeekF(f,header.data_offset+name_record.data_index*SizeOf(data_record));
-      If (IOresult <> 0) then
-        begin
-          CloseF(f);
-          _restore;
-          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
-                 'LOADiNG STOPPED$',
-                 '~O~KAY$',' BNK LOADER ',1);
-          EXIT;
-        end;
-
-      BlockReadF(f,data_record,SizeOf(data_record),temp);
-      If (temp <> SizeOf(data_record)) then
-        begin
-          CloseF(f);
-          _restore;
-          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
-                 'LOADiNG STOPPED$',
-                 '~O~KAY$',' BNK LOADER ',1);
-          EXIT;
-        end;
-
-      import_instrument_from_data_record;
-      If name_record.usage_flag then
-        begin
-          bnk_queue[3+index-bnk_skip] := '~ ~~';
-          Inc(nm_valid);
-        end
-      else
-        begin
-          If (nm_valid = 0) then
-            begin
-              Inc(bnk_skip);
-              CONTINUE;
-            end;
-          bnk_queue[3+index-bnk_skip] := ' ';
-        end;
-
-      bnk_queue[3+index-bnk_skip] := bnk_queue[3+index-bnk_skip]+
-        ExpStrR(CutStr(asciiz_string(name_record.ins_name)),11,' ')+'~  ';
-
-      With temp_instrument.fm_data do
-        begin
-          bnk_queue[3+index-bnk_skip] :=
-            bnk_queue[3+index-bnk_skip]+byte2hex(AM_VIB_EG_carrier);
-          bnk_queue[3+index-bnk_skip] :=
-            bnk_queue[3+index-bnk_skip]+byte2hex(AM_VIB_EG_modulator)+' ';
-          bnk_queue[3+index-bnk_skip] :=
-            bnk_queue[3+index-bnk_skip]+byte2hex(KSL_VOLUM_carrier);
-          bnk_queue[3+index-bnk_skip] :=
-            bnk_queue[3+index-bnk_skip]+byte2hex(KSL_VOLUM_modulator)+' ';
-          bnk_queue[3+index-bnk_skip] :=
-            bnk_queue[3+index-bnk_skip]+byte2hex(ATTCK_DEC_carrier);
-          bnk_queue[3+index-bnk_skip] :=
-            bnk_queue[3+index-bnk_skip]+byte2hex(ATTCK_DEC_modulator)+' ';
-          bnk_queue[3+index-bnk_skip] :=
-            bnk_queue[3+index-bnk_skip]+byte2hex(SUSTN_REL_carrier);
-          bnk_queue[3+index-bnk_skip] :=
-            bnk_queue[3+index-bnk_skip]+byte2hex(SUSTN_REL_modulator)+' ';
-          bnk_queue[3+index-bnk_skip] :=
-            bnk_queue[3+index-bnk_skip]+byte2hex(WAVEFORM_carrier);
-          bnk_queue[3+index-bnk_skip] :=
-            bnk_queue[3+index-bnk_skip]+byte2hex(WAVEFORM_modulator)+' ';
-          bnk_queue[3+index-bnk_skip] :=
-            bnk_queue[3+index-bnk_skip]+byte2hex(FEEDBACK_FM)+'    ';
-        end;
-
-      Case data_record.mode of
-        0: bnk_queue[3+index-bnk_skip] :=
-             bnk_queue[3+index-bnk_skip]+'MELODiC';
-        1: Case data_record.voice_num of
-             6..10: bnk_queue[3+index-bnk_skip] :=
-                      bnk_queue[3+index-bnk_skip]+'PERCUSSiON ('+
-                      _perc_voice[data_record.voice_num-5]+')';
-             else bnk_queue[3+index-bnk_skip] :=
-                    bnk_queue[3+index-bnk_skip]+'PERCUSSiON (??)';
-           end;
-        else
-          bnk_queue[3+index-bnk_skip] :=
-            bnk_queue[3+index-bnk_skip]+'???';
-      end;
-    end;
-
-  CloseF(f);
-  _restore;
-  If (nm_valid = 0) then EXIT;
-
-  If (index = header.total_entries) and
-     (bnk_skip = 0) then
-    mn_environment.context := '~[~'+Num2str(nm_valid,10)+'~/'+
-                                    Num2str(index,10)+']~'
-  else
-    mn_environment.context := '['+Num2str(nm_valid,10)+']~['+
-                                  Num2str(index,10)+'/'+
-                                  Num2str(header.total_entries,10)+']~';
-
-  old_external_proc := mn_environment.ext_proc;
-  old_topic_len := mn_setting.topic_len;
-  old_cycle_moves := mn_setting.cycle_moves;
-  mn_environment.ext_proc := bnk_lister_external_proc;
-  mn_setting.topic_len := 3;
-  mn_setting.cycle_moves := FALSE;
-
-  keyboard_reset_buffer;
-  If NOT _force_program_quit then
-    index := Menu(bnk_queue,01,01,min(1,get_bank_position(instdata_source,nm_valid)),
-                  72,20,nm_valid+3,' '+iCASE(NameOnly(instdata_source))+' ');
-
-  add_bank_position(instdata_source,nm_valid,index+3);
-  mn_environment.ext_proc := old_external_proc;
-  mn_setting.topic_len := old_topic_len;
-  mn_setting.cycle_moves := old_cycle_moves;
-
-  If (mn_environment.keystroke = kENTER) then
-    begin
-      load_flag := 1;
-      load_flag_alt := BYTE_NULL;
-      bnk_file_loader_alt(bnk_skip+index);
-      If (load_flag_alt <> BYTE_NULL) then
-        begin
-          songdata.instr_data[current_inst] := temp_instrument;
-          songdata.instr_names[current_inst] :=
-            Copy(songdata.instr_names[current_inst],1,9)+
-            Copy(bnk_queue[3+index],5,8);
-        end;
-    end;
-end;
-
-procedure fib_file_loader;
-
-const
-  id = 'FIB'+#$f4;
-
-var
-  f: File;
-  ident: array[1..4] of Char;
-  header: tFIB_HEADER;
-  temp: Longint;
-  index: Word;
-  old_external_proc: procedure;
-  old_topic_len: Byte;
-  old_cycle_moves: Boolean;
-  xstart,ystart: Byte;
-  instrument_data: tFIN_DATA;
-  nm_valid: Word;
-
-procedure _restore;
-begin
-  _debug_str_ := 'ILOADERS.INC:fib_file_loader:_restore';
-  move_to_screen_data := Addr(backup.screen);
-  move_to_screen_area[1] := xstart;
-  move_to_screen_area[2] := ystart;
-  move_to_screen_area[3] := xstart+43+2+1;
-  move_to_screen_area[4] := ystart+3+1;
-  move2screen;
-end;
-
-begin { fib_file_loader }
-  _debug_str_ := 'ILOADERS.INC:fib_file_loader';
-  {$i-}
-  Assign(f,instdata_source);
-  ResetF(f);
-  {$i+}
-  If (IOresult <> 0) then
-    begin
-      CloseF(f);
-      Dialog('ERROR READiNG DATA - DiSK ERROR?$'+
-             'LOADiNG STOPPED$',
-             '~O~KAY$',' FiB LOADER ',1);
-      EXIT;
-    end;
-
-  BlockReadF(f,header,SizeOf(header),temp);
-  If (temp <> SizeOf(header)) or
-     (header.ident <> id) then
-    begin
-      CloseF(f);
-      Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
-             'LOADiNG STOPPED$',
-             '~O~KAY$',' FiB LOADER ',1);
-      EXIT;
-    end;
-
-  Move(screen_ptr^,backup.screen,SizeOf(backup.screen));
-  backup.cursor := GetCursor;
-  backup.oldx   := WhereX;
-  backup.oldy   := WhereY;
-
-  dl_environment.context := ' ESC ฤ STOP ';
-  centered_frame(xstart,ystart,43,3,' '+iCASE(NameOnly(instdata_source))+' ',
-                 dialog_background+dialog_border,
-                 dialog_background+dialog_title,double);
-  ShowStr(screen_ptr^,xstart+43-Length(dl_environment.context),ystart+3,
-          dl_environment.context,
-          dialog_background+dialog_border);
-  dl_environment.context := '';
-
-  bnk_queue[1] := ' DOS       iNSTRUMENT                                                   ';
-  bnk_queue[2] := ' NAME      NAME                          ฺ20ฟ ฺ40ฟ ฺ60ฟ ฺ80ฟ ฺE0ฟ C0    ';
-  bnk_queue[3] := 'ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ';
-
-  progress_old_value := BYTE_NULL;
-  progress_step := 40/max(header.nmins,MAX_TIMBRES);
-  progress_xstart := xstart+2;
-  progress_ystart := ystart+2;
-
-  ShowCStr(screen_ptr^,xstart+2,ystart+1,
-           'LOADiNG CONTENTS [RECORD ~'+
-           ExpStrL(Num2str(0,10),5,'0')+'~ OF ~'+
-           ExpStrL(Num2str(max(header.nmins,MAX_TIMBRES),10),5,'0')+'~]',
-           dialog_background+dialog_text,
-           dialog_background+dialog_hi_text);
-
-  show_progress(0);
-  nm_valid := 0;
-  bnk_skip := 0;
-
-  For index := 1 to max(header.nmins,MAX_TIMBRES) do
-    begin
-      If keypressed and (index > 1) then
-        begin
-          fkey := getkey;
-          If (fkey = kESC) then
-            begin
-              Dec(index);
-              BREAK;
-            end;
-        end;
-
-      ShowCStr(screen_ptr^,xstart+2+25,ystart+1,
-               '~'+
-               ExpStrL(Num2str(index,10),5,'0')+'~ OF ~'+
-               ExpStrL(Num2str(max(header.nmins,MAX_TIMBRES),10),5,'0')+'~]',
-               dialog_background+dialog_text,
-               dialog_background+dialog_hi_text);
-      show_progress(index);
-
-      BlockReadF(f,instrument_data,SizeOf(instrument_data),temp);
-      If (temp <> SizeOf(instrument_data)) then
-        begin
-          CloseF(f);
-          _restore;
-          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
-                 'LOADiNG STOPPED$',
-                 '~O~KAY$',' FiB LOADER ',1);
-          EXIT;
-        end;
-
-      import_standard_instrument_alt(instrument_data.idata);
-      If NOT Empty(instrument_data.idata,SizeOf(instrument_data.idata)) then
-        begin
-          bnk_queue[3+index-bnk_skip] := '~ ~~';
-          Inc(nm_valid);
-        end
-      else
-        begin
-          If (nm_valid = 0) then
-            begin
-              Inc(bnk_skip);
-              CONTINUE;
-            end;
-          bnk_queue[3+index-bnk_skip] := ' ';
-        end;
-
-      bnk_queue[3+index-bnk_skip] := bnk_queue[3+index-bnk_skip]+
-        ExpStrR(Upper(CutStr(BaseNameOnly(instrument_data.dname))),8,' ')+'~  ';
-      bnk_queue[3+index-bnk_skip] := bnk_queue[3+index-bnk_skip]+
-        ExpStrR(CutStr(instrument_data.iname),27,' ')+'   ';
-
-      With temp_instrument.fm_data do
-        begin
-          bnk_queue[3+index-bnk_skip] :=
-            bnk_queue[3+index-bnk_skip]+byte2hex(AM_VIB_EG_carrier);
-          bnk_queue[3+index-bnk_skip] :=
-            bnk_queue[3+index-bnk_skip]+byte2hex(AM_VIB_EG_modulator)+' ';
-          bnk_queue[3+index-bnk_skip] :=
-            bnk_queue[3+index-bnk_skip]+byte2hex(KSL_VOLUM_carrier);
-          bnk_queue[3+index-bnk_skip] :=
-            bnk_queue[3+index-bnk_skip]+byte2hex(KSL_VOLUM_modulator)+' ';
-          bnk_queue[3+index-bnk_skip] :=
-            bnk_queue[3+index-bnk_skip]+byte2hex(ATTCK_DEC_carrier);
-          bnk_queue[3+index-bnk_skip] :=
-            bnk_queue[3+index-bnk_skip]+byte2hex(ATTCK_DEC_modulator)+' ';
-          bnk_queue[3+index-bnk_skip] :=
-            bnk_queue[3+index-bnk_skip]+byte2hex(SUSTN_REL_carrier);
-          bnk_queue[3+index-bnk_skip] :=
-            bnk_queue[3+index-bnk_skip]+byte2hex(SUSTN_REL_modulator)+' ';
-          bnk_queue[3+index-bnk_skip] :=
-            bnk_queue[3+index-bnk_skip]+byte2hex(WAVEFORM_carrier);
-          bnk_queue[3+index-bnk_skip] :=
-            bnk_queue[3+index-bnk_skip]+byte2hex(WAVEFORM_modulator)+' ';
-          bnk_queue[3+index-bnk_skip] :=
-            bnk_queue[3+index-bnk_skip]+byte2hex(FEEDBACK_FM)+'  ';
-        end;
-    end;
-
-  SeekF(f,SizeOf(header)+header.nmins*SizeOf(instrument_data));
-  If (IOresult <> 0) then
-    begin
-      CloseF(f);
-      _restore;
-      Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
-             'LOADiNG STOPPED$',
-             '~O~KAY$',' FiB LOADER ',1);
-      EXIT;
-    end;
-
-  BlockReadF(f,ident,SizeOf(ident),temp);
-  If (temp <> SizeOf(ident)) or
-     (ident <> id) then
-    begin
-      CloseF(f);
-      _restore;
-      Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
-             'LOADiNG STOPPED$',
-             '~O~KAY$',' FiB LOADER ',1);
-      EXIT;
-    end;
-
-  CloseF(f);
-  _restore;
-
-  If (nm_valid = 0) then EXIT;
-  If (index = header.nmins) and (bnk_skip = 0) then
-    mn_environment.context := '~[~'+Num2str(nm_valid,10)+'~/'+
-                                    Num2str(index,10)+']~'
-  else
-    mn_environment.context := '['+Num2str(nm_valid,10)+']~['+
-                                  Num2str(index,10)+'/'+
-                                  Num2str(128,10)+']~';
-
-  old_external_proc := mn_environment.ext_proc;
-  old_topic_len := mn_setting.topic_len;
-  old_cycle_moves := mn_setting.cycle_moves;
-  mn_environment.ext_proc := fib_lister_external_proc;
-  mn_setting.topic_len := 3;
-  mn_setting.cycle_moves := FALSE;
-
-  keyboard_reset_buffer;
-  If NOT _force_program_quit then
-    index := Menu(bnk_queue,01,01,min(1,get_bank_position(instdata_source,nm_valid)),
-                  72,20,nm_valid+3,' '+iCASE(NameOnly(instdata_source))+' ');
-
-  add_bank_position(instdata_source,nm_valid,index+3);
-  mn_environment.ext_proc := old_external_proc;
-  mn_setting.topic_len := old_topic_len;
-  mn_setting.cycle_moves := old_cycle_moves;
-
-  If (mn_environment.keystroke = kENTER) then
-    begin
-      load_flag := 1;
-      load_flag_alt := BYTE_NULL;
-      fib_file_loader_alt(index+bnk_skip);
-      If (load_flag_alt <> BYTE_NULL) then
-        begin
-          songdata.instr_data[current_inst] := temp_instrument;
-          If (CutStr(Copy(bnk_queue[3+index],16,27)) <> '') then
-            songdata.instr_names[current_inst] :=
-              Copy(songdata.instr_names[current_inst],1,9)+
-              Copy(bnk_queue[3+index],16,27)
-          else
-            songdata.instr_names[current_inst] :=
-              Copy(songdata.instr_names[current_inst],1,9)+
-              Copy(bnk_queue[3+index],5,8)
-        end;
-    end;
-end;
-
-procedure ibk_file_loader;
-
-const
-  id = 'IBK'+#$1a;
-
-var
-  f: File;
-  header: array[1..4] of Char;
-  temp: Longint;
-  index: Word;
-  old_external_proc: procedure;
-  old_topic_len: Byte;
-  old_cycle_moves: Boolean;
-  xstart,ystart: Byte;
-  nm_valid: Word;
-  instrument_name: array[1..9] of Char;
-  instrument_data: Record
-                     idata: tFM_INST_DATA;
-                     dummy: array[1..5] of Byte;
-                   end;
-
-procedure _restore;
-begin
-  _debug_str_ := 'ILOADERS.INC:ibk_file_loader:_restore';
-  move_to_screen_data := Addr(backup.screen);
-  move_to_screen_area[1] := xstart;
-  move_to_screen_area[2] := ystart;
-  move_to_screen_area[3] := xstart+43+2+1;
-  move_to_screen_area[4] := ystart+3+1;
-  move2screen;
-end;
-
-begin { ibk_file_loader }
-  _debug_str_ := 'ILOADERS.INC:ibk_file_loader';
-  {$i-}
-  Assign(f,instdata_source);
-  ResetF(f);
-  {$i+}
-  If (IOresult <> 0) then
-    begin
-      CloseF(f);
-      Dialog('ERROR READiNG DATA - DiSK ERROR?$'+
-             'LOADiNG STOPPED$',
-             '~O~KAY$',' iBK LOADER ',1);
-      EXIT;
-    end;
-
-  BlockReadF(f,header,SizeOf(header),temp);
-  If (temp <> SizeOf(header)) or
-     (header <> id) then
-    begin
-      CloseF(f);
-      Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
-             'LOADiNG STOPPED$',
-             '~O~KAY$',' iBK LOADER ',1);
-      EXIT;
-    end;
-
-  Move(screen_ptr^,backup.screen,SizeOf(backup.screen));
-  backup.cursor := GetCursor;
-  backup.oldx   := WhereX;
-  backup.oldy   := WhereY;
-
-  dl_environment.context := ' ESC ฤ STOP ';
-  centered_frame(xstart,ystart,43,3,' '+iCASE(NameOnly(instdata_source))+' ',
-                 dialog_background+dialog_border,
-                 dialog_background+dialog_title,double);
-  ShowStr(screen_ptr^,xstart+43-Length(dl_environment.context),ystart+3,
-          dl_environment.context,
-          dialog_background+dialog_border);
-  dl_environment.context := '';
-
-  ibk_queue[1] := ' iNSTRUMENT                                 ';
-  ibk_queue[2] := ' NAME         ฺ20ฟ ฺ40ฟ ฺ60ฟ ฺ80ฟ ฺE0ฟ C0   ';
-  ibk_queue[3] := 'ออออออออออออออออออออออออออออออออออออออออออออ';
-
-  progress_old_value := BYTE_NULL;
-  progress_step := 40/128;
-  progress_xstart := xstart+2;
-  progress_ystart := ystart+2;
-
-  ShowCStr(screen_ptr^,xstart+2,ystart+1,
-           'LOADiNG CONTENTS [RECORD ~'+
-           ExpStrL(Num2str(0,10),5,'0')+'~ OF ~'+
-           ExpStrL(Num2str(128,10),5,'0')+'~]',
-           dialog_background+dialog_text,
-           dialog_background+dialog_hi_text);
-
-  show_progress(0);
-  nm_valid := 0;
-  ibk_skip := 0;
-
-  For index := 1 to 128 do
-    begin
-      If keypressed and (index > 1) then
-        begin
-          fkey := getkey;
-          If (fkey = kESC) then
-            begin
-              Dec(index);
-              BREAK;
-            end;
-        end;
-
-      ShowCStr(screen_ptr^,xstart+2+25,ystart+1,
-               '~'+
-               ExpStrL(Num2str(index,10),5,'0')+'~ OF ~'+
-               ExpStrL(Num2str(128,10),5,'0')+'~]',
-               dialog_background+dialog_text,
-               dialog_background+dialog_hi_text);
-      show_progress(index);
-
-      SeekF(f,$004+PRED(index)*SizeOf(instrument_data));
-      If (IOresult <> 0) then
-        begin
-          CloseF(f);
-          _restore;
-          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
-                 'LOADiNG STOPPED$',
-                 '~O~KAY$',' iBK LOADER ',1);
-          EXIT;
-        end;
-
-      BlockReadF(f,instrument_data,SizeOf(instrument_data),temp);
-      If (temp <> SizeOf(instrument_data)) then
-        begin
-          CloseF(f);
-          _restore;
-          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
-                 'LOADiNG STOPPED$',
-                 '~O~KAY$',' iBK LOADER ',1);
-          EXIT;
-        end;
-
-      SeekF(f,$804+PRED(index)*SizeOf(instrument_name));
-      If (IOresult <> 0) then
-        begin
-          CloseF(f);
-          _restore;
-          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
-                 'LOADiNG STOPPED$',
-                 '~O~KAY$',' iBK LOADER ',1);
-          EXIT;
-        end;
-
-      BlockReadF(f,instrument_name,SizeOf(instrument_name),temp);
-      If (temp <> SizeOf(instrument_name)) then
-        begin
-          CloseF(f);
-          _restore;
-          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
-                 'LOADiNG STOPPED$',
-                 '~O~KAY$',' iBK LOADER ',1);
-          EXIT;
-        end;
-
-      import_sbi_instrument_alt(instrument_data);
-      If NOT Empty(instrument_data,SizeOf(instrument_data)) then
-        begin
-          ibk_queue[3+index-ibk_skip] := '~ ~~';
-          Inc(nm_valid);
-        end
-      else
-        begin
-          If (nm_valid = 0) then
-            begin
-              Inc(ibk_skip);
-              CONTINUE;
-            end;
-          ibk_queue[3+index-ibk_skip] := ' ';
-        end;
-
-      ibk_queue[3+index-ibk_skip] := ibk_queue[3+index-ibk_skip]+
-        ExpStrR(CutStr(asciiz_string(instrument_name)),11,' ')+'~  ';
-
-      With temp_instrument.fm_data do
-        begin
-          ibk_queue[3+index-ibk_skip] :=
-            ibk_queue[3+index-ibk_skip]+byte2hex(AM_VIB_EG_carrier);
-          ibk_queue[3+index-ibk_skip] :=
-            ibk_queue[3+index-ibk_skip]+byte2hex(AM_VIB_EG_modulator)+' ';
-          ibk_queue[3+index-ibk_skip] :=
-            ibk_queue[3+index-ibk_skip]+byte2hex(KSL_VOLUM_carrier);
-          ibk_queue[3+index-ibk_skip] :=
-            ibk_queue[3+index-ibk_skip]+byte2hex(KSL_VOLUM_modulator)+' ';
-          ibk_queue[3+index-ibk_skip] :=
-            ibk_queue[3+index-ibk_skip]+byte2hex(ATTCK_DEC_carrier);
-          ibk_queue[3+index-ibk_skip] :=
-            ibk_queue[3+index-ibk_skip]+byte2hex(ATTCK_DEC_modulator)+' ';
-          ibk_queue[3+index-ibk_skip] :=
-            ibk_queue[3+index-ibk_skip]+byte2hex(SUSTN_REL_carrier);
-          ibk_queue[3+index-ibk_skip] :=
-            ibk_queue[3+index-ibk_skip]+byte2hex(SUSTN_REL_modulator)+' ';
-          ibk_queue[3+index-ibk_skip] :=
-            ibk_queue[3+index-ibk_skip]+byte2hex(WAVEFORM_carrier);
-          ibk_queue[3+index-ibk_skip] :=
-            ibk_queue[3+index-ibk_skip]+byte2hex(WAVEFORM_modulator)+' ';
-          ibk_queue[3+index-ibk_skip] :=
-            ibk_queue[3+index-ibk_skip]+byte2hex(FEEDBACK_FM)+'  ';
-        end;
-    end;
-
-  CloseF(f);
-
-  _restore;
-
-  If (nm_valid = 0) then EXIT;
-  If (index = 128) and (ibk_skip = 0) then
-    mn_environment.context := '~[~'+Num2str(nm_valid,10)+'~/'+
-                                    Num2str(index,10)+']~'
-  else
-    mn_environment.context := '['+Num2str(nm_valid,10)+']~['+
-                                  Num2str(index,10)+'/'+
-                                  Num2str(128,10)+']~';
-
-  old_external_proc := mn_environment.ext_proc;
-  old_topic_len := mn_setting.topic_len;
-  old_cycle_moves := mn_setting.cycle_moves;
-  mn_environment.ext_proc := ibk_lister_external_proc;
-  mn_setting.topic_len := 3;
-  mn_setting.cycle_moves := FALSE;
-
-  keyboard_reset_buffer;
-  If NOT _force_program_quit then
-    index := Menu(ibk_queue,01,01,min(1,get_bank_position(instdata_source,nm_valid)),
-                  45,20,nm_valid+3,' '+iCASE(NameOnly(instdata_source))+' ');
-
-  add_bank_position(instdata_source,nm_valid,index+3);
-  mn_environment.ext_proc := old_external_proc;
-  mn_setting.topic_len := old_topic_len;
-  mn_setting.cycle_moves := old_cycle_moves;
-
-  If (mn_environment.keystroke = kENTER) then
-    begin
-      load_flag := 1;
-      load_flag_alt := BYTE_NULL;
-      ibk_file_loader_alt(index+ibk_skip);
-      If (load_flag_alt <> BYTE_NULL) then
-        begin
-          songdata.instr_data[current_inst] := temp_instrument;
-          songdata.instr_names[current_inst] :=
-            Copy(songdata.instr_names[current_inst],1,9)+
-            Copy(ibk_queue[3+index],5,8);
-        end;
-    end;
 end;

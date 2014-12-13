@@ -21,7 +21,6 @@
     function INSTRUMENT_CONTROL: Byte;
     procedure instr_control_proc_alt;
     function INSTRUMENT_CONTROL_alt(instr: Byte; title: String): Byte;
-
 }
 
 procedure INSTRUMENT_test(instr,instr2: Byte; chan: Byte; fkey: Word;
@@ -31,7 +30,7 @@ const
   _perc_sim_chan: array[19..20] of Byte = (18,17);
 
 var
-  temp,temp2,temp3,temp5: Byte;
+  idx,temp,temp2,temp3,temp5: Byte;
   valid_key,temp4: Boolean;
   chan_handle: array[1..18] of Byte;
   channels: Byte;
@@ -43,7 +42,10 @@ var
   freq: Word;
 
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'INSTEDIT.INC:INSTRUMENT_test:output_note';
+{$ENDIF}
   note := board_pos+12*(current_octave-1);
   If NOT (note in [0..12*8+1]) then
     begin
@@ -96,7 +98,10 @@ begin
 end;
 
 begin { INSTRUMENT_test }
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'INSTEDIT.INC:INSTRUMENT_test';
+{$ENDIF}
   If ctrl_pressed or alt_pressed or shift_pressed then EXIT;
   valid_key := FALSE;
   For temp := 1 to 29 do
@@ -106,6 +111,10 @@ begin { INSTRUMENT_test }
 
   If NOT valid_key or
      NOT (temp+12*(current_octave-1)-1 in [0..12*8+1]) then EXIT;
+
+  If Empty(songdata.instr_data[instr],SizeOf(songdata.instr_data[instr])) and
+     NOT (is_4op_mode and (instr2 <> BYTE_NULL) and
+          NOT Empty(songdata.instr_data[instr2],SizeOf(songdata.instr_data[instr2]))) then EXIT;
 
   temp2 := temp;
   status_backup.replay_forbidden := replay_forbidden;
@@ -168,13 +177,20 @@ begin { INSTRUMENT_test }
       output_note(songdata.instr_data[instr].perc_voice+15,temp2);
       While scankey(board_scancodes[temp2]) do
         begin
-          keyboard_poll_input;
+{$IFDEF __TMT__}
+          realtime_gfx_poll_proc;
+{$ELSE}
           _emulate_screen_without_delay := TRUE;
-          emulate_screen;
+          keyboard_poll_input;
+{$ENDIF}
+         keyboard_reset_buffer;
+         emulate_screen;
         end;
     end
   else Repeat
+{$IFNDEF __TMT__}
          keyboard_poll_input;
+{$ENDIF}
          valid_key := FALSE;
 
          For temp := 1 to 29 do
@@ -185,11 +201,11 @@ begin { INSTRUMENT_test }
              If NOT (is_4op_mode and (instr2 <> BYTE_NULL)) then
                begin
                  temp3 := get_chanpos(chan_handle,channels,temp2);
-                 temp5 := get_chanpos(chan_handle,channels,0)
+                 temp5 := get_chanpos(chan_handle,channels,0);
                end
              else begin
                     temp3 := get_chanpos2(chan_handle,channels,temp2);
-                    temp5 := get_chanpos2(chan_handle,channels,0)
+                    temp5 := get_chanpos2(chan_handle,channels,0);
                   end;
 
              If temp4 then valid_key := TRUE;
@@ -207,16 +223,26 @@ begin { INSTRUMENT_test }
                       If alt_pressed then keyoff_loop[temp3] := TRUE;
                     end;
            end;
+{$IFDEF __TMT__}
+          realtime_gfx_poll_proc;
+{$ELSE}
           _emulate_screen_without_delay := TRUE;
-         emulate_screen;
+          keyboard_poll_input;
+{$ENDIF}
          keyboard_reset_buffer;
+         emulate_screen;
        until NOT valid_key;
 
   While ctrl_pressed do
     begin
-      keyboard_poll_input;
-      _emulate_screen_without_delay := TRUE;
-      emulate_screen;
+{$IFDEF __TMT__}
+          realtime_gfx_poll_proc;
+{$ELSE}
+          _emulate_screen_without_delay := TRUE;
+          keyboard_poll_input;
+{$ENDIF}
+         keyboard_reset_buffer;
+         emulate_screen;
     end;
 
   songdata.flag_4op := flag_4op_backup;
@@ -271,8 +297,8 @@ begin
   For temp := 1 to 255 do
     If (songdata.instr_names[temp][1] = '') then
           begin
-        result := temp;
-        BREAK;
+            result := temp;
+            BREAK;
           end;
   _1st_marked := result;
 end;
@@ -290,7 +316,7 @@ begin
         begin
           result := temp;
           BREAK;
-                end;
+        end;
   _2nd_marked := result;
 end;
 
@@ -353,95 +379,97 @@ var
   temp_str: String;
 
 begin
-  If _debug_ then
-    _debug_str_ := 'INSTEDIT.INC:INSTRUMENT_CONTROL_page_refresh';
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
+  _debug_str_ := 'INSTEDIT.INC:INSTRUMENT_CONTROL_page_refresh';
+{$ENDIF}
   If (ins_parameter(page,10) AND 1 <> 1) then
     For temp := 1 to 18 do
-      ShowCStr(mn_environment.v_dest^,
+      ShowCStr(mn_environment.v_dest,
                INSCTRL_xshift+10,INSCTRL_yshift+06+temp,
                inst_itm1[temp].str,
                dialog_background+dialog_contxt_dis2,
                color_table[inst_itm1[temp].colr])
   else
     For temp := 1 to 18 do
-      ShowCStr(mn_environment.v_dest^,
+      ShowCStr(mn_environment.v_dest,
                INSCTRL_xshift+10,INSCTRL_yshift+06+temp,
                inst_itm2[temp].str,
                dialog_background+dialog_contxt_dis2,
                color_table[inst_itm2[temp].colr]);
 
-  ShowStr(mn_environment.v_dest^,
+  ShowStr(mn_environment.v_dest,
           INSCTRL_xshift+56,INSCTRL_yshift+05,
           byte2hex(page),
           dialog_background+dialog_title);
 
   For temp := 1 to 10 do
-    ShowStr(mn_environment.v_dest^,
+    ShowStr(mn_environment.v_dest,
             INSCTRL_xshift+32,INSCTRL_yshift+08+pos2[temp],
             byte2hex(tDUMMY_BUFF(Addr(songdata.instr_data[page])^)[_index[temp]]),
             dialog_background+dialog_item);
 
 
-  ShowCStr(mn_environment.v_dest^,
+  ShowCStr(mn_environment.v_dest,
            INSCTRL_xshift+30,INSCTRL_yshift+08+pos2[11],
            connection_str[tDUMMY_BUFF(Addr(songdata.instr_data[page])^)[_index[11]] AND 1]+'~/~'+
            CHR(ORD('0')+(tDUMMY_BUFF(Addr(songdata.instr_data[page])^)[_index[11]] SHR 1 AND 7)),
            dialog_background+dialog_item,
            color_table[inst_itm1[temp].colr]);
- 
+
   Case songdata.instr_data[page].panning of
-    0: ShowStr(mn_environment.v_dest^,
+    0: ShowStr(mn_environment.v_dest,
                INSCTRL_xshift+24,INSCTRL_yshift+08+pos2[12],
                'CENTER',
                dialog_background+dialog_item);
-    1: ShowStr(mn_environment.v_dest^,
+    1: ShowStr(mn_environment.v_dest,
                INSCTRL_xshift+24,INSCTRL_yshift+08+pos2[12],
                'LEFT  ',
                dialog_background+dialog_item);
-    2: ShowStr(mn_environment.v_dest^,
+    2: ShowStr(mn_environment.v_dest,
                INSCTRL_xshift+24,INSCTRL_yshift+08+pos2[12],
                'RiGHT ',
                dialog_background+dialog_item);
   end;
 
   If (songdata.instr_data[page].fine_tune < 0) then
-    ShowStr(mn_environment.v_dest^,
+    ShowStr(mn_environment.v_dest,
             INSCTRL_xshift+24,INSCTRL_yshift+08+pos2[13],
             '-'+ExpStrR(Num2str(Abs(songdata.instr_data[page].fine_tune),16),2,' '),
             dialog_background+dialog_item)
   else
-    ShowStr(mn_environment.v_dest^,
+    ShowStr(mn_environment.v_dest,
             INSCTRL_xshift+24,INSCTRL_yshift+08+pos2[13],
             '+'+ExpStrR(Num2str(Abs(songdata.instr_data[page].fine_tune),16),2,' '),
             dialog_background+dialog_item);
 
   Case songdata.instr_data[page].perc_voice of
-    0: ShowCStr(mn_environment.v_dest^,
+    0: ShowCStr(mn_environment.v_dest,
                 INSCTRL_xshift+09,INSCTRL_yshift+26,
                 ' [~MELODiC~] ',
                 dialog_background+dialog_border,
                 dialog_background+dialog_context);
-    1: ShowCStr(mn_environment.v_dest^,
+    1: ShowCStr(mn_environment.v_dest,
                 INSCTRL_xshift+09,INSCTRL_yshift+26,
                 ' [~PERC:BD~] ',
                 dialog_background+dialog_border,
                 dialog_background+dialog_context);
-    2: ShowCStr(mn_environment.v_dest^,
+    2: ShowCStr(mn_environment.v_dest,
                 INSCTRL_xshift+09,INSCTRL_yshift+26,
                 ' [~PERC:SD~] ',
                 dialog_background+dialog_border,
                 dialog_background+dialog_context);
-    3: ShowCStr(mn_environment.v_dest^,
+    3: ShowCStr(mn_environment.v_dest,
                  INSCTRL_xshift+09,INSCTRL_yshift+26,
                 ' [~PERC:TT~] ',
                 dialog_background+dialog_border,
                 dialog_background+dialog_context);
-    4: ShowCStr(mn_environment.v_dest^,
+    4: ShowCStr(mn_environment.v_dest,
                 INSCTRL_xshift+09,INSCTRL_yshift+26,
                 ' [~PERC:TC~] ',
                 dialog_background+dialog_border,
                 dialog_background+dialog_context);
-    5: ShowCStr(mn_environment.v_dest^,
+    5: ShowCStr(mn_environment.v_dest,
                 INSCTRL_xshift+09,INSCTRL_yshift+26,
                 ' [~PERC:HH~] ',
                 dialog_background+dialog_border,
@@ -453,19 +481,19 @@ begin
 
   With songdata.macro_table[
        songdata.instr_macros[page].arpeggio_table].arpeggio do
-    If (length <> 0) then // and (speed <> 0) then
+    If (songdata.instr_macros[page].arpeggio_table <> 0) then
       If (temp_str <> ' ') then temp_str := temp_str+'+ARP'
       else temp_str := temp_str+'[~MACRO:ARP';
 
   With songdata.macro_table[
        songdata.instr_macros[page].vibrato_table].vibrato do
-    If (length <> 0) then // and (speed <> 0) then
+    If (songdata.instr_macros[page].vibrato_table <> 0) then
       If (temp_str <> ' ') then temp_str := temp_str+'+ViB'
       else temp_str := temp_str+'[~MACRO:ViB';
 
   If (temp_str <> ' ') then temp_str := temp_str+'~] ';
 
-  ShowCStr(mn_environment.v_dest^,INSCTRL_xshift+19,INSCTRL_yshift+26,
+  ShowCStr(mn_environment.v_dest,INSCTRL_xshift+19,INSCTRL_yshift+26,
            ExpStrR(temp_str,21+1,'ֽ'),
            dialog_background+dialog_border,
            dialog_background+dialog_context);
@@ -474,12 +502,16 @@ begin
 end;
 
 const
+{$IFDEF __TMT__}
+  ie_vsize_shift: array[0..5] of Byte = (0,12,12,0,0,0);
+{$ELSE}
   ie_vsize_shift: array[0..2] of Byte = (0,12,12);
+{$ENDIF}
 
 var
   adsr_bckg: Byte;
 
-procedure _show_adsr(var dest; xstart,ystart: Byte;
+procedure _show_adsr(dest: tSCREEN_MEM_PTR; xstart,ystart: Byte;
                      attack,decay,sustain,release,attenuation: Byte;
                      eg_type: Byte;
                      attr,attr_hi: Byte;
@@ -515,16 +547,19 @@ begin
 end;
 
 begin { _show_adsr }
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'INSTEDIT.INC:_show_adsr';
+{$ENDIF}
   fr_setting.update_area := FALSE;
   fr_setting.shadow_enabled := FALSE;
 
   adsr_bckg := instrument_adsr;
-  If (program_screen_mode <> 0) then
+  If (program_screen_mode in [1,2]) then
     begin
       adsr_bckg := instrument_bckg;
       Frame(dest,xstart,ystart+1,xstart+61,ystart+11,
-               instrument_bckg,'',0,solid1);
+            instrument_bckg,'',0,solid1);
     end
   else If reset then
          Frame(dest,xstart,ystart,xstart+63,ystart+12,
@@ -657,9 +692,9 @@ begin { _show_adsr }
             ExpStrR('D',_conv(decay,16-decay),'ת')+
             ExpStrR('S',_conv(sustain,sustain),'ת')+
             ExpStrR('R',_conv(release,15-release)+
-                        15-_conv(release,15-release)+
-                        15-_conv(sustain,sustain)+
-                        15-_conv(decay,16-decay)+
+                         15-_conv(release,15-release)+
+                         15-_conv(sustain,sustain)+
+                         15-_conv(decay,16-decay)+
                         15-_conv(attack,16-attack),'ת'),
             attr_hi);
 end;
@@ -674,78 +709,81 @@ const
   _index: array[1..13] of Byte = (1,0,3,2,5,4,7,6,9,8,10,11,12);
 
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'INSTEDIT.INC:INSTRUMENT_CONTROL_page_refresh_alt';
+{$ENDIF}
   If (ins_parameter(page,10) AND 1 <> 1) then
     For temp := 1 to 18 do
-      ShowCStr(mn_environment.v_dest^,INSCTRL_xshift+10,INSCTRL_yshift+06+temp,inst_itm1[temp].str,
+      ShowCStr(mn_environment.v_dest,INSCTRL_xshift+10,INSCTRL_yshift+06+temp,inst_itm1[temp].str,
                dialog_background+dialog_contxt_dis2,
                color_table[inst_itm1[temp].colr])
   else
     For temp := 1 to 18 do
-      ShowCStr(mn_environment.v_dest^,INSCTRL_xshift+10,INSCTRL_yshift+06+temp,inst_itm2[temp].str,
+      ShowCStr(mn_environment.v_dest,INSCTRL_xshift+10,INSCTRL_yshift+06+temp,inst_itm2[temp].str,
                dialog_background+dialog_contxt_dis2,
                color_table[inst_itm2[temp].colr]);
 
   For temp := 1 to 10 do
-    ShowStr(mn_environment.v_dest^,INSCTRL_xshift+32,INSCTRL_yshift+08+pos2[temp],
+    ShowStr(mn_environment.v_dest,INSCTRL_xshift+32,INSCTRL_yshift+08+pos2[temp],
             byte2hex(tDUMMY_BUFF(Addr(songdata.instr_data[page])^)[_index[temp]]),
             instrument_bckg+instrument_hi_text);
 
-  ShowCStr(mn_environment.v_dest^,
+  ShowCStr(mn_environment.v_dest,
            INSCTRL_xshift+30,INSCTRL_yshift+08+pos2[11],
            connection_str[tDUMMY_BUFF(Addr(songdata.instr_data[page])^)[_index[11]] AND 1]+'~/~'+
            CHR(ORD('0')+(tDUMMY_BUFF(Addr(songdata.instr_data[page])^)[_index[11]] SHR 1 AND 7)),
            dialog_background+dialog_item,
            color_table[inst_itm1[temp].colr]);
-            
+
   Case songdata.instr_data[page].panning of
-    0: ShowStr(mn_environment.v_dest^,INSCTRL_xshift+24,INSCTRL_yshift+08+pos2[12],
+    0: ShowStr(mn_environment.v_dest,INSCTRL_xshift+24,INSCTRL_yshift+08+pos2[12],
                'CENTER',
                instrument_bckg+instrument_hi_text);
-    1: ShowStr(mn_environment.v_dest^,INSCTRL_xshift+24,INSCTRL_yshift+08+pos2[12],
+    1: ShowStr(mn_environment.v_dest,INSCTRL_xshift+24,INSCTRL_yshift+08+pos2[12],
                'LEFT  ',
                instrument_bckg+instrument_hi_text);
-    2: ShowStr(mn_environment.v_dest^,INSCTRL_xshift+24,INSCTRL_yshift+08+pos2[12],
+    2: ShowStr(mn_environment.v_dest,INSCTRL_xshift+24,INSCTRL_yshift+08+pos2[12],
                'RiGHT ',
                instrument_bckg+instrument_hi_text);
   end;
 
   If (songdata.instr_data[page].fine_tune < 0) then
-    ShowStr(mn_environment.v_dest^,INSCTRL_xshift+24,INSCTRL_yshift+08+pos2[13],
+    ShowStr(mn_environment.v_dest,INSCTRL_xshift+24,INSCTRL_yshift+08+pos2[13],
             '-'+ExpStrR(Num2str(Abs(songdata.instr_data[page].fine_tune),16),2,' '),
             instrument_bckg+instrument_hi_text)
   else
-    ShowStr(mn_environment.v_dest^,INSCTRL_xshift+24,INSCTRL_yshift+08+pos2[13],
+    ShowStr(mn_environment.v_dest,INSCTRL_xshift+24,INSCTRL_yshift+08+pos2[13],
             '+'+ExpStrR(Num2str(Abs(songdata.instr_data[page].fine_tune),16),2,' '),
             instrument_bckg+instrument_hi_text);
 
   Case songdata.instr_data[page].perc_voice of
-    0: ShowCStr(mn_environment.v_dest^,
+    0: ShowCStr(mn_environment.v_dest,
                 INSCTRL_xshift+09,INSCTRL_yshift+26,
                 ' [~MELODiC~] ',
                 dialog_background+dialog_border,
                 dialog_background+dialog_context);
-    1: ShowCStr(mn_environment.v_dest^,
+    1: ShowCStr(mn_environment.v_dest,
                 INSCTRL_xshift+09,INSCTRL_yshift+26,
                 ' [~PERC:BD~] ',
                 dialog_background+dialog_border,
                 dialog_background+dialog_context);
-    2: ShowCStr(mn_environment.v_dest^,
+    2: ShowCStr(mn_environment.v_dest,
                 INSCTRL_xshift+09,INSCTRL_yshift+26,
                 ' [~PERC:SD~] ',
                 dialog_background+dialog_border,
                 dialog_background+dialog_context);
-    3: ShowCStr(mn_environment.v_dest^,
+    3: ShowCStr(mn_environment.v_dest,
                  INSCTRL_xshift+09,INSCTRL_yshift+26,
                 ' [~PERC:TT~] ',
                 dialog_background+dialog_border,
                 dialog_background+dialog_context);
-    4: ShowCStr(mn_environment.v_dest^,
+    4: ShowCStr(mn_environment.v_dest,
                 INSCTRL_xshift+09,INSCTRL_yshift+26,
                 ' [~PERC:TC~] ',
                 dialog_background+dialog_border,
                 dialog_background+dialog_context);
-    5: ShowCStr(mn_environment.v_dest^,
+    5: ShowCStr(mn_environment.v_dest,
                 INSCTRL_xshift+09,INSCTRL_yshift+26,
                 ' [~PERC:HH~] ',
                 dialog_background+dialog_border,
@@ -757,19 +795,19 @@ begin
 
   With songdata.macro_table[
        songdata.instr_macros[page].arpeggio_table].arpeggio do
-    If (length <> 0) then // and (speed <> 0) then
+    If (songdata.instr_macros[page].arpeggio_table <> 0) then
       If (temp_str <> ' ') then temp_str := temp_str+'+ARP'
       else temp_str := temp_str+'[~MACRO:ARP';
 
   With songdata.macro_table[
        songdata.instr_macros[page].vibrato_table].vibrato do
-    If (length <> 0) then // and (speed <> 0) then
+    If (songdata.instr_macros[page].vibrato_table <> 0) then
       If (temp_str <> ' ') then temp_str := temp_str+'+ViB'
       else temp_str := temp_str+'[~MACRO:ViB';
 
   If (temp_str <> ' ') then temp_str := temp_str+'~] ';
 
-  ShowCStr(mn_environment.v_dest^,INSCTRL_xshift+19,INSCTRL_yshift+26,
+  ShowCStr(mn_environment.v_dest,INSCTRL_xshift+19,INSCTRL_yshift+26,
            ExpStrR(temp_str,21+1,'ֽ'),
            dialog_background+dialog_border,
            dialog_background+dialog_context);
@@ -809,7 +847,7 @@ const
 
 const
   _ext_carrier: array[1..6] of String[70] = (
-    '( ) 3.0 dB/octave            ©          ×',
+    '( ) 3.0 dB/octave            ©     c     ×',
     '( ) 6.0 dB/octave    ~PANNiNG~ תתתתתתתתתתתתת',
     '',
     '~FiNE-TUNE~            ~FEEDBACK STRENGTH~ ',
@@ -818,7 +856,7 @@ const
 
 const
   _ext_modulator: array[1..6] of String[70] = (
-    '( ) 3.0 dB/octave            ~©          ×~',
+    '( ) 3.0 dB/octave            ~©     c     ×~',
     '( ) 6.0 dB/octave    ~PANNiNG תתתתתתתתתתתתת~',
     '',
     '~FiNE-TUNE            FEEDBACK STRENGTH ~  ',
@@ -912,31 +950,34 @@ var
   temp_str: String;
 
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'INSTEDIT.INC:INSTRUMENT_CONTROL_edit:page_build';
-  ShowStr(vscreen,xstart+45,ystart,
+{$ENDIF}
+  ShowStr(ptr_temp_screen,xstart+45,ystart,
           byte2hex(instrum_page),
           instrument_bckg+instrument_title);
 
-  If (program_screen_mode <> 0) then
-    ShowStr(vscreen,xstart-1,ystart+25,#204+ExpStrL('',70,#205)+#185,instrument_bckg+instrument_border);
+  If NOT (program_screen_mode in [1,2]) then
+    ShowStr(ptr_temp_screen,xstart-1,ystart+25,#204+ExpStrL('',70,#205)+#185,instrument_bckg+instrument_border);
 
   Case inst^.perc_voice of
-    0: ShowCStr(vscreen,xstart,ystart+25,' [~MELODiC~]',
+    0: ShowCStr(ptr_temp_screen,xstart,ystart+25,' [~MELODiC~]',
                 instrument_bckg+instrument_border,
                 instrument_bckg+instrument_context);
-    1: ShowCStr(vscreen,xstart,ystart+25,' [~PERC:BD~]',
+    1: ShowCStr(ptr_temp_screen,xstart,ystart+25,' [~PERC:BD~]',
                 instrument_bckg+instrument_border,
                 instrument_bckg+instrument_context);
-    2: ShowCStr(vscreen,xstart,ystart+25,' [~PERC:SD~]',
+    2: ShowCStr(ptr_temp_screen,xstart,ystart+25,' [~PERC:SD~]',
                 instrument_bckg+instrument_border,
                 instrument_bckg+instrument_context);
-    3: ShowCStr(vscreen,xstart,ystart+25,' [~PERC:TT~]',
+    3: ShowCStr(ptr_temp_screen,xstart,ystart+25,' [~PERC:TT~]',
                 instrument_bckg+instrument_border,
                 instrument_bckg+instrument_context);
-    4: ShowCStr(vscreen,xstart,ystart+25,' [~PERC:TC~]',
+    4: ShowCStr(ptr_temp_screen,xstart,ystart+25,' [~PERC:TC~]',
                 instrument_bckg+instrument_border,
                 instrument_bckg+instrument_context);
-    5: ShowCStr(vscreen,xstart,ystart+25,' [~PERC:HH~]',
+    5: ShowCStr(ptr_temp_screen,xstart,ystart+25,' [~PERC:HH~]',
                 instrument_bckg+instrument_border,
                 instrument_bckg+instrument_context);
   end;
@@ -946,25 +987,25 @@ begin
 
   With songdata.macro_table[
        songdata.instr_macros[instrum_page].arpeggio_table].arpeggio do
-    If (length <> 0) then // and (speed <> 0) then
+    If (songdata.instr_macros[instrum_page].arpeggio_table <> 0) then
       If (temp_str <> ' ') then temp_str := temp_str+'+ARP'
       else temp_str := temp_str+'[~MACRO:ARP';
 
   With songdata.macro_table[
        songdata.instr_macros[instrum_page].vibrato_table].vibrato do
-    If (length <> 0) then // and (speed <> 0) then
+    If (songdata.instr_macros[instrum_page].vibrato_table <> 0) then
       If (temp_str <> ' ') then temp_str := temp_str+'+ViB'
       else temp_str := temp_str+'[~MACRO:ViB';
 
   If (temp_str <> ' ') then temp_str := temp_str+'~] ';
 
-  ShowCStr(vscreen,
+  ShowCStr(ptr_temp_screen,
            xstart+10,ystart+25,
            ExpStrR(temp_str,21+1,'ֽ'),
            instrument_bckg+instrument_border,
            instrument_bckg+instrument_context);
 
-  ShowCStr(vscreen,xstart+55,ystart+25,
+  ShowCStr(ptr_temp_screen,xstart+55,ystart+25,
            ExpStrL(' ~[SPEED:'+Num2str(songdata.tempo*songdata.macro_speedup,10)+#3+']~ ',17,'ֽ'),
            instrument_bckg+instrument_border,
            instrument_bckg+instrument_context);
@@ -989,33 +1030,33 @@ begin
   If carrier then
     For temp := 1 to 24 do
       If NOT (temp in [10..17]) then
-        ShowCStr(vscreen,xstart+1,ystart+temp,_text[temp],
+        ShowCStr(ptr_temp_screen,xstart+1,ystart+temp,_text[temp],
                  instrument_bckg+instrument_text,
                  instrument_bckg+instrument_car)
-      else ShowCStr(vscreen,xstart+1,ystart+temp,_text[temp],
+      else ShowCStr(ptr_temp_screen,xstart+1,ystart+temp,_text[temp],
                     instrument_bckg+instrument_text,
                     instrument_bckg+instrument_glob)
   else
     For temp := 1 to 24 do
       If NOT (temp in [10..17]) then
-        ShowCStr(vscreen,xstart+1,ystart+temp,_text[temp],
+        ShowCStr(ptr_temp_screen,xstart+1,ystart+temp,_text[temp],
                  instrument_bckg+instrument_text,
                  instrument_bckg+instrument_mod)
       else If carrier or (inst^.perc_voice in [2..5]) then
              begin
                If NOT (temp in [15..17]) then
-                 ShowCStr(vscreen,xstart+1,ystart+temp,_text[temp],
+                 ShowCStr(ptr_temp_screen,xstart+1,ystart+temp,_text[temp],
                           instrument_bckg+instrument_text,
                           instrument_bckg+instrument_glob)
                else If (temp <> 17) then
-                      ShowCStr(vscreen,xstart+1,ystart+temp,_text[temp],
+                      ShowCStr(ptr_temp_screen,xstart+1,ystart+temp,_text[temp],
                                instrument_bckg+instrument_glob,
                                instrument_bckg+instrument_hid)
-                    else ShowCStr(vscreen,xstart+1,ystart+temp,_text[temp],
+                    else ShowCStr(ptr_temp_screen,xstart+1,ystart+temp,_text[temp],
                                   instrument_bckg+instrument_text,
                                   instrument_bckg+instrument_hid);
              end
-           else ShowCStr(vscreen,xstart+1,ystart+temp,_text[temp],
+           else ShowCStr(ptr_temp_screen,xstart+1,ystart+temp,_text[temp],
                          instrument_bckg+instrument_text,
                          instrument_bckg+instrument_hid);
 
@@ -1023,75 +1064,75 @@ begin
   Case hpos of
     1: Case vpos of
          1:  If carrier then
-               ShowStr(vscreen,xstart+1,ystart+1,'ATTACK RATE',
+               ShowStr(ptr_temp_screen,xstart+1,ystart+1,'ATTACK RATE',
                        instrument_bckg+instrument_hi_car)
              else
-               ShowStr(vscreen,xstart+1,ystart+1,'ATTACK RATE',
+               ShowStr(ptr_temp_screen,xstart+1,ystart+1,'ATTACK RATE',
                        instrument_bckg+instrument_hi_mod);
 
          2:  If carrier then
-               ShowStr(vscreen,xstart+1,ystart+2,'DECAY RATE',
+               ShowStr(ptr_temp_screen,xstart+1,ystart+2,'DECAY RATE',
                        instrument_bckg+instrument_hi_car)
              else
-               ShowStr(vscreen,xstart+1,ystart+2,'DECAY RATE',
+               ShowStr(ptr_temp_screen,xstart+1,ystart+2,'DECAY RATE',
                        instrument_bckg+instrument_hi_mod);
          3,6,8,
          9:  If carrier then
-               ShowStr(vscreen,xstart+51,ystart+1,'WAVEFORM TYPE',
+               ShowStr(ptr_temp_screen,xstart+51,ystart+1,'WAVEFORM TYPE',
                        instrument_bckg+instrument_hi_car)
              else
-               ShowStr(vscreen,xstart+51,ystart+1,'WAVEFORM TYPE',
+               ShowStr(ptr_temp_screen,xstart+51,ystart+1,'WAVEFORM TYPE',
                        instrument_bckg+instrument_hi_mod);
 
          4:  If carrier then
-               ShowStr(vscreen,xstart+1,ystart+4,'SUSTAiN LEVEL',
+               ShowStr(ptr_temp_screen,xstart+1,ystart+4,'SUSTAiN LEVEL',
                        instrument_bckg+instrument_hi_car)
              else
-               ShowStr(vscreen,xstart+1,ystart+4,'SUSTAiN LEVEL',
+               ShowStr(ptr_temp_screen,xstart+1,ystart+4,'SUSTAiN LEVEL',
                        instrument_bckg+instrument_hi_mod);
 
          5:  If carrier then
-               ShowStr(vscreen,xstart+1,ystart+5,'RELEASE RATE',
+               ShowStr(ptr_temp_screen,xstart+1,ystart+5,'RELEASE RATE',
                        instrument_bckg+instrument_hi_car)
              else
-               ShowStr(vscreen,xstart+1,ystart+5,'RELEASE RATE',
+               ShowStr(ptr_temp_screen,xstart+1,ystart+5,'RELEASE RATE',
                        instrument_bckg+instrument_hi_mod);
 
          7:  If carrier then
-               ShowStr(vscreen,xstart+1,ystart+7,'OUTPUT LEVEL',
+               ShowStr(ptr_temp_screen,xstart+1,ystart+7,'OUTPUT LEVEL',
                        instrument_bckg+instrument_hi_car)
              else
-               ShowStr(vscreen,xstart+1,ystart+7,'OUTPUT LEVEL',
+               ShowStr(ptr_temp_screen,xstart+1,ystart+7,'OUTPUT LEVEL',
                        instrument_bckg+instrument_hi_mod);
          10,11,12,
          13: If carrier then
-               ShowStr(vscreen,xstart+1,ystart+9,'KEY SCALiNG LEVEL',
+               ShowStr(ptr_temp_screen,xstart+1,ystart+9,'KEY SCALiNG LEVEL',
                        instrument_bckg+instrument_hi_car)
              else
-               ShowStr(vscreen,xstart+1,ystart+9,'KEY SCALiNG LEVEL',
+               ShowStr(ptr_temp_screen,xstart+1,ystart+9,'KEY SCALiNG LEVEL',
                        instrument_bckg+instrument_hi_mod);
 
-         14: ShowStr(vscreen,xstart+22,ystart+15,'FEEDBACK STRENGTH',
+         14: ShowStr(ptr_temp_screen,xstart+22,ystart+15,'FEEDBACK STRENGTH',
                      instrument_bckg+instrument_hi_glob);
 
-         15: ShowStr(vscreen,xstart+1,ystart+15,'FiNE-TUNE',
+         15: ShowStr(ptr_temp_screen,xstart+1,ystart+15,'FiNE-TUNE',
                      instrument_bckg+instrument_hi_glob);
 
-         16: ShowStr(vscreen,xstart+22,ystart+16,'CONNECTiON TYPE',
+         16: ShowStr(ptr_temp_screen,xstart+22,ystart+16,'CONNECTiON TYPE',
                      instrument_bckg+instrument_hi_glob);
          17,18,19,
          20: If carrier then
                begin
-                 ShowStr(vscreen,xstart+1,ystart+19,'AMPLiTUDE MODULATiON/ViBRATO/ENVELOPE GENERATOR TYPE/',
+                 ShowStr(ptr_temp_screen,xstart+1,ystart+19,'AMPLiTUDE MODULATiON/ViBRATO/ENVELOPE GENERATOR TYPE/',
                          instrument_bckg+instrument_hi_car);
-                 ShowStr(vscreen,xstart+1,ystart+20,'KEY SCALE RATE/FREQUENCY DATA MULTiPLiER',
+                 ShowStr(ptr_temp_screen,xstart+1,ystart+20,'KEY SCALE RATE/FREQUENCY DATA MULTiPLiER',
                          instrument_bckg+instrument_hi_car);
                end
              else
                begin
-                 ShowStr(vscreen,xstart+1,ystart+19,'AMPLiTUDE MODULATiON/ViBRATO/ENVELOPE GENERATOR TYPE/',
+                 ShowStr(ptr_temp_screen,xstart+1,ystart+19,'AMPLiTUDE MODULATiON/ViBRATO/ENVELOPE GENERATOR TYPE/',
                          instrument_bckg+instrument_hi_mod);
-                 ShowStr(vscreen,xstart+1,ystart+20,'KEY SCALE RATE/FREQUENCY DATA MULTiPLiER',
+                 ShowStr(ptr_temp_screen,xstart+1,ystart+20,'KEY SCALE RATE/FREQUENCY DATA MULTiPLiER',
                          instrument_bckg+instrument_hi_mod);
                end;
        end;
@@ -1100,30 +1141,30 @@ begin
     7: Case vpos of
          2,4,5,
          7:  If carrier then
-               ShowStr(vscreen,xstart+51,ystart+1,'WAVEFORM TYPE',
+               ShowStr(ptr_temp_screen,xstart+51,ystart+1,'WAVEFORM TYPE',
                        instrument_bckg+instrument_hi_car)
              else
-               ShowStr(vscreen,xstart+51,ystart+1,'WAVEFORM TYPE',
+               ShowStr(ptr_temp_screen,xstart+51,ystart+1,'WAVEFORM TYPE',
                        instrument_bckg+instrument_hi_mod);
 
-         13: ShowStr(vscreen,xstart+22,ystart+13,'PANNiNG',
+         13: ShowStr(ptr_temp_screen,xstart+22,ystart+13,'PANNiNG',
                      instrument_bckg+instrument_hi_glob);
 
-         16: ShowStr(vscreen,xstart+22,ystart+16,'CONNECTiON TYPE',
+         16: ShowStr(ptr_temp_screen,xstart+22,ystart+16,'CONNECTiON TYPE',
                      instrument_bckg+instrument_hi_glob);
          18,19,
          20: If carrier then
                begin
-                 ShowStr(vscreen,xstart+1,ystart+19,'AMPLiTUDE MODULATiON/ViBRATO/ENVELOPE GENERATOR TYPE/',
+                 ShowStr(ptr_temp_screen,xstart+1,ystart+19,'AMPLiTUDE MODULATiON/ViBRATO/ENVELOPE GENERATOR TYPE/',
                          instrument_bckg+instrument_hi_car);
-                 ShowStr(vscreen,xstart+1,ystart+20,'KEY SCALE RATE/FREQUENCY DATA MULTiPLiER',
+                 ShowStr(ptr_temp_screen,xstart+1,ystart+20,'KEY SCALE RATE/FREQUENCY DATA MULTiPLiER',
                          instrument_bckg+instrument_hi_car);
                end
              else
                begin
-                 ShowStr(vscreen,xstart+1,ystart+19,'AMPLiTUDE MODULATiON/ViBRATO/ENVELOPE GENERATOR TYPE/',
+                 ShowStr(ptr_temp_screen,xstart+1,ystart+19,'AMPLiTUDE MODULATiON/ViBRATO/ENVELOPE GENERATOR TYPE/',
                          instrument_bckg+instrument_hi_mod);
-                 ShowStr(vscreen,xstart+1,ystart+20,'KEY SCALE RATE/FREQUENCY DATA MULTiPLiER',
+                 ShowStr(ptr_temp_screen,xstart+1,ystart+20,'KEY SCALE RATE/FREQUENCY DATA MULTiPLiER',
                          instrument_bckg+instrument_hi_mod);
                end;
        end;
@@ -1138,30 +1179,33 @@ var
   adsr_vpos: Byte;
 
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'INSTEDIT.INC:INSTRUMENT_CONTROL_edit:page_refresh';
+{$ENDIF}
   x0 := xstart;
   y0 := ystart;
 
-  If (program_screen_mode = 0) then adsr_vpos := y0+10
+  If NOT (program_screen_mode in [1,2]) then adsr_vpos := y0+10
   else adsr_vpos := y0+25;
 
   If (NOT ((vpos in [1,2,4,5,7,20]) and (hpos = 1)) or
       NOT _ADSR_preview_flag) then
     begin
-      _show_adsr(vscreen,x0+3,adsr_vpos,
+      _show_adsr(ptr_temp_screen,x0+3,adsr_vpos,
                  BYTE_NULL,BYTE_NULL,BYTE_NULL,BYTE_NULL,BYTE_NULL,BYTE_NULL,BYTE_NULL,BYTE_NULL,
                  TRUE);
       page_build;
     end;
 
-  If (program_screen_mode = 0) then
+  If NOT (program_screen_mode in [1,2]) then
     begin
       If _ADSR_preview_flag then
-        ShowCStr(vscreen,xstart+29,ystart+25,' [ADSR:~ON~] '+#205,
+        ShowCStr(ptr_temp_screen,xstart+29,ystart+25,' [ADSR:~ON~] '+#205,
                  instrument_bckg+instrument_border,
                  instrument_bckg+instrument_context)
       else
-        ShowCStr(vscreen,xstart+29,ystart+25,' [ADSR:~OFF~] ',
+        ShowCStr(ptr_temp_screen,xstart+29,ystart+25,' [ADSR:~OFF~] ',
                  instrument_bckg+instrument_border,
                  instrument_bckg+instrument_context);
     end;
@@ -1169,87 +1213,87 @@ begin
   If carrier then temp := inst^.fm_data.ATTCK_DEC_carrier
   else temp := inst^.fm_data.ATTCK_DEC_modulator;
 
-  ShowCStr(vscreen,x0+_hpos[1,1],y0+_vpos[1],'~'+
+  ShowCStr(ptr_temp_screen,x0+_hpos[1,1],y0+_vpos[1],'~'+
            ExpStrL('',   (temp SHR 4),'')+'~'+
            ExpStrL('',15-(temp SHR 4),''),
            instrument_bckg+instrument_text,
            instrument_bckg+instrument_hi_text);
 
-  ShowCStr(vscreen,x0+_hpos[2,1],y0+_vpos[2],'~'+
+  ShowCStr(ptr_temp_screen,x0+_hpos[2,1],y0+_vpos[2],'~'+
            ExpStrL('',   (temp AND $0f),'')+'~'+
            ExpStrL('',15-(temp AND $0f),''),
            instrument_bckg+instrument_text,
            instrument_bckg+instrument_hi_text);
 
-  ShowStr(vscreen,x0+_hpos[1,1]+16,y0+_vpos[1],
+  ShowStr(ptr_temp_screen,x0+_hpos[1,1]+16,y0+_vpos[1],
           ExpStrR(Num2str(temp SHR 4,16),1,' '),
           instrument_bckg+instrument_text);
 
-  ShowStr(vscreen,x0+_hpos[2,1]+16,y0+_vpos[2],
+  ShowStr(ptr_temp_screen,x0+_hpos[2,1]+16,y0+_vpos[2],
           ExpStrR(Num2str(temp AND $0f,16),1,' '),
           instrument_bckg+instrument_text);
 
   If carrier then temp := inst^.fm_data.SUSTN_REL_carrier
   else temp := inst^.fm_data.SUSTN_REL_modulator;
 
-  ShowCStr(vscreen,x0+_hpos[4,1],y0+_vpos[4],'~'+
+  ShowCStr(ptr_temp_screen,x0+_hpos[4,1],y0+_vpos[4],'~'+
            ExpStrL('',   (temp SHR 4),'')+'~'+
            ExpStrL('',15-(temp SHR 4),''),
            instrument_bckg+instrument_text,
            instrument_bckg+instrument_hi_text);
 
-  ShowCStr(vscreen,x0+_hpos[5,1],y0+_vpos[5],'~'+
+  ShowCStr(ptr_temp_screen,x0+_hpos[5,1],y0+_vpos[5],'~'+
            ExpStrL('',   (temp AND $0f),'')+'~'+
            ExpStrL('',15-(temp AND $0f),''),
            instrument_bckg+instrument_text,
            instrument_bckg+instrument_hi_text);
 
-  ShowStr(vscreen,x0+_hpos[4,1]+16,y0+_vpos[4],
+  ShowStr(ptr_temp_screen,x0+_hpos[4,1]+16,y0+_vpos[4],
           ExpStrR(Num2str(temp SHR 4,16),1,' '),
           instrument_bckg+instrument_text);
 
-  ShowStr(vscreen,x0+_hpos[5,1]+16,y0+_vpos[5],
+  ShowStr(ptr_temp_screen,x0+_hpos[5,1]+16,y0+_vpos[5],
           ExpStrR(Num2str(temp AND $0f,16),1,' '),
           instrument_bckg+instrument_text);
 
   If carrier then temp := inst^.fm_data.WAVEFORM_carrier
   else temp := inst^.fm_data.WAVEFORM_modulator;
 
-  ShowVStr(vscreen,x0+_hpos[2,2],y0+_vpos[2],
+  ShowVStr(ptr_temp_screen,x0+_hpos[2,2],y0+_vpos[2],
            ExpStrL('',temp AND 7,' ')+'û'+ExpStrL('',7-temp AND 7,' '),
            instrument_bckg+instrument_hi_text);
 
   If carrier then temp := inst^.fm_data.KSL_VOLUM_carrier
   else temp := inst^.fm_data.KSL_VOLUM_modulator;
 
-  ShowCStr(vscreen,x0+_hpos[7,1],y0+_vpos[7],'~'+
+  ShowCStr(ptr_temp_screen,x0+_hpos[7,1],y0+_vpos[7],'~'+
            ExpStrL('',   ((63-(temp AND $3f)) DIV 2),'')+'~'+
            ExpStrL('',31-((63-(temp AND $3f)) DIV 2),''),
            instrument_bckg+instrument_text,
            instrument_bckg+instrument_hi_text);
 
-  ShowStr(vscreen,x0+_hpos[7,1]+32,y0+_vpos[7],
+  ShowStr(ptr_temp_screen,x0+_hpos[7,1]+32,y0+_vpos[7],
           ExpStrR(Num2str(63-(temp AND $3f),16),2,' '),
           instrument_bckg+instrument_text);
 
   temp := temp SHR 6;
   temp := temp SHR 1+temp AND 1 SHL 1;
-  ShowVStr(vscreen,x0+_hpos[10,1],y0+_vpos[10],
+  ShowVStr(ptr_temp_screen,x0+_hpos[10,1],y0+_vpos[10],
            ExpStrL('',temp,' ')+'û'+ExpStrL('',3-temp,' '),
            instrument_bckg+instrument_hi_text);
 
   If carrier or (inst^.perc_voice in [2..5]) then
     begin
       Case inst^.panning of
-        0: ShowCStr(vscreen,x0+_hpos[13,2],y0+_vpos[13],'~ת~תתת~~תתת~ת~',
+        0: ShowCStr(ptr_temp_screen,x0+_hpos[13,2],y0+_vpos[13],'~ת~תתת~~תתת~ת~',
                    instrument_bckg+instrument_text,
                    instrument_bckg+instrument_hi_text);
 
-        1: ShowCStr(vscreen,x0+_hpos[13,2],y0+_vpos[13],'~~ת~ת~תתתתת~ת~',
+        1: ShowCStr(ptr_temp_screen,x0+_hpos[13,2],y0+_vpos[13],'~~ת~ת~תתתתת~ת~',
                    instrument_bckg+instrument_text,
                    instrument_bckg+instrument_hi_text);
 
-        2: ShowCStr(vscreen,x0+_hpos[13,2],y0+_vpos[13],'~ת~תתתתת~ת~ת~~',
+        2: ShowCStr(ptr_temp_screen,x0+_hpos[13,2],y0+_vpos[13],'~ת~תתתתת~ת~ת~~',
                    instrument_bckg+instrument_text,
                    instrument_bckg+instrument_hi_text);
       end;
@@ -1272,32 +1316,32 @@ begin
       else If (inst^.fine_tune < 0) then temps2 := '-'
            else temps2 := '';
 
-      ShowStr(vscreen,x0+_hpos[15,1]+15,y0+_vpos[15]-1,
+      ShowStr(ptr_temp_screen,x0+_hpos[15,1]+15,y0+_vpos[15]-1,
               ExpStrL(temps2+Num2str(temp,16),4,' '),
               instrument_bckg+instrument_text);
 
-      ShowCStr(vscreen,x0+_hpos[15,1],y0+_vpos[15],temps1,
+      ShowCStr(ptr_temp_screen,x0+_hpos[15,1],y0+_vpos[15],temps1,
                instrument_bckg+instrument_text,
                instrument_bckg+instrument_hi_text);
 
       If carrier then
         begin
           temp := inst^.fm_data.FEEDBACK_FM;
-          ShowCStr(vscreen,x0+_hpos[14,1],y0+_vpos[14],'~'+
+          ShowCStr(ptr_temp_screen,x0+_hpos[14,1],y0+_vpos[14],'~'+
                    ExpStrL('',   (temp SHR 1) AND 7, '')+'~'+
                    ExpStrL('',7-((temp SHR 1) AND 7),''),
                    instrument_bckg+instrument_text,
                    instrument_bckg+instrument_hi_text);
 
-          ShowStr(vscreen,x0+_hpos[14,1]+8,y0+_vpos[14],
+          ShowStr(ptr_temp_screen,x0+_hpos[14,1]+8,y0+_vpos[14],
                   ExpStrR(Num2str((temp SHR 1) AND 7,16),2,' '),
                   instrument_bckg+instrument_text);
 
           If (temp AND 1 = 0) then
-            ShowCStr(vscreen,x0+_hpos[16,1]-1,y0+_vpos[16],'(~û~) FM (~ ~) Additive synthesis',
+            ShowCStr(ptr_temp_screen,x0+_hpos[16,1]-1,y0+_vpos[16],'(~û~) FM (~ ~) Additive synthesis',
                      instrument_bckg+instrument_text,
                      instrument_bckg+instrument_hi_text)
-          else ShowCStr(vscreen,x0+_hpos[16,1]-1,y0+_vpos[16],'(~ ~) FM (~û~) Additive synthesis',
+          else ShowCStr(ptr_temp_screen,x0+_hpos[16,1]-1,y0+_vpos[16],'(~ ~) FM (~û~) Additive synthesis',
                         instrument_bckg+instrument_text,
                         instrument_bckg+instrument_hi_text);
         end;
@@ -1311,45 +1355,45 @@ begin
   If ((temp SHR 4) AND 1 = 0) then temps1 := temps1+' ' else temps1 := temps1+'û';
   If ((temp SHR 5) AND 1 = 0) then temps1 := temps1+' ' else temps1 := temps1+'û';
 
-  ShowVStr(vscreen,x0+_hpos[17,1],y0+_vpos[17],temps1,
+  ShowVStr(ptr_temp_screen,x0+_hpos[17,1],y0+_vpos[17],temps1,
            instrument_bckg+instrument_hi_text);
 
   temps1 := ExpStrL('',16,' '); temps1[(temp AND $0f)+1] := '.';
   If ((vpos in [18..20]) and (hpos in [2..7])) then
-    ShowStr(vscreen,x0+_hpos[20,2]-7,y0+_vpos[18]-1,
+    ShowStr(ptr_temp_screen,x0+_hpos[20,2]-7,y0+_vpos[18]-1,
             ExpStrR(_help_text[(vpos-18)*6+hpos-2],34,' '),
             instrument_bckg+instrument_hi_text)
   else
-    ShowStr(vscreen,x0+_hpos[20,2]-7,y0+_vpos[18]-1,
+    ShowStr(ptr_temp_screen,x0+_hpos[20,2]-7,y0+_vpos[18]-1,
             ExpStrR(_help_text[temp AND $0f],34,' '),
             instrument_bckg+instrument_hi_text);
 
   For temp := 1 to 6 do
     If (temps1[temp] = ' ') then
-      ShowStr(vscreen,x0+_hpos[18,2+temp-1],y0+_vpos[18],' ',
+      ShowStr(ptr_temp_screen,x0+_hpos[18,2+temp-1],y0+_vpos[18],' ',
               instrument_bckg+instrument_hi_text)
-    else ShowStr(vscreen,x0+_hpos[18,2+temp-1],y0+_vpos[18],'û',
+    else ShowStr(ptr_temp_screen,x0+_hpos[18,2+temp-1],y0+_vpos[18],'û',
                  instrument_bckg+instrument_hi_text);
 
   For temp := 1 to 6 do
     If (temps1[6+temp] = ' ') then
-      ShowStr(vscreen,x0+_hpos[19,2+temp-1],y0+_vpos[19],' ',
+      ShowStr(ptr_temp_screen,x0+_hpos[19,2+temp-1],y0+_vpos[19],' ',
               instrument_bckg+instrument_hi_text)
-    else ShowStr(vscreen,x0+_hpos[19,2+temp-1],y0+_vpos[19],'û',
+    else ShowStr(ptr_temp_screen,x0+_hpos[19,2+temp-1],y0+_vpos[19],'û',
                  instrument_bckg+instrument_hi_text);
 
   For temp := 1 to 4 do
     If (temps1[12+temp] = ' ') then
-      ShowStr(vscreen,x0+_hpos[20,2+temp-1],y0+_vpos[20],' ',
+      ShowStr(ptr_temp_screen,x0+_hpos[20,2+temp-1],y0+_vpos[20],' ',
               instrument_bckg+instrument_hi_text)
-    else ShowStr(vscreen,x0+_hpos[20,2+temp-1],y0+_vpos[20],'û',
+    else ShowStr(ptr_temp_screen,x0+_hpos[20,2+temp-1],y0+_vpos[20],'û',
                  instrument_bckg+instrument_hi_text);
 
-  If (program_screen_mode <> 0) or
+  If NOT (program_screen_mode in [1,2]) or
      ((vpos in [1,2,4,5,7,20]) and (hpos = 1) and
       _ADSR_preview_flag) then
     If NOT carrier or (inst^.perc_voice in [2..5]) then
-      _show_adsr(vscreen,x0+3,adsr_vpos,
+      _show_adsr(ptr_temp_screen,x0+3,adsr_vpos,
                  inst^.fm_data.ATTCK_DEC_modulator SHR 4,
                  inst^.fm_data.ATTCK_DEC_modulator AND $0f,
                  inst^.fm_data.SUSTN_REL_modulator SHR 4,
@@ -1359,7 +1403,7 @@ begin
                  adsr_bckg+instrument_mod,
                  adsr_bckg+instrument_hi_mod,FALSE)
     else
-      _show_adsr(vscreen,x0+3,adsr_vpos,
+      _show_adsr(ptr_temp_screen,x0+3,adsr_vpos,
                  inst^.fm_data.ATTCK_DEC_carrier SHR 4,
                  inst^.fm_data.ATTCK_DEC_carrier AND $0f,
                  inst^.fm_data.SUSTN_REL_carrier SHR 4,
@@ -1397,34 +1441,37 @@ const
 label _jmp1,_end;
 
 begin { INSTRUMENT_CONTROL_edit }
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'INSTEDIT.INC:INSTRUMENT_CONTROL_edit';
+{$ENDIF}
   inst := Addr(songdata.instr_data[instrum_page]);
   If (inst^.perc_voice in [0,1]) then carrier := TRUE
   else carrier := FALSE;
-
-  hpos := 1; vpos := 1;
+  hpos := 1;
+  vpos := 1;
 
 _jmp1:
   If _force_program_quit then EXIT;
 
-  Move(screen_ptr^,backup.screen,SizeOf(backup.screen));
-  backup.cursor := GetCursor;
-  backup.oldx   := WhereX;
-  backup.oldy   := WhereY;
-
+  ScreenMemCopy(screen_ptr,ptr_screen_backup);
   HideCursor;
-  Move(screen_ptr^,vscreen,SizeOf(vscreen));
-  centered_frame_vdest := Addr(vscreen);
+
+  ScreenMemCopy(screen_ptr,ptr_temp_screen);
+  centered_frame_vdest := ptr_temp_screen;
   centered_frame(xstart,ystart,71,25+ie_vsize_shift[program_screen_mode],' iNSTRUMENT EDiTOR (iNS_  ) ',
                  instrument_bckg+instrument_border,
                  instrument_bckg+instrument_title,double);
   centered_frame_vdest := screen_ptr;
 
-  move_to_screen_data := Addr(vscreen);
+  move_to_screen_data := ptr_temp_screen;
   move_to_screen_area[1] := xstart;
   move_to_screen_area[2] := ystart;
   move_to_screen_area[3] := xstart+71+2;
   move_to_screen_area[4] := ystart+25+ie_vsize_shift[program_screen_mode]+1;
+{$IFDEF __TMT__}
+  toggle_waitretrace := TRUE;
+{$ENDIF}
   move2screen_alt;
 
   move_to_screen_area[1] := xstart+1;
@@ -1925,7 +1972,7 @@ _jmp1:
         kF1:     begin
                    Dec(xstart);
                    HideCursor;
-                   move_to_screen_data := Addr(backup.screen);
+                   move_to_screen_data := ptr_screen_backup;
                    move_to_screen_area[1] := xstart;
                    move_to_screen_area[2] := ystart;
                    move_to_screen_area[3] := xstart+71+2;
@@ -1938,7 +1985,7 @@ _jmp1:
         kCtrlS:  begin
                    Dec(xstart);
                    HideCursor;
-                   move_to_screen_data := Addr(backup.screen);
+                   move_to_screen_data := ptr_screen_backup;
                    move_to_screen_area[1] := xstart;
                    move_to_screen_area[2] := ystart;
                    move_to_screen_area[3] := xstart+71+2;
@@ -1953,7 +2000,7 @@ _jmp1:
         kShF2:   begin
                    Dec(xstart);
                    HideCursor;
-                   move_to_screen_data := Addr(backup.screen);
+                   move_to_screen_data := ptr_screen_backup;
                    move_to_screen_area[1] := xstart;
                    move_to_screen_area[2] := ystart;
                    move_to_screen_area[3] := xstart+71+2;
@@ -1968,7 +2015,7 @@ _jmp1:
         kCtrlL:  begin
                    Dec(xstart);
                    HideCursor;
-                   move_to_screen_data := Addr(backup.screen);
+                   move_to_screen_data := ptr_screen_backup;
                    move_to_screen_area[1] := xstart;
                    move_to_screen_area[2] := ystart;
                    move_to_screen_area[3] := xstart+71+2;
@@ -1985,7 +2032,7 @@ _jmp1:
         kCtrlO:  begin
                    Dec(xstart);
                    HideCursor;
-                   move_to_screen_data := Addr(backup.screen);
+                   move_to_screen_data := ptr_screen_backup;
                    move_to_screen_area[1] := xstart;
                    move_to_screen_area[2] := ystart;
                    move_to_screen_area[3] := xstart+71+2;
@@ -1998,7 +2045,7 @@ _jmp1:
         kCtrlQ:  begin
                    Dec(xstart);
                    HideCursor;
-                   move_to_screen_data := Addr(backup.screen);
+                   move_to_screen_data := ptr_screen_backup;
                    move_to_screen_area[1] := xstart;
                    move_to_screen_area[2] := ystart;
                    move_to_screen_area[3] := xstart+71+2;
@@ -2011,7 +2058,7 @@ _jmp1:
         kCtrlE:  begin
                    Dec(xstart);
                    HideCursor;
-                   move_to_screen_data := Addr(backup.screen);
+                   move_to_screen_data := ptr_screen_backup;
                    move_to_screen_area[1] := xstart;
                    move_to_screen_area[2] := ystart;
                    move_to_screen_area[3] := xstart+71+2;
@@ -2043,13 +2090,16 @@ _jmp1:
           nope := FALSE;
         end;
 _end:
-      emulate_screen;
-      // keyboard_reset_buffer;
+{$IFDEF __TMT__}
+    keyboard_reset_buffer_alt;
+{$ELSE}
+    emulate_screen;
+{$ENDIF}
     until (nope and (fkey = kESC)) or _force_program_quit;
 
   Dec(xstart);
   HideCursor;
-  move_to_screen_data := Addr(backup.screen);
+  move_to_screen_data := ptr_screen_backup;
   move_to_screen_area[1] := xstart;
   move_to_screen_area[2] := ystart;
   move_to_screen_area[3] := xstart+71+2;
@@ -2063,7 +2113,10 @@ var
   temp: Byte;
 
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'INSTEDIT.INC:copy_object';
+{$ENDIF}
   Case clipboard.object_type of
     objInstrument:
       begin
@@ -2100,7 +2153,10 @@ var
   temp: Byte;
 
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'INSTEDIT.INC:paste_object';
+{$ENDIF}
   Case clipboard.object_type of
     objInstrument:
       Case mode of
@@ -2183,7 +2239,10 @@ var
   istr: String;
 
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'INSTEDIT.INC:instr_control_ai';
+{$ENDIF}
   istr := '';
   For temp := 1 to 18 do
     iflag[temp] := ai_table[mn_environment.curr_page+temp-1];
@@ -2207,7 +2266,7 @@ begin
     If (iflag[temp] <> 0) then
       ai_table[mn_environment.curr_page+temp-1] := 1;
 
-  ShowVC3Str(mn_environment.v_dest^,
+  ShowVC3Str(mn_environment.v_dest,
              INSCTRL_xshift+37,
              INSCTRL_yshift+07,
              istr,
@@ -2222,12 +2281,15 @@ var
   temp,temp2,ins1,ins2: Byte;
   temps: String;
   temp_inst: Record
-               name:   String[32];
+               name:   String;
                data:   tADTRACK2_INS;
                macros: tREGISTER_TABLE;
              end;
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'INSTEDIT.INC:instr_control_proc';
+{$ENDIF}
   Case mn_environment.keystroke of
       kNPmins: If (play_status <> isStopped) then
                  If NOT mn_environment.is_editing then
@@ -2239,7 +2301,9 @@ begin
                              NOT (songdata.pattern_order[temp-1] < $80) do
                          begin
                            Dec(temp);
-                           //keyboard_reset_buffer;
+{$IFDEF __TMT__}
+                           keyboard_reset_buffer_alt;
+{$ENDIF}
                          end;
 
                        If (temp > 0) then
@@ -2264,7 +2328,9 @@ begin
                              (songdata.pattern_order[SUCC(temp)] > $80) do
                          begin
                            Inc(temp);
-                           //keyboard_reset_buffer;
+{$IFDEF __TMT__}
+                           keyboard_reset_buffer_alt;
+{$ENDIF}
                          end;
 
                        If (temp < $7f) then
@@ -2471,7 +2537,7 @@ begin
   If is_4op_mode then
     Case marked_instruments of
       0: begin
-           ShowStr(mn_environment.v_dest^,INSCTRL_xshift+39,INSCTRL_yshift+26,
+           ShowStr(mn_environment.v_dest,INSCTRL_xshift+39,INSCTRL_yshift+26,
                    ExpStrL('',17,'ֽ'),
                    dialog_background+dialog_border);
            STATUS_LINE_refresh;
@@ -2480,7 +2546,7 @@ begin
       1: begin
            temps := connection_str[tDUMMY_BUFF(Addr(songdata.instr_data[_1st_marked])^)[_index[11]] AND 1]+'/'+
                     connection_str[tDUMMY_BUFF(Addr(songdata.instr_data[instrum_page])^)[_index[11]] AND 1];
-           ShowCStr(mn_environment.v_dest^,INSCTRL_xshift+41,INSCTRL_yshift+26,
+           ShowCStr(mn_environment.v_dest,INSCTRL_xshift+41,INSCTRL_yshift+26,
                   ' ץ~'+byte2hex(_1st_marked)+
                   '~,פ~'+byte2hex(instrum_page)+'~ '+temps+' ',
                   dialog_background+dialog_border,
@@ -2491,7 +2557,7 @@ begin
            begin
              temps := connection_str[tDUMMY_BUFF(Addr(songdata.instr_data[_1st_marked])^)[_index[11]] AND 1]+'/'+
                       connection_str[tDUMMY_BUFF(Addr(songdata.instr_data[_2nd_marked])^)[_index[11]] AND 1];
-             ShowCStr(mn_environment.v_dest^,INSCTRL_xshift+41,INSCTRL_yshift+26,
+             ShowCStr(mn_environment.v_dest,INSCTRL_xshift+41,INSCTRL_yshift+26,
                       ' ץ~'+byte2hex(_1st_marked)+
                       '~,פ~'+byte2hex(_2nd_marked)+'~ '+temps+' ',
                       dialog_background+dialog_border,
@@ -2500,15 +2566,15 @@ begin
          else
            begin
              temps := connection_str[tDUMMY_BUFF(Addr(songdata.instr_data[_2nd_marked])^)[_index[11]] AND 1]+'/'+
-                      connection_str[tDUMMY_BUFF(Addr(songdata.instr_data[_1st_marked])^)[_index[11]] AND 1];           
-             ShowCStr(mn_environment.v_dest^,INSCTRL_xshift+41,INSCTRL_yshift+26,
+                      connection_str[tDUMMY_BUFF(Addr(songdata.instr_data[_1st_marked])^)[_index[11]] AND 1];
+             ShowCStr(mn_environment.v_dest,INSCTRL_xshift+41,INSCTRL_yshift+26,
                       ' ץ~'+byte2hex(_2nd_marked)+
                       '~,פ~'+byte2hex(_1st_marked)+'~ '+temps+' ',
                       dialog_background+dialog_border,
                       dialog_background+dialog_context);
            end
     end
-  else ShowStr(mn_environment.v_dest^,INSCTRL_xshift+41,INSCTRL_yshift+26,
+  else ShowStr(mn_environment.v_dest,INSCTRL_xshift+41,INSCTRL_yshift+26,
                ExpStrL('',17,'ֽ'),
                dialog_background+dialog_border);
 
@@ -2531,14 +2597,17 @@ var
 label _jmp1;
 
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'INSTEDIT.INC:INSTRUMENT_CONTROL';
+{$ENDIF}
   For temp := 1 to 255 do
     begin
       temp_marks[temp] := songdata.instr_names[temp][1];
       songdata.instr_names[temp][1] := ' ';
     end;
 
-  songdata_crc := Update32(songdata,SizeOf(songdata),0);
+  songdata_crc := Update32(ptr_songdata,SizeOf(songdata),0);
   For temp := 1 to 255 do
     songdata.instr_names[temp][1] := temp_marks[temp];
 
@@ -2546,13 +2615,9 @@ _jmp1:
   If _force_program_quit then EXIT;
 
   keyboard_reset_buffer;
-  Move(screen_ptr^,backup.screen,SizeOf(backup.screen));
-  backup.cursor := GetCursor;
-  backup.oldx   := WhereX;
-  backup.oldy   := WhereY;
-
-  Move(screen_ptr^,vscreen,SizeOf(vscreen));
-  mn_environment.v_dest := Addr(vscreen);
+  ScreenMemCopy(screen_ptr,ptr_screen_backup);
+  mn_environment.v_dest := ptr_temp_screen;
+  ScreenMemCopy(screen_ptr,mn_environment.v_dest);
 
   mn_setting.center_box := FALSE;
   mn_setting.cycle_moves := FALSE;
@@ -2564,39 +2629,39 @@ _jmp1:
   Move(mn_setting.terminate_keys,old_keys,SizeOf(old_keys));
   Move(new_keys,mn_setting.terminate_keys,SizeOf(new_keys));
 
-  Frame(Addr(vscreen)^,INSCTRL_xshift+07,INSCTRL_yshift+05,
-                       INSCTRL_xshift+83,INSCTRL_yshift+26,
-                       dialog_background+dialog_border,
-                       ' iNSTRUMENT CONTROL (iNS_  ) ',
-                       dialog_background+dialog_title,
-                       double);
+  Frame(ptr_temp_screen,INSCTRL_xshift+07,INSCTRL_yshift+05,
+        INSCTRL_xshift+83,INSCTRL_yshift+26,
+        dialog_background+dialog_border,
+        ' iNSTRUMENT CONTROL (iNS_  ) ',
+        dialog_background+dialog_title,
+        double);
 
   fr_setting.update_area := FALSE;
   fr_setting.shadow_enabled := FALSE;
-  Frame(Addr(vscreen)^,INSCTRL_xshift+09,INSCTRL_yshift+06,
-                       INSCTRL_xshift+34,INSCTRL_yshift+25,
-                       dialog_background+dialog_border,
-                       '',
-                       dialog_background+dialog_title,
-                       single);
+  Frame(ptr_temp_screen,INSCTRL_xshift+09,INSCTRL_yshift+06,
+        INSCTRL_xshift+34,INSCTRL_yshift+25,
+        dialog_background+dialog_border,
+        '',
+        dialog_background+dialog_title,
+        single);
 
-  Frame(Addr(vscreen)^,INSCTRL_xshift+36,INSCTRL_yshift+06,
-                       INSCTRL_xshift+81,INSCTRL_yshift+25,
-                       dialog_background+dialog_border,
-                       '',
-                       dialog_background+dialog_title,
-                       single);
+  Frame(ptr_temp_screen,INSCTRL_xshift+36,INSCTRL_yshift+06,
+        INSCTRL_xshift+81,INSCTRL_yshift+25,
+        dialog_background+dialog_border,
+        '',
+        dialog_background+dialog_title,
+        single);
 
-  ShowStr(Addr(vscreen)^,INSCTRL_xshift+66,INSCTRL_yshift+25,
+  ShowStr(ptr_temp_screen,INSCTRL_xshift+66,INSCTRL_yshift+25,
                          ' TAB ִ EDITOR ',
                           dialog_background+dialog_context);
-  ShowStr(Addr(vscreen)^,INSCTRL_xshift+58,INSCTRL_yshift+26,
+  ShowStr(ptr_temp_screen,INSCTRL_xshift+58,INSCTRL_yshift+26,
                          ' [SHiFT] TAB ִ MACROS ',
                           dialog_background+dialog_context);
 
-  ShowVStr(mn_environment.v_dest^,INSCTRL_xshift+37,INSCTRL_yshift+07,ExpStrL('',18,#28),
+  ShowVStr(mn_environment.v_dest,INSCTRL_xshift+37,INSCTRL_yshift+07,ExpStrL('',18,#28),
            dialog_background+instrument_ai_off);
-  ShowVStr(mn_environment.v_dest^,INSCTRL_xshift+38,INSCTRL_yshift+06,'ֲ'+ExpStrL('',18,'³')+'ֱ',
+  ShowVStr(mn_environment.v_dest,INSCTRL_xshift+38,INSCTRL_yshift+06,'ֲ'+ExpStrL('',18,'³')+'ֱ',
            dialog_background+dialog_border);
 
   fr_setting.shadow_enabled := TRUE;
@@ -2607,12 +2672,12 @@ _jmp1:
 
   If (ins_parameter(instrum_page,10) AND 1 <> 1) then
     For temp := 1 to 18 do
-      ShowCStr(Addr(vscreen)^,INSCTRL_xshift+10,INSCTRL_yshift+06+temp,inst_itm1[temp].str,
+      ShowCStr(ptr_temp_screen,INSCTRL_xshift+10,INSCTRL_yshift+06+temp,inst_itm1[temp].str,
                dialog_background+dialog_contxt_dis2,
                color_table[inst_itm1[temp].colr])
   else
     For temp := 1 to 18 do
-      ShowCStr(Addr(vscreen)^,INSCTRL_xshift+10,INSCTRL_yshift+06+temp,inst_itm2[temp].str,
+      ShowCStr(ptr_temp_screen,INSCTRL_xshift+10,INSCTRL_yshift+06+temp,inst_itm2[temp].str,
                dialog_background+dialog_contxt_dis2,
                color_table[inst_itm2[temp].colr]);
 
@@ -2626,11 +2691,14 @@ _jmp1:
     Menu(songdata.instr_names,INSCTRL_xshift+38,INSCTRL_yshift+06,instrum_page,42,18,255,'');
 
   INSTRUMENT_CONTROL_page_refresh(instrum_page);
-  move_to_screen_data := Addr(vscreen);
+  move_to_screen_data := ptr_temp_screen;
   move_to_screen_area[1] := INSCTRL_xshift+7;
   move_to_screen_area[2] := INSCTRL_yshift+5;
   move_to_screen_area[3] := INSCTRL_xshift+83+2;
   move_to_screen_area[4] := INSCTRL_yshift+26+1;
+{$IFDEF __TMT__}
+  toggle_waitretrace := TRUE;
+{$ENDIF}
   move2screen_alt;
 
   mn_environment.v_dest := screen_ptr;
@@ -2650,7 +2718,7 @@ _jmp1:
   mn_environment.ext_proc := NIL;
   mn_environment.ext_proc_rt := NIL;
 
-  move_to_screen_data := Addr(backup.screen);
+  move_to_screen_data := ptr_screen_backup;
   move_to_screen_area[1] := INSCTRL_xshift+7;
   move_to_screen_area[2] := INSCTRL_yshift+5;
   move_to_screen_area[3] := INSCTRL_xshift+83+2;
@@ -2758,7 +2826,10 @@ end;
 
 procedure instr_control_proc_alt;
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'INSTEDIT.INC:instr_control_proc_alt';
+{$ENDIF}
   INSTRUMENT_CONTROL_page_refresh_alt(mn_environment.curr_pos);
   If NOT shift_pressed and NOT alt_pressed and NOT ctrl_pressed then
     If (_4op_to_test <> 0) then
@@ -2772,47 +2843,46 @@ var
   temp: Byte;
 
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'INSTEDIT.INC:INSTRUMENT_CONTROL_alt';
+{$ENDIF}
   keyboard_reset_buffer;
-  Move(screen_ptr^,backup.screen,SizeOf(backup.screen));
-  backup.cursor := GetCursor;
-  backup.oldx   := WhereX;
-  backup.oldy   := WhereY;
-
-  Move(screen_ptr^,vscreen,SizeOf(vscreen));
-  mn_environment.v_dest := Addr(vscreen);
+  ScreenMemCopy(screen_ptr,ptr_screen_backup);
+  mn_environment.v_dest := ptr_temp_screen;
+  ScreenMemCopy(screen_ptr,mn_environment.v_dest);
 
   mn_setting.center_box := FALSE;
   mn_setting.cycle_moves := FALSE;
   mn_environment.ext_proc := instr_control_proc_alt;
   mn_environment.ext_proc_rt := instr_control_ai;
 
-  Frame(Addr(vscreen)^,INSCTRL_xshift+07,INSCTRL_yshift+05,
-                       INSCTRL_xshift+83,INSCTRL_yshift+26,
-                       dialog_background+dialog_border,
-                       ' '+title+' ',
-                       dialog_background+dialog_title,
-                       double);
+  Frame(ptr_temp_screen,INSCTRL_xshift+07,INSCTRL_yshift+05,
+        INSCTRL_xshift+83,INSCTRL_yshift+26,
+        dialog_background+dialog_border,
+        ' '+title+' ',
+        dialog_background+dialog_title,
+        double);
 
   fr_setting.update_area := FALSE;
   fr_setting.shadow_enabled := FALSE;
-  Frame(Addr(vscreen)^,INSCTRL_xshift+09,INSCTRL_yshift+06,
-                       INSCTRL_xshift+34,INSCTRL_yshift+25,
-                       instrument_bckg+instrument_border,
-                       '',
-                       instrument_bckg+instrument_title,
-                       single);
+  Frame(ptr_temp_screen,INSCTRL_xshift+09,INSCTRL_yshift+06,
+        INSCTRL_xshift+34,INSCTRL_yshift+25,
+        instrument_bckg+instrument_border,
+        '',
+        instrument_bckg+instrument_title,
+        single);
 
-  Frame(Addr(vscreen)^,INSCTRL_xshift+36,INSCTRL_yshift+06,
-                       INSCTRL_xshift+81,INSCTRL_yshift+25,
-                       instrument_bckg+instrument_border,
-                       '',
-                       instrument_bckg+instrument_title,
-                       single);
+  Frame(ptr_temp_screen,INSCTRL_xshift+36,INSCTRL_yshift+06,
+        INSCTRL_xshift+81,INSCTRL_yshift+25,
+        instrument_bckg+instrument_border,
+        '',
+        instrument_bckg+instrument_title,
+        single);
 
-  ShowVStr(mn_environment.v_dest^,INSCTRL_xshift+37,INSCTRL_yshift+07,ExpStrL('',18,#28),
+  ShowVStr(mn_environment.v_dest,INSCTRL_xshift+37,INSCTRL_yshift+07,ExpStrL('',18,#28),
            dialog_background+instrument_ai_off);
-  ShowVStr(mn_environment.v_dest^,INSCTRL_xshift+38,INSCTRL_yshift+06,'ֲ'+ExpStrL('',18,'³')+'ֱ',
+  ShowVStr(mn_environment.v_dest,INSCTRL_xshift+38,INSCTRL_yshift+06,'ֲ'+ExpStrL('',18,'³')+'ֱ',
            dialog_background+dialog_border);
 
   fr_setting.shadow_enabled := TRUE;
@@ -2823,12 +2893,12 @@ begin
 
   If (ins_parameter(instr,10) AND 1 <> 1) then
     For temp := 1 to 18 do
-      ShowCStr(Addr(vscreen)^,INSCTRL_xshift+10,INSCTRL_yshift+06+temp,inst_itm1[temp].str,
+      ShowCStr(ptr_temp_screen,INSCTRL_xshift+10,INSCTRL_yshift+06+temp,inst_itm1[temp].str,
                dialog_background+dialog_contxt_dis2,
                color_table[inst_itm1[temp].colr])
   else
     For temp := 1 to 18 do
-      ShowCStr(Addr(vscreen)^,INSCTRL_xshift+10,INSCTRL_yshift+06+temp,inst_itm2[temp].str,
+      ShowCStr(ptr_temp_screen,INSCTRL_xshift+10,INSCTRL_yshift+06+temp,inst_itm2[temp].str,
                dialog_background+dialog_contxt_dis2,
                color_table[inst_itm2[temp].colr]);
 
@@ -2842,11 +2912,14 @@ begin
     Menu(songdata.instr_names,INSCTRL_xshift+38,INSCTRL_yshift+06,instr,42,18,255,'');
 
   INSTRUMENT_CONTROL_page_refresh_alt(instr);
-  move_to_screen_data := Addr(vscreen);
+  move_to_screen_data := ptr_temp_screen;
   move_to_screen_area[1] := INSCTRL_xshift+7;
   move_to_screen_area[2] := INSCTRL_yshift+5;
   move_to_screen_area[3] := INSCTRL_xshift+83+2;
   move_to_screen_area[4] := INSCTRL_yshift+26+1;
+{$IFDEF __TMT__}
+  toggle_waitretrace := TRUE;
+{$ENDIF}
   move2screen_alt;
 
   mn_environment.v_dest := screen_ptr;
@@ -2863,7 +2936,7 @@ begin
   mn_environment.ext_proc := NIL;
   mn_environment.ext_proc_rt := NIL;
 
-  move_to_screen_data := Addr(backup.screen);
+  move_to_screen_data := ptr_screen_backup;
   move_to_screen_area[1] := INSCTRL_xshift+7;
   move_to_screen_area[2] := INSCTRL_yshift+5;
   move_to_screen_area[3] := INSCTRL_xshift+83+2;

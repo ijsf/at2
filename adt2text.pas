@@ -1,10 +1,52 @@
 unit AdT2text;
+{$IFDEF __TMT__}
+{$S-,Q-,R-,V-,B-,X+}
+{$ELSE}
+{$PACKRECORDS 1}
+{$ENDIF}
 interface
 
 const
-{__AT2VER__}at2ver  = '2.4.19';
-{__AT2DAT__}at2date = '11-04-2014';
-{__AT2LNK__}at2link = '9:56am';
+{__AT2VER__}at2ver  = '2.4.20';
+{__AT2DAT__}at2date = '12-15-2014';
+{__AT2LNK__}at2link = '9:12am';
+
+{$IFDEF __TMT__}
+
+const
+  _PLATFORM_STR_ = 'DOS';
+
+const
+  ascii_line_01 = '           Ú-ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ--ùú               úù-¿';
+  ascii_line_02 = '           ³             ~Û~`²`°         ~Û~`²`° ~ÛÛÛÛÛÛÛÛÛ~`²`°  ~ÛÛÛÛÛÛ~`²`°    ³';
+  ascii_line_03 = '           ³             ~Û~`²`°         ~Û~`²`°     ~Û~`²`°     ~Û~`²`°    ~Û~`²`°   ³';
+  ascii_line_04 = '           ù        ~Û~`²`°  ~Û~`²`°         ~Û~`²`°     ~Û~`²`°    ~Û~`²`°      ~Û~`²`°  ³';
+  ascii_line_05 = '           ú       ~Û~`²`°   ~Û~`²`°         ~Û~`²`°     ~Û~`²`°     ~Û~`²`°     ~Û~`²`°  ³';
+  ascii_line_06 = '                  ~Û~`²`°    ~Û~`²`°   ~ÛÛÛÛÛÛÛ~`²`°     ~Û~`²`°           ~ÛÛ~`²`°   ³';
+  ascii_line_07 = '                 ~Û~`²`°  ~ÛÛÛÛ~`²`°  ~Û~`²`°    ~Û~`²`°     ~Û~`²`°          ~Û~`²`°     ³';
+  ascii_line_08 = '                ~Û~`²`°      ~Û~`²`° ~Û~`²`°     ~Û~`²`°     ~Û~`²`°        ~Û~`²`°       ³';
+  ascii_line_09 = '               ~Û~`²`°       ~Û~`²`° ~Û~`²`°     ~Û~`²`°     ~Û~`²`°      ~Û~`²`°         ³';
+  ascii_line_10 = '           ú  ~Û~`²`°        ~Û~`²`° ~Û~`²`°     ~Û~`²`°     ~Û~`²`°     ~Û~`²`°     ~Û~`²`°  ³';
+  ascii_line_11 = '           ù             ~Û~`²`°  ~ÛÛÛÛÛÛÛÛ~`²`°     ~Û~`²`°    ~ÛÛÛÛÛÛÛÛÛÛ~`²`°  ³';
+  ascii_line_12 = '           À-ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ--ùú    úù-ÄÄÄÄÄÄÄÄÄÄÄ-Äùú  úù-ÄÄÄÄ-Ù';
+  ascii_line_13 = '                    .:: ~THE ULTiMATE FM-TRACKiNG TOOL~ ::.          ';
+  ascii_line_14 = '           Ú-Ä--ùú úù-ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ--ùú  úù-ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ-¿';
+  ascii_line_15 = '           ³ `code:`                               ~ÄÂÄ       ÄÄ~     ù';
+  ascii_line_16 = '           ³ ~subz3ro/Altair~                 ~/´DLiB³R/´CK3R ³³ G3~  ú';
+  ascii_line_17 = '           ³ `additional ideas:`               ~³       ³     ÄÄ~      ';
+  ascii_line_18 = '           ³ ~Malfunction/Altair~                        ~'+at2ver+'~      ';
+  ascii_line_19 = '           ³ `special thanks:`                                      ú';
+  ascii_line_20 = '           ³ ~encore~                                               ù';
+  ascii_line_21 = '           ³ ~insane/Altair~        HOMEPAGE   www.adlibtracker.net ³';
+  ascii_line_22 = '           ³ ~ijsf~                 EMAiL  subz3ro.altair@gmail.com ³';
+  ascii_line_23 = '           À-ÄÄÄÄÄÄÄÄÄÄ--ùú    úù-ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ-Ù';
+
+procedure C3WriteLn(str: String; atr1,atr2,atr3: Byte);
+
+{$ELSE}
+
+const
+  _PLATFORM_STR_ = 'SDL';
 
 const
   ascii_line_01 = 'Ú-ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ--ùú               úù-¿';
@@ -23,29 +65,35 @@ const
   ascii_line_14 = 'Ú-Ä--ùú úù-ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ--ùú  úù-ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ-¿';
   ascii_line_15 = '³ `code:`                               ~ÄÂÄ       ÄÄ~     ù';
   ascii_line_16 = '³ ~subz3ro/Altair~                 ~/´DLiB³R/´CK3R ³³ SDL~ ú';
-  ascii_line_17 = '³ `SDL portation support:`          ~³       ³     ÄÄ~      ';
-  ascii_line_18 = '³ ~Dmitry Smagin~                             ~'+at2ver+'~      ';
-  ascii_line_19 = '³ `Linux portation:`';
-  ascii_line_20 = '³ ~Florian Jung (Windfisch)~';
-  ascii_line_21 = '³ `additional ideas:`                                    ú';
-  ascii_line_22 = '³ ~Malfunction/Altair~                                   ù';
-  ascii_line_23 = '³ `special thanks:`      HOMEPAGE   www.adlibtracker.net ³';
-  ascii_line_24 = '³ ~encore~               EMAiL  subz3ro.alrair@gmail.com ³';
-  ascii_line_25 = '³ ~insane/Altair~                      flo@windfisch.org ³';
-  ascii_line_26 = 'À-ÄÄÄÄÄÄÄÄÄÄ--ùú    úù-ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ-Ù';
+  ascii_line_17 = '³ `additional ideas:`               ~³       ³     ÄÄ~      ';
+  ascii_line_18 = '³ ~Malfunction/Altair~                        ~'+at2ver+'~      ';
+  ascii_line_19 = '³ `special thanks:`';
+  ascii_line_20 = '³ ~Dmitry Smagin~                                        ú';
+  ascii_line_21 = '³ ~Windfisch~                                            ù';
+  ascii_line_22 = '³ ~insane/Altair~        HOMEPAGE   www.adlibtracker.net ³';
+  ascii_line_23 = '³ ~encore~               EMAiL  subz3ro.alrair@gmail.com ³';
+
+  ascii_line_24 = 'À-ÄÄÄÄÄÄÄÄÄÄ--ùú    úù-ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ-Ù';
+
+procedure C3WriteLn(posX,PosY: Byte; str: String; atr1,atr2,atr3: Byte);
+
+{$ENDIF}
 
 procedure HELP(topic: String);
-procedure C3WriteLn(posX,PosY: Byte; str: String; atr1,atr2,atr3: Byte);
 procedure ShowStartMessage;
 
 implementation
 
 uses
-    AdT2sys,AdT2vscr,AdT2unit,AdT2keyb,
-    StringIO,DialogIO,TxtScrIO;
+  AdT2unit,AdT2sys,AdT2keyb,
+  TxtScrIO,StringIO,DialogIO,ParserIO;
 
 const
-  LINES = 1076;
+{$IFDEF __TMT__}
+  LINES = 1070;
+{$ELSE}
+  LINES = 1098;
+{$ENDIF}
   help_data: array[1..LINES] of String[128] = (
     '@topic:general',
     'ÍËÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍ',
@@ -66,6 +114,8 @@ const
     '~[Alt] F5~                 @F5 ¿',
     '@input:alt_f8',
     '~[Alt] F9~                 @F9 Ù',
+    '~[Shift] F2~               Quick Save',
+    '~[Shift] F3~               Quick Load',
     '@input:shift_f5',
     '~[Shift] F6~               Toggle Debug mode from position at cursor',
     '@input:shift_f8',
@@ -76,36 +126,38 @@ const
     '~+,-~                      Same as above; play pattern from start',
     '',
     '@topic:note_recorder',
-    'ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿',
-    '³ `WHEN iN NOTE RECORDER MODE`                                         ³',
-    'ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´',
-    '³ ~^Left,^Right~ ³ Select group of tracks for recording                ³',
-    '³ ~[Alt] Q~      ³ Quick reset last selected group of tracks           ³',   
-    '³ ~Enter~        ³ Start recording from current position ~(*)~           ³',
-    '³ ~Space~        ³ `Toggle` using custom instrument for all tracks ¿     ³@@spec_attr:01@@',
-    '³ ~[Alt] Space~  ³ `Toggle` using present instruments in tracks    Ã (*) ³@@spec_attr:02@@',
-    '³ ~MBoard keys~  ³ Write notes to corresponding tracks           ³     ³',
-    '³ ~F8,F9~        ³ Toggle pattern repeat OFF/ON                  Ù     ³',
-    '³ ~Backspace~    ³ Clear note/instrument sequence in tracks            ³',
-    '³ ~Up,Down~      ³ Rewind/Fast-Forward while recording                 ³',
-    '³ ~[Shift] F6~   ³ Continue in Debug mode from position at cursor      ³',
-    '³ ~F7~           ³ Stop recording and reset starting position;         ³',
-    '³              ³ current group of tracks can be modified             ³',
-    '³ ~[Alt] 1..9,0~ ³ Toggle corresponding track ON/OFF                   ³',
-    '³ ~[Alt] R~      ³ Reset flags on all tracks                           ³',
-    '³ ~*~            ³ Reverse ON/OFF on all tracks                        ³',
-    'ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´',
-    '³ In case you need non-continuos track selection, you can choose     ³',
-    '³ from already selected group a subset of tracks where notes will be ³',
-    '³ written by manipulating track ON/OFF flags.                        ³',
-    'ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ',
+    'ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿',
+    '³ `WHEN iN NOTE RECORDER MODE`                                            ³',
+    'ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´',
+    '³ ~^Left,^Right~     Select group of tracks for recording                 ³',
+    '³ ~[Alt] Q~          Quick reset last selected group of tracks            ³',
+    '³ ~Enter~            Start recording from current position ~(*)~            ³',
+    '³ ~Space~            `Toggle` using custom instrument for all tracks ¿      ³@@spec_attr:01@@',
+    '³ ~[Alt] Space~      `Toggle` using present instruments in tracks    ö ref. ³@@spec_attr:02@@',
+    '³ ~MBoard keys~      Write notes to corresponding tracks           ø ~(*)~  ³',
+    '³ ~F8,F9~            Toggle pattern repeat OFF/ON                  Ù      ³',
+    '³ ~Backspace~        Clear note/instrument sequence in tracks             ³',
+    '³ ~Up,Down~          Rewind/Fast-Forward while recording                  ³',
+    '³ ~[Shift] Up,Down~  Increase/Decrease row correction for writing notes   ³',
+    '³ ~[Shift] F6~       Continue in Debug mode from position at cursor       ³',
+    '³ ~F7~               Stop recording and reset starting position;          ³',
+    '³                  current group of tracks can be modified              ³',
+    '³ ~[Alt] 1..9,0~     Toggle track channel ON/OFF (~Shift~ toggles 1`X`)       ³',
+    '³ ~[Alt] R~          Reset flags on all tracks                            ³',
+    '³ ~*~                Reverse ON/OFF on all tracks                         ³',
+    'ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´',
+    '³ In case you need non-continuos track selection, you can choose        ³',
+    '³ from already selected group a subset of tracks where notes will be    ³',
+    '³ written by manipulating track ON/OFF flags.                           ³',
+    'ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ',
     '',
-    'ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿',
-    '³ `WHiLE SONG iS PLAYED WiTH TRACE`           ³',
-    'ÃÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´',
-    '³ ~Enter~ ³ Remove Trace and pause playing    ³',
-    '³ ~Esc~   ³ Remove Trace and continue playing ³',
-    'ÀÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ',
+    'ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿',
+    '³ `iF SONG iS PLAYED WiTH TRACE, iT CAN BE REMOVED WHiLE...`          ³',
+    'ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´',
+    '³ ~Enter~        Playback is paused and cursor stays on position      ³',
+    '³ ~Esc~          Cursor jumps to last position and playback continues ³',
+    '³ ~[Shift] Esc~  Cursor stays on position and playback continues      ³',
+    'ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ',
     '',
     '~^Enter~                   Play next pattern according to order',
     '~^Left  (Up)~              Rewind current pattern (with Trace)',
@@ -122,21 +174,33 @@ const
     '~^P~                       Toggle Pattern List window',
     '~^R~                       Toggle Remap Instrument window',
     '~^T~                       Toggle Transpose window',
+    '~^X~                       Toggle Rearrange Tracks window',
     '~^1..^8~                   Quick-set octave',
     '~[Alt] +,-~                Adjust overall volume',
     '~[Alt] C~                  Copy object to clipboard (with selection)',
     '~[Alt] P~                  Paste object from clipboard',
     '~[Alt] M~                  Toggle marking lines ON/OFF',
     '~[Alt] L~                  Toggle Line Marking Setup window',
-    '~[Alt] 1..9,0~             Toggle corresponding track ON/OFF',
+    '~[Alt] 1..9,0~             Toggle track channel ON/OFF (~Shift~ toggles 1`X`)',
     '~[Alt] S~                  Set all OFF except current track (solo)',
     '~[Alt] R~                  Reset flags on all tracks',
     '~*~                        Reverse ON/OFF on all tracks',
-    '~F10~                      Toggle Quit Program dialog',
-    '~[Shift] F11~              Toggle default (AdT2) behavior mode (optional)',
-    '~F11~                      Toggle FastTracker behavior mode (optional)',
-    '~F12~                      Toggle Scream Tracker behavior mode (optional)',
-    '~[Ctrl][Tab] Up/Down~      Scroll Volume Analyzer section (if necessary)',
+    '~F10~                      Quit program',
+    '~F11~                      Toggle typing mode in Pattern Editor (`AT`'#26'`FT`'#26'`ST`)',
+    '~F12~                      Toggle `line feed` in Pattern Editor',
+    '~[Shift] F12~              Toggle `jump to marked line` in Pattern Editor',
+
+{$IFDEF __TMT__}
+
+    '~[Ctrl][Tab] [...] (*)~    Scroll screen content (if necessary)',
+    '',
+    '~(*) Up,Down,Left,Right,PgUp,PgDown,Home,End~',
+
+{$ELSE}
+
+    '~[Ctrl][Tab] [...] (*)~    Scroll Volume Analyzer section (if necessary)',
+    '',
+    '~(*) Up,Down,PgUp,PgDown~',
     '',
     '@topic:wav_recorder',
     'ÍËÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍ',
@@ -148,11 +212,11 @@ const
     '',
     'ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿',
     '³ `FUNCTiONALiTY OF ALTERNATiVE KEYS`                    ³',
-    'ÃÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´',
-    '³ ~Alt~   ³ Toggle normal recording mode                 ³',
-    '³ ~Ctrl~  ³ Toggle ''per track'' recording mode            ³',
-    '³ ~Shift~ ³ Toggle Fade in / Fade out sound processing   ³',
-    'ÃÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´',
+    'ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´',
+    '³ ~Alt~    Toggle normal recording mode                  ³',
+    '³ ~Ctrl~   Toggle ''per track'' recording mode             ³',
+    '³ ~Shift~  Toggle Fade in / Fade out sound processing    ³',
+    'ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´',
     '³ POSSiBLE COMBiNATiONS: Alt,Ctrl,Alt+Shift,Ctrl+Shift ³',
     'ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ',
     '',
@@ -160,9 +224,12 @@ const
     'you can exclude/include corresponding tracks from/to being recorded',
     'with ordinary track selection procedure:',
     '',
-    '~[Alt] 1..9,0~             Toggle corresponding track ON/OFF',
+    '~[Alt] 1..9,0~             Toggle track channel ON/OFF (~Shift~ toggles 1`X`)',
     '~[Alt] S~                  Set all OFF except current track (solo)',
     '~[Alt] R~                  Reset flags on all tracks',
+
+{$ENDIF}
+
     '',
     '@topic:pattern_order',
     'ÍËÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍ',
@@ -227,14 +294,14 @@ const
     '³ marking also with ~PgUp,PgDn,Home,End~ (~Shift~ is still held down!) ³',
     '³ Quick mark: ~[Alt] Q~ (1x-2x-3x) track Ä pattern Ä discard       ³',
     '³ Toggle last marked block: ~[Alt] B~                                ³',
-    'ÃÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´',
-    '³ ~^B~ ³ Blank block  ³ Insert blank block to pattern                ³',
-    '³ ~^C~ ³ Copy block   ³ Copy block to clipboard                      ³',
-    '³ ~^D~ ³ Delete block ³ Remove block from pattern                    ³',
-    '³ ~^N~ ³ Nuke block   ³ Clear block contents                         ³',
-    '³ ~^V~ ³ Paste block  ³ Paste block from clipboard to pattern ~(*)~    ³',
-    '³ ~^X~ ³ Cut block    ³ Combine both Copy and Delete operation       ³',
-    'ÃÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´',
+    'ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´',
+    '³ ~^B~  Blank block  (Insert blank block to pattern)                 ³',
+    '³ ~^C~  Copy block   (Copy block to clipboard)                       ³',
+    '³ ~^D~  Delete block (Remove block from pattern)                     ³',
+    '³ ~^N~  Nuke block   (Clear block contents)                          ³',
+    '³ ~^V~  Paste block  (Paste block from clipboard to pattern) ~(*)~     ³',
+    '³ ~^X~  Cut block    (Combine both Copy and Delete operation)        ³',
+    'ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´',
     '³ `(*) PASTE BLOCK OPERATiON VARiANTS`                               ³',
     '³ ŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸŸ                               ³',
     '³ "Paste block" operation has three other functional variants      ³',
@@ -427,10 +494,10 @@ const
     '~Home,End~                 Cursor navigation',
     '~[Shift] Left,Right~       Move left/right in arpeggio table      ¿',
     '~[Shift] PgUp,PgDown~      Move page left/right in arpeggio table ö',
-    '~^Left,^Right~             Move left/right in vibrato table       ø refer to',
-    '~^PgUp,^PgDown~            Move page left/right in vibrato table  ö ~(*)~',
-    '~[Shift] Space~            Toggle arpeggio table selection        ö',
-    '~^Space~                   Toggle vibrato table selection         Ù',
+    '~^Left,^Right~             Move left/right in vibrato table       ö refer to',
+    '~^PgUp,^PgDown~            Move page left/right in vibrato table  ø ~(*)~',
+    '~[Shift]{Alt} Space~       Toggle arpeggio table selection ~(**)~   ö',
+    '~[Ctrl] {Alt} Space~       Toggle vibrato table selection  ~(**)~   Ù',
     '~[Shift] Home,End~         Navigate to start/end of arpeggio table',
     '~^Home,^End~               Navigate to start/end of vibrato table',
     '~[Ctrl] "[","]"~           Change current instrument (if possible)',
@@ -440,7 +507,8 @@ const
     '~^Enter~                   Load all macro data from bank (if available)',
     '~Esc~                      Leave Arpeggio/Vibrato Macro Browser window',
     '',
-    '~(*)~ Key combination with ~Ctrl+Shift~ applies action to both tables',
+    '~(*)~  Key combination with ~Ctrl+Shift~ applies action to both tables',
+    '~(**)~ ~Alt~ key invokes no arpeggio resp. vibrato table (index value reset)',
     '',
     '@topic:debug_info',
     'ÍËÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍ',
@@ -457,7 +525,7 @@ const
     '~^Enter~                   Play next pattern according to order',
     '~^Left~                    Rewind current pattern',
     '~^Right~                   Fast-Forward',
-    '~[Alt] 1..9,0~             Toggle corresponding track ON/OFF',
+    '~[Alt] 1..9,0~             Toggle track channel ON/OFF (~Shift~ toggles 1`X`)',
     '~[Alt] S~                  Set all OFF except current track (solo)',
     '~[Alt] R~                  Reset flags on all tracks',
     '~*~                        Reverse ON/OFF on all tracks',
@@ -474,6 +542,19 @@ const
     '~[Shift] Tab~              Jump to previous selection',
     '~MBoard keys <hold down>~  Preview instrument',
     '~Enter~                    Remap',
+    '~Esc~                      Return to Pattern Editor or Pattern Order',
+    '',
+    '@topic:rearrange_dialog',
+    'ÍËÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍ',
+    ' º `REARRANGE TRACKS WiNDOW KEY REFERENCE` º',
+    'ÍÊÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ',
+    '~Up,Down,Left,Right,~',
+    '~Home,End~                 Cursor navigation',
+    '~Tab~                      Jump to next selection',
+    '~[Shift] Tab~              Jump to previous selection',
+    '~^PgUp,^PgDown~            Shift track at cursor up/down in the track list',
+    '~[Shift] ^PgUp,^PgDown~    Rotate track list from cursor upside/downside',
+    '~Enter~                    Rearrange',
     '~Esc~                      Return to Pattern Editor or Pattern Order',
     '',
     '@topic:replace_dialog',
@@ -509,12 +590,13 @@ const
     'ÍÊÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ',
     '~Up,Down,Left,Right,~',
     '~Home,End~                 Cursor navigation',
-{$IFDEF WINDOWS}
-    '~\~                        Navigate to drive root',
-{$ELSE}
+{$IFDEF UNIX}
     '~/~                        Navigate to root directory',
+{$ELSE}
+    '~\~                        Navigate to drive root',
 {$ENDIF}
     '~Backspace~                Navigate to parent directory',
+    '~[Shift] Backspace~        Navigate to program home directory',
     '~MBoard keys <hold down>~  Preview instrument (instrument files only)',
     '~Enter~                    Choose file under cursor / read instrument bank',
     '~Esc~                      Leave without choosing file',
@@ -1020,13 +1102,10 @@ const
     '     `B` ViBRATO OFF',
     '     `C` TREMOLO OFF',
     '     `D` FORCE FiNE ViBRATO',
+    '       FORCE FiNE GLOBAL FREQ. SLiDE',
     '     `E` FORCE FiNE TREMOLO',
+    '       FORCE EXTRA FiNE GLOBAL FREQ. SLiDE',
     '     `F` FORCE NO RESTART FOR MACRO TABLES',
-    '',
-    '`!`xx ÄÄ SWAP ARPEGGiO TABLE        xx=table_number         [0-FF]',
-    '`@`xx ÄÄ SWAP ViBRATO TABLE         xx=table_number         [0-FF]',
-    '`=`xx ÄÄ FORCE iNSTRUMENT VOLUME    xx=volume_level         [0-3F]',
-    '`%`xx ÄÄ SET GLOBAL VOLUME          xx=volume_level         [0-3F]',
     '',
     '@topic:effects_page5',
     '`#`?? `0`x SET CONNECTiON TYPE        x=FM/AM                 [0-1]  ~I~',
@@ -1054,7 +1133,6 @@ const
     '    `7`x GLOBAL VOLUME SLiDE DOWN   x=speed_of_slide        [1-F]',
     '    `8`x FiNE ~&6x~                   x=speed_of_slide        [1-F]',
     '    `9`x FiNE ~&7x~                   x=speed_of_slide        [1-F]',
-    '@topic:effects_page7',
     '    `A`x EXTRA FiNE ~&6x~             x=speed_of_slide        [1-F]',
     '    `B`x EXTRA FiNE ~&7x~             x=speed_of_slide        [1-F]',
     '    `C`x EXTRA FiNE VSLiDE UP       x=speed_of_slide        [1-F]',
@@ -1062,9 +1140,16 @@ const
     '    `E`x EXTRA FiNE FSLiDE UP       x=speed_of_slide        [1-F]',
     '    `F`x EXTRA FiNE FSLiDE DOWN     x=speed_of_slide        [1-F]',
     '',
+    '@topic:effects_page7',
     '`$`xy ÄÄ EXTRA FiNE ARPEGGiO        xy=1st_«tone|2nd_«tone  [1-F]',
     '`@@~xy ÄÄ EXTRA FiNE ViBRATO         xy=speed|depth          [1-F]  ~C~',
     '`^`xy ÄÄ EXTRA FiNE TREMOLO         xy=speed|depth          [1-F]  ~C~',
+    '`!`xx ÄÄ SWAP ARPEGGiO TABLE        xx=table_number         [0-FF]',
+    '`@`xx ÄÄ SWAP ViBRATO TABLE         xx=table_number         [0-FF]',
+    '`=`xx ÄÄ FORCE iNSTRUMENT VOLUME    xx=volume_level         [0-3F]',
+    '`%`xx ÄÄ SET GLOBAL VOLUME          xx=volume_level         [0-3F]',
+    '`>`xx ÄÄ GLOBAL FREQ. SLiDE UP      xx=speed_of_slide       [1-FF]',
+    '`<`xx ÄÄ GLOBAL FREQ. SLiDE DOWN    xx=speed_of_slide       [1-FF]',
     '`@@`xx ÄÄ SET CUSTOM SPEED TABLE     xx=parameter            [0-FF]',
     '',
     '`@@`??  `00`     Reset default speed table',
@@ -1093,7 +1178,11 @@ const
     '',
     '',
     '                                ÄÂÄ       ÄÄ',
+{$IFDEF __TMT__}
+    '                           /´DLiB³R/´CK3R ³³ G3',
+{$ELSE}
     '                           /´DLiB³R/´CK3R ³³ SDL',
+{$ENDIF}
     '                            ³       ³     ÄÄ',
     '                                      '+at2ver+'',
     '',
@@ -1105,23 +1194,37 @@ const
     'E-MAiL subz3ro.altair@gmail.com',
     'iCQ#   58622796',
     '',
-    'For Linux specific topics please contact `Florian Jung` directly',
-    'via email address `flo@windfisch.org`.',
-    '',
     '`Credits:`',
+
+{$IFDEF __TMT__}
+
+    'TMT Development Corp. [TMT Pascal Compiler Lite 3.90]',
+    'Borland International [Turbo Assembler 4.1]',
+    'Charles Scheffold & Thomas Pytel [PMODE/W 1.33]',
+    'Joergen Ibsen [aPLib 0.26b]',
+    'Markus Oberhumer, Laszlo Molnar & John Reiser [UPX 3.91d]',
+
+{$ELSE}
+
     'Florian Klaempfl and others [Free Pascal Compiler 2.6.2]',
     'Japheth [JWasm v2.11]',
+
     'Joergen Ibsen [aPLib 0.26b]',
     'Simple DirectMedia Layer [SDL 1.2]',
+
     'Daniel F. Moisset [SDL4Freepascal-1.2.0.0]',
     'Jarek Burczynski and MAME Development Team [ymf262.c version 0.2]',
     'Markus Oberhumer, Laszlo Molnar & John Reiser [UPX 3.91w]',
+
+{$ENDIF}
+
     '',
+
     '`subz3ro thanks to:`',
     'Slawomir Bubel (Malfunction/Altair), Daniel Illgen (insane/Altair),',
     'Mikkel Hastrup (encore), Florian Jung (Windfisch), Dmitry Smagin,',
-    'Sven Renner (NeuralNET), Tyler Montbriand (Corona688),',
-    'PissMasterPlus and Maan M. Hamze',
+    'Cecill Etheredge (ijsf), Sven Renner (NeuralNET),',
+    'Tyler Montbriand (Corona688), PissMasterPlus and Maan M. Hamze',
     '',
     '`Greetz fly to the following people:`',
     'Dragan Espenschied (drx/Bodenstandig 2000), Carl Peczynski (OxygenStar),',
@@ -1162,8 +1265,8 @@ var
   temp_pos_atr1: Byte;
   temp_pos_atr2: Byte;
 
-procedure ListCStr(var dest; x,y: Byte;
-                             str: String; atr1,atr2,atr3: Byte);
+procedure ListCStr(dest: tSCREEN_MEM_PTR; x,y: Byte;
+                   str: String; atr1,atr2,atr3: Byte);
 begin
   temp_pos_atr1 := Pos('@@attr:',str);
   temp_pos_atr2 := Pos('@@spec_attr:',str);
@@ -1219,11 +1322,11 @@ begin
 end;
 
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2TEXT.PAS:Help';
-  Move(screen_ptr^,backup.screen,SizeOf(backup.screen));
-  backup.cursor := GetCursor;
-  backup.oldx   := WhereX;
-  backup.oldy   := WhereY;
+{$ENDIF}
+  ScreenMemCopy(screen_ptr,ptr_screen_backup);
 
   // assign special attribute values
   FillChar(spec_attr_table,SizeOf(spec_attr_table),0);
@@ -1246,7 +1349,7 @@ begin
   Repeat
     If (page > 1) then temps := '' else temps := '-';
     If (page < LINES-(MAX_PATTERN_ROWS+6)) then temps := temps+'' else temps := temps+'-';
-    ShowCStr(screen_ptr^,xstart+1+74-Length(temps),ystart+MAX_PATTERN_ROWS+8,
+    ShowCStr(screen_ptr,xstart+1+74-Length(temps),ystart+MAX_PATTERN_ROWS+8,
              '[~'+temps+'~]',
              help_background+help_border,
              help_background+help_indicators);
@@ -1258,13 +1361,13 @@ begin
            (Copy(help_data[temp],1,6) <> '@input') then
           begin
             If (Copy(help_data[temp],1,3) <> ' º ') then
-              ListCStr(screen_ptr^,xstart+2,ypos,
+              ListCStr(screen_ptr,xstart+2,ypos,
                        help_data[temp],
                        help_background+help_text,
                        help_background+help_keys,
                        help_background+help_hi_text)
             else
-              ListCStr(screen_ptr^,xstart+2,ypos,
+              ListCStr(screen_ptr,xstart+2,ypos,
                        help_data[temp],
                        help_background+help_text,
                        help_background+help_keys,
@@ -1275,13 +1378,13 @@ begin
                  Length(help_data[temp])-7) = 'key_comment') then
             begin
               If NOT use_H_for_B then
-                ListCStr(screen_ptr^,xstart+2,ypos,
+                ListCStr(screen_ptr,xstart+2,ypos,
                          key_comment_B,
                          help_background+help_text,
                          help_background+help_keys,
                          help_background+help_topic)
               else
-                ListCStr(screen_ptr^,xstart+2,ypos,
+                ListCStr(screen_ptr,xstart+2,ypos,
                          key_comment_H,
                          help_background+help_text,
                          help_background+help_keys,
@@ -1292,13 +1395,13 @@ begin
                    Length(help_data[temp])-7) = 'shift_f5') then
             begin
               If NOT trace_by_default then
-                ListCStr(screen_ptr^,xstart+2,ypos,
+                ListCStr(screen_ptr,xstart+2,ypos,
                          shift_f5_1,
                          help_background+help_text,
                          help_background+help_keys,
                          help_background+help_topic)
               else
-                ListCStr(screen_ptr^,xstart+2,ypos,
+                ListCStr(screen_ptr,xstart+2,ypos,
                          shift_f5_2,
                          help_background+help_text,
                          help_background+help_keys,
@@ -1309,13 +1412,13 @@ begin
                   Length(help_data[temp])-7) = 'shift_f8') then
             begin
               If NOT trace_by_default then
-                ListCStr(screen_ptr^,xstart+2,ypos,
+                ListCStr(screen_ptr,xstart+2,ypos,
                          shift_f8_1,
                          help_background+help_text,
                          help_background+help_keys,
                          help_background+help_topic)
               else
-                ListCStr(screen_ptr^,xstart+2,ypos,
+                ListCStr(screen_ptr,xstart+2,ypos,
                          shift_f8_2,
                          help_background+help_text,
                          help_background+help_keys,
@@ -1326,13 +1429,13 @@ begin
                    Length(help_data[temp])-7) = 'shift_f9') then
             begin
               If NOT trace_by_default then
-                ListCStr(screen_ptr^,xstart+2,ypos,
+                ListCStr(screen_ptr,xstart+2,ypos,
                          shift_f9_1,
                          help_background+help_text,
                          help_background+help_keys,
                          help_background+help_topic)
               else
-                ListCStr(screen_ptr^,xstart+2,ypos,
+                ListCStr(screen_ptr,xstart+2,ypos,
                          shift_f9_2,
                          help_background+help_text,
                          help_background+help_keys,
@@ -1343,13 +1446,13 @@ begin
                    Length(help_data[temp])-7) = 'alt_f8') then
             begin
               If NOT nosync_by_default then
-                ListCStr(screen_ptr^,xstart+2,ypos,
+                ListCStr(screen_ptr,xstart+2,ypos,
                          alt_f8_1,
                          help_background+help_text,
                          help_background+help_keys,
                          help_background+help_topic)
               else
-                ListCStr(screen_ptr^,xstart+2,ypos,
+                ListCStr(screen_ptr,xstart+2,ypos,
                          alt_f8_2,
                          help_background+help_text,
                          help_background+help_keys,
@@ -1390,10 +1493,10 @@ begin
       kHOME:   page := 1;
       kEND:    page := LINES-(MAX_PATTERN_ROWS+6);
     end;
-    emulate_screen;
+    // emulate_screen;
   until (fkey = kENTER) or (fkey = kESC) or _force_program_quit;
 
-  move_to_screen_data := Addr(backup.screen);
+  move_to_screen_data := ptr_screen_backup;
   move_to_screen_area[1] := xstart;
   move_to_screen_area[2] := ystart;
   move_to_screen_area[3] := xstart+77+2;
@@ -1401,12 +1504,27 @@ begin
   move2screen;
 end;
 
-procedure C3WriteLn(posX,posY: Byte; str: String; atr1,atr2,atr3: Byte);
+{$IFDEF __TMT__}
+
+procedure C3WriteLn(str: String; atr1,atr2,atr3: Byte);
 begin
-  ShowC3Str(screen_ptr^,posX,posY,
+  ShowC3Str(screen_ptr,WhereX,WhereY,
             str,
             atr1,atr2,atr3);
+  WriteLn;
 end;
+
+{$ELSE}
+
+procedure C3WriteLn(posX,posY: Byte; str: String; atr1,atr2,atr3: Byte);
+begin
+  ShowC3Str(screen_ptr,posX,posY,
+            str,
+            atr1,atr2,atr3);
+
+end;
+
+{$ENDIF}
 
 procedure ShowStartMessage;
 
@@ -1415,18 +1533,19 @@ var
 
 begin
   For temp := 0 to 18 do
-    adt2_title[temp] := RotStrL('/´DLiB TR/´CK3R ][', ' [SDL] VER.'+at2ver+' ',temp);
+    adt2_title[temp] := RotStrL('/´DLiB TR/´CK3R ][', ' ['+_PLATFORM_STR_+'] VER.'+at2ver+' ',temp);
 
-  adt2_title[18] := ' [SDL] VER.'+at2ver+' ';
+  adt2_title[18] := ' ['+_PLATFORM_STR_+'] VER.'+at2ver+' ';
 
   For temp := 19 to 36 do
-     adt2_title[temp] := RotStrL(' [SDL] VER.'+at2ver+' ', '/´DLiB TR/´CK3R ][',temp-18);
+     adt2_title[temp] := RotStrL(' ['+_PLATFORM_STR_+'] VER.'+at2ver+' ', '/´DLiB TR/´CK3R ][',temp-18);
 
+{$IFDEF __TMT__}
   WriteLn;
-  WriteLn('/´DLiB TR/´CK3R ][ SDL');
-  WriteLn('coded by subz3ro/Altair, SDL portation by Dmitry Smagin & Florian Jung');
-  WriteLn('version ',at2ver,' built on ',at2date,' ',at2link);
+  WriteLn(adt2_title[0],' coded by subz3ro/Altair');
+  WriteLn('            ',at2ver,' ',at2date,' ',at2link,'');
   WriteLn;
+{$ENDIF}
 end;
 
 end.

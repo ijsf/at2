@@ -25,16 +25,16 @@
     procedure fib_lister_external_proc;
     procedure ibk_lister_external_proc;
 }
+
 type
   tByteSet = Set of Byte;
 
-var
-  buf1,
-  buf2,buf3: array[0..PRED(65535)] of Byte;
-
 procedure import_standard_instrument_alt(var data);
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADINS.INC:import_standard_instrument_alt';
+{$ENDIF}
   With temp_instrument do
     begin
       fm_data.AM_VIB_EG_modulator := tDUMMY_BUFF(data)[0];
@@ -56,8 +56,11 @@ end;
 
 procedure import_fin_instrument_alt(var data);
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
    _debug_str_ := 'ILOADINS.INC:import_fin_instrument_alt';
-  With temp_instrument do
+{$ENDIF}
+   With temp_instrument do
     begin
       fm_data.AM_VIB_EG_modulator := tDUMMY_BUFF(data)[0];
       fm_data.AM_VIB_EG_carrier   := tDUMMY_BUFF(data)[1];
@@ -78,7 +81,10 @@ end;
 
 procedure import_hsc_instrument_alt(var data);
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADINS.INC:import_hsc_instrument_alt';
+{$ENDIF}
   With temp_instrument do
     begin
       fm_data.AM_VIB_EG_carrier   := tDUMMY_BUFF(data)[0];
@@ -100,7 +106,10 @@ end;
 
 procedure import_sat_instrument_alt(var data);
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADINS.INC:import_sat_instrument_alt';
+{$ENDIF}
   With temp_instrument do
     begin
       fm_data.FEEDBACK_FM         := tDUMMY_BUFF(data)[0] AND $0f;
@@ -147,7 +156,10 @@ var
   crc: Word;
 
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADINS.INC:a2i_file_loader_alt';
+{$ENDIF}
   FillChar(temp_instrument,SizeOf(temp_instrument),0);
   {$i-}
   Assign(f,fname);
@@ -174,7 +186,7 @@ begin
 
   If (header.ffver in [1..4]) then
     begin
-      BlockReadF(f,buf1,header.b0len,temp);
+      BlockReadF(f,buf2,header.b0len,temp);
       If NOT (temp = header.b0len) then
         begin
           CloseF(f);
@@ -183,7 +195,7 @@ begin
 
       crc := WORD_NULL;
       crc := Update16(header.b0len,1,crc);
-      crc := Update16(buf1,header.b0len,crc);
+      crc := Update16(buf2,header.b0len,crc);
 
       If (crc <> header.crc16) then
         begin
@@ -192,19 +204,19 @@ begin
         end;
 
       Case header.ffver of
-        4: Move(buf1,buf2,header.b0len);
-        3: LZSS_decompress(buf1,buf2,header.b0len);
-        2: LZW_decompress(buf1,buf2);
-        1: SIXPACK_decompress(buf1,buf2,header.b0len);
+        4: Move(buf2,buf3,header.b0len);
+        3: LZSS_decompress(buf2,buf3,header.b0len);
+        2: LZW_decompress(buf2,buf3);
+        1: SIXPACK_decompress(buf2,buf3,header.b0len);
       end;
 
-      Move(buf2,temp_instrument,SizeOf(temp_instrument));
+      Move(buf3,temp_instrument,SizeOf(temp_instrument));
       temp_instrument.panning := 0;
     end;
 
   If (header.ffver in [5..8]) then
     begin
-      BlockReadF(f,buf1,header.b0len,temp);
+      BlockReadF(f,buf2,header.b0len,temp);
       If NOT (temp = header.b0len) then
         begin
           CloseF(f);
@@ -213,7 +225,7 @@ begin
 
       crc := WORD_NULL;
       crc := Update16(header.b0len,1,crc);
-      crc := Update16(buf1,header.b0len,crc);
+      crc := Update16(buf2,header.b0len,crc);
 
       If (crc <> header.crc16) then
         begin
@@ -222,13 +234,13 @@ begin
         end;
 
       Case header.ffver of
-        8: Move(buf1,buf2,header.b0len);
-        7: LZSS_decompress(buf1,buf2,header.b0len);
-        6: LZW_decompress(buf1,buf2);
-        5: SIXPACK_decompress(buf1,buf2,header.b0len);
+        8: Move(buf2,buf3,header.b0len);
+        7: LZSS_decompress(buf2,buf3,header.b0len);
+        6: LZW_decompress(buf2,buf3);
+        5: SIXPACK_decompress(buf2,buf3,header.b0len);
       end;
 
-      Move(buf2,temp_instrument,SizeOf(temp_instrument));
+      Move(buf3,temp_instrument,SizeOf(temp_instrument));
     end;
 
   If (header.ffver = 9) then
@@ -241,7 +253,7 @@ begin
           EXIT;
         end;
 
-      BlockReadF(f,buf1,header2.b0len,temp);
+      BlockReadF(f,buf2,header2.b0len,temp);
       If NOT (temp = header2.b0len) then
         begin
           CloseF(f);
@@ -250,7 +262,7 @@ begin
 
       crc := WORD_NULL;
       crc := Update16(header2.b0len,1,crc);
-      crc := Update16(buf1,header2.b0len,crc);
+      crc := Update16(buf2,header2.b0len,crc);
 
       If (crc <> header2.crc16) then
         begin
@@ -258,8 +270,8 @@ begin
           EXIT;
         end;
 
-      APACK_decompress(buf1,buf2);
-      Move(buf2,temp_instrument,SizeOf(temp_instrument));
+      APACK_decompress(buf2,buf3);
+      Move(buf3,temp_instrument,SizeOf(temp_instrument));
     end;
 
   CloseF(f);
@@ -284,7 +296,10 @@ var
   crc,temp: Longint;
 
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADINS.INC:a2f_file_loader_alt';
+{$ENDIF}
   FillChar(temp_instrument,SizeOf(temp_instrument),0);
   FillChar(temp_instrument_macro,SizeOf(temp_instrument_macro),0);
   FillChar(temp_instrument_dis_fmreg_col,SizeOf(temp_instrument_dis_fmreg_col),0);
@@ -313,7 +328,7 @@ begin
 
   If (header.ffver = 1) then
     begin
-      BlockReadF(f,buf1,header.b0len,temp);
+      BlockReadF(f,buf2,header.b0len,temp);
       If NOT (temp = header.b0len) then
         begin
           CloseF(f);
@@ -322,7 +337,7 @@ begin
 
       crc := DWORD_NULL;
       crc := Update32(header.b0len,1,crc);
-      crc := Update32(buf1,header.b0len,crc);
+      crc := Update32(buf2,header.b0len,crc);
 
       If (crc <> header.crc32) then
         begin
@@ -330,15 +345,15 @@ begin
           EXIT;
         end;
 
-      APACK_decompress(buf1,buf2);
-      Move(buf2,temp_instrument,SizeOf(temp_instrument));
-      Move(buf2[SizeOf(songdata.instr_data[current_inst])+
-                buf2[SizeOf(songdata.instr_data[current_inst])]+1],
+      APACK_decompress(buf2,buf3);
+      Move(buf3,temp_instrument,SizeOf(temp_instrument));
+      Move(buf3[SizeOf(songdata.instr_data[current_inst])+
+                buf3[SizeOf(songdata.instr_data[current_inst])]+1],
            temp_instrument_macro,
            SizeOf(temp_instrument_macro));
 
-      Move(buf2[SizeOf(songdata.instr_data[current_inst])+
-                buf2[SizeOf(songdata.instr_data[current_inst])]+1+
+      Move(buf3[SizeOf(songdata.instr_data[current_inst])+
+                buf3[SizeOf(songdata.instr_data[current_inst])]+1+
                 SizeOf(songdata.instr_macros[current_inst])],
            temp_instrument_dis_fmreg_col,
            SizeOf(temp_instrument_dis_fmreg_col));
@@ -370,7 +385,10 @@ const
                  SizeOf(buffer.idata)+
                  SizeOf(buffer.resrv);
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADINS.INC:cif_file_loader_alt';
+{$ENDIF}
   FillChar(temp_instrument,SizeOf(temp_instrument),0);
   {$i-}
   Assign(f,fname);
@@ -410,7 +428,10 @@ var
   temp: Longint;
 
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADINS.INC:fin_file_loader_alt';
+{$ENDIF}
   FillChar(temp_instrument,SizeOf(temp_instrument),0);
   {$i-}
   Assign(f,fname);
@@ -453,7 +474,10 @@ var
   result: Boolean;
 
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADINS.INC:ins_file_loader_alt:correct_ins';
+{$ENDIF}
   result := TRUE;
   If NOT (tADTRACK2_INS(data).fm_data.WAVEFORM_modulator in [0..3]) then
     result := FALSE;
@@ -465,7 +489,10 @@ begin
 end;
 
 begin { ins_file_loader_alt }
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADINS.INC:ins_file_loader_alt';
+{$ENDIF}
   FillChar(temp_instrument,SizeOf(temp_instrument),0);
   {$i-}
   Assign(f,fname);
@@ -527,7 +554,10 @@ var
   temp: Longint;
 
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADINS.INC:sbi_file_loader_alt';
+{$ENDIF}
   FillChar(temp_instrument,SizeOf(temp_instrument),0);
   {$i-}
   Assign(f,fname);
@@ -589,7 +619,10 @@ var
 
 procedure import_sgi_instrument(inst: Byte; var data);
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADINS.INC:sgi_file_loader_alt:import_sgi_instrument';
+{$ENDIF}
   FillChar(temp_instrument,SizeOf(temp_instrument),0);
   With temp_instrument do
     begin
@@ -623,7 +656,10 @@ begin
 end;
 
 begin { sgi_file_loader_alt }
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADINS.INC:sgi_file_loader_alt';
+{$ENDIF}
   FillChar(temp_instrument,SizeOf(temp_instrument),0);
   {$i-}
   Assign(f,fname);
@@ -701,7 +737,10 @@ var
 
 procedure import_instrument_from_data_record;
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADINS.INC:import_instrument_from_data_record';
+{$ENDIF}
   FillChar(temp_instrument,SizeOf(temp_instrument),0);
   With temp_instrument.fm_data do
     begin
@@ -766,7 +805,10 @@ var
   temp: Longint;
 
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADINS.INC:bnk_file_loader_alt';
+{$ENDIF}
   {$i-}
   Assign(f,instdata_source);
   ResetF(f);
@@ -850,7 +892,10 @@ var
   instrument_data: tFIN_DATA;
 
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADINS.INC:fib_file_loader_alt';
+{$ENDIF}
   {$i-}
   Assign(f,instdata_source);
   ResetF(f);
@@ -901,7 +946,10 @@ var
 
 procedure import_sbi_instrument_alt(var data);
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADINS.INC:import_sbi_instrument_alt';
+{$ENDIF}
   FillChar(temp_instrument,SizeOf(temp_instrument),0);
   With temp_instrument do
     begin
@@ -937,7 +985,10 @@ var
                    end;
 
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADINS.INC:ibk_file_loader_alt';
+{$ENDIF}
   {$i-}
   Assign(f,instdata_source);
   ResetF(f);
@@ -996,7 +1047,10 @@ var
   freq: Word;
 
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADINS.INC:test_instrument_alt:output_note';
+{$ENDIF}
   note := board_pos+12*(current_octave-1);
   If NOT (note in [0..12*8+1]) then
     begin
@@ -1028,7 +1082,10 @@ begin
 end;
 
 begin { test_instrument_alt }
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADINS.INC:test_instrument_alt';
+{$ENDIF}
   valid_key := FALSE;
   For temp := 1 to 29 do
     If NOT shift_pressed then
@@ -1040,7 +1097,7 @@ begin { test_instrument_alt }
 
   If NOT percussion_mode then channels := 18
   else channels := 15;
- 
+
   temp2 := temp;
   If bankSelector or loadArpVib then
     If NOT loadArpVib then
@@ -1051,7 +1108,7 @@ begin { test_instrument_alt }
         load_flag_alt := BYTE_NULL;
         Move(temp_songdata.instr_data[bank_instrument],
              temp_instrument,
-             SizeOf(temp_instrument));           
+             SizeOf(temp_instrument));
         Move(temp_songdata.instr_macros[bank_instrument],
              temp_instrument_macro,
              SizeOf(temp_instrument_macro));
@@ -1064,7 +1121,7 @@ begin { test_instrument_alt }
         load_flag_alt := BYTE_NULL;
         Move(songdata.instr_data[current_inst],
              temp_instrument,
-             SizeOf(temp_instrument));           
+             SizeOf(temp_instrument));
         Move(songdata.instr_macros[current_inst],
              temp_instrument_macro,
              SizeOf(temp_instrument_macro));
@@ -1073,10 +1130,12 @@ begin { test_instrument_alt }
              SizeOf(temp_instrument_dis_fmreg_col));
       end
   else
-    begin  
+    begin
       temps := mn_environment.curr_item;
       load_flag_alt := BYTE_NULL;
+{$IFDEF __TMT__}
       keyboard_toggle_sleep;
+{$ENDIF}
       If (ExtOnly(temps) = 'a2i') then
         a2i_file_loader_alt(temps)
       else If (ExtOnly(temps) = 'a2f') then
@@ -1091,10 +1150,12 @@ begin { test_instrument_alt }
                                   sbi_file_loader_alt(temps)
                                  else If (ExtOnly(temps) = 'sgi') then
                                         sgi_file_loader_alt(temps);
+{$IFDEF __TMT__}
       keyboard_toggle_sleep;
+{$ENDIF}
       If (load_flag_alt = BYTE_NULL) then EXIT;
     end;
- 
+
   Move(songdata.macro_table,
        arp_vib_macro_table_backup,
        SizeOf(arp_vib_macro_table_backup));
@@ -1108,7 +1169,7 @@ begin { test_instrument_alt }
                songdata.macro_table[arpvib_arpeggio_table].arpeggio,
                SizeOf(songdata.macro_table[arpvib_arpeggio_table]));
         end
-      else temp_instrument_macro.arpeggio_table := 0;  
+      else temp_instrument_macro.arpeggio_table := 0;
       If vib_tab_selected then
         begin
           temp_instrument_macro.vibrato_table := arpvib_vibrato_table;
@@ -1132,7 +1193,8 @@ begin { test_instrument_alt }
                   songdata.macro_table[temp_instrument_macro.vibrato_table].vibrato,
                   SizeOf(songdata.macro_table[temp_instrument_macro.vibrato_table]));
          end;
-    
+
+  If Empty(temp_instrument,SizeOf(temp_instrument)) then EXIT;
   status_backup.replay_forbidden := replay_forbidden;
   status_backup.play_status := play_status;
   replay_forbidden := TRUE;
@@ -1161,7 +1223,7 @@ begin { test_instrument_alt }
       FillChar(songdata.instr_macros[current_inst],SizeOf(songdata.instr_macros[current_inst]),0);
       FillChar(songdata.dis_fmreg_col[current_inst],SizeOf(songdata.dis_fmreg_col[current_inst]),0);
     end;
- 
+
   Move(channel_flag,channel_flag_backup,SizeOf(channel_flag_backup));
   Move(event_table,event_table_backup,SizeOf(event_table_backup));
   common_flag_backup := songdata.common_flag;
@@ -1208,9 +1270,13 @@ begin { test_instrument_alt }
       output_note(temp_instrument.perc_voice+15,temp2);
       While scankey(board_scancodes[temp2]) do
         begin
-          keyboard_poll_input;
-          keyboard_reset_buffer;
+{$IFDEF __TMT__}
+          realtime_gfx_poll_proc;
+{$ELSE}
           _emulate_screen_without_delay := TRUE;
+          keyboard_poll_input;
+{$ENDIF}
+          keyboard_reset_buffer;
           emulate_screen;
         end;
     end
@@ -1239,20 +1305,28 @@ begin { test_instrument_alt }
                       If alt_pressed then keyoff_loop[temp3] := TRUE;
                     end;
            end;
-         keyboard_poll_input;
-         keyboard_reset_buffer;
+{$IFDEF __TMT__}
+          realtime_gfx_poll_proc;
+{$ELSE}
           _emulate_screen_without_delay := TRUE;
+          keyboard_poll_input;
+{$ENDIF}
+         keyboard_reset_buffer;
          emulate_screen;
        until NOT valid_key;
-       
+
   While ctrl_pressed do
     begin
-      keyboard_poll_input;
-      keyboard_reset_buffer;
-      _emulate_screen_without_delay := TRUE;
-      emulate_screen;
+{$IFDEF __TMT__}
+          realtime_gfx_poll_proc;
+{$ELSE}
+          _emulate_screen_without_delay := TRUE;
+          keyboard_poll_input;
+{$ENDIF}
+         keyboard_reset_buffer;
+         emulate_screen;
     end;
-   
+
   If (ExtOnly(temps) = 'a2f') or loadMacros then
     begin
       Move(ins__fmreg_table_backup,
@@ -1308,7 +1382,10 @@ var
   freq: Word;
 
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADINS.INC:test_instrument_alt2:output_note';
+{$ENDIF}
   note := board_pos+12*(current_octave-1);
   If NOT (note in [0..12*8+1]) then
     begin
@@ -1340,7 +1417,10 @@ begin
 end;
 
 begin { test_instrument_alt2 }
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADINS.INC:test_instrument_alt2';
+{$ENDIF}
   valid_key := FALSE;
   For temp := 1 to 29 do
     If NOT shift_pressed then
@@ -1357,7 +1437,10 @@ begin { test_instrument_alt2 }
   temps := mn_environment.curr_item;
   load_flag_alt := BYTE_NULL;
 
-  keyboard_toggle_sleep;
+  If Empty(temp_instrument,SizeOf(temp_instrument)) then EXIT;
+{$IFDEF __TMT__}
+      keyboard_toggle_sleep;
+{$ENDIF}
   If (ExtOnly(temps) = 'bnk') then
     bnk_file_loader_alt(Str2num(BaseNameOnly(mn_environment.curr_item),10))
   else If (ExtOnly(temps) = 'fib') then
@@ -1365,7 +1448,9 @@ begin { test_instrument_alt2 }
        else If (ExtOnly(temps) = 'ibk') then
               ibk_file_loader_alt(Str2num(BaseNameOnly(mn_environment.curr_item),10));
 
-  keyboard_toggle_sleep;
+{$IFDEF __TMT__}
+      keyboard_toggle_sleep;
+{$ENDIF}
   If (load_flag_alt = BYTE_NULL) then EXIT;
 
   status_backup.replay_forbidden := replay_forbidden;
@@ -1422,10 +1507,14 @@ begin { test_instrument_alt2 }
       output_note(temp_instrument.perc_voice+15,temp2);
       While scankey(board_scancodes[temp2]) do
         begin
-          keyboard_poll_input;
-          keyboard_reset_buffer;
+{$IFDEF __TMT__}
+          realtime_gfx_poll_proc;
+{$ELSE}
           _emulate_screen_without_delay := TRUE;
-          emulate_screen;
+          keyboard_poll_input;
+{$ENDIF}
+         keyboard_reset_buffer;
+         emulate_screen;
         end;
     end
   else Repeat
@@ -1453,18 +1542,26 @@ begin { test_instrument_alt2 }
                       If alt_pressed then keyoff_loop[temp3] := TRUE;
                     end;
            end;
-         keyboard_poll_input;
-         keyboard_reset_buffer;
+{$IFDEF __TMT__}
+          realtime_gfx_poll_proc;
+{$ELSE}
           _emulate_screen_without_delay := TRUE;
+          keyboard_poll_input;
+{$ENDIF}
+         keyboard_reset_buffer;
          emulate_screen;
        until NOT valid_key;
 
   While ctrl_pressed do
     begin
-      keyboard_poll_input;
-      keyboard_reset_buffer;
-      _emulate_screen_without_delay := TRUE;
-      emulate_screen;
+{$IFDEF __TMT__}
+          realtime_gfx_poll_proc;
+{$ELSE}
+          _emulate_screen_without_delay := TRUE;
+          keyboard_poll_input;
+{$ENDIF}
+         keyboard_reset_buffer;
+         emulate_screen;
     end;
 
   songdata.flag_4op := flag_4op_backup;
@@ -1492,7 +1589,10 @@ end;
 
 procedure fselect_external_proc;
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADINS.INC:fselect_external_proc';
+{$ENDIF}
   If NOT shift_pressed and NOT alt_pressed and NOT ctrl_pressed then
     test_instrument_alt(count_channel(pattern_hpos),
                         mn_environment.keystroke,
@@ -1501,7 +1601,10 @@ end;
 
 procedure a2b_lister_external_proc;
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADINS.INC:a2b_lister_external_proc';
+{$ENDIF}
   If NOT shift_pressed and NOT alt_pressed and NOT ctrl_pressed then
     test_instrument_alt(count_channel(pattern_hpos),
                         mn_environment.keystroke,
@@ -1510,7 +1613,10 @@ end;
 
 procedure a2w_lister_external_proc_callback;
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADINS.INC:a2w_lister_external_proc';
+{$ENDIF}
   If NOT shift_pressed and NOT alt_pressed and NOT ctrl_pressed then
     test_instrument_alt(count_channel(pattern_hpos),
                         mn_environment.keystroke,
@@ -1520,7 +1626,10 @@ end;
 
 procedure a2w_macro_lister_external_proc_callback;
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADINS.INC:a2w_macro_lister_external_proc_callback';
+{$ENDIF}
   If NOT shift_pressed and NOT alt_pressed and NOT ctrl_pressed then
     test_instrument_alt(count_channel(pattern_hpos),
                         mn_environment.keystroke,
@@ -1530,7 +1639,10 @@ end;
 
 procedure bnk_lister_external_proc;
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADINS.INC:bnk_lister_external_proc';
+{$ENDIF}
   mn_environment.curr_item :=
     Num2str(mn_environment.curr_pos+bnk_skip,10)+'.bnk';
   If NOT shift_pressed and NOT alt_pressed and NOT ctrl_pressed then
@@ -1540,7 +1652,10 @@ end;
 
 procedure fib_lister_external_proc;
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADINS.INC:fib_lister_external_proc';
+{$ENDIF}
   mn_environment.curr_item :=
     Num2str(mn_environment.curr_pos+bnk_skip,10)+'.fib';
   If NOT shift_pressed and NOT alt_pressed and NOT ctrl_pressed then
@@ -1550,7 +1665,10 @@ end;
 
 procedure ibk_lister_external_proc;
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADINS.INC:ibk_lister_external_proc';
+{$ENDIF}
   mn_environment.curr_item :=
     Num2str(mn_environment.curr_pos+ibk_skip,10)+'.ibk';
   If NOT shift_pressed and NOT alt_pressed and NOT ctrl_pressed then

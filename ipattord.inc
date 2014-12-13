@@ -18,8 +18,10 @@ var
   temps: String;
 
 begin
-  If _debug_ then
-    _debug_str_ := 'IPATTORD.INC:pattern_list__proc';
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
+  _debug_str_ := 'IPATTORD.INC:pattern_list__proc';
+{$ENDIF}
   Case mn_environment.keystroke of
     kSPACE:
       If ctrl_pressed then
@@ -52,12 +54,12 @@ begin
                   For temp1 := 1 to songdata.nm_tracks do
                     begin
                       If (mn_environment.keystroke <> kAltV) then
-                        put_chunk(mn_environment.curr_pos-1,temp2,temp1,
-                                  clipboard.pattern[temp1][temp2]);
+                      put_chunk(mn_environment.curr_pos-1,temp2,temp1,
+                                clipboard.pattern[temp1][temp2]);
                       If NOT (shift_pressed and (mn_environment.keystroke = kCtrlV)) then
-                        songdata.pattern_names[mn_environment.curr_pos-1] :=
-                          Copy(songdata.pattern_names[mn_environment.curr_pos-1],1,8)+
-                          clipboard._string;
+                      songdata.pattern_names[mn_environment.curr_pos-1] :=
+                        Copy(songdata.pattern_names[mn_environment.curr_pos-1],1,8)+
+                        clipboard._string;
                     end;
 
                 If NOT Empty(pattdata^[(mn_environment.curr_pos-1) DIV 8]
@@ -86,7 +88,7 @@ begin
                   Inc(_2nd);
 
                 Move(pattdata^[_1st DIV 8][_1st MOD 8],
-                     buffer,
+                     buf1,
                      PATTERN_SIZE);
 
                 temps := Copy(songdata.pattern_names[_1st],9,33);
@@ -99,7 +101,7 @@ begin
                     Copy(songdata.pattern_names[_1st],1,8)+
                     Copy(songdata.pattern_names[_2nd],9,33);
 
-                Move(buffer,
+                Move(buf1,
                      pattdata^[_2nd DIV 8][_2nd MOD 8],
                      PATTERN_SIZE);
 
@@ -169,7 +171,7 @@ begin
   end;
 
   nm_marked := _patts_marked;
-  ShowCStr(screen_ptr^,
+  ShowCStr(screen_ptr,
            mn_environment.xpos+16,
            mn_environment.desc_pos,
            ' ~USED:'+
@@ -178,7 +180,7 @@ begin
            dialog_background+dialog_border,
            dialog_background+dialog_context_dis);
 
-  ShowCStr(screen_ptr^,
+  ShowCStr(screen_ptr,
            mn_environment.xpos+31,
            mn_environment.desc_pos,
            ' ~MARKED:'+
@@ -204,7 +206,10 @@ var
 label _jmp1;
 
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'IPATTORD.INC:PATTERN_LIST';
+{$ENDIF}
   For temp := 0 to $7f do
     begin
       temp_marks[temp] := songdata.pattern_names[temp][1];
@@ -311,7 +316,10 @@ var
 label _jmp1;
 
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'IPATTORD.INC:PATTERN_LIST_alt';
+{$ENDIF}
   If NOT (clipboard.object_type in [objNote,objInstrumentDef,objEffect,objEffect2,
                                     objLine,objTrack,objPattern,objMarkedBlock]) then
     begin
@@ -358,7 +366,10 @@ var
   xstart: Byte;
 
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'IPATTORD.INC:PATTERN_ORDER_page_refresh';
+{$ENDIF}
   show_str(25+6+PATTORD_xshift+(MAX_ORDER_COLS*7-1) DIV 2+(MAX_ORDER_COLS*7-1) MOD 2,02,
            byte2hex(pattord_vpos+4*(pattord_hpos+pattord_page-1)-1),
            order_background+order_border);
@@ -385,7 +396,7 @@ begin
         If (songdata.pattern_order[temp2-2+4*(temp1+page-1)-1] < $80) then
           begin
             If (current_order = temp2-2+4*(temp1+page-1)-1) and
-               (play_status <> isStopped) then
+               (play_status <> isStopped) and NOT play_single_patt then
               show_cstr(xstart+pos1[temp1]-1,temp2,
                         byte2hex(temp2-2+4*(temp1+page-1)-1)+'~ ~',
                         order_played_b+order_played,HI(attr))
@@ -423,18 +434,18 @@ begin
       If (program_screen_mode <> 2) then
         If (temp1 <> 0) then
           scroll_pos0 := vscroll_bar(MAX_COLUMNS-2,02,6,temp1,
-                            (page+pattord_hpos-1)*4+pattord_vpos,scroll_pos0,
-                             scrollbar_bckg+scrollbar_text,
-                             scrollbar_bckg+scrollbar_mark)
-        else
+                                     (page+pattord_hpos-1)*4+pattord_vpos,scroll_pos0,
+                                     scrollbar_bckg+scrollbar_text,
+                                     scrollbar_bckg+scrollbar_mark)
+      else
           scroll_pos0 := vscroll_bar(MAX_COLUMNS-2,02,6,1,1,BYTE_NULL,
                                      scrollbar_bckg+scrollbar_text,
                                      scrollbar_bckg+scrollbar_mark);
 
       scroll_pos1 := vscroll_bar(MAX_COLUMNS-1,02,6,$7f,
-                        (page+pattord_hpos-1)*4+pattord_vpos,scroll_pos1,
-                         scrollbar_bckg+scrollbar_text,
-                         scrollbar_bckg+scrollbar_2nd_mark);
+                                 (page+pattord_hpos-1)*4+pattord_vpos,scroll_pos1,
+                                 scrollbar_bckg+scrollbar_text,
+                                 scrollbar_bckg+scrollbar_2nd_mark);
     end
   else
     begin
@@ -459,7 +470,10 @@ var
 
 procedure copy_object;
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'IPATTORD.INC:PATTERN_ORDER_edit:copy_object';
+{$ENDIF}
   Case clipboard.object_type of
     objPatternDef:
       clipboard.pattern_order[0] :=
@@ -473,7 +487,10 @@ end;
 
 procedure paste_object;
 begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'IPATTORD.INC:PATTERN_ORDER_edit:paste_object';
+{$ENDIF}
   Case clipboard.object_type of
     objPatternDef:
       begin
@@ -493,7 +510,10 @@ end;
 label _end;
 
 begin { PATTERN_ORDER_edit }
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
   _debug_str_ := 'IPATTORD.INC:PATTERN_ORDER_edit';
+{$ENDIF}
   songdata_crc_ord := Update32(songdata.pattern_order,
                                SizeOf(songdata.pattern_order),0);
   Repeat
@@ -506,8 +526,7 @@ begin { PATTERN_ORDER_edit }
     If tracing then fkey := PATTERN_trace
     else ThinCursor;
 
-    If (scankey(SC_LCTRL) or scankey(SC_RCTRL)) { CTRL } and
-       (scankey(SC_LALT) or scankey(SC_RALT)) { ALT } then
+    If ctrl_pressed and alt_pressed then
       begin
         DEBUG_INFO;
         PATTERN_ORDER_page_refresh(pattord_page);
@@ -570,14 +589,15 @@ begin { PATTERN_ORDER_edit }
                    end;
 
       kAstrsk,
-      kNPastr: If NOT (opl3_channel_recording_mode and (play_status <> isStopped)) then
-                 begin
-                   For temp := 1 to songdata.nm_tracks do
-                     begin
-                       channel_flag[temp] := NOT channel_flag[temp];
-                       If NOT channel_flag[temp] then reset_chan_data(temp);
-                     end;
-                 end;
+      kNPastr:
+{$IFNDEF __TMT__}
+               If NOT (opl3_channel_recording_mode and (play_status <> isStopped)) then
+{$ENDIF}
+                 For temp := 1 to songdata.nm_tracks do
+                   begin
+                     channel_flag[temp] := NOT channel_flag[temp];
+                     If NOT channel_flag[temp] then reset_chan_data(temp);
+                   end;
 
       kBkSPC:  begin
                  songdata.pattern_order[vpos+4*(hpos+page-1)-1] := $80;
@@ -620,7 +640,10 @@ begin { PATTERN_ORDER_edit }
                    PATTERN_page_refresh(pattern_page);
                  end;
 
-      kAltS:   If NOT (opl3_channel_recording_mode and (play_status <> isStopped)) then
+      kAltS:
+{$IFNDEF __TMT__}
+               If NOT (opl3_channel_recording_mode and (play_status <> isStopped)) then
+{$ENDIF}
                  begin
                    For temp := 1 to songdata.nm_tracks do
                      channel_flag[temp] := FALSE;
@@ -636,30 +659,40 @@ begin { PATTERN_ORDER_edit }
                      If NOT channel_flag[temp] then reset_chan_data(temp);
                  end;
 
-      kAltR:   If NOT (opl3_channel_recording_mode and (play_status <> isStopped)) then
+      kAltR:
+{$IFNDEF __TMT__}
+               If NOT (opl3_channel_recording_mode and (play_status <> isStopped)) then
+{$ENDIF}
                  FillChar(channel_flag,songdata.nm_tracks,BYTE(TRUE));
       kAlt1..
-      kAlt0:   If NOT (opl3_channel_recording_mode and (play_status <> isStopped)) then
+      kAlt0:
+{$IFNDEF __TMT__}
+               If NOT (opl3_channel_recording_mode and (play_status <> isStopped)) then
+{$ENDIF}
                  If (fkey <> kAlt0) then
                    begin
-                     If (HI(fkey)-$77 <= songdata.nm_tracks) then
+                     If shift_pressed then temp := HI(fkey)-$77+10
+                     else temp := HI(fkey)-$77;
+                     If (temp <= songdata.nm_tracks) then
                        begin
-                         channel_flag[HI(fkey)-$77] := NOT channel_flag[HI(fkey)-$77];
-                         If NOT channel_flag[HI(fkey)-$77] then reset_chan_data(HI(fkey)-$77);
-                         If is_4op_chan(HI(fkey)-$77) then
-                           If (HI(fkey)-$77 in [1,3,5]) then
+                         channel_flag[temp] := NOT channel_flag[temp];
+                         If NOT channel_flag[temp] then reset_chan_data(temp);
+                         If is_4op_chan(temp) then
+                           If (temp in [1,3,5,10,12,14]) then
                              begin
-                               channel_flag[SUCC(HI(fkey)-$77)] := channel_flag[HI(fkey)-$77];
-                               If NOT channel_flag[SUCC(HI(fkey)-$77)] then reset_chan_data(SUCC(HI(fkey)-$77));
+                               channel_flag[SUCC(temp)] := channel_flag[temp];
+                               If NOT channel_flag[SUCC(temp)] then reset_chan_data(SUCC(temp));
                              end
-                           else If (HI(fkey)-$77 in [2,4,6]) then
+                           else If (temp in [2,4,6,11,13,15]) then
                                   begin
-                                    channel_flag[PRED(HI(fkey)-$77)] := channel_flag[HI(fkey)-$77];
-                                    If NOT channel_flag[PRED(HI(fkey)-$77)] then reset_chan_data(PRED(HI(fkey)-$77));
-                                  end;  
+                                    channel_flag[PRED(temp)] := channel_flag[temp];
+                                    If NOT channel_flag[PRED(temp)] then reset_chan_data(PRED(temp));
+                                  end;
                        end;
                    end
-                 else If (songdata.nm_tracks = 10) then
+                 else If shift_pressed or
+                         (10 in [chan_pos..chan_pos+MAX_TRACKS-1]) or
+                         (songdata.nm_tracks = 10) then
                         begin
                           channel_flag[10] := NOT channel_flag[10];
                           If NOT channel_flag[10] then reset_chan_data(10);
@@ -667,8 +700,8 @@ begin { PATTERN_ORDER_edit }
                            begin
                              channel_flag[11] := channel_flag[10];
                              If NOT channel_flag[11] then reset_chan_data(11);
-                           end;  
-                        end  
+                           end;
+                        end
                       else begin
                              If NOT percussion_mode then temps := '1~0~$1~1~$1~2~$1~3~$1~4~$1~5~$1~6~$1~7~$1~8~$1~9~$2~0~$'
                              else temps := '1~0~$1~1~$1~2~$1~3~$1~4~$1~5~$16 ~B~D$17 ~S~D$18 ~T~T$19 T~C~$20 ~H~H$';
@@ -695,7 +728,7 @@ begin { PATTERN_ORDER_edit }
                                          begin
                                            channel_flag[SUCC(9+chpos)] := channel_flag[9+chpos];
                                            If NOT channel_flag[SUCC(9+chpos)] then reset_chan_data(SUCC(9+chpos));
-                                         end  
+                                         end
                                        else If (9+chpos in [11,13,15]) then
                                               begin
                                                 channel_flag[PRED(9+chpos)] := channel_flag[9+chpos];
@@ -745,6 +778,7 @@ begin { PATTERN_ORDER_edit }
       kCtrlQ:  MACRO_EDITOR(current_inst,FALSE);
       kCtrlE:  MACRO_EDITOR(current_inst,TRUE);
       kCtrlM:  MACRO_BROWSER(TRUE,TRUE);
+      kCtrlX:  REARRANGE;
 
       kCtLEFT: If (play_status = isPlaying) then rewind := TRUE;
       kCtRGHT: If (play_status = isPlaying) then fast_forward := TRUE;
@@ -766,8 +800,13 @@ begin { PATTERN_ORDER_edit }
                    no_status_refresh := FALSE;
                  end;
 
+{$IFDEF __TMT__}
+      kF1:     HELP('pattern_order');
+{$ELSE}
       kF1:     If (sdl_opl3_emulator = 1) and ((play_status = isPlaying) or opl3_channel_recording_mode) then HELP('wav_recorder')
                else HELP('pattern_order');
+{$ENDIF}
+
       kF2,
       kShF2,
       kCtrlS:  begin
@@ -905,6 +944,11 @@ begin { PATTERN_ORDER_edit }
                    fade_out_playback(FALSE);
                    stop_playing;
                    FillChar(ai_table,SizeOf(ai_table),0);
+                 end
+               else If debugging and replay_forbidden then
+                      begin
+                        fade_out_playback(FALSE);
+                        stop_playing;
                  end;
       kF8,
       kAltF8,
@@ -1138,8 +1182,43 @@ begin { PATTERN_ORDER_edit }
     If (Update32(songdata.pattern_order,SizeOf(songdata.pattern_order),0) <> songdata_crc_ord) then
       module_archived := FALSE;
 _end:
+{$IFDEF __TMT__}
+    keyboard_reset_buffer_alt;
+{$ELSE}
     emulate_screen;
-    // keyboard_reset_buffer;
+{$ENDIF}
+    If scankey(SC_F11) and
+       NOT ctrl_pressed and NOT alt_pressed and NOT shift_pressed then
+      begin
+        If (command_typing <> 0) then
+          Case command_typing of
+            1: If cycle_pattern then
+                 begin
+                   command_typing := 2;
+                   cycle_pattern := FALSE;
+                 end
+               else cycle_pattern := TRUE;
+
+            2: begin
+                 command_typing := 1;
+                 cycle_pattern := FALSE;
+               end;
+          end;
+        status_refresh;
+        wait_until_F11_F12_released;
+        keyboard_reset_buffer;
+      end;
+
+    If scankey(SC_F12) and
+       NOT ctrl_pressed and NOT alt_pressed then
+      begin
+        If NOT shift_pressed then
+          linefeed := NOT linefeed
+        else jump_mark_mode := NOT jump_mark_mode;
+        status_refresh;
+        wait_until_F11_F12_released;
+        keyboard_reset_buffer;
+      end;
   until (nope and ((fkey = kENTER) or (fkey = kESC) or (fkey = kF10))) or _force_program_quit;
   PATTERN_ORDER_page_refresh(page);
 end;

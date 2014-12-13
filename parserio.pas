@@ -1,19 +1,26 @@
 unit ParserIO;
+{$IFDEF __TMT__}
+{$S-,Q-,R-,V-,B-,X+}
+{$ELSE}
 {$PACKRECORDS 1}
+{$ENDIF}
 interface
 
 type
   tDUMMY_BUFF = array[0..PRED(655350)] of Byte;
 
-function Scan(var buf; skip,size: Longint; str: String): Longint;
-function SensitiveScan(var buf; skip,size: Longint; str: String): Longint;
-function Compare(var buf1,buf2; size: Longint): Boolean;
-function Empty(var buf; size: Longint): Boolean;
-function CountLines(var buf; size: Longint): Longint;
-function Update16(var buf; size: Longint; crc: Word): Word;
-function Update32(var buf; size: Longint; crc: Longint): Longint;
+function  Scan(var buf; skip,size: Longint; str: String): Longint;
+function  SensitiveScan(var buf; skip,size: Longint; str: String): Longint;
+function  Compare(var buf1,buf2; size: Longint): Boolean;
+function  Empty(var buf; size: Longint): Boolean;
+function  CountLines(var buf; size: Longint): Longint;
+function  Update16(var buf; size: Longint; crc: Word): Word;
+function  Update32(var buf; size: Longint; crc: Longint): Longint;
 
 implementation
+
+uses
+  StringIO;
 
 var
   CRC16_table: array[BYTE] of Word;
