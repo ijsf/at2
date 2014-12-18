@@ -704,10 +704,11 @@ end;
 
 begin
   Repeat emulate_screen until keypressed;
-  Repeat
-    keyboard_poll_input;
-    emulate_screen;
-  until NOT ctrl_tab_pressed;
+  While ctrl_tab_pressed do
+    begin
+      keyboard_poll_input;
+      emulate_screen;
+    end;
   getkey := getkey_proc;
 end;
 
