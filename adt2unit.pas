@@ -344,12 +344,7 @@ uses
 {$IFDEF __TMT__}
   CRT,DOS,DPMI,
 {$ELSE}
-{$IFDEF UNIX}
-  SDL_Timer,
-{$ELSE}
-  CRT,
-{$ENDIF}
-  DOS,
+  DOS,SDL_Timer,
 {$ENDIF}
   AdT2opl3,AdT2sys,AdT2extn,AdT2ext2,AdT2keyb,
   TimerInt,TxtScrIO,StringIO,DialogIO,ParserIO;
@@ -4165,7 +4160,6 @@ begin
       If scankey(SC_DOWN) then
         If (screen_scroll_offset < 16*MaxLn-16*hard_maxln) then
           Inc(screen_scroll_offset,2);
-      keyboard_reset_buffer;
 
       If scankey(SC_PAGEUP) then
         screen_scroll_offset := 0;
@@ -5365,11 +5359,7 @@ begin
         If fade_screen then
           begin
             vid_FadeOut;
-      {$IFDEF UNIX}
-        SDL_Delay(1);
-      {$ELSE}
-            Delay(1);
-      {$ENDIF}
+            SDL_Delay(1);
           end;
       end
   else
@@ -5377,11 +5367,7 @@ begin
       If fade_screen then
         begin
           vid_FadeOut;
-    {$IFDEF UNIX}
-      SDL_Delay(1);
-    {$ELSE}
-          Delay(1);
-    {$ENDIF}
+          SDL_Delay(1);
         end;
 
 {$ENDIF}

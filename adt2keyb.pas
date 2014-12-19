@@ -168,6 +168,7 @@ asm
         call    screen_saver
         cli
         jmp     @@1
+// filter out CTRL+TAB combo as it is handled within timer routine
 @@4:    cmp     byte ptr keydown[1dh],1 // [Ctrl]
         jnz     @@4a
         cmp     byte ptr keydown[0fh],1 // [Tab]
@@ -704,12 +705,14 @@ end;
 
 begin
   Repeat emulate_screen until keypressed;
-  While ctrl_tab_pressed do
+  // filter out CTRL+TAB combo as it is handled within timer routine
+  If ctrl_tab_pressed then
     begin
-      keyboard_poll_input;
       emulate_screen;
-    end;
-  getkey := getkey_proc;
+      keyboard_reset_buffer;
+      getkey := WORD_NULL;
+    end
+  else getkey := getkey_proc;
 end;
 
 function scankey(scancode: Byte): Boolean;
