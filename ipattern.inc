@@ -1143,7 +1143,7 @@ begin
                  If (fkey2 <> kAlt0) then
                    begin
                      If shift_pressed then temp := HI(fkey2)-$77+10
-                     else temp := HI(fkey)-$77;
+                     else temp := HI(fkey2)-$77;
                      If (temp <= songdata.nm_tracks) then
                        begin
                          channel_flag[temp] := NOT channel_flag[temp];

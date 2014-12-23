@@ -1,3 +1,15 @@
+;;
+;; aPLib compression library  -  the smaller the better :)
+;;
+;; DISASSEMBLED A LONG TIME AGO FOR INTERNAL USE WITHIN ADTRACK2
+;; DO NOT DISTRIBUTE!!!
+;;
+;; Copyright (c) 1998-2014 Joergen Ibsen
+;; All Rights Reserved
+;;
+;; http://www.ibsensoftware.com/
+;;
+
         .386
         .model flat
 
