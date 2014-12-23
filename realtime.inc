@@ -242,15 +242,16 @@ begin
                 status_background+status_dynamic_txt);
 
   If (play_status <> isStopped) then
-    temps := ' '+byte2dec(max(song_timer DIV 60,99))+':'+
+    temps := ' ~'+byte2dec(max(song_timer DIV 60,99))+':'+
                  byte2dec(max(song_timer MOD 60,99))+'.'+
-                 CHR(48+max(song_timer_tenths DIV 10,9))+' '
+                 CHR(48+max(song_timer_tenths DIV 10,9))+'~ '
   else temps := ' 00~:~00~.~0 ';
 
   temp := Pos('.',songdata_title);
   If (play_status <> isStopped) then
-    show_str(13,07,temps,
-             status_background+status_border)
+    show_cstr(13,07,temps,
+	          status_background+status_text_dis,
+              status_background+status_border)
   else show_cstr(13,07,temps,
                  status_background+status_text_dis,
                  status_background+status_border);

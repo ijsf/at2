@@ -30,7 +30,7 @@ echo **                                **
 echo ************************************
 tasm aplib.asm /m2 >!log
 if not exist aplib.obj goto :compile_error
-tmtpc -M -$MAP+ -$W- -OBJMAX:1000000 adtrack2.pas >!log
+tmtpc -M -STACK:1024000 -$MAP+ -$W- -OBJMAX:1024000 adtrack2.pas >!log
 if not exist adtrack2.exe goto :compile_error
 if not exist *.fpd goto :no_fpd_file
 del *.fpd >nul
