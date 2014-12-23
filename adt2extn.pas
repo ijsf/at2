@@ -3311,7 +3311,9 @@ _jmp1:
                         PATTERN_page_refresh(pattern_page);
                       end;
 
-      kNPmins: If NOT play_single_patt then
+      kCHmins,
+      kNPmins,
+      kCtHOME: If NOT play_single_patt then
                  begin
                    temp := current_order;
                    temp2 := current_line;
@@ -3330,13 +3332,15 @@ _jmp1:
                        If (songdata.pattern_order[temp] < $80) then
                          begin
                            fade_out_playback(FALSE);
-                           If shift_pressed then calibrate_player(temp,temp2,TRUE,FALSE)
+                           If (fkey = kCtHOME) then calibrate_player(temp,temp2,TRUE,FALSE)
                            else calibrate_player(temp,0,TRUE,FALSE);
                          end;
                      end;
                  end;
 
-      kNPplus: If NOT play_single_patt then
+      kCHplus,
+      kNPplus,
+      kCtEND:  If NOT play_single_patt then
                  begin
                    temp := current_order;
                    temp2 := current_line;
@@ -3355,7 +3359,7 @@ _jmp1:
                        If (songdata.pattern_order[temp] < $80) then
                          begin
                            fade_out_playback(FALSE);
-                           If shift_pressed then calibrate_player(temp,temp2,TRUE,FALSE)
+                           If (fkey = kCtEND) then calibrate_player(temp,temp2,TRUE,FALSE)
                            else calibrate_player(temp,0,TRUE,FALSE);
                          end;
                      end;

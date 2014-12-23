@@ -8,8 +8,8 @@ interface
 
 const
 {__AT2VER__}at2ver  = '2.4.20';
-{__AT2DAT__}at2date = '12-16-2014';
-{__AT2LNK__}at2link = '3:47pm';
+{__AT2DAT__}at2date = '12-23-2014';
+{__AT2LNK__}at2link = '9:32am';
 
 {$IFDEF __TMT__}
 
@@ -90,7 +90,7 @@ uses
 
 const
 {$IFDEF __TMT__}
-  LINES = 1070;
+  LINES = 1071;
 {$ELSE}
   LINES = 1098;
 {$ENDIF}
@@ -122,7 +122,7 @@ const
     '@input:shift_f9',
     '~[Shift] Space~            Toggle MidiBoard mode ON/OFF',
     '~^Space~                   Toggle Note Recorder mode ON/OFF',
-    '~[Shift] +,-~              Skip to next/previous pattern while Tracing',
+    '~[Ctrl] Home,End~          Skip to previous/next pattern while Tracing',
     '~+,-~                      Same as above; play pattern from start',
     '',
     '@topic:note_recorder',
@@ -421,7 +421,7 @@ const
     '~[Shift] ^Enter~           Paste data from instrument registers w/ selection',
     '~Backspace~                Clear current item in table',
     '~[Shift] Backspace~        Clear line in table',
-    '~[Shift] +,-~              Adjust value at cursor / current item in table',
+    '~+,-~                      Adjust value at cursor / current item in table',
     '~^Home,^End~               Quick-adjust table length',
     '~[Shift] ^Home,^End~       Quick-adjust loop begin position',
     '~[Shift] ^PgUp,^PgDown~    Quick-adjust loop length',
@@ -459,7 +459,7 @@ const
     '~^V~                       Paste object from clipboard',
     '~Backspace~                Clear current item in table',
     '~[Shift] Backspace~        Clear line in table',
-    '~[Shift] +,-~              Adjust value at cursor / current item in table',
+    '~+,-~                      Adjust value at cursor / current item in table',
     '~^Home,^End~               Quick-adjust table length',
     '~[Shift] ^Home,^End~       Quick-adjust loop begin position',
     '~[Shift] ^PgUp,^PgDown~    Quick-adjust loop length',
@@ -520,7 +520,7 @@ const
     '~Backspace~                Toggle pattern repeat',
     '~Space~                    Enter Debug mode / Proceed step',
     '~^Space~                   Exit Debug mode',
-    '~[Shift] +,-~              Skip to next/previous pattern',
+    '~[Ctrl] Home,End~          Skip to previous/next pattern',
     '~+,-~                      Same as above; play pattern from start',
     '~^Enter~                   Play next pattern according to order',
     '~^Left~                    Rewind current pattern',
@@ -1203,6 +1203,7 @@ const
     'Charles Scheffold & Thomas Pytel [PMODE/W 1.33]',
     'Joergen Ibsen [aPLib 0.26b]',
     'Markus Oberhumer, Laszlo Molnar & John Reiser [UPX 3.91d]',
+    'Virtual Research independent group production [VESA 2.0 LFB library]',
 
 {$ELSE}
 

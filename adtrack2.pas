@@ -128,10 +128,10 @@ begin { MAIN }
   If (IOresult <> 0) then dos_dir := '';
   ShowStartMessage;
 
-  WriteLn('******************************************');
-  WriteLn('**  TEST VERSION -- DO NOT DISTRIBUTE!  **');
-  WriteLn('******************************************');
-  WriteLn;
+//  WriteLn('******************************************');
+//  WriteLn('**  TEST VERSION -- DO NOT DISTRIBUTE!  **');
+//  WriteLn('******************************************');
+//  WriteLn;
 
   { init system things }
   sys_init;

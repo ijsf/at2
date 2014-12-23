@@ -2781,14 +2781,14 @@ void YMF262UpdateOne(int which, INT16 *buffer, INT16 *buffers_chan[], int length
         *buffer++=(INT16)b;
 
         /* store to 'per channel' sound buffers */
-	if (buffers_chan)
-	{
+    if (buffers_chan)
+    {
           for(int idx=0; idx < 18 ; idx++ )
           {
               *buffers_chan[idx]++=(INT16)a_ch[idx];
               *buffers_chan[idx]++=(INT16)b_ch[idx];
           }
-	}
+    }
 
         advance(chip);
     }

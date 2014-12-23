@@ -392,14 +392,15 @@ const
   _hex: array[0..15] of Char = '0123456789ABCDEF';
 
 const
-  new_keys: array[1..31] of Word = (kF1,kESC,kENTER,kSPACE,kTAB,kShTAB,kUP,kDOWN,
+  new_keys: array[1..33] of Word = (kF1,kESC,kENTER,kSPACE,kTAB,kShTAB,kUP,kDOWN,
                                     kCtrlO,kF2,kCtrlF2,kF3,kCtrlL,kCtrlS,kCtrlM,
                                     kCtENTR,kAltC,kAltP,kCtrlC,kCtrlV,
-                                    kCtPgUP,kCtPgDN,kSPACE,kNPplus,kNPmins,
+                                    kCtPgUP,kCtPgDN,kSPACE,
+                                    kCHplus,kNPplus,kCHmins,kNPmins,
                                     kCtLbr,kCtRbr,
                                     kCtHOME,kCtEND,kCtLEFT,kCtRGHT);
 var
-  old_keys: array[1..31] of Word;
+  old_keys: array[1..33] of Word;
   temps,tstr: String;
   xstart,ystart,temp,temp1: Byte;
   fmreg_cursor_pos,
@@ -2486,13 +2487,14 @@ _jmp2:
                    ((Str2num(temps,16) >= 0) and (Str2num(temps,16) <= 255));
 
              songdata.instr_macros[instr].length := Str2num(temps,16);
-             If shift_pressed then
-               Case is_environment.keystroke of
-                 kNPplus: If (songdata.instr_macros[instr].length < 255) then
-                            Inc(songdata.instr_macros[instr].length);
-                 kNPmins: If (songdata.instr_macros[instr].length > 0) then
-                            Dec(songdata.instr_macros[instr].length);
-               end;
+             Case is_environment.keystroke of
+               kCHplus,
+               kNPplus: If (songdata.instr_macros[instr].length < 255) then
+                          Inc(songdata.instr_macros[instr].length);
+               kCHmins,
+               kNPmins: If (songdata.instr_macros[instr].length > 0) then
+                          Dec(songdata.instr_macros[instr].length);
+             end;
 
              If (is_environment.keystroke = kENTER) or
                 (is_environment.keystroke = kTAB) or
@@ -2535,13 +2537,14 @@ _jmp2:
                    ((Str2num(temps,16) >= 0) and (Str2num(temps,16) <= 255));
 
              songdata.instr_macros[instr].loop_begin := Str2num(temps,16);
-             If shift_pressed then
-               Case is_environment.keystroke of
-                 kNPplus: If (songdata.instr_macros[instr].loop_begin < 255) then
-                            Inc(songdata.instr_macros[instr].loop_begin);
-                 kNPmins: If (songdata.instr_macros[instr].loop_begin > 0) then
-                            Dec(songdata.instr_macros[instr].loop_begin);
-               end;
+             Case is_environment.keystroke of
+               kCHplus,
+               kNPplus: If (songdata.instr_macros[instr].loop_begin < 255) then
+                          Inc(songdata.instr_macros[instr].loop_begin);
+               kCHmins,
+               kNPmins: If (songdata.instr_macros[instr].loop_begin > 0) then
+                          Dec(songdata.instr_macros[instr].loop_begin);
+             end;
 
              While NOT ((songdata.instr_macros[instr].keyoff_pos > songdata.instr_macros[instr].loop_begin+
                                      min0(songdata.instr_macros[instr].loop_length-1,0)) or
@@ -2588,13 +2591,14 @@ _jmp2:
                    ((Str2num(temps,16) >= 0) and (Str2num(temps,16) <= 255));
 
              songdata.instr_macros[instr].loop_length := Str2num(temps,16);
-             If shift_pressed then
-               Case is_environment.keystroke of
-                 kNPplus: If (songdata.instr_macros[instr].loop_length < 255) then
-                            Inc(songdata.instr_macros[instr].loop_length);
-                 kNPmins: If (songdata.instr_macros[instr].loop_length > 0) then
-                            Dec(songdata.instr_macros[instr].loop_length);
-               end;
+             Case is_environment.keystroke of
+               kCHplus,
+               kNPplus: If (songdata.instr_macros[instr].loop_length < 255) then
+                          Inc(songdata.instr_macros[instr].loop_length);
+               kCHmins,
+               kNPmins: If (songdata.instr_macros[instr].loop_length > 0) then
+                          Dec(songdata.instr_macros[instr].loop_length);
+             end;
 
              While NOT ((songdata.instr_macros[instr].keyoff_pos > songdata.instr_macros[instr].loop_begin+
                                      min0(songdata.instr_macros[instr].loop_length-1,0)) or
@@ -2646,27 +2650,27 @@ _jmp2:
                    (Str2num(temps,16) = 0);
 
              songdata.instr_macros[instr].keyoff_pos := Str2num(temps,16);
-             If shift_pressed then
-               Case is_environment.keystroke of
-                 kNPplus: If (songdata.instr_macros[instr].loop_begin = 0) or
-                             (songdata.instr_macros[instr].loop_length = 0) or
-                             (songdata.instr_macros[instr].keyoff_pos <> 0) then
-                            If (songdata.instr_macros[instr].keyoff_pos < 255) then
-                              Inc(songdata.instr_macros[instr].keyoff_pos)
-                            else
-                          else If (songdata.instr_macros[instr].loop_begin+
-                                   songdata.instr_macros[instr].loop_length <= 255) then
-                                 songdata.instr_macros[instr].keyoff_pos :=
-                                   songdata.instr_macros[instr].loop_begin+
-                                   songdata.instr_macros[instr].loop_length;
-
-                 kNPmins: If (min0(songdata.instr_macros[instr].keyoff_pos-1,0) > songdata.instr_macros[instr].loop_begin+
-                                min0(songdata.instr_macros[instr].loop_length-1,0)) or
-                             ((songdata.instr_macros[instr].keyoff_pos > 0) and
-                             ((songdata.instr_macros[instr].loop_begin = 0) or
-                              (songdata.instr_macros[instr].loop_length = 0))) then
-                            Dec(songdata.instr_macros[instr].keyoff_pos);
-               end;
+             Case is_environment.keystroke of
+               kCHplus,
+               kNPplus: If (songdata.instr_macros[instr].loop_begin = 0) or
+                           (songdata.instr_macros[instr].loop_length = 0) or
+                           (songdata.instr_macros[instr].keyoff_pos <> 0) then
+                          If (songdata.instr_macros[instr].keyoff_pos < 255) then
+                            Inc(songdata.instr_macros[instr].keyoff_pos)
+                          else
+                        else If (songdata.instr_macros[instr].loop_begin+
+                                 songdata.instr_macros[instr].loop_length <= 255) then
+                               songdata.instr_macros[instr].keyoff_pos :=
+                                 songdata.instr_macros[instr].loop_begin+
+                                 songdata.instr_macros[instr].loop_length;
+               kCHmins,
+               kNPmins: If (min0(songdata.instr_macros[instr].keyoff_pos-1,0) > songdata.instr_macros[instr].loop_begin+
+                              min0(songdata.instr_macros[instr].loop_length-1,0)) or
+                           ((songdata.instr_macros[instr].keyoff_pos > 0) and
+                           ((songdata.instr_macros[instr].loop_begin = 0) or
+                            (songdata.instr_macros[instr].loop_length = 0))) then
+                          Dec(songdata.instr_macros[instr].keyoff_pos);
+             end;
 
              If (is_environment.keystroke = kENTER) or
                 (is_environment.keystroke = kTAB) or
@@ -2706,13 +2710,14 @@ _jmp2:
                    ((Str2num(temps,16) >= 0) and (Str2num(temps,16) <= 255));
 
              ptr_arpeggio_table := Str2num(temps,16);
-             If shift_pressed then
-               Case is_environment.keystroke of
-                 kNPplus: If (ptr_arpeggio_table < 255) then
-                            Inc(ptr_arpeggio_table);
-                 kNPmins: If (ptr_arpeggio_table > 0) then
-                            Dec(ptr_arpeggio_table);
-               end;
+             Case is_environment.keystroke of
+               kCHplus,
+               kNPplus: If (ptr_arpeggio_table < 255) then
+                          Inc(ptr_arpeggio_table);
+               kCHmins,
+               kNPmins: If (ptr_arpeggio_table > 0) then
+                          Dec(ptr_arpeggio_table);
+             end;
 
              If (is_environment.keystroke = kENTER) or
                 (is_environment.keystroke = kTAB) or
@@ -2744,13 +2749,14 @@ _jmp2:
                    ((Str2num(temps,16) >= 0) and (Str2num(temps,16) <= 255));
 
              ptr_vibrato_table := Str2num(temps,16);
-             If shift_pressed then
-               Case is_environment.keystroke of
-                 kNPplus: If (ptr_vibrato_table < 255) then
-                            Inc(ptr_vibrato_table);
-                 kNPmins: If (ptr_vibrato_table > 0) then
-                            Dec(ptr_vibrato_table);
-               end;
+             Case is_environment.keystroke of
+               kCHplus,
+               kNPplus: If (ptr_vibrato_table < 255) then
+                          Inc(ptr_vibrato_table);
+               kCHmins,
+               kNPmins: If (ptr_vibrato_table > 0) then
+                          Dec(ptr_vibrato_table);
+             end;
 
              If (is_environment.keystroke = kENTER) or
                 (is_environment.keystroke = kTAB) or
@@ -3006,194 +3012,192 @@ _jmp2:
                           FillChar(songdata.instr_macros[instr].data[255],
                                    SizeOf(songdata.instr_macros[instr].data[255]),0);
                         end;
+               kCHplus,
+               kNPplus: With songdata.instr_macros[instr].data[fmreg_page] do
+                          Case fmreg_hpos of
+                            1: fm_data.ATTCK_DEC_modulator :=
+                               _inc(fm_data.ATTCK_DEC_modulator SHR 4,15) SHL 4+
+                               fm_data.ATTCK_DEC_modulator AND $0f;
+                            2: fm_data.ATTCK_DEC_modulator :=
+                               fm_data.ATTCK_DEC_modulator AND $0f0+
+                               _inc(fm_data.ATTCK_DEC_modulator AND $0f,15);
+                            3: fm_data.SUSTN_REL_modulator :=
+                               _inc(fm_data.SUSTN_REL_modulator SHR 4,15) SHL 4+
+                               fm_data.SUSTN_REL_modulator AND $0f;
+                            4: fm_data.SUSTN_REL_modulator :=
+                               fm_data.SUSTN_REL_modulator AND $0f0+
+                               _inc(fm_data.SUSTN_REL_modulator AND $0f,15);
+                            5: fm_data.WAVEFORM_modulator :=
+                               _inc(fm_data.WAVEFORM_modulator,7);
+                            6,
+                            7: fm_data.KSL_VOLUM_modulator :=
+                               fm_data.KSL_VOLUM_modulator AND $0c0+
+                               _inc(fm_data.KSL_VOLUM_modulator AND $3f,63);
+                            8: fm_data.KSL_VOLUM_modulator :=
+                               fm_data.KSL_VOLUM_modulator AND $3f+
+                               _inc(fm_data.KSL_VOLUM_modulator SHR 6,3) SHL 6;
+                            9: fm_data.AM_VIB_EG_modulator :=
+                               fm_data.AM_VIB_EG_modulator AND $0f0+
+                               _inc(fm_data.AM_VIB_EG_modulator AND $0f,15);
+                           10: fm_data.AM_VIB_EG_modulator :=
+                               fm_data.AM_VIB_EG_modulator AND $7f+
+                               _inc(fm_data.AM_VIB_EG_modulator SHR 7,1) SHL 7;
+                           11: fm_data.AM_VIB_EG_modulator :=
+                               fm_data.AM_VIB_EG_modulator AND $0bf+
+                               _inc(fm_data.AM_VIB_EG_modulator SHR 6 AND 1,1) SHL 6;
+                           12: fm_data.AM_VIB_EG_modulator :=
+                               fm_data.AM_VIB_EG_modulator AND $0ef+
+                               _inc(fm_data.AM_VIB_EG_modulator SHR 4 AND 1,1) SHL 4;
+                           13: fm_data.AM_VIB_EG_modulator :=
+                               fm_data.AM_VIB_EG_modulator AND $0df+
+                               _inc(fm_data.AM_VIB_EG_modulator SHR 5 AND 1,1) SHL 5;
+                           14: fm_data.ATTCK_DEC_carrier :=
+                               _inc(fm_data.ATTCK_DEC_carrier SHR 4,15) SHL 4+
+                               fm_data.ATTCK_DEC_carrier AND $0f;
+                           15: fm_data.ATTCK_DEC_carrier :=
+                               fm_data.ATTCK_DEC_carrier AND $0f0+
+                               _inc(fm_data.ATTCK_DEC_carrier AND $0f,15);
+                           16: fm_data.SUSTN_REL_carrier :=
+                               _inc(fm_data.SUSTN_REL_carrier SHR 4,15) SHL 4+
+                               fm_data.SUSTN_REL_carrier AND $0f;
+                           17: fm_data.SUSTN_REL_carrier :=
+                               fm_data.SUSTN_REL_carrier AND $0f0+
+                               _inc(fm_data.SUSTN_REL_carrier AND $0f,15);
+                           18: fm_data.WAVEFORM_carrier :=
+                               _inc(fm_data.WAVEFORM_carrier,7);
+                           19,
+                           20: fm_data.KSL_VOLUM_carrier :=
+                               fm_data.KSL_VOLUM_carrier AND $0c0+
+                               _inc(fm_data.KSL_VOLUM_carrier AND $3f,63);
+                           21: fm_data.KSL_VOLUM_carrier :=
+                               fm_data.KSL_VOLUM_carrier AND $3f+
+                               _inc(fm_data.KSL_VOLUM_carrier SHR 6,3) SHL 6;
+                           22: fm_data.AM_VIB_EG_carrier :=
+                               fm_data.AM_VIB_EG_carrier AND $0f0+
+                               _inc(fm_data.AM_VIB_EG_carrier AND $0f,15);
+                           23: fm_data.AM_VIB_EG_carrier :=
+                               fm_data.AM_VIB_EG_carrier AND $7f+
+                               _inc(fm_data.AM_VIB_EG_carrier SHR 7,1) SHL 7;
+                           24: fm_data.AM_VIB_EG_carrier :=
+                               fm_data.AM_VIB_EG_carrier AND $0bf+
+                               _inc(fm_data.AM_VIB_EG_carrier SHR 6 AND 1,1) SHL 6;
+                           25: fm_data.AM_VIB_EG_carrier :=
+                               fm_data.AM_VIB_EG_carrier AND $0ef+
+                               _inc(fm_data.AM_VIB_EG_carrier SHR 4 AND 1,1) SHL 4;
+                           26: fm_data.AM_VIB_EG_carrier :=
+                               fm_data.AM_VIB_EG_carrier AND $0df+
+                               _inc(fm_data.AM_VIB_EG_carrier SHR 5 AND 1,1) SHL 5;
+                           27: fm_data.FEEDBACK_FM :=
+                               fm_data.FEEDBACK_FM AND $0fe+
+                               _inc(fm_data.FEEDBACK_FM AND 1,1);
+                           28: fm_data.FEEDBACK_FM :=
+                               fm_data.FEEDBACK_FM AND 1+
+                               _inc(fm_data.FEEDBACK_FM SHR 1,7) SHL 1;
 
-               kNPplus: If shift_pressed then
-                          With songdata.instr_macros[instr].data[fmreg_page] do
-                            Case fmreg_hpos of
-                              1: fm_data.ATTCK_DEC_modulator :=
-                                 _inc(fm_data.ATTCK_DEC_modulator SHR 4,15) SHL 4+
-                                 fm_data.ATTCK_DEC_modulator AND $0f;
-                              2: fm_data.ATTCK_DEC_modulator :=
-                                 fm_data.ATTCK_DEC_modulator AND $0f0+
-                                 _inc(fm_data.ATTCK_DEC_modulator AND $0f,15);
-                              3: fm_data.SUSTN_REL_modulator :=
-                                 _inc(fm_data.SUSTN_REL_modulator SHR 4,15) SHL 4+
-                                 fm_data.SUSTN_REL_modulator AND $0f;
-                              4: fm_data.SUSTN_REL_modulator :=
-                                 fm_data.SUSTN_REL_modulator AND $0f0+
-                                 _inc(fm_data.SUSTN_REL_modulator AND $0f,15);
-                              5: fm_data.WAVEFORM_modulator :=
-                                 _inc(fm_data.WAVEFORM_modulator,7);
-                              6,
-                              7: fm_data.KSL_VOLUM_modulator :=
-                                 fm_data.KSL_VOLUM_modulator AND $0c0+
-                                 _inc(fm_data.KSL_VOLUM_modulator AND $3f,63);
-                              8: fm_data.KSL_VOLUM_modulator :=
-                                 fm_data.KSL_VOLUM_modulator AND $3f+
-                                 _inc(fm_data.KSL_VOLUM_modulator SHR 6,3) SHL 6;
-                              9: fm_data.AM_VIB_EG_modulator :=
-                                 fm_data.AM_VIB_EG_modulator AND $0f0+
-                                 _inc(fm_data.AM_VIB_EG_modulator AND $0f,15);
-                             10: fm_data.AM_VIB_EG_modulator :=
-                                 fm_data.AM_VIB_EG_modulator AND $7f+
-                                 _inc(fm_data.AM_VIB_EG_modulator SHR 7,1) SHL 7;
-                             11: fm_data.AM_VIB_EG_modulator :=
-                                 fm_data.AM_VIB_EG_modulator AND $0bf+
-                                 _inc(fm_data.AM_VIB_EG_modulator SHR 6 AND 1,1) SHL 6;
-                             12: fm_data.AM_VIB_EG_modulator :=
-                                 fm_data.AM_VIB_EG_modulator AND $0ef+
-                                 _inc(fm_data.AM_VIB_EG_modulator SHR 4 AND 1,1) SHL 4;
-                             13: fm_data.AM_VIB_EG_modulator :=
-                                 fm_data.AM_VIB_EG_modulator AND $0df+
-                                 _inc(fm_data.AM_VIB_EG_modulator SHR 5 AND 1,1) SHL 5;
-                             14: fm_data.ATTCK_DEC_carrier :=
-                                 _inc(fm_data.ATTCK_DEC_carrier SHR 4,15) SHL 4+
-                                 fm_data.ATTCK_DEC_carrier AND $0f;
-                             15: fm_data.ATTCK_DEC_carrier :=
-                                 fm_data.ATTCK_DEC_carrier AND $0f0+
-                                 _inc(fm_data.ATTCK_DEC_carrier AND $0f,15);
-                             16: fm_data.SUSTN_REL_carrier :=
-                                 _inc(fm_data.SUSTN_REL_carrier SHR 4,15) SHL 4+
-                                 fm_data.SUSTN_REL_carrier AND $0f;
-                             17: fm_data.SUSTN_REL_carrier :=
-                                 fm_data.SUSTN_REL_carrier AND $0f0+
-                                 _inc(fm_data.SUSTN_REL_carrier AND $0f,15);
-                             18: fm_data.WAVEFORM_carrier :=
-                                 _inc(fm_data.WAVEFORM_carrier,7);
-                             19,
-                             20: fm_data.KSL_VOLUM_carrier :=
-                                 fm_data.KSL_VOLUM_carrier AND $0c0+
-                                 _inc(fm_data.KSL_VOLUM_carrier AND $3f,63);
-                             21: fm_data.KSL_VOLUM_carrier :=
-                                 fm_data.KSL_VOLUM_carrier AND $3f+
-                                 _inc(fm_data.KSL_VOLUM_carrier SHR 6,3) SHL 6;
-                             22: fm_data.AM_VIB_EG_carrier :=
-                                 fm_data.AM_VIB_EG_carrier AND $0f0+
-                                 _inc(fm_data.AM_VIB_EG_carrier AND $0f,15);
-                             23: fm_data.AM_VIB_EG_carrier :=
-                                 fm_data.AM_VIB_EG_carrier AND $7f+
-                                 _inc(fm_data.AM_VIB_EG_carrier SHR 7,1) SHL 7;
-                             24: fm_data.AM_VIB_EG_carrier :=
-                                 fm_data.AM_VIB_EG_carrier AND $0bf+
-                                 _inc(fm_data.AM_VIB_EG_carrier SHR 6 AND 1,1) SHL 6;
-                             25: fm_data.AM_VIB_EG_carrier :=
-                                 fm_data.AM_VIB_EG_carrier AND $0ef+
-                                 _inc(fm_data.AM_VIB_EG_carrier SHR 4 AND 1,1) SHL 4;
-                             26: fm_data.AM_VIB_EG_carrier :=
-                                 fm_data.AM_VIB_EG_carrier AND $0df+
-                                 _inc(fm_data.AM_VIB_EG_carrier SHR 5 AND 1,1) SHL 5;
-                             27: fm_data.FEEDBACK_FM :=
-                                 fm_data.FEEDBACK_FM AND $0fe+
-                                 _inc(fm_data.FEEDBACK_FM AND 1,1);
-                             28: fm_data.FEEDBACK_FM :=
-                                 fm_data.FEEDBACK_FM AND 1+
-                                 _inc(fm_data.FEEDBACK_FM SHR 1,7) SHL 1;
+                           29,30,31,
+                           32: freq_slide :=
+                               _inc(freq_slide,1023);
+                           33: Case panning of
+                                 0: panning := 2;
+                                 1: panning := 0;
+                               end;
+                           34,
+                           35: duration :=
+                               _inc(duration,255);
+                          end;
+               kCHmins,
+               kNPmins: With songdata.instr_macros[instr].data[fmreg_page] do
+                          Case fmreg_hpos of
+                            1: fm_data.ATTCK_DEC_modulator :=
+                               _dec(fm_data.ATTCK_DEC_modulator SHR 4,0) SHL 4+
+                               fm_data.ATTCK_DEC_modulator AND $0f;
+                            2: fm_data.ATTCK_DEC_modulator :=
+                               fm_data.ATTCK_DEC_modulator AND $0f0+
+                               _dec(fm_data.ATTCK_DEC_modulator AND $0f,0);
+                            3: fm_data.SUSTN_REL_modulator :=
+                               _dec(fm_data.SUSTN_REL_modulator SHR 4,0) SHL 4+
+                               fm_data.SUSTN_REL_modulator AND $0f;
+                            4: fm_data.SUSTN_REL_modulator :=
+                               fm_data.SUSTN_REL_modulator AND $0f0+
+                               _dec(fm_data.SUSTN_REL_modulator AND $0f,0);
+                            5: fm_data.WAVEFORM_modulator :=
+                               _dec(fm_data.WAVEFORM_modulator,0);
+                            6,
+                            7: fm_data.KSL_VOLUM_modulator :=
+                               fm_data.KSL_VOLUM_modulator AND $0c0+
+                               _dec(fm_data.KSL_VOLUM_modulator AND $3f,0);
+                            8: fm_data.KSL_VOLUM_modulator :=
+                               fm_data.KSL_VOLUM_modulator AND $3f+
+                               _dec(fm_data.KSL_VOLUM_modulator SHR 6,0) SHL 6;
+                            9: fm_data.AM_VIB_EG_modulator :=
+                               fm_data.AM_VIB_EG_modulator AND $0f0+
+                               _dec(fm_data.AM_VIB_EG_modulator AND $0f,0);
+                           10: fm_data.AM_VIB_EG_modulator :=
+                               fm_data.AM_VIB_EG_modulator AND $7f+
+                               _dec(fm_data.AM_VIB_EG_modulator SHR 7,0) SHL 7;
+                           11: fm_data.AM_VIB_EG_modulator :=
+                               fm_data.AM_VIB_EG_modulator AND $0bf+
+                               _dec(fm_data.AM_VIB_EG_modulator SHR 6 AND 1,0) SHL 6;
+                           12: fm_data.AM_VIB_EG_modulator :=
+                               fm_data.AM_VIB_EG_modulator AND $0ef+
+                               _dec(fm_data.AM_VIB_EG_modulator SHR 4 AND 1,0) SHL 4;
+                           13: fm_data.AM_VIB_EG_modulator :=
+                               fm_data.AM_VIB_EG_modulator AND $0df+
+                               _dec(fm_data.AM_VIB_EG_modulator SHR 5 AND 1,0) SHL 5;
+                           14: fm_data.ATTCK_DEC_carrier :=
+                               _dec(fm_data.ATTCK_DEC_carrier SHR 4,0) SHL 4+
+                               fm_data.ATTCK_DEC_carrier AND $0f;
+                           15: fm_data.ATTCK_DEC_carrier :=
+                               fm_data.ATTCK_DEC_carrier AND $0f0+
+                               _dec(fm_data.ATTCK_DEC_carrier AND $0f,0);
+                           16: fm_data.SUSTN_REL_carrier :=
+                               _dec(fm_data.SUSTN_REL_carrier SHR 4,0) SHL 4+
+                               fm_data.SUSTN_REL_carrier AND $0f;
+                           17: fm_data.SUSTN_REL_carrier :=
+                               fm_data.SUSTN_REL_carrier AND $0f0+
+                               _dec(fm_data.SUSTN_REL_carrier AND $0f,0);
+                           18: fm_data.WAVEFORM_carrier :=
+                               _dec(fm_data.WAVEFORM_carrier,0);
+                           19,
+                           20: fm_data.KSL_VOLUM_carrier :=
+                               fm_data.KSL_VOLUM_carrier AND $0c0+
+                               _dec(fm_data.KSL_VOLUM_carrier AND $3f,0);
+                           21: fm_data.KSL_VOLUM_carrier :=
+                               fm_data.KSL_VOLUM_carrier AND $3f+
+                               _dec(fm_data.KSL_VOLUM_carrier SHR 6,0) SHL 6;
+                           22: fm_data.AM_VIB_EG_carrier :=
+                               fm_data.AM_VIB_EG_carrier AND $0f0+
+                               _dec(fm_data.AM_VIB_EG_carrier AND $0f,0);
+                           23: fm_data.AM_VIB_EG_carrier :=
+                               fm_data.AM_VIB_EG_carrier AND $7f+
+                               _dec(fm_data.AM_VIB_EG_carrier SHR 7,0) SHL 7;
+                           24: fm_data.AM_VIB_EG_carrier :=
+                               fm_data.AM_VIB_EG_carrier AND $0bf+
+                               _dec(fm_data.AM_VIB_EG_carrier SHR 6 AND 1,0) SHL 6;
+                           25: fm_data.AM_VIB_EG_carrier :=
+                               fm_data.AM_VIB_EG_carrier AND $0ef+
+                               _dec(fm_data.AM_VIB_EG_carrier SHR 4 AND 1,0) SHL 4;
+                           26: fm_data.AM_VIB_EG_carrier :=
+                               fm_data.AM_VIB_EG_carrier AND $0df+
+                               _dec(fm_data.AM_VIB_EG_carrier SHR 5 AND 1,0) SHL 5;
+                           27: fm_data.FEEDBACK_FM :=
+                               fm_data.FEEDBACK_FM AND $0fe+
+                               _dec(fm_data.FEEDBACK_FM AND 1,0);
+                           28: fm_data.FEEDBACK_FM :=
+                               fm_data.FEEDBACK_FM AND 1+
+                               _dec(fm_data.FEEDBACK_FM SHR 1,0) SHL 1;
 
-                             29,30,31,
-                             32: freq_slide :=
-                                 _inc(freq_slide,1023);
-                             33: Case panning of
-                                   0: panning := 2;
-                                   1: panning := 0;
-                                 end;
-                             34,
-                             35: duration :=
-                                 _inc(duration,255);
-                            end;
-
-               kNPmins: If shift_pressed then
-                          With songdata.instr_macros[instr].data[fmreg_page] do
-                            Case fmreg_hpos of
-                              1: fm_data.ATTCK_DEC_modulator :=
-                                 _dec(fm_data.ATTCK_DEC_modulator SHR 4,0) SHL 4+
-                                 fm_data.ATTCK_DEC_modulator AND $0f;
-                              2: fm_data.ATTCK_DEC_modulator :=
-                                 fm_data.ATTCK_DEC_modulator AND $0f0+
-                                 _dec(fm_data.ATTCK_DEC_modulator AND $0f,0);
-                              3: fm_data.SUSTN_REL_modulator :=
-                                 _dec(fm_data.SUSTN_REL_modulator SHR 4,0) SHL 4+
-                                 fm_data.SUSTN_REL_modulator AND $0f;
-                              4: fm_data.SUSTN_REL_modulator :=
-                                 fm_data.SUSTN_REL_modulator AND $0f0+
-                                 _dec(fm_data.SUSTN_REL_modulator AND $0f,0);
-                              5: fm_data.WAVEFORM_modulator :=
-                                 _dec(fm_data.WAVEFORM_modulator,0);
-                              6,
-                              7: fm_data.KSL_VOLUM_modulator :=
-                                 fm_data.KSL_VOLUM_modulator AND $0c0+
-                                 _dec(fm_data.KSL_VOLUM_modulator AND $3f,0);
-                              8: fm_data.KSL_VOLUM_modulator :=
-                                 fm_data.KSL_VOLUM_modulator AND $3f+
-                                 _dec(fm_data.KSL_VOLUM_modulator SHR 6,0) SHL 6;
-                              9: fm_data.AM_VIB_EG_modulator :=
-                                 fm_data.AM_VIB_EG_modulator AND $0f0+
-                                 _dec(fm_data.AM_VIB_EG_modulator AND $0f,0);
-                             10: fm_data.AM_VIB_EG_modulator :=
-                                 fm_data.AM_VIB_EG_modulator AND $7f+
-                                 _dec(fm_data.AM_VIB_EG_modulator SHR 7,0) SHL 7;
-                             11: fm_data.AM_VIB_EG_modulator :=
-                                 fm_data.AM_VIB_EG_modulator AND $0bf+
-                                 _dec(fm_data.AM_VIB_EG_modulator SHR 6 AND 1,0) SHL 6;
-                             12: fm_data.AM_VIB_EG_modulator :=
-                                 fm_data.AM_VIB_EG_modulator AND $0ef+
-                                 _dec(fm_data.AM_VIB_EG_modulator SHR 4 AND 1,0) SHL 4;
-                             13: fm_data.AM_VIB_EG_modulator :=
-                                 fm_data.AM_VIB_EG_modulator AND $0df+
-                                 _dec(fm_data.AM_VIB_EG_modulator SHR 5 AND 1,0) SHL 5;
-                             14: fm_data.ATTCK_DEC_carrier :=
-                                 _dec(fm_data.ATTCK_DEC_carrier SHR 4,0) SHL 4+
-                                 fm_data.ATTCK_DEC_carrier AND $0f;
-                             15: fm_data.ATTCK_DEC_carrier :=
-                                 fm_data.ATTCK_DEC_carrier AND $0f0+
-                                 _dec(fm_data.ATTCK_DEC_carrier AND $0f,0);
-                             16: fm_data.SUSTN_REL_carrier :=
-                                 _dec(fm_data.SUSTN_REL_carrier SHR 4,0) SHL 4+
-                                 fm_data.SUSTN_REL_carrier AND $0f;
-                             17: fm_data.SUSTN_REL_carrier :=
-                                 fm_data.SUSTN_REL_carrier AND $0f0+
-                                 _dec(fm_data.SUSTN_REL_carrier AND $0f,0);
-                             18: fm_data.WAVEFORM_carrier :=
-                                 _dec(fm_data.WAVEFORM_carrier,0);
-                             19,
-                             20: fm_data.KSL_VOLUM_carrier :=
-                                 fm_data.KSL_VOLUM_carrier AND $0c0+
-                                 _dec(fm_data.KSL_VOLUM_carrier AND $3f,0);
-                             21: fm_data.KSL_VOLUM_carrier :=
-                                 fm_data.KSL_VOLUM_carrier AND $3f+
-                                 _dec(fm_data.KSL_VOLUM_carrier SHR 6,0) SHL 6;
-                             22: fm_data.AM_VIB_EG_carrier :=
-                                 fm_data.AM_VIB_EG_carrier AND $0f0+
-                                 _dec(fm_data.AM_VIB_EG_carrier AND $0f,0);
-                             23: fm_data.AM_VIB_EG_carrier :=
-                                 fm_data.AM_VIB_EG_carrier AND $7f+
-                                 _dec(fm_data.AM_VIB_EG_carrier SHR 7,0) SHL 7;
-                             24: fm_data.AM_VIB_EG_carrier :=
-                                 fm_data.AM_VIB_EG_carrier AND $0bf+
-                                 _dec(fm_data.AM_VIB_EG_carrier SHR 6 AND 1,0) SHL 6;
-                             25: fm_data.AM_VIB_EG_carrier :=
-                                 fm_data.AM_VIB_EG_carrier AND $0ef+
-                                 _dec(fm_data.AM_VIB_EG_carrier SHR 4 AND 1,0) SHL 4;
-                             26: fm_data.AM_VIB_EG_carrier :=
-                                 fm_data.AM_VIB_EG_carrier AND $0df+
-                                 _dec(fm_data.AM_VIB_EG_carrier SHR 5 AND 1,0) SHL 5;
-                             27: fm_data.FEEDBACK_FM :=
-                                 fm_data.FEEDBACK_FM AND $0fe+
-                                 _dec(fm_data.FEEDBACK_FM AND 1,0);
-                             28: fm_data.FEEDBACK_FM :=
-                                 fm_data.FEEDBACK_FM AND 1+
-                                 _dec(fm_data.FEEDBACK_FM SHR 1,0) SHL 1;
-
-                             29,30,31,
-                             32: freq_slide :=
-                                 _dec(freq_slide,-1023);
-                             33: Case panning of
-                                   0: panning := 1;
-                                   2: panning := 0;
-                                 end;
-                             34,
-                             35: duration :=
-                                 _dec(duration,0);
-                            end;
+                           29,30,31,
+                           32: freq_slide :=
+                               _dec(freq_slide,-1023);
+                           33: Case panning of
+                                 0: panning := 1;
+                                 2: panning := 0;
+                               end;
+                           34,
+                           35: duration :=
+                               _dec(duration,0);
+                          end;
 
                kBkSPC: If NOT shift_pressed then
                          With songdata.instr_macros[instr].data[fmreg_page] do
@@ -3572,17 +3576,18 @@ _jmp2:
 
              songdata.macro_table[ptr_arpeggio_table].
              arpeggio.length := Str2num(temps,16);
-             If shift_pressed then
-               Case is_environment.keystroke of
-                 kNPplus: If (songdata.macro_table[ptr_arpeggio_table].
-                              arpeggio.length < 255) then
-                            Inc(songdata.macro_table[ptr_arpeggio_table].
-                                arpeggio.length);
-                 kNPmins: If (songdata.macro_table[ptr_arpeggio_table].
-                              arpeggio.length > 0) then
-                            Dec(songdata.macro_table[ptr_arpeggio_table].
-                                arpeggio.length);
-               end;
+             Case is_environment.keystroke of
+               kCHplus,
+               kNPplus: If (songdata.macro_table[ptr_arpeggio_table].
+                            arpeggio.length < 255) then
+                          Inc(songdata.macro_table[ptr_arpeggio_table].
+                              arpeggio.length);
+               kCHmins,
+               kNPmins: If (songdata.macro_table[ptr_arpeggio_table].
+                            arpeggio.length > 0) then
+                          Dec(songdata.macro_table[ptr_arpeggio_table].
+                              arpeggio.length);
+             end;
 
              If (is_environment.keystroke = kENTER) or
                 (is_environment.keystroke = kTAB) or
@@ -3627,17 +3632,18 @@ _jmp2:
 
              songdata.macro_table[ptr_arpeggio_table].
              arpeggio.speed := Str2num(temps,16);
-             If shift_pressed then
-               Case is_environment.keystroke of
-                 kNPplus: If (songdata.macro_table[ptr_arpeggio_table].
-                              arpeggio.speed < 255) then
-                            Inc(songdata.macro_table[ptr_arpeggio_table].
-                                arpeggio.speed);
-                 kNPmins: If (songdata.macro_table[ptr_arpeggio_table].
-                              arpeggio.speed > 0) then
-                            Dec(songdata.macro_table[ptr_arpeggio_table].
-                                arpeggio.speed);
-               end;
+             Case is_environment.keystroke of
+               kCHplus,
+               kNPplus: If (songdata.macro_table[ptr_arpeggio_table].
+                            arpeggio.speed < 255) then
+                          Inc(songdata.macro_table[ptr_arpeggio_table].
+                              arpeggio.speed);
+               kCHmins,
+               kNPmins: If (songdata.macro_table[ptr_arpeggio_table].
+                            arpeggio.speed > 0) then
+                          Dec(songdata.macro_table[ptr_arpeggio_table].
+                              arpeggio.speed);
+             end;
 
              If (is_environment.keystroke = kENTER) or
                 (is_environment.keystroke = kTAB) or
@@ -3680,17 +3686,18 @@ _jmp2:
 
              songdata.macro_table[ptr_arpeggio_table].
              arpeggio.loop_begin := Str2num(temps,16);
-             If shift_pressed then
-               Case is_environment.keystroke of
-                 kNPplus: If (songdata.macro_table[ptr_arpeggio_table].
-                              arpeggio.loop_begin < 255) then
-                            Inc(songdata.macro_table[ptr_arpeggio_table].
-                                arpeggio.loop_begin);
-                 kNPmins: If (songdata.macro_table[ptr_arpeggio_table].
-                              arpeggio.loop_begin > 0) then
-                            Dec(songdata.macro_table[ptr_arpeggio_table].
-                                arpeggio.loop_begin);
-               end;
+             Case is_environment.keystroke of
+               kCHplus,
+               kNPplus: If (songdata.macro_table[ptr_arpeggio_table].
+                            arpeggio.loop_begin < 255) then
+                          Inc(songdata.macro_table[ptr_arpeggio_table].
+                              arpeggio.loop_begin);
+               kCHmins,
+               kNPmins: If (songdata.macro_table[ptr_arpeggio_table].
+                            arpeggio.loop_begin > 0) then
+                          Dec(songdata.macro_table[ptr_arpeggio_table].
+                              arpeggio.loop_begin);
+             end;
 
              While NOT ((songdata.macro_table[ptr_arpeggio_table].
                          arpeggio.keyoff_pos > songdata.macro_table[ptr_arpeggio_table].
@@ -3747,17 +3754,18 @@ _jmp2:
 
              songdata.macro_table[ptr_arpeggio_table].
              arpeggio.loop_length := Str2num(temps,16);
-             If shift_pressed then
-               Case is_environment.keystroke of
-                 kNPplus: If (songdata.macro_table[ptr_arpeggio_table].
-                              arpeggio.loop_length < 255) then
-                            Inc(songdata.macro_table[ptr_arpeggio_table].
-                                arpeggio.loop_length);
-                 kNPmins: If (songdata.macro_table[ptr_arpeggio_table].
-                              arpeggio.loop_length > 0) then
-                            Dec(songdata.macro_table[ptr_arpeggio_table].
-                                arpeggio.loop_length);
-               end;
+             Case is_environment.keystroke of
+               kCHplus,
+               kNPplus: If (songdata.macro_table[ptr_arpeggio_table].
+                            arpeggio.loop_length < 255) then
+                          Inc(songdata.macro_table[ptr_arpeggio_table].
+                              arpeggio.loop_length);
+               kCHmins,
+               kNPmins: If (songdata.macro_table[ptr_arpeggio_table].
+                            arpeggio.loop_length > 0) then
+                          Dec(songdata.macro_table[ptr_arpeggio_table].
+                              arpeggio.loop_length);
+             end;
 
              While NOT ((songdata.macro_table[ptr_arpeggio_table].
                          arpeggio.keyoff_pos > songdata.macro_table[ptr_arpeggio_table].
@@ -3823,44 +3831,44 @@ _jmp2:
 
              songdata.macro_table[ptr_arpeggio_table].
              arpeggio.keyoff_pos := Str2num(temps,16);
-             If shift_pressed then
-               Case is_environment.keystroke of
-                 kNPplus: If (songdata.macro_table[ptr_arpeggio_table].
-                              arpeggio.loop_begin = 0) or
-                             (songdata.macro_table[ptr_arpeggio_table].
-                              arpeggio.loop_length = 0) or
-                             (songdata.macro_table[ptr_arpeggio_table].
-                              arpeggio.keyoff_pos <> 0) then
-                            If (songdata.macro_table[ptr_arpeggio_table].
-                                arpeggio.keyoff_pos < 255) then
-                              Inc(songdata.macro_table[ptr_arpeggio_table].
-                                  arpeggio.keyoff_pos)
-                            else
-                          else If (songdata.macro_table[ptr_arpeggio_table].
-                                   arpeggio.loop_begin+
-                                   songdata.macro_table[ptr_arpeggio_table].
-                                   arpeggio.loop_length <= 255) then
+             Case is_environment.keystroke of
+               kCHplus,
+               kNPplus: If (songdata.macro_table[ptr_arpeggio_table].
+                            arpeggio.loop_begin = 0) or
+                           (songdata.macro_table[ptr_arpeggio_table].
+                            arpeggio.loop_length = 0) or
+                           (songdata.macro_table[ptr_arpeggio_table].
+                            arpeggio.keyoff_pos <> 0) then
+                          If (songdata.macro_table[ptr_arpeggio_table].
+                              arpeggio.keyoff_pos < 255) then
+                            Inc(songdata.macro_table[ptr_arpeggio_table].
+                                arpeggio.keyoff_pos)
+                          else
+                        else If (songdata.macro_table[ptr_arpeggio_table].
+                                 arpeggio.loop_begin+
                                  songdata.macro_table[ptr_arpeggio_table].
-                                 arpeggio.keyoff_pos :=
-                                   songdata.macro_table[ptr_arpeggio_table].
-                                   arpeggio.loop_begin+
-                                   songdata.macro_table[ptr_arpeggio_table].
-                                   arpeggio.loop_length;
-
-                 kNPmins: If (min0(songdata.macro_table[ptr_arpeggio_table].
-                                   arpeggio.keyoff_pos-1,0) > songdata.macro_table[ptr_arpeggio_table].
-                                                              arpeggio.loop_begin+
-                                min0(songdata.macro_table[ptr_arpeggio_table].
-                                     arpeggio.loop_length-1,0)) or
-                             ((songdata.macro_table[ptr_arpeggio_table].
-                               arpeggio.keyoff_pos > 0) and
-                             ((songdata.macro_table[ptr_arpeggio_table].
-                               arpeggio.loop_begin = 0) or
-                              (songdata.macro_table[ptr_arpeggio_table].
-                               arpeggio.loop_length = 0))) then
-                            Dec(songdata.macro_table[ptr_arpeggio_table].
-                                arpeggio.keyoff_pos);
-               end;
+                                 arpeggio.loop_length <= 255) then
+                               songdata.macro_table[ptr_arpeggio_table].
+                               arpeggio.keyoff_pos :=
+                                 songdata.macro_table[ptr_arpeggio_table].
+                                 arpeggio.loop_begin+
+                                 songdata.macro_table[ptr_arpeggio_table].
+                                 arpeggio.loop_length;
+               kCHmins,
+               kNPmins: If (min0(songdata.macro_table[ptr_arpeggio_table].
+                                 arpeggio.keyoff_pos-1,0) > songdata.macro_table[ptr_arpeggio_table].
+                                                            arpeggio.loop_begin+
+                              min0(songdata.macro_table[ptr_arpeggio_table].
+                                   arpeggio.loop_length-1,0)) or
+                           ((songdata.macro_table[ptr_arpeggio_table].
+                             arpeggio.keyoff_pos > 0) and
+                           ((songdata.macro_table[ptr_arpeggio_table].
+                             arpeggio.loop_begin = 0) or
+                            (songdata.macro_table[ptr_arpeggio_table].
+                             arpeggio.loop_length = 0))) then
+                          Dec(songdata.macro_table[ptr_arpeggio_table].
+                              arpeggio.keyoff_pos);
+             end;
 
              If (is_environment.keystroke = kENTER) or
                 (is_environment.keystroke = kTAB) or
@@ -3950,31 +3958,31 @@ _jmp2:
                           else If cycle_pattern then arpeggio_page := 1;
                       end;
 
-               kNPplus: If shift_pressed then
+               kCHplus,
+               kNPplus: If (songdata.macro_table[ptr_arpeggio_table].
+                            arpeggio.data[arpeggio_page] < $80) then
                           If (songdata.macro_table[ptr_arpeggio_table].
-                              arpeggio.data[arpeggio_page] < $80) then
-                            If (songdata.macro_table[ptr_arpeggio_table].
-                                arpeggio.data[arpeggio_page] < 96) then
-                              Inc(songdata.macro_table[ptr_arpeggio_table].
-                                  arpeggio.data[arpeggio_page])
-                            else
-                          else If (songdata.macro_table[ptr_arpeggio_table].
-                                   arpeggio.data[arpeggio_page] < $80+96+1) then
-                                 Inc(songdata.macro_table[ptr_arpeggio_table].
-                                     arpeggio.data[arpeggio_page]);
+                              arpeggio.data[arpeggio_page] < 96) then
+                            Inc(songdata.macro_table[ptr_arpeggio_table].
+                                arpeggio.data[arpeggio_page])
+                          else
+                        else If (songdata.macro_table[ptr_arpeggio_table].
+                                 arpeggio.data[arpeggio_page] < $80+96+1) then
+                               Inc(songdata.macro_table[ptr_arpeggio_table].
+                                   arpeggio.data[arpeggio_page]);
+               kCHmins,
+               kNPmins: If (songdata.macro_table[ptr_arpeggio_table].
+                            arpeggio.data[arpeggio_page] < $80) then
+                          If (songdata.macro_table[ptr_arpeggio_table].
+                              arpeggio.data[arpeggio_page] > 1) then
+                            Dec(songdata.macro_table[ptr_arpeggio_table].
+                                arpeggio.data[arpeggio_page])
+                          else
+                        else If (songdata.macro_table[ptr_arpeggio_table].
+                                 arpeggio.data[arpeggio_page] > $80+1) then
+                               Dec(songdata.macro_table[ptr_arpeggio_table].
+                                   arpeggio.data[arpeggio_page]);
 
-               kNPmins: If shift_pressed then
-                          If (songdata.macro_table[ptr_arpeggio_table].
-                              arpeggio.data[arpeggio_page] < $80) then
-                            If (songdata.macro_table[ptr_arpeggio_table].
-                                arpeggio.data[arpeggio_page] > 1) then
-                              Dec(songdata.macro_table[ptr_arpeggio_table].
-                                  arpeggio.data[arpeggio_page])
-                            else
-                          else If (songdata.macro_table[ptr_arpeggio_table].
-                                   arpeggio.data[arpeggio_page] > $80+1) then
-                                 Dec(songdata.macro_table[ptr_arpeggio_table].
-                                     arpeggio.data[arpeggio_page]);
                kBkSPC: begin
                          songdata.macro_table[ptr_arpeggio_table].
                          arpeggio.data[arpeggio_page] := 0;
@@ -4219,17 +4227,18 @@ _jmp2:
 
              songdata.macro_table[ptr_vibrato_table].
                       vibrato.length := Str2num(temps,16);
-             If shift_pressed then
-               Case is_environment.keystroke of
-                 kNPplus: If (songdata.macro_table[ptr_vibrato_table].
-                              vibrato.length < 255) then
-                            Inc(songdata.macro_table[ptr_vibrato_table].
-                                vibrato.length);
-                 kNPmins: If (songdata.macro_table[ptr_vibrato_table].
-                              vibrato.length > 0) then
-                            Dec(songdata.macro_table[ptr_vibrato_table].
-                                vibrato.length);
-               end;
+             Case is_environment.keystroke of
+               kCHplus,
+               kNPplus: If (songdata.macro_table[ptr_vibrato_table].
+                            vibrato.length < 255) then
+                          Inc(songdata.macro_table[ptr_vibrato_table].
+                              vibrato.length);
+               kCHmins,
+               kNPmins: If (songdata.macro_table[ptr_vibrato_table].
+                            vibrato.length > 0) then
+                          Dec(songdata.macro_table[ptr_vibrato_table].
+                              vibrato.length);
+             end;
 
              If (is_environment.keystroke = kENTER) or
                 (is_environment.keystroke = kTAB) or
@@ -4276,17 +4285,18 @@ _jmp2:
 
              songdata.macro_table[ptr_vibrato_table].
                       vibrato.speed := Str2num(temps,16);
-             If shift_pressed then
-               Case is_environment.keystroke of
-                 kNPplus: If (songdata.macro_table[ptr_vibrato_table].
-                              vibrato.speed < 255) then
-                            Inc(songdata.macro_table[ptr_vibrato_table].
-                                vibrato.speed);
-                 kNPmins: If (songdata.macro_table[ptr_vibrato_table].
-                              vibrato.speed > 0) then
-                            Dec(songdata.macro_table[ptr_vibrato_table].
-                                vibrato.speed);
-               end;
+             Case is_environment.keystroke of
+               kCHplus,
+               kNPplus: If (songdata.macro_table[ptr_vibrato_table].
+                            vibrato.speed < 255) then
+                          Inc(songdata.macro_table[ptr_vibrato_table].
+                              vibrato.speed);
+               kCHmins,
+               kNPmins: If (songdata.macro_table[ptr_vibrato_table].
+                            vibrato.speed > 0) then
+                          Dec(songdata.macro_table[ptr_vibrato_table].
+                              vibrato.speed);
+             end;
 
              If (is_environment.keystroke = kENTER) or
                 (is_environment.keystroke = kTAB) or
@@ -4329,17 +4339,18 @@ _jmp2:
 
              songdata.macro_table[ptr_vibrato_table].
                       vibrato.delay := Str2num(temps,16);
-             If shift_pressed then
-               Case is_environment.keystroke of
-                 kNPplus: If (songdata.macro_table[ptr_vibrato_table].
-                              vibrato.delay < 255) then
-                            Inc(songdata.macro_table[ptr_vibrato_table].
-                                vibrato.delay);
-                 kNPmins: If (songdata.macro_table[ptr_vibrato_table].
-                              vibrato.delay > 0) then
-                            Dec(songdata.macro_table[ptr_vibrato_table].
-                                vibrato.delay);
-               end;
+             Case is_environment.keystroke of
+               kCHplus,
+               kNPplus: If (songdata.macro_table[ptr_vibrato_table].
+                            vibrato.delay < 255) then
+                          Inc(songdata.macro_table[ptr_vibrato_table].
+                              vibrato.delay);
+               kCHmins,
+               kNPmins: If (songdata.macro_table[ptr_vibrato_table].
+                            vibrato.delay > 0) then
+                          Dec(songdata.macro_table[ptr_vibrato_table].
+                              vibrato.delay);
+             end;
 
              If (is_environment.keystroke = kENTER) or
                 (is_environment.keystroke = kTAB) or
@@ -4382,17 +4393,18 @@ _jmp2:
 
              songdata.macro_table[ptr_vibrato_table].
                       vibrato.loop_begin := Str2num(temps,16);
-             If shift_pressed then
-               Case is_environment.keystroke of
-                 kNPplus: If (songdata.macro_table[ptr_vibrato_table].
-                              vibrato.loop_begin < 255) then
-                            Inc(songdata.macro_table[ptr_vibrato_table].
-                                vibrato.loop_begin);
-                 kNPmins: If (songdata.macro_table[ptr_vibrato_table].
-                              vibrato.loop_begin > 0) then
-                            Dec(songdata.macro_table[ptr_vibrato_table].
-                                vibrato.loop_begin);
-               end;
+             Case is_environment.keystroke of
+               kCHplus,
+               kNPplus: If (songdata.macro_table[ptr_vibrato_table].
+                            vibrato.loop_begin < 255) then
+                          Inc(songdata.macro_table[ptr_vibrato_table].
+                              vibrato.loop_begin);
+               kCHmins,
+               kNPmins: If (songdata.macro_table[ptr_vibrato_table].
+                            vibrato.loop_begin > 0) then
+                          Dec(songdata.macro_table[ptr_vibrato_table].
+                              vibrato.loop_begin);
+             end;
 
              While NOT ((songdata.macro_table[ptr_vibrato_table].
                          vibrato.keyoff_pos > songdata.macro_table[ptr_vibrato_table].
@@ -4449,17 +4461,18 @@ _jmp2:
 
              songdata.macro_table[ptr_vibrato_table].
                       vibrato.loop_length := Str2num(temps,16);
-             If shift_pressed then
-               Case is_environment.keystroke of
-                 kNPplus: If (songdata.macro_table[ptr_vibrato_table].
-                              vibrato.loop_length < 255) then
-                            Inc(songdata.macro_table[ptr_vibrato_table].
-                                vibrato.loop_length);
-                 kNPmins: If (songdata.macro_table[ptr_vibrato_table].
-                              vibrato.loop_length > 0) then
-                            Dec(songdata.macro_table[ptr_vibrato_table].
-                                vibrato.loop_length);
-               end;
+             Case is_environment.keystroke of
+               kCHplus,
+               kNPplus: If (songdata.macro_table[ptr_vibrato_table].
+                            vibrato.loop_length < 255) then
+                          Inc(songdata.macro_table[ptr_vibrato_table].
+                              vibrato.loop_length);
+               kCHmins,
+               kNPmins: If (songdata.macro_table[ptr_vibrato_table].
+                            vibrato.loop_length > 0) then
+                          Dec(songdata.macro_table[ptr_vibrato_table].
+                              vibrato.loop_length);
+             end;
 
              While NOT ((songdata.macro_table[ptr_vibrato_table].
                          vibrato.keyoff_pos > songdata.macro_table[ptr_vibrato_table].
@@ -4525,44 +4538,44 @@ _jmp2:
 
              songdata.macro_table[ptr_vibrato_table].
                       vibrato.keyoff_pos := Str2num(temps,16);
-             If shift_pressed then
-               Case is_environment.keystroke of
-                 kNPplus: If (songdata.macro_table[ptr_vibrato_table].
-                              vibrato.loop_begin = 0) or
-                             (songdata.macro_table[ptr_vibrato_table].
-                              vibrato.loop_length = 0) or
-                             (songdata.macro_table[ptr_vibrato_table].
-                              vibrato.keyoff_pos <> 0) then
-                            If (songdata.macro_table[ptr_vibrato_table].
-                                vibrato.keyoff_pos < 255) then
-                              Inc(songdata.macro_table[ptr_vibrato_table].
-                                  vibrato.keyoff_pos)
-                            else
-                          else If (songdata.macro_table[ptr_vibrato_table].
-                                   vibrato.loop_begin+
-                                   songdata.macro_table[ptr_vibrato_table].
-                                   vibrato.loop_length <= 255) then
+             Case is_environment.keystroke of
+               kCHplus,
+               kNPplus: If (songdata.macro_table[ptr_vibrato_table].
+                            vibrato.loop_begin = 0) or
+                           (songdata.macro_table[ptr_vibrato_table].
+                            vibrato.loop_length = 0) or
+                           (songdata.macro_table[ptr_vibrato_table].
+                            vibrato.keyoff_pos <> 0) then
+                          If (songdata.macro_table[ptr_vibrato_table].
+                              vibrato.keyoff_pos < 255) then
+                            Inc(songdata.macro_table[ptr_vibrato_table].
+                                vibrato.keyoff_pos)
+                          else
+                        else If (songdata.macro_table[ptr_vibrato_table].
+                                 vibrato.loop_begin+
                                  songdata.macro_table[ptr_vibrato_table].
-                                 vibrato.keyoff_pos :=
-                                   songdata.macro_table[ptr_vibrato_table].
-                                   vibrato.loop_begin+
-                                   songdata.macro_table[ptr_vibrato_table].
-                                   vibrato.loop_length;
-
-                 kNPmins: If (min0(songdata.macro_table[ptr_vibrato_table].
-                                   vibrato.keyoff_pos-1,0) > songdata.macro_table[ptr_vibrato_table].
-                                                             vibrato.loop_begin+
-                                min0(songdata.macro_table[ptr_vibrato_table].
-                                     vibrato.loop_length-1,0)) or
-                             ((songdata.macro_table[ptr_vibrato_table].
-                               vibrato.keyoff_pos > 0) and
-                             ((songdata.macro_table[ptr_vibrato_table].
-                               vibrato.loop_begin = 0) or
-                              (songdata.macro_table[ptr_vibrato_table].
-                               vibrato.loop_length = 0))) then
-                            Dec(songdata.macro_table[ptr_vibrato_table].
-                                vibrato.keyoff_pos);
-               end;
+                                 vibrato.loop_length <= 255) then
+                               songdata.macro_table[ptr_vibrato_table].
+                               vibrato.keyoff_pos :=
+                                 songdata.macro_table[ptr_vibrato_table].
+                                 vibrato.loop_begin+
+                                 songdata.macro_table[ptr_vibrato_table].
+                                 vibrato.loop_length;
+               kCHmins,
+               kNPmins: If (min0(songdata.macro_table[ptr_vibrato_table].
+                                 vibrato.keyoff_pos-1,0) > songdata.macro_table[ptr_vibrato_table].
+                                                           vibrato.loop_begin+
+                              min0(songdata.macro_table[ptr_vibrato_table].
+                                   vibrato.loop_length-1,0)) or
+                           ((songdata.macro_table[ptr_vibrato_table].
+                             vibrato.keyoff_pos > 0) and
+                           ((songdata.macro_table[ptr_vibrato_table].
+                             vibrato.loop_begin = 0) or
+                            (songdata.macro_table[ptr_vibrato_table].
+                             vibrato.loop_length = 0))) then
+                          Dec(songdata.macro_table[ptr_vibrato_table].
+                              vibrato.keyoff_pos);
+             end;
 
              If (is_environment.keystroke = kENTER) or
                 (is_environment.keystroke = kTAB) or
@@ -4656,17 +4669,17 @@ _jmp2:
                           else If cycle_pattern then vibrato_page := 1;
                       end;
 
-               kNPplus: If shift_pressed then
-                          If (songdata.macro_table[ptr_vibrato_table].
-                              vibrato.data[vibrato_page] < 127) then
-                            Inc(songdata.macro_table[ptr_vibrato_table].
-                                vibrato.data[vibrato_page]);
+               kCHplus,
+               kNPplus: If (songdata.macro_table[ptr_vibrato_table].
+                            vibrato.data[vibrato_page] < 127) then
+                          Inc(songdata.macro_table[ptr_vibrato_table].
+                              vibrato.data[vibrato_page]);
+               kCHmins,
+               kNPmins: If (songdata.macro_table[ptr_vibrato_table].
+                            vibrato.data[vibrato_page] > -127) then
+                          Dec(songdata.macro_table[ptr_vibrato_table].
+                              vibrato.data[vibrato_page]);
 
-               kNPmins: If shift_pressed then
-                          If (songdata.macro_table[ptr_vibrato_table].
-                              vibrato.data[vibrato_page] > -127) then
-                            Dec(songdata.macro_table[ptr_vibrato_table].
-                                vibrato.data[vibrato_page]);
                kBkSPC: begin
                          songdata.macro_table[ptr_vibrato_table].
                          vibrato.data[vibrato_page] := 0;

@@ -827,6 +827,8 @@ begin
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'IPATTERN.INC:update_trace';
 {$ENDIF}
+  tracing := TRUE;
+  trace_update_proc := update_trace;
   space_pressed := scankey(SC_SPACE);
   If (play_status = isPlaying) then
     If (last_order <> current_order) or
@@ -1259,7 +1261,8 @@ begin
                           PATTERN_page_refresh(pattern_page);
                         end;
       kCHmins,
-      kNPmins: If NOT play_single_patt then
+      kNPmins,
+      kCtHOME: If NOT play_single_patt then
                  begin
                    temp := current_order;
                    temp2 := current_line;
@@ -1278,14 +1281,15 @@ begin
                        If (songdata.pattern_order[temp] < $80) then
                          begin
                            fade_out_playback(FALSE);
-                           If shift_pressed then calibrate_player(temp,temp2,TRUE,FALSE)
+                           If (fkey2 = kCtHOME) then calibrate_player(temp,temp2,TRUE,FALSE)
                            else calibrate_player(temp,0,TRUE,FALSE);
                          end;
                      end;
                  end;
 
       kCHplus,
-      kNPplus: If NOT play_single_patt then
+      kNPplus,
+      kCtEND:  If NOT play_single_patt then
                  begin
                    temp := current_order;
                    temp2 := current_line;
@@ -1304,7 +1308,7 @@ begin
                        If (songdata.pattern_order[temp] < $80) then
                          begin
                            fade_out_playback(FALSE);
-                           If shift_pressed then calibrate_player(temp,temp2,TRUE,FALSE)
+                           If (fkey2 = kCtEND) then calibrate_player(temp,temp2,TRUE,FALSE)
                            else calibrate_player(temp,0,TRUE,FALSE);
                          end;
                      end;

@@ -7,7 +7,7 @@ http://www.adlibtracker.net/files/revision.htm
 
 
 * version 2.3.53
-  released: --/--/----
+  released: 12/23/2014
 
    . changed hotkey for toggle of typing modes (hotkey: F11)
    . added toggle of line feed (hotkey: F12)
@@ -42,6 +42,9 @@ http://www.adlibtracker.net/files/revision.htm
    . added navigation to program home directory in File Browser window
      with Shift+Backspace key (refer also to option "home_dir_path")
    . added quick selection for muting track numbers above 9 with Shift key
+   . fixed treating of all +/- combos for keyboards without NUMPAD
+   . fixed player calibration issue with pattern break command
+   . AT2 player updated to version 0.42
 
 
 * version 2.3.52

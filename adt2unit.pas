@@ -182,6 +182,7 @@ var
   reset_adsrw: array[1..20] of Boolean;
   ignore_note_once: array[1..20] of Boolean;
   track_notes_ins: Boolean;
+  seek_pattern_break: Boolean;
 
 var
   speed_update,lockvol,panlock,lockVP: Boolean;
@@ -1543,6 +1544,7 @@ begin
           If no_loop(chan,current_line) then
             begin
               pattern_break := TRUE;
+              seek_pattern_break := TRUE;
               next_line := max(event.effect,PRED(songdata.patt_len));
             end;
 
@@ -2116,6 +2118,7 @@ begin
           If no_loop(chan,current_line) then
             begin
               pattern_break := TRUE;
+              seek_pattern_break := TRUE;
               next_line := event.effect2;
             end;
 
@@ -4388,6 +4391,7 @@ begin
     While (current_line <> line) or
           (current_order <> order) do
       begin
+        seek_pattern_break := FALSE;
         If scankey(SC_ESCAPE) then BREAK;
         If NOT ((previous_order = current_order) and
                 (previous_line >= current_line) and NOT (pattern_break and
@@ -4422,6 +4426,8 @@ begin
             Inc(jump_count);
             If (jump_count > $7f) then BREAK;
           end;
+
+        If (current_order = order) and seek_pattern_break then BREAK;
         keyboard_reset_buffer;
       end
   else

@@ -275,7 +275,7 @@
  [Shift] Space            Toggle MidiBoard mode ON/OFF
  ^Space                   Toggle Note Recorder mode ON/OFF
  [Alt] Space              Toggle Synth! mode ON/OFF (if available)
- [Shift] +,-              Skip to next/previous pattern while Tracing
+ [Ctrl] Home,End          Skip to previous/next pattern while Tracing
  +,-                      Same as above; play pattern from start
 
  ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
@@ -535,7 +535,7 @@
  [Shift] ^Enter           Paste data from instrument registers w/ selection
  Backspace                Clear current item in table
  [Shift] Backspace        Clear line in table
- [Shift] +,-              Adjust value at cursor / current item in table
+ +,-                      Adjust value at cursor / current item in table
  ^Home,^End               Quick-adjust table length
  [Shift] ^Home,^End       Quick-adjust loop begin position
  [Shift] ^PgUp,^PgDown    Quick-adjust loop length
@@ -573,7 +573,7 @@
  ^V                       Paste object from clipboard
  Backspace                Clear current item in table
  [Shift] Backspace        Clear line in table
- [Shift] +,-              Adjust value at cursor / current item in table
+ +,-                      Adjust value at cursor / current item in table
  ^Home,^End               Quick-adjust table length
  [Shift] ^Home,^End       Quick-adjust loop begin position
  [Shift] ^PgUp,^PgDown    Quick-adjust loop length
@@ -632,7 +632,7 @@
  Backspace                Toggle pattern repeat
  Space                    Enter Debug mode / Proceed step (if possible)
  ^Space                   Exit Debug mode
- [Shift] +,-              Skip to next/previous pattern
+ [Ctrl] Home,End          Skip to previous/next pattern
  +,-                      Same as above; play pattern from start
  ^Enter                   Play next pattern according to order
  ^Left                    Rewind current pattern
@@ -2574,12 +2574,12 @@
  TiP 22  You can control the playback from within the Instrument Control
          panel. Following commands are functional:
 
-         F5              Play
-         F6              Pause
-         F7              Stop
-         F9              Play current pattern or order only
-         [Shift] +,-   * Skip to next/previous pattern while Tracing
-         +,-           * Same as above; play pattern from start
+         F5               Play
+         F6               Pause
+         F7               Stop
+         F9               Play current pattern or order only
+         [Ctrl] Home,End  * Skip to previous/next pattern while Tracing
+         +,-              * Same as above; play pattern from start
 
          NOTE: Commands marked with asterisk (*) work only while the name
                of instrument is not being edited.
@@ -2651,6 +2651,7 @@
  Charles Scheffold & Thomas Pytel [PMODE/W 1.33]
  Joergen Ibsen [aPLib 0.26b]
  Markus Oberhumer, Laszlo Molnar & John Reiser [UPX 3.91d]
+ Virtual Research independent group production [VESA 2.0 LFB library]
 
  (further in alphabetical order :)
 
@@ -2685,4 +2686,4 @@
 ù                                                                           ³
 À-ÄÄÄÄÄÄÄÄÄÄÄÄÄ--ùú           úù-ÄÄÄÄÄÄÄ--ùú                 úù-ÄÄÄÄÄÄÄÄÄÄÄ-Ù
 
- This document was last updated on December 14, 2014.
+ This document was last updated on December 23, 2014.

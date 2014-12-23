@@ -2291,7 +2291,9 @@ begin
   _debug_str_ := 'INSTEDIT.INC:instr_control_proc';
 {$ENDIF}
   Case mn_environment.keystroke of
-      kNPmins: If (play_status <> isStopped) then
+      kCHmins,
+      kNPmins,
+      kCtHOME: If (play_status <> isStopped) then
                  If NOT mn_environment.is_editing then
                    If NOT play_single_patt then
                      begin
@@ -2312,13 +2314,14 @@ begin
                            If (songdata.pattern_order[temp] < $80) then
                              begin
                                fade_out_playback(FALSE);
-                               If shift_pressed then calibrate_player(temp,temp2,TRUE,FALSE)
+                               If (mn_environment.keystroke = kCtHOME) then calibrate_player(temp,temp2,TRUE,FALSE)
                                else calibrate_player(temp,0,TRUE,FALSE);
                              end;
                          end;
                      end;
-
-      kNPplus: If (play_status <> isStopped) then
+      kCHplus,
+      kNPplus,
+      kCtEND:  If (play_status <> isStopped) then
                  If NOT mn_environment.is_editing then
                    If NOT play_single_patt then
                      begin
@@ -2339,7 +2342,7 @@ begin
                            If (songdata.pattern_order[temp] < $80) then
                              begin
                                fade_out_playback(FALSE);
-                               If shift_pressed then calibrate_player(temp,temp2,TRUE,FALSE)
+                               If (mn_environment.keystroke = kCtEND) then calibrate_player(temp,temp2,TRUE,FALSE)
                                else calibrate_player(temp,0,TRUE,FALSE);
                              end;
                          end;
