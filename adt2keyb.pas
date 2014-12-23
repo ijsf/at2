@@ -109,18 +109,6 @@ end;
 
 {$IFDEF __TMT__}
 
-procedure check_clearbuffer; assembler;
-asm
-        cmp     byte ptr [_2x_ctrl_pressed],1
-        jnz     @@1
-        lea     edi,[keydown]
-        mov     ecx,128
-        xor     al,al
-        repnz   stosb
-        mov     byte ptr [_2x_ctrl_pressed],0
-@@1:
-end;
-
 procedure stuff_keycode(keycode: Word); assembler;
 asm
         cli
@@ -138,16 +126,16 @@ end;
 
 function keypressed: Boolean; assembler;
 asm
-        call    check_clearbuffer
+        cli
         call    realtime_gfx_poll_proc
         call    emulate_screen
-        cli
+        sti
         mov     ah,01h
         int     16h
         mov     al,1
         jnz     @@2
         xor     al,al
-@@2:    sti
+@@2:
 end;
 
 function getkey: Word; assembler;
@@ -158,24 +146,25 @@ asm
         mov     ah,01h
         int     16h
         jnz     @@4
-        call    check_clearbuffer
+        cli
         call    realtime_gfx_poll_proc
         call    emulate_screen
+        sti
         mov     eax,dword ptr [ssaver_time]
         cmp     dword ptr [seconds_counter],eax
         jb      @@1
-        sti
         call    screen_saver
-        cli
         jmp     @@1
-// filter out CTRL+TAB combo as it is handled within timer routine
+        // filter out CTRL+TAB combo as it is handled within timer routine
 @@4:    cmp     byte ptr keydown[1dh],1 // [Ctrl]
         jnz     @@4a
         cmp     byte ptr keydown[0fh],1 // [Tab]
         jnz     @@4a
+        cli
         call    keyboard_reset_buffer
         call    realtime_gfx_poll_proc
         call    emulate_screen
+        sti
         jmp     @@1
 @@4a:   xor     ah,ah
         int     16h
