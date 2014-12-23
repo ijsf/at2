@@ -10,7 +10,7 @@
  byte carries additional information that points to last 4 bits
  of info byte that are "interactive". If both effect and info bytes
  are fixed, then such effect is called an "extended command".
- /´DLiB TR/´CK3R ][ uses total count of 87 effects, and 16 extended
+ /´DLiB TR/´CK3R ][ uses total count of 89 effects, and 16 extended
  commands. The fixed values of effect byte and corresponding
  information mapped into hi-part (bits 7-4) and lo-part (bits 3-0)
  of info byte are shown in the following table:
