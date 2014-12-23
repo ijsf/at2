@@ -247,14 +247,9 @@ begin
                  CHR(48+max(song_timer_tenths DIV 10,9))+'~ '
   else temps := ' 00~:~00~.~0 ';
 
-  temp := Pos('.',songdata_title);
-  If (play_status <> isStopped) then
-    show_cstr(13,07,temps,
-	          status_background+status_text_dis,
-              status_background+status_border)
-  else show_cstr(13,07,temps,
-                 status_background+status_text_dis,
-                 status_background+status_border);
+  show_cstr(13,07,temps,
+            status_background+status_text_dis,
+            status_background+status_border);
 
   If (@mn_environment.ext_proc_rt <> NIL) and (program_screen_mode in [0,3]) then
     show_cstr(16,01,temps,
@@ -265,6 +260,7 @@ begin
              main_background+main_border);
 
 {$IFDEF __TMT__}
+  temp := Pos('.',songdata_title);
   show_str(03,06,'['+ExpStrR(iCASE(Copy(songdata_title,1,PRED(temp))),8,' ')+']',
            status_background+status_dynamic_txt);
   show_str(03,07,'['+ExpStrR(iCASE(Copy(songdata_title,SUCC(temp),3)),3,' ')+']',
