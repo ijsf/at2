@@ -111,7 +111,6 @@ end;
 
 procedure stuff_keycode(keycode: Word); assembler;
 asm
-        cli
         mov     edi,041ch
         mov     ax,keycode
         mov     ebx,0400h
@@ -121,15 +120,13 @@ asm
         cmp     byte ptr [edi],60
         jle     @@1
         mov     byte ptr [edi],30
-@@1:    sti
+@@1:
 end;
 
 function keypressed: Boolean; assembler;
 asm
-        cli
         call    realtime_gfx_poll_proc
         call    emulate_screen
-        sti
         mov     ah,01h
         int     16h
         mov     al,1
@@ -146,10 +143,8 @@ asm
         mov     ah,01h
         int     16h
         jnz     @@4
-        cli
         call    realtime_gfx_poll_proc
         call    emulate_screen
-        sti
         mov     eax,dword ptr [ssaver_time]
         cmp     dword ptr [seconds_counter],eax
         jb      @@1
@@ -160,11 +155,9 @@ asm
         jnz     @@4a
         cmp     byte ptr keydown[0fh],1 // [Tab]
         jnz     @@4a
-        cli
         call    keyboard_reset_buffer
         call    realtime_gfx_poll_proc
         call    emulate_screen
-        sti
         jmp     @@1
 @@4a:   xor     ah,ah
         int     16h
@@ -173,7 +166,6 @@ end;
 
 function scankey(scancode: Byte): Boolean; assembler;
 asm
-        cli
         lea     edi,[keydown]
         xor     ebx,ebx
         mov     bl,scancode
@@ -181,7 +173,7 @@ asm
         cmp     byte ptr [edi+ebx],al
         jz      @@1
         xor     al,al
-@@1:    sti
+@@1:
 end;
 
 procedure newint09; interrupt; assembler;
