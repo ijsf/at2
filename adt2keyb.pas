@@ -39,11 +39,11 @@ function  right_shift_pressed: Boolean;
 function  alt_pressed: Boolean;
 function  ctrl_pressed: Boolean;
 function  ctrl_tab_pressed: Boolean;
+function  LookUpKey(key: Word; var table; size: Byte): Boolean;
 procedure screen_saver;
 
 {$IFDEF __TMT__}
 
-procedure stuff_keycode(keycode: Word);
 procedure keyboard_reset_buffer_alt;
 procedure keyboard_toggle_sleep;
 function  ScrollLock: Boolean;
@@ -109,75 +109,46 @@ end;
 
 {$IFDEF __TMT__}
 
-procedure stuff_keycode(keycode: Word); assembler;
-asm
-        mov     edi,041ch
-        mov     ax,keycode
-        mov     ebx,0400h
-        add     bx,word ptr [edi]
-        mov     word ptr [ebx],ax
-        add     byte ptr [edi],2
-        cmp     byte ptr [edi],60
-        jle     @@1
-        mov     byte ptr [edi],30
-@@1:
+function keypressed: Boolean;
+begin
+  Repeat
+    realtime_gfx_poll_proc;
+    emulate_screen;
+    // filter out CTRL+TAB combo as it is handled within timer routine
+    If ctrl_tab_pressed then keyboard_reset_buffer;
+    keypressed := CRT.keypressed;
+  until NOT ctrl_tab_pressed;
 end;
 
-function keypressed: Boolean; assembler;
-asm
-        call    realtime_gfx_poll_proc
-        call    emulate_screen
-        mov     ah,01h
+function getkey: Word;
+
+var
+  result: Word;
+
+begin
+  no_status_refresh := FALSE;
+  While NOT keypressed do
+    begin
+      realtime_gfx_poll_proc;
+      emulate_screen;
+      If (seconds_counter >= ssaver_time) then screen_saver;
+    end;
+  asm
+        xor     ah,ah
         int     16h
-        mov     al,1
-        jnz     @@2
-        xor     al,al
-@@2:
+        mov     result,ax
+  end;
+  getkey := result;
 end;
 
-function getkey: Word; assembler;
-asm
-@@1:    lea     edi,[no_status_refresh]
-        xor     al,al
-        stosb
-        mov     ah,01h
-        int     16h
-        jnz     @@4
-        call    realtime_gfx_poll_proc
-        call    emulate_screen
-        mov     eax,dword ptr [ssaver_time]
-        cmp     dword ptr [seconds_counter],eax
-        jb      @@1
-        call    screen_saver
-        jmp     @@1
-        // filter out CTRL+TAB combo as it is handled within timer routine
-@@4:    cmp     byte ptr keydown[1dh],1 // [Ctrl]
-        jnz     @@4a
-        cmp     byte ptr keydown[0fh],1 // [Tab]
-        jnz     @@4a
-        call    keyboard_reset_buffer
-        call    realtime_gfx_poll_proc
-        call    emulate_screen
-        jmp     @@1
-@@4a:   xor     ah,ah
-        int     16h
-@@5:
+function scankey(scancode: Byte): Boolean;
+begin
+  scankey := keydown[scancode];
 end;
 
-function scankey(scancode: Byte): Boolean; assembler;
-asm
-        lea     edi,[keydown]
-        xor     ebx,ebx
-        mov     bl,scancode
-        mov     al,1
-        cmp     byte ptr [edi+ebx],al
-        jz      @@1
-        xor     al,al
-@@1:
-end;
-
-procedure newint09; interrupt; assembler;
-asm
+procedure newint09; interrupt;
+begin
+  asm
         mov     dword ptr [seconds_counter],0
         push    eax
         push    ebx
@@ -252,6 +223,7 @@ asm
         pushfd
         call    oldint09
 @@6:
+  end;
 end;
 
 procedure keyboard_toggle_sleep;
@@ -768,6 +740,30 @@ end;
 function ctrl_tab_pressed: Boolean;
 begin
   ctrl_tab_pressed := ctrl_pressed and scankey(SC_TAB);
+end;
+
+function LookUpKey(key: Word; var table; size: Byte): Boolean;
+
+var
+  result: Boolean;
+
+begin
+  asm
+        mov     esi,[table]
+        xor     ecx,ecx
+        mov     cl,size
+        mov     result,TRUE
+        jecxz   @@3
+@@1:    lodsw
+        cmp     ax,key
+        jz      @@2
+        loop    @@1
+@@2:    mov     result,FALSE
+        jecxz   @@3
+        mov     result,TRUE
+@@3:
+  end;
+  LookUpKey := result;
 end;
 
 end.

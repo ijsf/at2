@@ -152,8 +152,8 @@ begin
          FillChar(peak_lock,SizeOf(volume_lock),0);
          _m_flag_4op_backup := songdata.flag_4op;
          If NOT percussion_mode and
-            NOT is_4op_mode then _m_channels := 18
-         else If NOT is_4op_mode then _m_channels := 15
+            NOT (songdata.flag_4op <> 0) then _m_channels := 18
+         else If NOT (songdata.flag_4op <> 0) then _m_channels := 15
               else begin
                      If (instr2 <> BYTE_NULL) then
                        begin
@@ -219,14 +219,14 @@ begin
     end;
 
   _m_chan_handle[chan] := board_scancodes[board_pos];
-  If is_4op_mode and (instr2 <> BYTE_NULL) then chan := _m_4op_chan[chan];
+  If (songdata.flag_4op <> 0) and (instr2 <> BYTE_NULL) then chan := _m_4op_chan[chan];
   load_instrument(songdata.instr_data[instr],chan);
 
   If percussion_mode and
      (songdata.instr_data[instr].perc_voice in [4,5]) then
     load_instrument(songdata.instr_data[instr],_m_perc_sim_chan[chan]);
 
-  If is_4op_mode and (instr2 <> BYTE_NULL) then
+  If (songdata.flag_4op <> 0) and (instr2 <> BYTE_NULL) then
     load_instrument(songdata.instr_data[instr2],PRED(chan));
 
   freq := nFreq(note-1)+$2000+
@@ -241,7 +241,7 @@ begin
   freqtable2[chan] := freq;
   init_macro_table(chan,note,instr,freq);
 
-  If is_4op_mode and (instr2 <> BYTE_NULL) then
+  If (songdata.flag_4op <> 0) and (instr2 <> BYTE_NULL) then
     begin
       freq_table[PRED(chan)] := freq;
       freqtable2[PRED(chan)] := freq;
@@ -295,7 +295,7 @@ begin
             _m_temp2 := board_scancodes[_m_temp];
             _m_temp4 := scankey(_m_temp2);
 
-            If NOT (is_4op_mode and (instr2 <> BYTE_NULL)) then
+            If NOT ((songdata.flag_4op <> 0) and (instr2 <> BYTE_NULL)) then
               begin
                 _m_temp3 := get_chanpos(_m_chan_handle,_m_channels,_m_temp2);
                 _m_temp5 := get_chanpos(_m_chan_handle,_m_channels,0)
@@ -658,15 +658,11 @@ begin
   _str1 := temp_str;
 end;
 
-function _str2(str: String; len: Byte): String; assembler;
-asm
-        push    ebx
-        push    ecx
-        push    edx
-        push    esi
-        push    edi
-        mov     esi,[str]
-        mov     edi,@result
+function _str2(str: String; len: Byte): String;
+begin
+  asm
+        lea     esi,[str]
+        mov     edi,@RESULT
         movzx   ebx,len
         xor     edx,edx
         push    edi
@@ -687,14 +683,11 @@ asm
 @@2:    loop    @@1
 @@3:    pop     edi
         mov     eax,esi
-        sub     eax,[str]
+        lea     esi,[str]
+        sub     eax,esi
         dec     eax
         stosb
-        pop     edi
-        pop     esi
-        pop     edx
-        pop     ecx
-        pop     ebx
+  end;
 end;
 
 procedure fmreg_page_refresh(xpos,ypos: Byte; page: Word);

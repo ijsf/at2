@@ -47,6 +47,11 @@ const
   ptr_screen_emulator: Pointer = Addr(screen_emulator);
 
 const
+  move_to_screen_data: Pointer = NIL;
+  move_to_screen_area: array[1..4] of Byte = (0,0,0,0);
+  move_to_screen_routine: procedure = NIL;
+
+const
   program_screen_mode: Byte = 0;
 
 const
@@ -70,6 +75,9 @@ const
   scroll_pos3: Byte = BYTE(NOT 0);
   scroll_pos4: Byte = BYTE(NOT 0);
   toggle_waitretrace: Boolean = TRUE;
+
+var
+  cursor_backup: Longint;
 
 const
   Black   = $00;  DGray    = $08;
@@ -98,8 +106,6 @@ procedure show_vcstr(xpos,ypos: Byte; str: String; attr1,attr2: Byte);
 function  CStrLen(str: String): Byte;
 function  CStr2Len(str: String): Byte;
 function  C3StrLen(str: String): Byte;
-function  AbsPos(x,y: Byte): Word;
-function  Color(fgnd,bgnd: Byte): Byte;
 
 procedure ScreenMemCopy(source,dest: tSCREEN_MEM_PTR);
 procedure CleanScreen(dest: tSCREEN_MEM_PTR);
@@ -208,23 +214,19 @@ uses
   AdT2unit,AdT2sys,AdT2ext2,
   DialogIO,ParserIO;
 
-procedure show_str(xpos,ypos: Byte; str: String; color: Byte); assembler;
+procedure show_str(xpos,ypos: Byte; str: String; color: Byte);
 
 var
   x11,x12,x21,x22,y11,y21: Byte;
   index: Byte;
 
-asm
-        push    ebx
-        push    ecx
-        push    edx
-        push    esi
-        push    edi
+begin
+  asm
         xor     ebx,ebx
         xor     ecx,ecx
         mov     edi,dword ptr [screen_ptr]
         mov     edx,edi
-        mov     esi,[str]
+        lea     esi,[str]
         lodsb
         mov     cl,al
         or      ecx,ecx
@@ -296,25 +298,18 @@ asm
 @@6:    inc     index
         cmp     index,cl
         jbe     @@1
-@@7:    pop     edi
-        pop     esi
-        pop     edx
-        pop     ecx
-        pop     ebx
+@@7:
+  end;
 end;
 
-procedure show_cstr(xpos,ypos: Byte; str: String; attr1,attr2: Byte); assembler;
+procedure show_cstr(xpos,ypos: Byte; str: String; attr1,attr2: Byte);
 
 var
   x11,x12,x21,x22,y11,y21: Byte;
   index,color1,color2: Byte;
 
-asm
-        push    ebx
-        push    ecx
-        push    edx
-        push    esi
-        push    edi
+begin
+  asm
         mov     al,attr1
         mov     color1,al
         mov     al,attr2
@@ -323,7 +318,7 @@ asm
         xor     ecx,ecx
         mov     edi,dword ptr [screen_ptr]
         mov     edx,edi
-        mov     esi,[str]
+        lea     esi,[str]
         lodsb
         mov     cl,al
         or      ecx,ecx
@@ -435,30 +430,23 @@ asm
 @@6:    inc     index
         cmp     index,cl
         jbe     @@1
-@@7:    pop     edi
-        pop     esi
-        pop     edx
-        pop     ecx
-        pop     ebx
+@@7:
+  end;
 end;
 
-procedure show_vstr(xpos,ypos: Byte; str: String; color: Byte); assembler;
+procedure show_vstr(xpos,ypos: Byte; str: String; color: Byte);
 
 var
   x11,x12,x21,x22,y11,y21: Byte;
   index: Byte;
 
-asm
-        push    ebx
-        push    ecx
-        push    edx
-        push    esi
-        push    edi
+begin
+  asm
         xor     ebx,ebx
         xor     ecx,ecx
         mov     edi,dword ptr [screen_ptr]
         mov     edx,edi
-        mov     esi,[str]
+        lea     esi,[str]
         lodsb
         mov     cl,al
         or      ecx,ecx
@@ -530,25 +518,18 @@ asm
 @@6:    inc     index
         cmp     index,cl
         jbe     @@1
-@@7:    pop     edi
-        pop     esi
-        pop     edx
-        pop     ecx
-        pop     ebx
+@@7:
+  end;
 end;
 
-procedure show_vcstr(xpos,ypos: Byte; str: String; attr1,attr2: Byte); assembler;
+procedure show_vcstr(xpos,ypos: Byte; str: String; attr1,attr2: Byte);
 
 var
   x11,x12,x21,x22,y11,y21: Byte;
   index,color1,color2: Byte;
 
-asm
-        push    ebx
-        push    ecx
-        push    edx
-        push    esi
-        push    edi
+begin
+  asm
         mov     al,attr1
         mov     color1,al
         mov     al,attr2
@@ -557,7 +538,7 @@ asm
         xor     ecx,ecx
         mov     edi,dword ptr [screen_ptr]
         mov     edx,edi
-        mov     esi,[str]
+        lea     esi,[str]
         lodsb
         mov     cl,al
         or      ecx,ecx
@@ -669,11 +650,8 @@ asm
 @@6:    inc     index
         cmp     index,cl
         jbe     @@1
-@@7:    pop     edi
-        pop     esi
-        pop     edx
-        pop     ecx
-        pop     ebx
+@@7:
+  end;
 end;
 
 var
@@ -703,14 +681,11 @@ asm
         popad
 end;
 
-procedure ShowStr(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; attr: Byte); assembler;
-asm
-        push    ecx
-        push    edx
-        push    esi
-        push    edi
+procedure ShowStr(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; attr: Byte);
+begin
+  asm
         mov     edi,dword ptr [dest]
-        mov     esi,[str]
+        lea     esi,[str]
         mov     al,x
         mov     ah,y
         xor     ecx,ecx
@@ -725,19 +700,13 @@ asm
 @@1:    lodsb
         stosw
         loop    @@1
-@@2:    pop     edi
-        pop     esi
-        pop     edx
-        pop     ecx
+@@2:
+  end;
 end;
 
-procedure ShowVStr(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; attr: Byte); assembler;
-asm
-        push    ebx
-        push    ecx
-        push    edx
-        push    esi
-        push    edi
+procedure ShowVStr(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; attr: Byte);
+begin
+  asm
         mov     al,MaxCol
         dec     al
         xor     ah,ah
@@ -746,7 +715,7 @@ asm
         mul     bl
         mov     bx,ax
         mov     edi,dword ptr [dest]
-        mov     esi,[str]
+        lea     esi,[str]
         mov     al,x
         mov     ah,y
         xor     ecx,ecx
@@ -762,21 +731,14 @@ asm
         stosw
         add     edi,ebx
         loop    @@1
-@@2:    pop     edi
-        pop     esi
-        pop     edx
-        pop     ecx
-        pop     ebx
+@@2:
+  end;
 end;
 
-procedure ShowCStr(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; atr1,atr2: Byte); assembler;
-asm
-        push    ebx
-        push    ecx
-        push    edx
-        push    esi
-        push    edi
-        mov     esi,[str]
+procedure ShowCStr(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; atr1,atr2: Byte);
+begin
+  asm
+        lea     esi,[str]
         mov     edi,dword ptr [dest]
         lodsb
         xor     ecx,ecx
@@ -801,21 +763,14 @@ asm
         jmp     @@3
 @@2:    xchg    ah,bh
         loop    @@1
-@@3:    pop     edi
-        pop     esi
-        pop     edx
-        pop     ecx
-        pop     ebx
+@@3:
+  end;
 end;
 
-procedure ShowCStr2(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; atr1,atr2: Byte); assembler;
-asm
-        push    ebx
-        push    ecx
-        push    edx
-        push    esi
-        push    edi
-        mov     esi,[str]
+procedure ShowCStr2(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; atr1,atr2: Byte);
+begin
+  asm
+        mov     esi,dword ptr [str]
         mov     edi,dword ptr [dest]
         lodsb
         xor     ecx,ecx
@@ -840,27 +795,20 @@ asm
         jmp     @@3
 @@2:    xchg    ah,bh
         loop    @@1
-@@3:    pop     edi
-        pop     esi
-        pop     edx
-        pop     ecx
-        pop     ebx
+@@3:
+  end;
 end;
 
-procedure ShowVCStr(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; atr1,atr2: Byte); assembler;
-asm
-        push    ebx
-        push    ecx
-        push    edx
-        push    esi
-        push    edi
+procedure ShowVCStr(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; atr1,atr2: Byte);
+begin
+  asm
         mov     al,MaxCol
         dec     al
         xor     ah,ah
         mov     bl,2
         mul     bl
         mov     bx,ax
-        mov     esi,[str]
+        lea     esi,[str]
         mov     edi,dword ptr [dest]
         lodsb
         xor     ecx,ecx
@@ -887,27 +835,20 @@ asm
         jmp     @@3
 @@2:    xchg    ah,bh
         loop    @@1
-@@3:    pop     edi
-        pop     esi
-        pop     edx
-        pop     ecx
-        pop     ebx
+@@3:
+  end;
 end;
 
-procedure ShowVCStr2(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; atr1,atr2: Byte); assembler;
-asm
-        push    ebx
-        push    ecx
-        push    edx
-        push    esi
-        push    edi
+procedure ShowVCStr2(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; atr1,atr2: Byte);
+begin
+  asm
         mov     al,MaxCol
         dec     al
         xor     ah,ah
         mov     bl,2
         mul     bl
         mov     bx,ax
-        mov     esi,[str]
+        lea     esi,[str]
         mov     edi,dword ptr [dest]
         lodsb
         xor     ecx,ecx
@@ -934,21 +875,14 @@ asm
         jmp     @@3
 @@2:    xchg    ah,bh
         loop    @@1
-@@3:    pop     edi
-        pop     esi
-        pop     edx
-        pop     ecx
-        pop     ebx
+@@3:
+  end;
 end;
 
-procedure ShowC3Str(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; atr1,atr2,atr3: Byte); assembler;
-asm
-        push    ebx
-        push    ecx
-        push    edx
-        push    esi
-        push    edi
-        mov     esi,[str]
+procedure ShowC3Str(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; atr1,atr2,atr3: Byte);
+begin
+  asm
+        lea     esi,[str]
         mov     edi,dword ptr [dest]
         lodsb
         xor     ecx,ecx
@@ -979,27 +913,20 @@ asm
         jmp     @@4
 @@3:    xchg    ah,bh
         loop    @@1
-@@4:    pop     edi
-        pop     esi
-        pop     edx
-        pop     ecx
-        pop     ebx
+@@4:
+  end;
 end;
 
-procedure ShowVC3Str(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; atr1,atr2,atr3: Byte); assembler;
-asm
-        push    ebx
-        push    ecx
-        push    edx
-        push    esi
-        push    edi
+procedure ShowVC3Str(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; atr1,atr2,atr3: Byte);
+begin
+  asm
         mov     al,MaxCol
         dec     al
         xor     ah,ah
         mov     bl,2
         mul     bl
         mov     bx,ax
-        mov     esi,[str]
+        lea     esi,[str]
         mov     edi,dword ptr [dest]
         lodsb
         xor     ecx,ecx
@@ -1032,19 +959,18 @@ asm
         jmp     @@4
 @@3:    xchg    ah,bh
         loop    @@1
-@@4:    pop     edi
-        pop     esi
-        pop     edx
-        pop     ecx
-        pop     ebx
+@@4:
+  end;
 end;
 
-function CStrLen(str: String): Byte; assembler;
-asm
-        push    ebx
-        push    ecx
-        push    esi
-        mov     esi,[str]
+function CStrLen(str: String): Byte;
+
+var
+  result: Byte;
+
+begin
+  asm
+        lea     esi,[str]
         lodsb
         xor     ebx,ebx
         xor     ecx,ecx
@@ -1058,17 +984,19 @@ asm
         jmp     @@3
 @@2:    loop    @@1
 @@3:    mov     eax,ebx
-        pop     esi
-        pop     ecx
-        pop     ebx
+        mov     result,al
+  end;
+  CStrLen := result;
 end;
 
-function CStr2Len(str: String): Byte; assembler;
-asm
-        push    ebx
-        push    ecx
-        push    esi
-        mov     esi,[str]
+function CStr2Len(str: String): Byte;
+
+var
+  result: Byte;
+
+begin
+  asm
+        lea     esi,[str]
         lodsb
         xor     ebx,ebx
         xor     ecx,ecx
@@ -1082,17 +1010,19 @@ asm
         jmp     @@3
 @@2:    loop    @@1
 @@3:    mov     eax,ebx
-        pop     esi
-        pop     ecx
-        pop     ebx
+        mov     result,al
+  end;
+  CStr2Len := result;
 end;
 
-function C3StrLen(str: String): Byte; assembler;
-asm
-        push    ebx
-        push    ecx
-        push    esi
-        mov     esi,[str]
+function C3StrLen(str: String): Byte;
+
+var
+  result: Byte;
+
+begin
+  asm
+        lea     esi,[str]
         lodsb
         xor     ebx,ebx
         xor     ecx,ecx
@@ -1110,35 +1040,18 @@ asm
         jmp     @@4
 @@3:    loop    @@1
 @@4:    mov     eax,ebx
-        pop     esi
-        pop     ecx
-        pop     ebx
+        mov     result,al
+  end;
+  C3StrLen := result;
 end;
 
-function AbsPos(x,y: Byte): Word; assembler;
-asm
-        push    ecx
-        mov     al,x
-        mov     ah,y
-        xor     ecx,ecx
-        call    DupChar
-        mov     ax,absolute_pos
-        pop     ecx
-end;
-
-function Color(fgnd,bgnd: Byte): Byte; assembler;
-asm
-        mov     al,bgnd
-        xor     ah,ah
-        mov     bh,16
-        mul     bh
-        add     al,fgnd
-end;
-
-procedure ScreenMemCopy(source,dest: tSCREEN_MEM_PTR); assembler;
-asm
-        push    esi
-        push    edi
+procedure ScreenMemCopy(source,dest: tSCREEN_MEM_PTR);
+begin
+  cursor_backup := GetCursor;
+{$IFDEF __TMT__}
+  HideCursor;
+{$ENDIF}
+  asm
         xor     edx,edx
         mov     eax,SCREEN_MEM_SIZE
         cmp     eax,16
@@ -1160,34 +1073,28 @@ asm
         mov     edi,dword ptr [dest]
         cld
         rep     movsb
-@@2:    pop     edi
-        pop     esi
+@@2:
+  end;
 end;
 
-procedure CleanScreen(dest: tSCREEN_MEM_PTR); assembler;
-asm
-        push    ecx
-        push    edi
+procedure CleanScreen(dest: tSCREEN_MEM_PTR);
+begin
+  asm
         mov     edi,dword ptr [dest]
-        mov     ecx,180*60
+        mov     ecx,MAX_SCREEN_MEM_SIZE/2
         mov     ax,07h
         rep     stosw
-        pop     edi
-        pop     ecx
+  end;
 end;
 
 procedure Frame(dest: tSCREEN_MEM_PTR; x1,y1,x2,y2,atr1: Byte;
-                title: String; atr2: Byte; border: String); assembler;
+                title: String; atr2: Byte; border: String);
 var
   xexp1,xexp2,xexp3,yexp1,yexp2: Byte;
   offs: Longint;
 
-asm
-        push    ebx
-        push    ecx
-        push    edx
-        push    esi
-        push    edi
+begin
+  asm
 {$IFDEF __TMT__}
         cmp     byte ptr [toggle_waitretrace],TRUE
         jnz     @no_wr
@@ -1206,7 +1113,7 @@ asm
         mov     area_y2,al
 @@0:    mov     bl,fr_setting.wide_range_type
         mov     bh,fr_setting.shadow_enabled
-        mov     esi,[border]
+        lea     esi,[border]
         mov     edi,[dest]
         mov     offs,edi
         cmp     bl,0
@@ -1310,7 +1217,7 @@ asm
         mov     dh,atr1
         mov     ecx,1
         call    DupChar
-        mov     esi,[title]
+        lea     esi,[title]
         mov     cl,[esi]
         jecxz   @@7
         xor     eax,eax
@@ -1386,35 +1293,47 @@ asm
 @@10:   stosb
         inc     edi
         loop    @@10
-@@11:   pop     edi
-        pop     esi
-        pop     edx
-        pop     ecx
-        pop     ebx
+@@11:
+  end;
 end;
 
 {$IFDEF __TMT__}
 
-function WhereX: Byte; assembler;
-asm
+function WhereX: Byte;
+
+var
+  result: Byte;
+
+begin
+  asm
         mov     bh,DispPg
         mov     ah,03h
         int     10h
         inc     dl
-        mov     al,dl
+        mov     result,dl
+  end;
+  WhereX := result;
 end;
 
-function WhereY: Byte; assembler;
-asm
+function WhereY: Byte;
+
+var
+  result: Byte;
+
+begin
+  asm
         mov     bh,DispPg
         mov     ah,03h
         int     10h
         inc     dh
-        mov     al,dh
+        mov     result,dh
+  end;
+  WhereY := result;
 end;
 
-procedure GotoXY(x,y: Byte); assembler;
-asm
+procedure GotoXY(x,y: Byte);
+begin
+  asm
         lea     edi,[virtual_cur_pos]
         mov     ah,y
         mov     al,x
@@ -1426,10 +1345,16 @@ asm
         mov     bh,DispPg
         mov     ah,02h
         int     10h
+  end;
 end;
 
-function GetCursor: Longint; assembler;
-asm
+function GetCursor: Longint;
+
+var
+  result: Longint;
+
+begin
+  asm
         xor     edx,edx
         mov     bh,DispPg
         mov     ah,03h
@@ -1440,12 +1365,15 @@ asm
         call    GetCursorShape
         pop     edx
         add     edx,eax
-        mov     eax,edx
+        mov     result,edx
+  end;
+  GetCursor := result;
 end;
 
 
-procedure SetCursor(cursor: Longint); assembler;
-asm
+procedure SetCursor(cursor: Longint);
+begin
+  asm
         lea     edi,[virtual_cur_pos]
         mov     ax,word ptr [cursor+2]
         stosw
@@ -1457,34 +1385,31 @@ asm
         mov     bh,DispPg
         mov     ah,02h
         int     10h
+  end;
 end;
 
-procedure ThinCursor; assembler;
-asm
-        xor     ecx,ecx
-        mov     cx,0d0eh
-        push    ecx
-        call    SetCursorShape
+procedure ThinCursor;
+begin
+  SetCursorShape($0d0e);
 end;
 
-procedure WideCursor; assembler;
-asm
-        xor     ecx,ecx
-        mov     cx,010eh
-        push    ecx
-        call    SetCursorShape
+procedure WideCursor;
+begin
+  SetCursorShape($010e);
 end;
 
-procedure HideCursor; assembler;
-asm
-        xor     ecx,ecx
-        mov     cx,1010h
-        push    ecx
-        call    SetCursorShape
+procedure HideCursor;
+begin
+  SetCursorShape($1010);
 end;
 
-function GetCursorShape: Word; assembler;
-asm
+function GetCursorShape: Word;
+
+var
+  result: Word;
+
+begin
+  asm
         mov     dx,03d4h
         mov     al,0ah
         out     dx,al
@@ -1498,10 +1423,14 @@ asm
         inc     dx
         in      al,dx
         and     al,1fh
+        mov     result,ax
+  end;
+  GetCursorShape := result;
 end;
 
-procedure SetCursorShape(shape: Word); assembler;
-asm
+procedure SetCursorShape(shape: Word);
+begin
+  asm
         mov     ax,shape
         mov     word ptr [virtual_cur_shape],ax
         mov     dx,03d4h
@@ -1522,6 +1451,7 @@ asm
         and     al,0e0h
         or      al,ah
         out     dx,al
+  end;
 end;
 
 {$ELSE}
@@ -1601,8 +1531,13 @@ begin
   work_MaxCol := MaxCol;
 end;
 
-function iVGA: Boolean; assembler;
-asm
+function iVGA: Boolean;
+
+var
+  result: Boolean;
+
+begin
+  asm
         mov     ax,1a00h
         int     10h
         cmp     al,1ah
@@ -1611,18 +1546,22 @@ asm
         jb      @@1
         cmp     bl,0ffh
         jnz     @@2
-@@1:    xor     al,al
+@@1:    mov     result,FALSE
         jmp     @@3
-@@2:    mov     al,1
+@@2:    mov     result,TRUE
 @@3:
+  end;
+  iVGA := result;
 end;
 
-procedure ResetMode; assembler;
-asm
+procedure ResetMode;
+begin
+  asm
         xor     ah,ah
         mov     al,v_mode
         mov     bh,DispPg
         int     10h
+  end;
 end;
 
 var
@@ -1700,8 +1639,9 @@ begin
   PORT[$3c9] := blue;
 end;
 
-procedure WaitRetrace; assembler;
-asm
+procedure WaitRetrace;
+begin
+  asm
         mov     dx,3dah
 @@1:    in      al,dx
         and     al,08h
@@ -1709,10 +1649,12 @@ asm
 @@2:    in      al,dx
         and     al,08h
         jz      @@2
+  end;
 end;
 
-procedure GetPalette(var pal; first,last: Word); assembler;
-asm
+procedure GetPalette(var pal; first,last: Word);
+begin
+  asm
         xor     eax,eax
         xor     ecx,ecx
         mov     ax,first
@@ -1730,10 +1672,12 @@ asm
         add     ecx,eax
         add     ecx,eax
         rep     insb
+  end;
 end;
 
-procedure SetPalette(var pal; first,last: Word); assembler;
-asm
+procedure SetPalette(var pal; first,last: Word);
+begin
+  asm
         mov     dx,03dah
 @@1:    in      al,dx
         test    al,8
@@ -1755,6 +1699,7 @@ asm
         add     ecx,eax
         add     ecx,eax
         rep     outsb
+  end;
 end;
 
 const
@@ -1810,11 +1755,23 @@ begin
     end;
 end;
 
-procedure RefreshEnable; assembler;
-asm mov ax,1200h; mov bl,36h; int 10h end;
+procedure RefreshEnable;
+begin
+  asm
+        mov     ax,1200h
+        mov     bl,36h
+        int     10h
+  end;
+end;
 
-procedure RefreshDisable; assembler;
-asm mov ax,1201h; mov bl,36h; int 10h end;
+procedure RefreshDisable;
+begin
+  asm
+        mov     ax,1201h
+        mov     bl,36h
+        int     10h
+  end;
+end;
 
 procedure Split2Static;
 
@@ -2395,8 +2352,10 @@ begin
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'TXTSCRIO.PAS:move2screen';
 {$ENDIF}
+  HideCursor;
   toggle_waitretrace := TRUE;
   move2screen_alt;
+  SetCursor(cursor_backup);
   area_x1 := 0;
   area_y1 := 0;
   area_x2 := 0;
@@ -2418,58 +2377,52 @@ begin
 {$ENDIF}
 end;
 
-procedure move2screen_alt; assembler;
-asm
-        push    ecx
-        push    esi
-        push    edi
+procedure move2screen_alt;
+
+var
+  pos1,pos2: Byte;
+
+begin
 {$IFDEF __TMT}
-        cmp     byte ptr [toggle_waitretrace],TRUE
-        jnz     @@no_wr
-        call    WaitRetrace
-        mov     byte ptr [toggle_waitretrace],FALSE
-@@no_wr:
+  If toggle_waitretrace then
+    begin
+      WaitRetrace;
+      toggle_waitretrace := FALSE;
+    end;
 {$ENDIF}
+  asm
         mov     esi,dword ptr [screen_ptr]
         lea     edi,[temp_screen2]
         mov     ecx,SCREEN_MEM_SIZE
-        push    edi
-        push    esi
-        push    ecx
         rep     movsb
         mov     esi,[move_to_screen_data]
         mov     edi,dword ptr [ptr_temp_screen2]
         xor     ecx,ecx
         mov     cl,byte ptr [move_to_screen_area+1]
-@@1:    push    ecx
+@@1:    mov     pos2,cl
         xor     ecx,ecx
         mov     cl,byte ptr [move_to_screen_area+0]
-@@2:    pop     eax
-        push    eax
-        push    ecx
-        push    eax
-        call    AbsPos
-        push    esi
-        push    edi
-        add     esi,eax
-        add     edi,eax
-        movsw
-        pop     edi
-        pop     esi
+@@2:    mov     pos1,cl
+        mov     al,pos1
+        mov     ah,pos2
+        xor     ecx,ecx
+        call    DupChar
+        movzx   ecx,absolute_pos
+        mov     ax,word ptr [esi+ecx]
+        mov     word ptr [edi+ecx],ax
+        movzx   ecx,pos1
         inc     ecx
         cmp     cl,byte ptr [move_to_screen_area+2]
         jbe     @@2
-        pop     ecx
+        movzx   ecx,pos2
         inc     ecx
         cmp     cl,byte ptr [move_to_screen_area+3]
         jbe     @@1
-        pop     ecx
-        pop     edi
-        pop     esi
+        lea     esi,[temp_screen2]
+        mov     edi,dword ptr [screen_ptr]
+        mov     ecx,SCREEN_MEM_SIZE
         rep     movsb
-        pop     edi
-        pop     esi
-        pop     ecx
+  end;
 end;
 
 procedure TxtScrIO_Init;
@@ -2642,7 +2595,8 @@ begin
   end;
 
   SCREEN_MEM_SIZE := MaxCol*MaxLn*2;
-
+  move_to_screen_routine := move2screen;
+  
   If (command_typing = 0) then PATEDIT_lastpos := 4*MAX_TRACKS
   else PATEDIT_lastpos := 10*MAX_TRACKS;
 

@@ -1,6 +1,6 @@
 {
         function asciiz_string(str: String): String;
-        function check_byte(var data; _byte: Byte; size: Longint): Boolean; assembler;
+        function check_byte(var data; _byte: Byte; size: Longint): Boolean;
         procedure insert_command(cmd,cmd2: Word; patterns: Byte; chan: Byte; exceptions: tByteSet);
         procedure init_old_songdata;
         procedure import_old_a2m_event1(patt,line,chan: Byte; old_chunk: tOLD_CHUNK;
@@ -40,8 +40,8 @@
         procedure import_sat_instrument(inst: Byte; var data);
         function import_sat_instrument_name(var data; inst: Byte): String;
         procedure sat_file_loader;
-        function _sal(op1,op2: Word): Byte; assembler;
-        function _sar(op1,op2: Word): Byte; assembler;
+        function _sal(op1,op2: Word): Byte;
+        function _sar(op1,op2: Word): Byte;
         procedure import_sa2_effect(effect,def1,def2: Byte;
                                     var out1,out2: Byte);
         procedure sa2_file_loader;
@@ -53,21 +53,25 @@ begin
   else asciiz_string := '';
 end;
 
-function check_byte(var data; _byte: Byte; size: Longint): Boolean; assembler;
-asm
-        push    ecx
-        push    edi
+function check_byte(var data; _byte: Byte; size: Longint): Boolean;
+
+var
+  result: Boolean;
+
+begin
+  asm
         mov     edi,[data]
         mov     ecx,size
         jecxz   @@1
         mov     al,_byte
         repnz   scasb
         jnz     @@1
-        mov     al,TRUE
+        mov     result,TRUE
         jmp     @@2
-@@1:    mov     al,FALSE
-@@2:    pop     edi
-        pop     ecx
+@@1:    mov     result,FALSE
+@@2:
+  end;
+  check_byte := result;
 end;
 
 procedure insert_command(cmd,cmd2: Word; patterns: Byte; chan: Byte; exceptions: tByteSet);
@@ -7470,18 +7474,34 @@ begin
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
 end;
 
-function _sal(op1,op2: Word): Byte; assembler;
-asm
+function _sal(op1,op2: Word): Byte;
+
+var
+  result: Byte;
+
+begin
+  asm
         mov     ax,op1
         mov     cx,op2
         sal     ax,cl
+        mov     result,al
+  end;
+  _sal := result;
 end;
 
-function _sar(op1,op2: Word): Byte; assembler;
-asm
+function _sar(op1,op2: Word): Byte;
+
+var
+  result: Byte;
+
+begin
+  asm
         mov     ax,op1
         mov     cx,op2
         sar     ax,cl
+        mov     result,al
+  end;
+  _sar := result;
 end;
 
 procedure import_sa2_effect(effect,def1,def2: Byte;

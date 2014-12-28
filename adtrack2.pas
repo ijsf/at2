@@ -25,8 +25,9 @@ var
   opl3detected: Boolean;
   dos_dir: String;
 
-procedure LoadFont(var font_data); assembler;
-asm
+procedure LoadFont(var font_data);
+begin
+  asm
         // set access to font memory
         mov     dx,3c4h
         mov     ax,0402h
@@ -68,6 +69,7 @@ asm
         out     dx,ax
         mov     ax,0004h
         out     dx,ax
+  end;
 end;
 
 var

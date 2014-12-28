@@ -1940,15 +1940,11 @@ begin
   _str1 := temp_str;
 end;
 
-function _str2(str: String; len: Byte): String; assembler;
-asm
-        push    ebx
-        push    ecx
-        push    edx
-        push    esi
-        push    edi
-        mov     esi,[str]
-        mov     edi,@result
+function _str2(str: String; len: Byte): String;
+begin
+  asm
+        lea     esi,[str]
+        mov     edi,@RESULT
         movzx   ebx,len
         xor     edx,edx
         push    edi
@@ -1969,14 +1965,11 @@ asm
 @@2:    loop    @@1
 @@3:    pop     edi
         mov     eax,esi
-        sub     eax,[str]
+        lea     esi,[str]
+        sub     eax,esi
         dec     eax
         stosb
-        pop     edi
-        pop     esi
-        pop     edx
-        pop     ecx
-        pop     ebx
+  end;
 end;
 
 procedure fmreg_page_refresh(xpos,ypos: Byte; page: Word);

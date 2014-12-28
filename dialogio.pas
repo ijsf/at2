@@ -187,11 +187,6 @@ const
                       $0000,$0000,$0000,$0000,$0000,
                       $0000,$0000,$0000,$0000,$0000,
                       $0000,$0000,$0000,$0000,$0000));
-const
-  move_to_screen_data: Pointer = NIL;
-  move_to_screen_area: array[1..4] of Byte = (0,0,0,0);
-  move_to_screen_routine: procedure = move2screen;
-
 var
   dl_environment: tDIALOG_ENVIRONMENT;
   mn_environment: tMENU_ENVIRONMENT;
@@ -233,13 +228,11 @@ var
   mbuf:   tMBUFFR;
   contxt: String;
 
-function OutStr(var queue; len: Byte; order: Word): String; assembler;
-asm
-        push    ecx
-        push    esi
-        push    edi
+function OutStr(var queue; len: Byte; order: Word): String;
+begin
+  asm
         mov     esi,[queue]
-        mov     edi,@result
+        mov     edi,@RESULT
         xor     ecx,ecx
         mov     cx,order
         dec     ecx
@@ -252,30 +245,7 @@ asm
 @@2:    xor     ecx,ecx
         mov     cl,al
         rep     movsb
-        pop     edi
-        pop     esi
-        pop     ecx
-end;
-
-function LookUpKey(key: Word; var table; size: Byte): Boolean; assembler;
-asm
-        push    ecx
-        push    esi
-        mov     esi,[table]
-        xor     ecx,ecx
-        mov     cl,size
-        xor     eax,eax
-        mov     al,1
-        jecxz   @@3
-@@1:    lodsw
-        cmp     ax,key
-        jz      @@2
-        loop    @@1
-@@2:    xor     eax,eax
-        jecxz   @@3
-        mov     al,1
-@@3:    pop     esi
-        pop     ecx
+  end;
 end;
 
 function OutKey(str: String): Char;

@@ -60,8 +60,9 @@ implementation
 uses
   TxtScrIO;
 
-procedure opl2out(reg,data: Word); assembler;
-asm
+procedure opl2out(reg,data: Word);
+begin
+  asm
         mov     ax,reg
         mov     dx,word ptr [opl3port]
         or      ah,ah
@@ -78,10 +79,12 @@ asm
         mov     ecx,36
 @@3:    in      al,dx
         loop    @@3
+  end;
 end;
 
-procedure opl3out_proc(reg,data: Word); assembler;
-asm
+procedure opl3out_proc(reg,data: Word);
+begin
+  asm
         mov     ax,reg
         mov     dx,word ptr [opl3port]
         or      ah,ah
@@ -95,10 +98,12 @@ asm
         mov     ecx,26
 @@2:    in      al,dx
         loop    @@2
+  end;
 end;
 
-procedure opl3exp(data: Word); assembler;
-asm
+procedure opl3exp(data: Word);
+begin
+  asm
         mov     ax,data
         mov     dx,word ptr [opl3port]
         add     dx,2
@@ -112,10 +117,12 @@ asm
         mov     ecx,36
 @@2:    in      al,dx
         loop    @@2
+  end;
 end;
 
-function iAdLibGold: Boolean; assembler;
-asm
+function iAdLibGold: Boolean;
+begin
+  asm
         push    04h
         push    80h
         push    04h
@@ -155,10 +162,11 @@ asm
         and     al,6
         or      al,al
         jnz     @@1
-        mov     al,TRUE
+        mov     @RESULT,TRUE
         jmp     @@2
-@@1:    mov     al,FALSE
+@@1:    mov     @RESULT,FALSE
 @@2:
+  end;
 end;
 
 {$ELSE}

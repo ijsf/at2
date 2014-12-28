@@ -1013,12 +1013,9 @@ end;
 
 procedure override_frame(dest: tSCREEN_MEM_PTR; x,y: Byte; frame: String; attr: Byte);
 
-procedure override_attr(dest: tSCREEN_MEM_PTR; x,y: Byte; len: Byte; attr: Byte); assembler;
-asm
-        push    ebx
-        push    ecx
-        push    edx
-        push    edi
+procedure override_attr(dest: tSCREEN_MEM_PTR; x,y: Byte; len: Byte; attr: Byte);
+begin
+  asm
         mov     al,MaxCol
         dec     al
         xor     ah,ah
@@ -1053,10 +1050,8 @@ asm
         stosb
         add     edi,ebx
         loop    @@1
-@@2:    pop     edi
-        pop     edx
-        pop     ecx
-        pop     ebx
+@@2:
+  end;
 end;
 
 begin
@@ -1773,11 +1768,13 @@ begin
   _find_note := temp;
 end;
 
-function _find_fx(fx_str: Char): Byte; assembler;
-asm
-        push    ebx
-        push    ecx
-        push    edi
+function _find_fx(fx_str: Char): Byte;
+
+var
+  result: Byte;
+
+begin
+  asm
         lea     edi,[fx_digits]
         mov     ebx,edi
         mov     al,fx_str
@@ -1786,9 +1783,9 @@ asm
         sub     edi,ebx
         mov     eax,edi
         dec     eax
-        pop     edi
-        pop     ecx
-        pop     ebx
+        mov     result,al
+  end;
+  _find_fx := result;
 end;
 
 function _wildcard_str(wildcard,str: String): String;

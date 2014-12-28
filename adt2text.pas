@@ -8,8 +8,8 @@ interface
 
 const
 {__AT2VER__}at2ver  = '2.4.20';
-{__AT2DAT__}at2date = '12-23-2014';
-{__AT2LNK__}at2link = '7:04pm';
+{__AT2DAT__}at2date = '12-30-2014';
+{__AT2LNK__}at2link = '9:16pm';
 
 {$IFDEF __TMT__}
 

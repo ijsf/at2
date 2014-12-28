@@ -27,13 +27,9 @@ var
   ctrl_bits,ctrl_mask,
   command,count,offs: Word;
 
-procedure RDC_decode; assembler;
-asm
-        push    ebx
-        push    ecx
-        push    edx
-        push    esi
-        push    edi
+procedure RDC_decode;
+begin
+  asm
         mov     ctrl_mask,0
         mov     eax,input_ptr
         mov     ibuf_end,eax
@@ -161,11 +157,7 @@ asm
 @@7:    mov     eax,obuf_idx
         sub     eax,output_ptr
         mov     output_size,ax
-        pop     edi
-        pop     esi
-        pop     edx
-        pop     ecx
-        pop     ebx
+  end;
 end;
 
 function RDC_decompress(var source,dest; size: Word): Word;
@@ -216,13 +208,9 @@ asm
         pop     ebx
 end;
 
-procedure LZSS_decode; assembler;
-asm
-        push    ebx
-        push    ecx
-        push    edx
-        push    esi
-        push    edi
+procedure LZSS_decode;
+begin
+  asm
         mov     ibufCount,0
         mov     ax,input_size
         mov     ibufSize,ax
@@ -277,11 +265,8 @@ asm
         dec     cl
         jnz     @@4
         jmp     @@1
-@@5:    pop     edi
-        pop     esi
-        pop     edx
-        pop     ecx
-        pop     ebx
+@@5:
+  end;
 end;
 
 function LZSS_decompress(var source,dest; size: Word): Word;
@@ -331,13 +316,13 @@ asm
         and     ax,[ebx+le7a_0]
 end;
 
-function LZW_decode: Word; assembler;
-asm
-        push    ebx
-        push    ecx
-        push    edx
-        push    esi
-        push    edi
+function LZW_decode: Word;
+
+var
+  result: Word;
+  
+begin
+  asm
         xor     eax,eax
         xor     ebx,ebx
         xor     ecx,ecx
@@ -433,11 +418,9 @@ asm
         shl     le74,1
 @@8:    jmp     @@1
 @@9:    mov     output_size,ax
-        pop     edi
-        pop     esi
-        pop     edx
-        pop     ecx
-        pop     ebx
+        mov     result,ax
+  end;
+  LZW_decode := result;  
 end;
 
 function LZW_decompress(var source,dest): Word;
@@ -475,13 +458,9 @@ var
   dad,freq: array[0..TWICEMAX] of Word;
   index,ibitCount,ibitBuffer,obufCount: Word;
 
-procedure InitTree; assembler;
-asm
-        push    ebx
-        push    ecx
-        push    edx
-        push    esi
-        push    edi
+procedure InitTree;
+begin
+  asm
         xor     edi,edi
         mov     di,2
         mov     bx,2
@@ -510,20 +489,12 @@ asm
         inc     di
         cmp     di,MAXCHAR
         jbe     @@2
-        pop     edi
-        pop     esi
-        pop     edx
-        pop     ecx
-        pop     ebx
+  end;
 end;
 
-procedure UpdateFreq(a,b: Word); assembler;
-asm
-        push    ebx
-        push    ecx
-        push    edx
-        push    esi
-        push    edi
+procedure UpdateFreq(a,b: Word);
+begin
+  asm
         xor     ecx,ecx
         xor     edi,edi
 @@1:    mov     di,a
@@ -573,20 +544,13 @@ asm
         shr     ax,1
         stosw
         loop    @@4
-@@5:    pop     edi
-        pop     esi
-        pop     edx
-        pop     ecx
-        pop     ebx
+@@5:
+  end;
 end;
 
-procedure UpdateModel(code: Word); assembler;
-asm
-        push    ebx
-        push    ecx
-        push    edx
-        push    esi
-        push    edi
+procedure UpdateModel(code: Word);
+begin
+  asm
         xor     ecx,ecx
         xor     edi,edi
         mov     bx,code
@@ -693,20 +657,17 @@ asm
         mov     dx,word ptr dad[edi]
         cmp     dx,ROOT
         jnz     @@2
-@@10:   pop     edi
-        pop     esi
-        pop     edx
-        pop     ecx
-        pop     ebx
+@@10:
+  end;
 end;
 
-function InputCode(bits: Word): Word; assembler;
-asm
-        push    ebx
-        push    ecx
-        push    edx
-        push    esi
-        push    edi
+function InputCode(bits: Word): Word;
+
+var
+  result: Word;
+
+begin
+  asm
         xor     bx,bx
         xor     ecx,ecx
         mov     cx,1
@@ -740,20 +701,18 @@ asm
         cmp     cx,bits
         jbe     @@1
         mov     ax,bx
-        pop     edi
-        pop     esi
-        pop     edx
-        pop     ecx
-        pop     ebx
+        mov     result,ax
+  end;
+  InputCode := result;
 end;
 
-function Uncompress: Word; assembler;
-asm
-        push    ebx
-        push    ecx
-        push    edx
-        push    esi
-        push    edi
+function Uncompress: Word;
+
+var
+  result: Word;
+
+begin
+  asm
         xor     eax,eax
         xor     ebx,ebx
         mov     bx,1
@@ -795,20 +754,14 @@ asm
         push    ebx
         call    UpdateModel
         pop     eax
-        pop     edi
-        pop     esi
-        pop     edx
-        pop     ecx
-        pop     ebx
+        mov     result,ax
+  end;
+  Uncompress := result;
 end;
 
-procedure SIXPACK_decode; assembler;
-asm
-        push    ebx
-        push    ecx
-        push    edx
-        push    esi
-        push    edi
+procedure SIXPACK_decode;
+begin
+  asm
         mov     ibitCount,0
         mov     ibitBuffer,0
         mov     obufCount,0
@@ -918,11 +871,7 @@ asm
         jmp     @@1
 @@10:   mov     bx,obufCount
         mov     output_size,bx
-        pop     edi
-        pop     esi
-        pop     edx
-        pop     ecx
-        pop     ebx
+  end;
 end;
 
 function SIXPACK_decompress(var source,dest; size: Word): Word;

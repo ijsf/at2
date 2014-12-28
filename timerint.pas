@@ -29,8 +29,8 @@ const
   timer_handler: Pointer = NIL;
 
 procedure int08; interrupt;
-          assembler;
-asm
+begin
+  asm
 {$IFNDEF _32BIT}
         cmp     word ptr timer_handler,0
         jnz     @@1
@@ -76,20 +76,25 @@ asm
         out     20h,al
 {$ENDIF}
 @@ret:
+  end;
 end;
 
-procedure DisableTimerIRQ; assembler;
-asm
+procedure DisableTimerIRQ;
+begin
+  asm
         in      al,21h
         or      al,1
         out     21h,al
+  end;
 end;
 
-procedure EnableTimerIRQ; assembler;
-asm
+procedure EnableTimerIRQ;
+begin
+  asm
         in      al,21h
         and     al,0feh
         out     21h,al
+  end;
 end;
 
 procedure TimerSetup(Hz: Longint);

@@ -59,7 +59,9 @@ asm
         push    input
         call    _aP_pack
 end;
+
 {$ELSE}
+
 function callback(param1,param2: Longint): Longint; cdecl;
 begin
   asm pushad end;

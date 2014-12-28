@@ -7,7 +7,7 @@ http://www.adlibtracker.net/files/revision.htm
 
 
 * version 2.3.53
-  released: 12/23/2014
+  released: 12/23/2014 (* 12/30/2014)
 
    . changed hotkey for toggle of typing modes (hotkey: F11)
    . added toggle of line feed (hotkey: F12)
@@ -45,6 +45,7 @@ http://www.adlibtracker.net/files/revision.htm
    . fixed treating of all +/- combos for keyboards without NUMPAD
    . fixed player calibration issue with pattern break command
    . AT2 player updated to version 0.42
+   * fixed interface bugs in Instrument Editor window
 
 
 * version 2.3.52

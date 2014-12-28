@@ -30,7 +30,7 @@ const
   _perc_sim_chan: array[19..20] of Byte = (18,17);
 
 var
-  idx,temp,temp2,temp3,temp5: Byte;
+  temp,temp2,temp3,temp5: Byte;
   valid_key,temp4: Boolean;
   chan_handle: array[1..18] of Byte;
   channels: Byte;
@@ -54,14 +54,14 @@ begin
     end;
 
   chan_handle[chan] := board_scancodes[board_pos];
-  If is_4op_mode and (instr2 <> BYTE_NULL) then chan := _4op_chan[chan];
+  If (songdata.flag_4op <> 0) and (instr2 <> BYTE_NULL) then chan := _4op_chan[chan];
   load_instrument(songdata.instr_data[instr],chan);
 
   If percussion_mode and
      (songdata.instr_data[instr].perc_voice in [4,5]) then
     load_instrument(songdata.instr_data[instr],_perc_sim_chan[chan]);
 
-  If is_4op_mode and (instr2 <> BYTE_NULL) then
+  If (songdata.flag_4op <> 0) and (instr2 <> BYTE_NULL) then
     load_instrument(songdata.instr_data[instr2],PRED(chan));
 
   freq := nFreq(note-1)+$2000+
@@ -84,7 +84,7 @@ begin
          macro_table[chan].vib_table := 0;
        end;
 
-  If is_4op_mode and (instr2 <> BYTE_NULL) then
+  If (songdata.flag_4op <> 0) and (instr2 <> BYTE_NULL) then
     begin
       freq_table[PRED(chan)] := freq;
       freqtable2[PRED(chan)] := freq;
@@ -113,7 +113,7 @@ begin { INSTRUMENT_test }
      NOT (temp+12*(current_octave-1)-1 in [0..12*8+1]) then EXIT;
 
   If Empty(songdata.instr_data[instr],SizeOf(songdata.instr_data[instr])) and
-     NOT (is_4op_mode and (instr2 <> BYTE_NULL) and
+     NOT ((songdata.flag_4op <> 0) and (instr2 <> BYTE_NULL) and
           NOT Empty(songdata.instr_data[instr2],SizeOf(songdata.instr_data[instr2]))) then EXIT;
 
   temp2 := temp;
@@ -140,8 +140,8 @@ begin { INSTRUMENT_test }
   FillChar(peak_lock,SizeOf(volume_lock),0);
   flag_4op_backup := songdata.flag_4op;
   If NOT percussion_mode and
-     NOT is_4op_mode then channels := 18
-  else If NOT is_4op_mode then channels := 15
+     NOT (songdata.flag_4op <> 0) then channels := 18
+  else If NOT (songdata.flag_4op <> 0) then channels := 15
        else begin
               If (instr2 <> BYTE_NULL) then
                 begin
@@ -198,7 +198,7 @@ begin { INSTRUMENT_test }
              temp2 := board_scancodes[temp];
              temp4 := scankey(temp2);
 
-             If NOT (is_4op_mode and (instr2 <> BYTE_NULL)) then
+             If NOT ((songdata.flag_4op <> 0) and (instr2 <> BYTE_NULL)) then
                begin
                  temp3 := get_chanpos(chan_handle,channels,temp2);
                  temp5 := get_chanpos(chan_handle,channels,0);
@@ -326,7 +326,7 @@ var
   result: Word;
 
 begin
-  If (marked_instruments = 0) or NOT is_4op_mode then result := 0
+  If (marked_instruments = 0) or NOT (songdata.flag_4op <> 0) then result := 0
   else Case marked_instruments of
          1: result := instrum_page+_1st_marked SHL 8;
          2: If (last_marked <> _1st_marked) then result := _2nd_marked+_1st_marked SHL 8
@@ -958,7 +958,7 @@ begin
           byte2hex(instrum_page),
           instrument_bckg+instrument_title);
 
-  If NOT (program_screen_mode in [1,2]) then
+  If (program_screen_mode in [1,2]) then
     ShowStr(ptr_temp_screen,xstart-1,ystart+25,#204+ExpStrL('',70,#205)+#185,instrument_bckg+instrument_border);
 
   Case inst^.perc_voice of
@@ -1389,7 +1389,7 @@ begin
     else ShowStr(ptr_temp_screen,x0+_hpos[20,2+temp-1],y0+_vpos[20],'û',
                  instrument_bckg+instrument_hi_text);
 
-  If NOT (program_screen_mode in [1,2]) or
+  If (program_screen_mode in [1,2]) or
      ((vpos in [1,2,4,5,7,20]) and (hpos = 1) and
       _ADSR_preview_flag) then
     If NOT carrier or (inst^.perc_voice in [2..5]) then
@@ -2537,7 +2537,7 @@ begin
       mn_environment.refresh;
     end;
 
-  If is_4op_mode then
+  If (songdata.flag_4op <> 0) then
     Case marked_instruments of
       0: begin
            ShowStr(mn_environment.v_dest,INSCTRL_xshift+39,INSCTRL_yshift+26,

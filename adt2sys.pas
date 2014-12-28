@@ -10,7 +10,6 @@ const
   virtual_screen__first_row: Longint = 0;
   virtual_cur_shape: Word = 0;
   virtual_cur_pos: Word = 0;
-  emulate_screen: procedure = NIL;
   slide_ticks: Longint = 0;
   reset_slide_ticks: Boolean = FALSE;
 {$IFDEF __TMT__}
@@ -48,6 +47,7 @@ const
 
 procedure sys_init;
 procedure sys_deinit;
+procedure emulate_screen;
 
 {$IFNDEF __TMT__}
 
@@ -87,9 +87,7 @@ uses
   AdT2unit,AdT2text,AdT2keyb,AdT2data,
   TxtScrIO,StringIO,ParserIO;
 
-{$IFDEF __TMT__}
-procedure emulate_screen_proc; forward;
-{$ELSE}
+{$IFNDEF __TMT__}
 var
   screen: PSDL_Surface;
   rgb_color_alt: array[0..15] of tRGB;
@@ -97,9 +95,7 @@ var
 
 procedure sys_init;
 begin
-{$IFDEF __TMT__}
-  emulate_screen := emulate_screen_proc;
-{$ELSE}
+{$IFNDEF __TMT__}
   vid_Init; // SDL video
   AdT2opl3.snd_Init; // SDL sound + opl3 emulation
 {$ENDIF}
@@ -114,7 +110,7 @@ end;
 
 {$IFDEF __TMT__}
 
-procedure emulate_screen_800x600_1; assembler;
+procedure emulate_screen_800x600_1;
 
 const
   H_RES = 800;
@@ -131,7 +127,8 @@ var
   loop_idx1,loop_idx2,loop_idx3,
   loop_idx4: Dword;
 
-asm
+begin
+  asm
         push    ebx
         push    esi
         push    edi
@@ -229,12 +226,11 @@ asm
         dec     loop_idx1
         cmp     loop_idx1,0
         ja      @@2
-@@12:   pop     edi
-        pop     esi
-        pop     ebx
+@@12:
+  end;
 end;
 
-procedure emulate_screen_800x600_2; assembler;
+procedure emulate_screen_800x600_2;
 
 const
   H_RES = 800;
@@ -251,10 +247,8 @@ var
   loop_idx1,loop_idx2,loop_idx3,
   loop_idx4: Dword;
 
-asm
-        push    ebx
-        push    esi
-        push    edi
+begin
+  asm
         mov     ax,word ptr [virtual_cur_pos]
         mov     cur_pos_lo,al
         mov     cur_pos_hi,ah
@@ -349,12 +343,11 @@ asm
         dec     loop_idx1
         cmp     loop_idx1,0
         ja      @@2
-@@12:   pop     edi
-        pop     esi
-        pop     ebx
+@@12:
+  end;
 end;
 
-procedure emulate_screen_1024x768; assembler;
+procedure emulate_screen_1024x768;
 
 const
   H_RES = 1024;
@@ -371,10 +364,8 @@ var
   loop_idx1,loop_idx2,loop_idx3,
   loop_idx4: Dword;
 
-asm
-        push    ebx
-        push    esi
-        push    edi
+begin
+  asm
         mov     ax,word ptr [virtual_cur_pos]
         mov     cur_pos_lo,al
         mov     cur_pos_hi,ah
@@ -459,12 +450,11 @@ asm
         dec     loop_idx1
         cmp     loop_idx1,0
         ja      @@2
-@@9:    pop     edi
-        pop     esi
-        pop     ebx
+@@9:
+  end;
 end;
 
-procedure emulate_screen_proc;
+procedure emulate_screen;
 begin
   If (program_screen_mode < 3) or
      ((program_screen_mode = 3) and (comp_text_mode < 2)) then
@@ -481,7 +471,7 @@ end;
 
 {$ELSE}
 
-procedure emulate_screen_720x480; assembler;
+procedure emulate_screen_720x480;
 
 var
    bit_pos,bit_mask: Byte;
@@ -491,12 +481,8 @@ var
    loop_idx1,loop_idx2,loop_idx3,
    loop_idx4: Dword;
 
-asm
-        push    ebx
-        push    ecx
-        push    edx
-        push    esi
-        push    edi
+begin
+  asm
         mov     eax,_cursor_blink_factor
         cmp     _cursor_blink_pending_frames,eax
         jnae    @@1
@@ -582,14 +568,10 @@ asm
         dec     loop_idx1
         cmp     loop_idx1,0
         ja      @@2
-        pop     edi
-        pop     esi
-        pop     edx
-        pop     ecx
-        pop     ebx
+  end;
 end;
 
-procedure emulate_screen_960x800; assembler;
+procedure emulate_screen_960x800;
 
 var
    bit_pos,bit_mask: Byte;
@@ -597,12 +579,8 @@ var
    loop_idx1,loop_idx2,loop_idx3,
    loop_idx4: Dword;
 
-asm
-        push    ebx
-        push    ecx
-        push    edx
-        push    esi
-        push    edi
+begin
+  asm
         mov     eax,_cursor_blink_factor
         cmp     _cursor_blink_pending_frames,eax
         jnae    @@1
@@ -674,14 +652,10 @@ asm
         dec     loop_idx1
         cmp     loop_idx1,0
         ja      @@2
-        pop     edi
-        pop     esi
-        pop     edx
-        pop     ecx
-        pop     ebx
+  end;
 end;
 
-procedure emulate_screen_1440x960; assembler;
+procedure emulate_screen_1440x960;
 
 var
    bit_pos,bit_mask: Byte;
@@ -689,12 +663,8 @@ var
    loop_idx1,loop_idx2,loop_idx3,
    loop_idx4: Dword;
 
-asm
-        push    ebx
-        push    ecx
-        push    edx
-        push    esi
-        push    edi
+begin
+  asm
         mov     eax,_cursor_blink_factor
         cmp     _cursor_blink_pending_frames,eax
         jnae    @@1
@@ -766,11 +736,7 @@ asm
         dec     loop_idx1
         cmp     loop_idx1,0
         ja      @@2
-        pop     edi
-        pop     esi
-        pop     edx
-        pop     ecx
-        pop     ebx
+  end;
 end;
 
 procedure emulate_screen_proc;
@@ -803,7 +769,7 @@ begin
   SDL_SetPalette(screen,SDL_PHYSPAL,SDL_ColorArray(palette),0,16);
 end;
 
-procedure vid_EmulateScreen;
+procedure emulate_screen;
 
 const
    frame_start: Longint = 0;
@@ -844,7 +810,6 @@ begin
 
   vid_SetRGBPalette(Addr(rgb_color)^);
   Move(rgb_color,rgb_color_alt,SizeOf(rgb_color));
-  emulate_screen := vid_EmulateScreen;
   _FrameBuffer := screen^.pixels;
   rwop := SDL_RWFromMem(adt2_icon_bitmap,SizeOf(adt2_icon_bitmap));
   icon := SDL_LoadBMP_RW(rwop,TRUE);

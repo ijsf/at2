@@ -304,7 +304,6 @@ function  count_pos(hpos: Byte): Byte;
 function  calc_max_speedup(tempo: Byte): Word;
 function  calc_order_jump: Integer;
 function  calc_following_order(order: Byte): Integer;
-function  is_4op_mode: Boolean;
 function  is_4op_chan(chan: Byte): Boolean;
 
 procedure count_order(var entries: Byte);
@@ -357,15 +356,17 @@ const
   FreqEnd   = $2ae;
   FreqRange = FreqEnd-FreqStart;
 
-function nFreq(note: Byte): Word; assembler;
+function nFreq(note: Byte): Word;
 
 const
   Fnum: array[0..11] of Word = (
     $157,$16b,$181,$198,$1b0,$1ca,$1e5,$202,$220,$241,$263,$287);
 
-asm
-        push    ebx
-        push    ecx
+var
+  result: Word;
+
+begin
+  asm
         xor     ebx,ebx
         mov     al,[note]
         xor     ah,ah
@@ -387,15 +388,18 @@ asm
 @@1:    mov     ax,7
         shl     ax,10
         add     ax,FreqEnd
-@@2:    pop     ecx
-        pop     ebx
+@@2:    mov     result,ax
+  end;
+  nFreq := result;
 end;
 
-function calc_freq_shift_up(freq,shift: Word): Word; assembler;
-asm
-        push    ebx
-        push    ecx
-        push    edx
+function calc_freq_shift_up(freq,shift: Word): Word;
+
+var
+  result: Word;
+
+begin
+  asm
         mov     cx,freq
         mov     ax,shift
         mov     bx,cx
@@ -417,16 +421,18 @@ asm
         shl     dx,10
         add     ax,dx
         add     ax,bx
-        pop     edx
-        pop     ecx
-        pop     ebx
+        mov     result,ax
+  end;
+  calc_freq_shift_up := result;
 end;
 
-function calc_freq_shift_down(freq,shift: Word): Word; assembler;
-asm
-        push    ebx
-        push    ecx
-        push    edx
+function calc_freq_shift_down(freq,shift: Word): Word;
+
+var
+  result: Word;
+
+begin
+  asm
         mov     cx,freq
         mov     ax,shift
         mov     bx,cx
@@ -448,18 +454,18 @@ asm
         shl     dx,10
         add     ax,dx
         add     ax,bx
-        pop     edx
-        pop     ecx
-        pop     ebx
+        mov     result,ax
+  end;
+  calc_freq_shift_down := result;
 end;
 
-function calc_vibtrem_shift(depth,position: Byte;
-                            var direction: Byte): Word; assembler;
-asm
-        push    ebx
-        push    ecx
-        push    edx
-        push    edi
+function calc_vibtrem_shift(depth,position: Byte; var direction: Byte): Word;
+
+var
+  result: Word;
+
+begin
+  asm
         xor     ebx,ebx
         mov     al,depth
         xor     ah,ah
@@ -484,16 +490,14 @@ asm
         jne     @@1
         mov     cl,0
         mov     [ebx],cl
-@@1:    pop     edi
-        pop     edx
-        pop     ecx
-        pop     ebx
+@@1:    mov     result,ax
+  end;
+  calc_vibtrem_shift := result;
 end;
 
-procedure change_freq(chan: Byte; freq: Word); assembler;
-asm
-        push    ebx
-        push    edx
+procedure change_freq(chan: Byte; freq: Word);
+begin
+  asm
         xor     ebx,ebx
         mov     bl,chan
         dec     ebx
@@ -524,14 +528,17 @@ asm
         push    edx
         call    opl3out
         call    opl3out
-@@1:    pop     edx
-        pop     ebx
+@@1:
+  end;
 end;
 
-function ins_parameter(ins,param: Byte): Byte; assembler;
-asm
-        push    ebx
-        push    esi
+function ins_parameter(ins,param: Byte): Byte;
+
+var
+  result: Byte;
+
+begin
+  asm
         xor     ebx,ebx
         lea     esi,[songdata.instr_data]
         mov     bl,ins
@@ -542,17 +549,14 @@ asm
         mov     bl,param
         add     esi,ebx
         lodsb
-        pop     esi
-        pop     ebx
+        mov     result,al
+  end;
+  ins_parameter := result;
 end;
 
-function get_event(pattern,line,channel: Byte): tCHUNK; assembler;
-asm
-        push    ebx
-        push    ecx
-        push    edx
-        push    esi
-        push    edi
+function get_event(pattern,line,channel: Byte): tCHUNK;
+begin
+  asm
         mov     esi,[pattdata]
         mov     edi,@result
         mov     al,pattern
@@ -590,11 +594,8 @@ asm
         add     esi,ecx
         mov     ecx,CHUNK_SIZE
         rep     movsb
-@@2:    pop     edi
-        pop     esi
-        pop     edx
-        pop     ecx
-        pop     ebx
+@@2:
+  end;
 end;
 
 function min(value: Longint; minimum: Longint): Longint;
@@ -609,10 +610,9 @@ begin
   else max := maximum;
 end;
 
-function concw(lo,hi: Byte): Word; assembler;
-asm
-        mov     al,[lo]
-        mov     ah,[hi]
+function concw(lo,hi: Byte): Word;
+begin
+  concw := lo+(hi SHL 8);
 end;
 
 procedure synchronize_song_timer;
@@ -4021,13 +4021,10 @@ begin
 {$ENDIF}
 end;
 
-function _macro_speedup: Word; assembler;
-asm
-        mov     ax,macro_speedup
-        or      ax,ax
-        jnz     @@1
-        inc     ax
-@@1:
+function _macro_speedup: Word;
+begin
+  If (macro_speedup > 0) then _macro_speedup := macro_speedup
+  else _macro_speedup := macro_speedup+1;
 end;
 
 procedure timer_poll_proc;
@@ -4823,14 +4820,9 @@ begin
         atr1,name,atr2,border);
 end;
 
-procedure get_chunk(pattern,line,channel: Byte;
-                    var chunk: tCHUNK); assembler;
-asm
-        push    ebx
-        push    ecx
-        push    edx
-        push    esi
-        push    edi
+procedure get_chunk(pattern,line,channel: Byte; var chunk: tCHUNK);
+begin
+  asm
         mov     esi,[pattdata]
         mov     edi,[chunk]
         mov     al,pattern
@@ -4868,22 +4860,14 @@ asm
         add     esi,ecx
         mov     ecx,CHUNK_SIZE
         rep     movsb
-@@2:    pop     edi
-        pop     esi
-        pop     edx
-        pop     ecx
-        pop     ebx
+@@2:
+  end;
 end;
 
-procedure put_chunk(pattern,line,channel: Byte;
-                    chunk: tCHUNK); assembler;
-asm
-        push    ebx
-        push    ecx
-        push    edx
-        push    esi
-        push    edi
-        mov     esi,[chunk]
+procedure put_chunk(pattern,line,channel: Byte; chunk: tCHUNK);
+begin
+  asm
+        lea     esi,[chunk]
         mov     edi,[pattdata]
         mov     al,pattern
         inc     al
@@ -4919,15 +4903,17 @@ asm
         mov     ecx,CHUNK_SIZE
         rep     movsb
         mov     module_archived,FALSE
-@@2:    pop     edi
-        pop     esi
-        pop     edx
-        pop     ecx
-        pop     ebx
+@@2:
+  end;
 end;
 
-function get_chanpos(var data; channels,scancode: Byte): Byte; assembler;
-asm
+function get_chanpos(var data; channels,scancode: Byte): Byte;
+
+var
+  result: Byte;
+
+begin
+  asm
         xor     ebx,ebx
 @@1:    mov     edi,[data]
         add     edi,ebx
@@ -4952,11 +4938,18 @@ asm
         inc     ebx
         jmp     @@1
 @@4:    popa
-@@5:
+@@5:    mov     result,al
+  end;
+  get_chanpos := result;
 end;
 
-function get_chanpos2(var data; channels,scancode: Byte): Byte; assembler;
-asm
+function get_chanpos2(var data; channels,scancode: Byte): Byte;
+
+var
+  result: Byte;
+
+begin
+  asm
         mov     edi,[data]
         xor     ecx,ecx
         mov     cl,channels
@@ -4968,12 +4961,18 @@ asm
         sub     eax,ecx
         jmp     @@2
 @@1:    xor     eax,eax
-@@2:
+@@2:    mov     result,al
+  end;
+  get_chanpos2 := result;
 end;
 
-function count_channel(hpos: Byte): Byte; assembler;
-asm
-        push    ebx
+function count_channel(hpos: Byte): Byte;
+
+var
+  result: Byte;
+
+begin
+  asm
         mov     al,PATEDIT_lastpos
         xor     ah,ah
         mov     bl,MAX_TRACKS
@@ -4988,12 +4987,18 @@ asm
         jmp     @@2
 @@1:    add     al,chan_pos
         dec     al
-@@2:    pop     ebx
+@@2:    mov     result,al
+  end;
+  count_channel := result;
 end;
 
-function count_pos(hpos: Byte): Byte; assembler;
-asm
-        push    ebx
+function count_pos(hpos: Byte): Byte;
+
+var
+  result: Byte;
+
+begin
+  asm
         mov     al,PATEDIT_lastpos
         xor     ah,ah
         mov     bl,MAX_TRACKS
@@ -5008,7 +5013,9 @@ asm
         jnz     @@1
         dec     bl
         mov     al,bl
-@@1:    pop     ebx
+@@1:    mov     result,al
+  end;
+  count_pos := result;
 end;
 
 procedure count_order(var entries: Byte);
@@ -5180,61 +5187,49 @@ begin
 end;
 
 procedure load_instrument(var data; chan: Byte);
-
-function _param(var data; param: Byte): Byte; assembler;
-asm
-        movzx   eax, [param]
-        add     eax, [data]
-        movzx   eax, byte ptr [eax]
-end;
-
 begin
-  fmpar_table[chan].connect := _param(data,10) AND 1;
-  fmpar_table[chan].feedb   := _param(data,10) SHR 1 AND 7;
-  fmpar_table[chan].multipM := _param(data,0)  AND $0f;
-  fmpar_table[chan].kslM    := _param(data,2)  SHR 6;
-  fmpar_table[chan].tremM   := _param(data,0)  SHR 7;
-  fmpar_table[chan].vibrM   := _param(data,0)  SHR 6 AND 1;
-  fmpar_table[chan].ksrM    := _param(data,0)  SHR 4 AND 1;
-  fmpar_table[chan].sustM   := _param(data,0)  SHR 5 AND 1;
-  fmpar_table[chan].multipC := _param(data,1)  AND $0f;
-  fmpar_table[chan].kslC    := _param(data,3)  SHR 6;
-  fmpar_table[chan].tremC   := _param(data,1)  SHR 7;
-  fmpar_table[chan].vibrC   := _param(data,1)  SHR 6 AND 1;
-  fmpar_table[chan].ksrC    := _param(data,1)  SHR 4 AND 1;
-  fmpar_table[chan].sustC   := _param(data,1)  SHR 5 AND 1;
+  fmpar_table[chan].connect := tDUMMY_BUFF(data)[10] AND 1;
+  fmpar_table[chan].feedb   := tDUMMY_BUFF(data)[10] SHR 1 AND 7;
+  fmpar_table[chan].multipM := tDUMMY_BUFF(data)[0]  AND $0f;
+  fmpar_table[chan].kslM    := tDUMMY_BUFF(data)[2]  SHR 6;
+  fmpar_table[chan].tremM   := tDUMMY_BUFF(data)[0]  SHR 7;
+  fmpar_table[chan].vibrM   := tDUMMY_BUFF(data)[0]  SHR 6 AND 1;
+  fmpar_table[chan].ksrM    := tDUMMY_BUFF(data)[0]  SHR 4 AND 1;
+  fmpar_table[chan].sustM   := tDUMMY_BUFF(data)[0]  SHR 5 AND 1;
+  fmpar_table[chan].multipC := tDUMMY_BUFF(data)[1]  AND $0f;
+  fmpar_table[chan].kslC    := tDUMMY_BUFF(data)[3]  SHR 6;
+  fmpar_table[chan].tremC   := tDUMMY_BUFF(data)[1]  SHR 7;
+  fmpar_table[chan].vibrC   := tDUMMY_BUFF(data)[1]  SHR 6 AND 1;
+  fmpar_table[chan].ksrC    := tDUMMY_BUFF(data)[1]  SHR 4 AND 1;
+  fmpar_table[chan].sustC   := tDUMMY_BUFF(data)[1]  SHR 5 AND 1;
 
-  fmpar_table[chan].adsrw_car.attck := _param(data,5) SHR 4;
-  fmpar_table[chan].adsrw_mod.attck := _param(data,4) SHR 4;
-  fmpar_table[chan].adsrw_car.dec   := _param(data,5) AND $0f;
-  fmpar_table[chan].adsrw_mod.dec   := _param(data,4) AND $0f;
-  fmpar_table[chan].adsrw_car.sustn := _param(data,7) SHR 4;
-  fmpar_table[chan].adsrw_mod.sustn := _param(data,6) SHR 4;
-  fmpar_table[chan].adsrw_car.rel   := _param(data,7) AND $0f;
-  fmpar_table[chan].adsrw_mod.rel   := _param(data,6) AND $0f;
-  fmpar_table[chan].adsrw_car.wform := _param(data,9) AND $07;
-  fmpar_table[chan].adsrw_mod.wform := _param(data,8) AND $07;
+  fmpar_table[chan].adsrw_car.attck := tDUMMY_BUFF(data)[5] SHR 4;
+  fmpar_table[chan].adsrw_mod.attck := tDUMMY_BUFF(data)[4] SHR 4;
+  fmpar_table[chan].adsrw_car.dec   := tDUMMY_BUFF(data)[5] AND $0f;
+  fmpar_table[chan].adsrw_mod.dec   := tDUMMY_BUFF(data)[4] AND $0f;
+  fmpar_table[chan].adsrw_car.sustn := tDUMMY_BUFF(data)[7] SHR 4;
+  fmpar_table[chan].adsrw_mod.sustn := tDUMMY_BUFF(data)[6] SHR 4;
+  fmpar_table[chan].adsrw_car.rel   := tDUMMY_BUFF(data)[7] AND $0f;
+  fmpar_table[chan].adsrw_mod.rel   := tDUMMY_BUFF(data)[6] AND $0f;
+  fmpar_table[chan].adsrw_car.wform := tDUMMY_BUFF(data)[9] AND $07;
+  fmpar_table[chan].adsrw_mod.wform := tDUMMY_BUFF(data)[8] AND $07;
 
-  panning_table[chan] := _param(data,11) AND 3;
-  volume_table[chan] := concw(_param(data,2) AND $3f,
-                              _param(data,3) AND $3f);
+  panning_table[chan] := tDUMMY_BUFF(data)[11] AND 3;
+  volume_table[chan] := concw(tDUMMY_BUFF(data)[2] AND $3f,
+                              tDUMMY_BUFF(data)[3] AND $3f);
 
   update_modulator_adsrw(chan);
   update_carrier_adsrw(chan);
   update_fmpar(chan);
 end;
 
-function is_4op_mode: Boolean; assembler;
-asm
-        mov     al,byte ptr [songdata.flag_4op]
-        or      al,al
-        jz      @@1
-        mov     al,TRUE
-@@1:
-end;
+function is_4op_chan(chan: Byte): Boolean;
 
-function is_4op_chan(chan: Byte): Boolean; assembler;
-asm
+var
+  result: Boolean;
+
+begin
+  asm
         mov     al,byte ptr [songdata.flag_4op]
         mov     ah,chan
         test    al,1
@@ -5243,7 +5238,7 @@ asm
         jb      @@1
         cmp     ah,2
         ja      @@1
-        mov     al,TRUE
+        mov     result,TRUE
         jmp     @@7
 @@1:    test    al,2
         jz      @@2
@@ -5251,7 +5246,7 @@ asm
         jb      @@2
         cmp     ah,4
         ja      @@2
-        mov     al,TRUE
+        mov     result,TRUE
         jmp     @@7
 @@2:    test    al,4
         jz      @@3
@@ -5259,7 +5254,7 @@ asm
         jb      @@3
         cmp     ah,6
         ja      @@3
-        mov     al,TRUE
+        mov     result,TRUE
         jmp     @@7
 @@3:    test    al,8
         jz      @@4
@@ -5267,7 +5262,7 @@ asm
         jb      @@4
         cmp     ah,11
         ja      @@4
-        mov     al,TRUE
+        mov     result,TRUE
         jmp     @@7
 @@4:    test    al,10h
         jz      @@5
@@ -5275,7 +5270,7 @@ asm
         jb      @@5
         cmp     ah,13
         ja      @@5
-        mov     al,TRUE
+        mov     result,TRUE
         jmp     @@7
 @@5:    test    al,20h
         jz      @@6
@@ -5283,10 +5278,12 @@ asm
         jb      @@6
         cmp     ah,15
         ja      @@6
-        mov     al,TRUE
+        mov     result,TRUE
         jmp     @@7
-@@6:    mov     al,FALSE
+@@6:    mov     result,FALSE
 @@7:
+  end;
+  is_4op_chan := result;
 end;
 
 function is_in_block(x0,y0,x1,y1: Byte): Boolean;

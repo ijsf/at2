@@ -58,9 +58,9 @@ procedure import_fin_instrument_alt(var data);
 begin
 {$IFDEF __TMT__}
   _last_debug_str_ := _debug_str_;
-   _debug_str_ := 'ILOADINS.INC:import_fin_instrument_alt';
+  _debug_str_ := 'ILOADINS.INC:import_fin_instrument_alt';
 {$ENDIF}
-   With temp_instrument do
+  With temp_instrument do
     begin
       fm_data.AM_VIB_EG_modulator := tDUMMY_BUFF(data)[0];
       fm_data.AM_VIB_EG_carrier   := tDUMMY_BUFF(data)[1];
@@ -1240,8 +1240,8 @@ begin { test_instrument_alt }
   FillChar(peak_lock,SizeOf(volume_lock),0);
   flag_4op_backup := songdata.flag_4op;
   If NOT percussion_mode and
-     NOT is_4op_mode then channels := 18
-  else If NOT is_4op_mode then channels := 15
+     NOT (songdata.flag_4op <> 0) then channels := 18
+  else If NOT (songdata.flag_4op <> 0) then channels := 15
        else begin
               songdata.flag_4op := 0;
               If NOT percussion_mode then channels := 18
@@ -1306,10 +1306,10 @@ begin { test_instrument_alt }
                     end;
            end;
 {$IFDEF __TMT__}
-          realtime_gfx_poll_proc;
+         realtime_gfx_poll_proc;
 {$ELSE}
-          _emulate_screen_without_delay := TRUE;
-          keyboard_poll_input;
+         _emulate_screen_without_delay := TRUE;
+         keyboard_poll_input;
 {$ENDIF}
          keyboard_reset_buffer;
          emulate_screen;
@@ -1318,13 +1318,13 @@ begin { test_instrument_alt }
   While ctrl_pressed do
     begin
 {$IFDEF __TMT__}
-          realtime_gfx_poll_proc;
+      realtime_gfx_poll_proc;
 {$ELSE}
-          _emulate_screen_without_delay := TRUE;
-          keyboard_poll_input;
+      _emulate_screen_without_delay := TRUE;
+      keyboard_poll_input;
 {$ENDIF}
-         keyboard_reset_buffer;
-         emulate_screen;
+      keyboard_reset_buffer;
+      emulate_screen;
     end;
 
   If (ExtOnly(temps) = 'a2f') or loadMacros then
@@ -1439,7 +1439,7 @@ begin { test_instrument_alt2 }
 
   If Empty(temp_instrument,SizeOf(temp_instrument)) then EXIT;
 {$IFDEF __TMT__}
-      keyboard_toggle_sleep;
+  keyboard_toggle_sleep;
 {$ENDIF}
   If (ExtOnly(temps) = 'bnk') then
     bnk_file_loader_alt(Str2num(BaseNameOnly(mn_environment.curr_item),10))
@@ -1449,7 +1449,7 @@ begin { test_instrument_alt2 }
               ibk_file_loader_alt(Str2num(BaseNameOnly(mn_environment.curr_item),10));
 
 {$IFDEF __TMT__}
-      keyboard_toggle_sleep;
+  keyboard_toggle_sleep;
 {$ENDIF}
   If (load_flag_alt = BYTE_NULL) then EXIT;
 
@@ -1470,8 +1470,8 @@ begin { test_instrument_alt2 }
   FillChar(channel_flag,SizeOf(channel_flag),BYTE(TRUE));
   flag_4op_backup := songdata.flag_4op;
   If NOT percussion_mode and
-     NOT is_4op_mode then channels := 18
-  else If NOT is_4op_mode then channels := 15
+     NOT (songdata.flag_4op <> 0) then channels := 18
+  else If NOT (songdata.flag_4op <> 0) then channels := 15
        else begin
               songdata.flag_4op := 0;
               If NOT percussion_mode then channels := 18
@@ -1513,8 +1513,8 @@ begin { test_instrument_alt2 }
           _emulate_screen_without_delay := TRUE;
           keyboard_poll_input;
 {$ENDIF}
-         keyboard_reset_buffer;
-         emulate_screen;
+          keyboard_reset_buffer;
+          emulate_screen;
         end;
     end
   else Repeat
@@ -1543,10 +1543,10 @@ begin { test_instrument_alt2 }
                     end;
            end;
 {$IFDEF __TMT__}
-          realtime_gfx_poll_proc;
+         realtime_gfx_poll_proc;
 {$ELSE}
-          _emulate_screen_without_delay := TRUE;
-          keyboard_poll_input;
+         _emulate_screen_without_delay := TRUE;
+         keyboard_poll_input;
 {$ENDIF}
          keyboard_reset_buffer;
          emulate_screen;
@@ -1555,13 +1555,13 @@ begin { test_instrument_alt2 }
   While ctrl_pressed do
     begin
 {$IFDEF __TMT__}
-          realtime_gfx_poll_proc;
+      realtime_gfx_poll_proc;
 {$ELSE}
-          _emulate_screen_without_delay := TRUE;
-          keyboard_poll_input;
+      _emulate_screen_without_delay := TRUE;
+      keyboard_poll_input;
 {$ENDIF}
-         keyboard_reset_buffer;
-         emulate_screen;
+      keyboard_reset_buffer;
+      emulate_screen;
     end;
 
   songdata.flag_4op := flag_4op_backup;

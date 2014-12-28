@@ -115,27 +115,6 @@ var
 var
   vscrollbar_pos: Word;
 
-function LookUpKey(key: Word; var table; size: Byte): Boolean; assembler;
-asm
-        push    ecx
-        push    esi
-        mov     esi,[table]
-        xor     ecx,ecx
-        mov     cl,size
-        xor     eax,eax
-        mov     al,1
-        jecxz   @@3
-@@1:    lodsw
-        cmp     ax,key
-        jz      @@2
-        loop    @@1
-@@2:    xor     eax,eax
-        jecxz   @@3
-        mov     al,1
-@@3:    pop     esi
-        pop     ecx
-end;
-
 function OutKey(str: String): Char;
 
 var

@@ -26,13 +26,15 @@ var
   CRC16_table: array[BYTE] of Word;
   CRC32_table: array[BYTE] of Longint;
 
-function Scan(var buf; skip,size: Longint; str: String): Longint; assembler;
-asm
-        push    ebx
-        push    esi
-        push    edi
-        mov     edi,[str]
-        mov     esi,[str]
+function Scan(var buf; skip,size: Longint; str: String): Longint;
+
+var
+  result: Longint;
+
+begin
+  asm
+        lea     edi,[str]
+        mov     esi,edi
         xor     eax,eax
         lodsb
         stosb
@@ -94,19 +96,21 @@ asm
         sub     eax,dword ptr [buf]
         inc     eax
 @@11:   dec     eax
-        pop     edi
-        pop     esi
-        pop     ebx
+        mov     result,eax
+  end;
+  Scan := result;
 end;
 
-function SensitiveScan(var buf; skip,size: Longint; str: String): Longint; assembler;
-asm
-        push    ebx
-        push    esi
-        push    edi
+function SensitiveScan(var buf; skip,size: Longint; str: String): Longint;
+
+var
+  result: Longint;
+
+begin
+  asm
         mov     edi,[buf]
         add     edi,skip
-        mov     esi,[str]
+        lea     esi,[str]
         mov     ecx,size
         sub     ecx,skip
         xor     eax,eax
@@ -148,15 +152,18 @@ asm
 @@5:    mov     eax,edi
         sub     eax,dword ptr [buf]
 @@6:    dec     eax
-        pop     edi
-        pop     esi
-        pop     ebx
+        mov     result,eax
+  end;
+  SensitiveScan := result;
 end;
 
-function Compare(var buf1,buf2; size: Longint): Boolean; assembler;
-asm
-        push    esi
-        push    edi
+function Compare(var buf1,buf2; size: Longint): Boolean;
+
+var
+  result: Boolean;
+  
+begin
+  asm
         xor     edx,edx
         mov     eax,size
         cmp     eax,16
@@ -174,9 +181,9 @@ asm
         jecxz   @@1
         repz    cmpsb
         jnz     @@2
-@@1:    mov     al,1
+@@1:    mov     result,TRUE
         jmp     @@6
-@@2:    xor     al,al
+@@2:    mov     result,FALSE
         jmp     @@6
 @@3:    mov     ecx,size
         jecxz   @@4
@@ -185,17 +192,21 @@ asm
         cld
         repz    cmpsb
         jnz     @@5
-@@4:    mov     al,1
+@@4:    mov     result,TRUE
         jmp     @@6
-@@5:    xor     al,al
-@@6:    pop     edi
-        pop     esi
+@@5:    mov     result,FALSE
+@@6:
+  end;
+  Compare := result;
 end;
 
-function Empty(var buf; size: Longint): Boolean; assembler;
-asm
-        push    esi
-        push    edi
+function Empty(var buf; size: Longint): Boolean;
+
+var
+  result: Boolean;
+
+begin
+  asm
         xor     edx,edx
         mov     eax,size
         cmp     eax,16
@@ -212,9 +223,9 @@ asm
         jecxz   @@1
         repz    scasb
         jnz     @@2
-@@1:    mov     al,1
+@@1:    mov     result,TRUE
         jmp     @@6
-@@2:    xor     al,al
+@@2:    mov     result,FALSE
         jmp     @@6
 @@3:    mov     ecx,size
         jecxz   @@4
@@ -222,17 +233,21 @@ asm
         xor     eax,eax
         repz    scasb
         jnz     @@5
-@@4:    mov     al,1
+@@4:    mov     result,TRUE
         jmp     @@6
-@@5:    xor     al,al
-@@6:    pop     edi
-        pop     esi
+@@5:    mov     result,FALSE
+@@6:
+  end;
+  Empty := result;
 end;
 
-function CountLines(var buf; size: Longint): Longint; assembler;
-asm
-        push    ebx
-        push    edi
+function CountLines(var buf; size: Longint): Longint;
+
+var
+  result: Longint;
+
+begin
+  asm
         mov     edi,[buf]
         mov     ecx,size
         mov     edx,edi
@@ -249,15 +264,18 @@ asm
 @@2:    cmp     edi,edx
         jb      @@1
 @@3:    mov     eax,ebx
-        pop     edi
-        pop     ebx
+        mov     result,eax
+  end;
+  CountLines := result;
 end;
 
-function Update16(var buf; size: Longint; crc: Word): Word; assembler;
-asm
-        push    ebx
-        push    esi
-        push    edi
+function Update16(var buf; size: Longint; crc: Word): Word;
+
+var
+  result: Word;
+
+begin
+  asm
         mov     esi,[buf]
         lea     edi,[CRC16_table]
         mov     bx,crc
@@ -275,16 +293,18 @@ asm
         xor     bx,dx
         loop    @@1
 @@2:    mov     ax,bx
-        pop     edi
-        pop     esi
-        pop     ebx
+        mov     result,ax
+  end;
+  Update16 := result;
 end;
 
-function Update32(var buf; size: Longint; crc: Longint): Longint; assembler;
-asm
-        push    ebx
-        push    esi
-        push    edi
+function Update32(var buf; size: Longint; crc: Longint): Longint;
+
+var
+  result: Longint;
+
+begin
+  asm
         mov     esi,[buf]
         lea     edi,[CRC32_table]
         mov     ebx,crc
@@ -302,9 +322,9 @@ asm
         xor     ebx,edx
         loop    @@1
 @@2:    mov     eax,ebx
-        pop     edi
-        pop     esi
-        pop     ebx
+        mov     result,eax
+  end;
+  Update32 := result;
 end;
 
 procedure make_table_16bit;

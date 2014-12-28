@@ -81,16 +81,14 @@ uses
   AdT2unit,AdT2sys,AdT2keyb,
   TxtScrIO;
 
-function byte2hex(value: Byte): String; assembler;
+function byte2hex(value: Byte): String;
 
 const
   data: array[0..15] of char = '0123456789ABCDEF';
 
+begin
   asm
-        push    ecx
-        push    esi
-        push    edi
-        mov     edi,@result
+        mov     edi,@RESULT
         lea     ebx,[data]
         mov     al,2
         stosb
@@ -103,23 +101,17 @@ const
         mov     al,ah
         xlat
         stosb
-        pop     edi
-        pop     esi
-        pop     ecx
+  end;
 end;
 
-function byte2dec(value: Byte): String; assembler;
+function byte2dec(value: Byte): String;
 
 const
   data: array[0..9] of char = '0123456789';
 
-asm
-        push    ebx
-        push    ecx
-        push    edx
-        push    esi
-        push    edi
-        mov     edi,@result
+begin
+  asm
+        mov     edi,@RESULT
         lea     ebx,[data]
         mov     al,value
         xor     ah,ah
@@ -147,20 +139,14 @@ asm
         mov     al,ah
         xlat
         stosb
-        pop     edi
-        pop     esi
-        pop     edx
-        pop     ecx
-        pop     ebx
+  end;
 end;
 
-function Capitalize(str: String): String; assembler;
-asm
-        push    ecx
-        push    esi
-        push    edi
-        mov     esi,[str]
-        mov     edi,@result
+function Capitalize(str: String): String;
+begin
+  asm
+        lea     esi,[str]
+        mov     edi,@RESULT
         mov     al,[esi]
         inc     esi
         mov     [edi],al
@@ -196,18 +182,15 @@ asm
 @@3:    mov     [edi],al
         inc     edi
         loop    @@1
-@@4:    pop     edi
-        pop     esi
-        pop     ecx
+@@4:
+  end;
 end;
 
-function Upper(str: String): String; assembler;
-asm
-        push    ecx
-        push    esi
-        push    edi
-        mov     esi,[str]
-        mov     edi,@result
+function Upper(str: String): String;
+begin
+  asm
+        lea     esi,[str]
+        mov     edi,@RESULT
         mov     al,[esi]
         inc     esi
         mov     [edi],al
@@ -225,18 +208,15 @@ asm
 @@2:    mov     [edi],al
         inc     edi
         loop    @@1
-@@3:    pop     edi
-        pop     esi
-        pop     ecx
+@@3:
+  end;
 end;
 
-function Lower(str: String): String; assembler;
-asm
-        push    ecx
-        push    esi
-        push    edi
-        mov     esi,[str]
-        mov     edi,@result
+function Lower(str: String): String;
+begin
+  asm
+        lea     esi,[str]
+        mov     edi,@RESULT
         mov     al,[esi]
         inc     esi
         mov     [edi],al
@@ -254,18 +234,15 @@ asm
 @@2:    mov     [edi],al
         inc     edi
         loop    @@1
-@@3:    pop     edi
-        pop     esi
-        pop     ecx
+@@3:
+  end;
 end;
 
-function iCase(str: String): String; assembler;
-asm
-        push    ecx
-        push    esi
-        push    edi
-        mov     esi,[str]
-        mov     edi,@result
+function iCase(str: String): String;
+begin
+  asm
+        lea     esi,[str]
+        mov     edi,@RESULT
         mov     al,[esi]
         inc     esi
         mov     [edi],al
@@ -294,9 +271,8 @@ asm
 @@4:    mov     [edi],al
         inc     edi
         loop    @@3
-@@5:    pop     edi
-        pop     esi
-        pop     ecx
+@@5:
+  end;
 end;
 
 function RotStrL(str1,str2: String; shift: Byte): String;
@@ -311,13 +287,11 @@ begin
              Copy(str1,1,Length(str1)-shift);
 end;
 
-function ExpStrL(str: String; size: Byte; chr: Char): String; assembler;
-asm
-        push    ecx
-        push    esi
-        push    edi
-        mov     esi,[str]
-        mov     edi,@result
+function ExpStrL(str: String; size: Byte; chr: Char): String;
+begin
+  asm
+        lea     esi,[str]
+        mov     edi,@RESULT
         cld
         xor     ecx,ecx
         lodsb
@@ -337,18 +311,15 @@ asm
 @@1:    stosb
         mov     cl,al
         rep     movsb
-@@2:    pop     edi
-        pop     edi
-        pop     ecx
+@@2:
+  end;
 end;
 
-function ExpStrR(str: String; size: Byte; chr: Char): String; assembler;
-asm
-        push    ecx
-        push    esi
-        push    edi
-        mov     esi,[str]
-        mov     edi,@result
+function ExpStrR(str: String; size: Byte; chr: Char): String;
+begin
+  asm
+        lea     esi,[str]
+        mov     edi,@RESULT
         cld
         xor     ecx,ecx
         lodsb
@@ -368,9 +339,8 @@ asm
 @@1:    stosb
         mov     cl,al
         rep     movsb
-@@2:    pop     edi
-        pop     edi
-        pop     ecx
+@@2:
+  end;
 end;
 
 function DietStr(str: String; size: Byte): String;
@@ -396,13 +366,11 @@ begin
   CutStr := str;
 end;
 
-function FlipStr(str: String): String; assembler;
-asm
-        push    ecx
-        push    esi
-        push    edi
-        mov     esi,[str]
-        mov     edi,@result
+function FlipStr(str: String): String;
+begin
+   asm
+        lea     esi,[str]
+        mov     edi,@RESULT
         mov     al,[esi]
         inc     esi
         mov     [edi],al
@@ -417,18 +385,15 @@ asm
         mov     [edi],al
         dec     edi
         loop    @@1
-@@2:    pop     edi
-        pop     edi
-        pop     ecx
+@@2:
+  end;
 end;
 
-function FilterStr(str: String; chr0,chr1: Char): String; assembler;
-asm
-        push    ecx
-        push    esi
-        push    edi
-        mov     esi,[str]
-        mov     edi,@result
+function FilterStr(str: String; chr0,chr1: Char): String;
+begin
+  asm
+        lea     esi,[str]
+        mov     edi,@RESULT
         mov     al,[esi]
         inc     esi
         mov     [edi],al
@@ -444,9 +409,8 @@ asm
 @@2:    mov     [edi],al
         inc     edi
         loop    @@1
-@@3:    pop     edi
-        pop     edi
-        pop     ecx
+@@3:
+  end;
 end;
 
 const
@@ -468,17 +432,13 @@ begin
   FilterStr2 := str;
 end;
 
-function Num2str(num: Longint; base: Byte): String; assembler;
+function Num2str(num: Longint; base: Byte): String;
 
 const
   hexa: array[0..PRED(16)+32] of Char = '0123456789ABCDEF'+
                                         #0#0#0#0#0#0#0#0#0#0#0#0#0#0#0#0;
-asm
-        push    ebx
-        push    ecx
-        push    edx
-        push    esi
-        push    edi
+begin
+  asm
         xor     eax,eax
         xor     edx,edx
         xor     edi,edi
@@ -502,7 +462,7 @@ asm
         mov     esi,edi
         mov     ecx,32
         sub     ecx,edi
-        mov     edi,@result
+        mov     edi,@RESULT
         mov     al,cl
         stosb
 @@2:    mov     al,byte ptr [hexa+esi+16]
@@ -510,14 +470,11 @@ asm
         inc     esi
         loop    @@2
         jmp     @@4
-@@3:    mov     edi,@result
+@@3:    mov     edi,@RESULT
         xor     al,al
         stosb
-@@4:    pop     edi
-        pop     esi
-        pop     edx
-        pop     ecx
-        pop     ebx
+@@4:
+  end;
 end;
 
 const
@@ -569,33 +526,10 @@ var
   key: Word;
   s1,s2: String;
 
-function LookupKey(key: Word; var table; size: Byte): Boolean; assembler;
-asm
-        push    ecx
-        push    esi
-        mov     esi,[table]
-        xor     ecx,ecx
-        mov     cl,size
-        mov     al,1
-        jecxz   @@3
-@@1:    lodsw
-        cmp     ax,key
-        jz      @@2
-        loop    @@1
-@@2:    xor     al,al
-        jecxz   @@3
-        mov     al,1
-@@3:    pop     esi
-        pop     ecx
-end;
-
-function more(value1,value2: Byte): Byte; assembler;
-asm
-        mov     al,value1
-        cmp     al,value2
-        jnb     @@1
-        mov     al,value2
-@@1:
+function more(value1,value2: Byte): Byte;
+begin
+  If (value1 >= value2) then more := value1
+  else more := value2;
 end;
 
 label _end;
@@ -817,23 +751,20 @@ _end:
   InputStr := s;
 end;
 
-function SameName(str1,str2: String): Boolean; assembler;
+function SameName(str1,str2: String): Boolean;
 
 var
   LastW: Word;
+  result: Boolean;
 
-asm
-        push    ebx
-        push    ecx
-        push    edx
-        push    esi
-        push    edi
+begin
+  asm
         mov     [LastW],0
         xor     eax,eax
         xor     ecx,ecx
         xor     ebx,ebx
-        mov     esi,[str1]
-        mov     edi,[str2]
+        lea     esi,[str1]
+        lea     edi,[str2]
         xor     ah,ah
         mov     al,[esi]
         inc     esi
@@ -926,7 +857,7 @@ asm
         jnz     @@1
         or      bx,bx
         jnz     @@14
-@@13:   mov     al,1
+@@13:   mov     result,TRUE
         jmp     @@16
 @@14:   or      dh,dh
         jz      @@15
@@ -943,12 +874,10 @@ asm
         sub     esi,eax
         dec     esi
         jmp     @@1
-@@15:   mov     al,0
-@@16:   pop     edi
-        pop     esi
-        pop     edx
-        pop     ecx
-        pop     ebx
+@@15:   mov     result,FALSE
+@@16:
+  end;
+  SameName := result;
 end;
 
 var
