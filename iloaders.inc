@@ -1,8 +1,6 @@
 {
-        function asciiz_string(str: String): String;
-        function check_byte(var data; _byte: Byte; size: Longint): Boolean;
+        function  check_byte(var data; _byte: Byte; size: Longint): Boolean;
         procedure insert_command(cmd,cmd2: Word; patterns: Byte; chan: Byte; exceptions: tByteSet);
-        procedure init_old_songdata;
         procedure import_old_a2m_event1(patt,line,chan: Byte; old_chunk: tOLD_CHUNK;
                                         processing_whole_song: Boolean);
         procedure replace_old_adsr(patterns: Byte);
@@ -10,15 +8,17 @@
         procedure import_old_a2m_event2(patt,line,chan: Byte; old_chunk: tOLD_CHUNK);
         procedure import_old_a2m_patterns2(block: Byte; count: Byte);
         procedure import_old_flags;
-        procedure import_old_songdata(old_songdata: tOLD_FIXED_SONGDATA);
-        procedure import_old_instruments(old_songdata: tOLD_FIXED_SONGDATA; var new_songdata: tFIXED_SONGDATA;
+        procedure import_old_songdata(old_songdata: pOLD_FIXED_SONGDATA);
+        procedure import_old_instruments(old_songdata: pOLD_FIXED_SONGDATA;
+                                         new_songdata: pFIXED_SONGDATA;
                                          instr,count: Byte);
-        procedure import_single_old_instrument(old_songdata: tOLD_FIXED_SONGDATA; pos,instr: Byte);
+        procedure import_single_old_instrument(old_songdata: pOLD_FIXED_SONGDATA;
+                                               pos,instr: Byte);
         procedure a2m_file_loader;
         procedure a2t_file_loader;
         procedure a2p_file_loader;
-        function dec2hex(dec: Byte): Byte;
-        function truncate_string(str: String): String;
+        function  dec2hex(dec: Byte): Byte;
+        function  truncate_string(str: String): String;
         procedure amd_file_loader;
         procedure import_cff_event(patt,line,chan,byte0,byte1,byte2: Byte);
         procedure import_cff_patterns(var data; patterns: Byte);
@@ -38,20 +38,14 @@
         procedure import_fin_instrument(inst: Byte; var data);
         procedure fmk_file_loader;
         procedure import_sat_instrument(inst: Byte; var data);
-        function import_sat_instrument_name(var data; inst: Byte): String;
+        function  import_sat_instrument_name(var data; inst: Byte): String;
         procedure sat_file_loader;
-        function _sal(op1,op2: Word): Byte;
-        function _sar(op1,op2: Word): Byte;
+        function  _sal(op1,op2: Word): Byte;
+        function  _sar(op1,op2: Word): Byte;
         procedure import_sa2_effect(effect,def1,def2: Byte;
                                     var out1,out2: Byte);
         procedure sa2_file_loader;
 }
-
-function asciiz_string(str: String): String;
-begin
-  If (Pos(#0,str) <> 0) then asciiz_string := Copy(str,1,Pos(#0,str)-1)
-  else asciiz_string := '';
-end;
 
 function check_byte(var data; _byte: Byte; size: Longint): Boolean;
 
@@ -138,23 +132,6 @@ begin
         patts := patts+CHR(patt);
       end;
   until (patt >= patterns) or (order > $7f);
-end;
-
-procedure init_old_songdata;
-
-var
-  temp: Byte;
-
-begin
-  FillChar(old_songdata,SizeOf(old_songdata),0);
-  FillChar(old_songdata.pattern_order,SizeOf(old_songdata.pattern_order),$080);
-  FillChar(old_songdata.instr_data,SizeOf(old_songdata.instr_data),0);
-
-{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
-  For temp := 1 to 250 do
-    old_songdata.instr_names[temp] :=
-      ' iNS_'+byte2hex(temp)+'÷ ';
-{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
 end;
 
 var
@@ -557,59 +534,43 @@ begin
       songdata.lock_flags[temp] := songdata.lock_flags[temp] AND NOT 3;
 end;
 
-procedure import_old_songdata(old_songdata: tOLD_FIXED_SONGDATA);
+procedure import_old_songdata(old_songdata: pOLD_FIXED_SONGDATA);
 
 var
   temp: Byte;
 
 begin
-  songdata.songname := old_songdata.songname;
-  songdata.composer := old_songdata.composer;
+  songdata.songname := old_songdata^.songname;
+  songdata.composer := old_songdata^.composer;
 
   For temp := 1 to 250 do
     begin
-      songdata.instr_names[temp] := old_songdata.instr_names[temp];
-      songdata.instr_data[temp].fm_data := old_songdata.instr_data[temp].fm_data;
-      songdata.instr_data[temp].panning := old_songdata.instr_data[temp].panning;
-      songdata.instr_data[temp].fine_tune := old_songdata.instr_data[temp].fine_tune;
+      songdata.instr_names[temp] := old_songdata^.instr_names[temp];
+      songdata.instr_data[temp].fm_data := old_songdata^.instr_data[temp].fm_data;
+      songdata.instr_data[temp].panning := old_songdata^.instr_data[temp].panning;
+      songdata.instr_data[temp].fine_tune := old_songdata^.instr_data[temp].fine_tune;
       songdata.instr_data[temp].perc_voice := 0;
     end;
 
-  Move(old_songdata.pattern_order,
+  Move(old_songdata^.pattern_order,
        songdata.pattern_order,
-       SizeOf(old_songdata.pattern_order));
+       SizeOf(old_songdata^.pattern_order));
 
-  songdata.tempo := old_songdata.tempo;
-  songdata.speed := old_songdata.speed;
-  songdata.common_flag := old_songdata.common_flag;
+  songdata.tempo := old_songdata^.tempo;
+  songdata.speed := old_songdata^.speed;
+  songdata.common_flag := old_songdata^.common_flag;
   import_old_flags;
 end;
 
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
-procedure import_old_instruments(old_songdata: tOLD_FIXED_SONGDATA; var new_songdata: tFIXED_SONGDATA;
-                                 instr,count: Byte);
-var
-  temp: Byte;
-
-begin
-  For temp := instr to instr+PRED(count) do
-    begin
-      new_songdata.instr_names[temp] := Copy(new_songdata.instr_names[temp],1,9)+
-                                    Copy(old_songdata.instr_names[temp],10,22);
-      new_songdata.instr_data[temp].fm_data := old_songdata.instr_data[temp].fm_data;
-      new_songdata.instr_data[temp].panning := old_songdata.instr_data[temp].panning;
-      new_songdata.instr_data[temp].fine_tune := old_songdata.instr_data[temp].fine_tune;
-      new_songdata.instr_data[temp].perc_voice := 0;
-    end;
-end;
-
-procedure import_single_old_instrument(old_songdata: tOLD_FIXED_SONGDATA; pos,instr: Byte);
+procedure import_single_old_instrument(old_songdata: pOLD_FIXED_SONGDATA;
+                                       pos,instr: Byte);
 begin
   songdata.instr_names[pos] := Copy(songdata.instr_names[pos],1,9)+
-                               Copy(old_songdata.instr_names[instr],10,22);
-  songdata.instr_data[pos].fm_data := old_songdata.instr_data[instr].fm_data;
-  songdata.instr_data[pos].panning := old_songdata.instr_data[instr].panning;
-  songdata.instr_data[pos].fine_tune := old_songdata.instr_data[instr].fine_tune;
+                               Copy(old_songdata^.instr_names[instr],10,22);
+  songdata.instr_data[pos].fm_data := old_songdata^.instr_data[instr].fm_data;
+  songdata.instr_data[pos].panning := old_songdata^.instr_data[instr].panning;
+  songdata.instr_data[pos].fine_tune := old_songdata^.instr_data[instr].fine_tune;
   songdata.instr_data[pos].perc_voice := 0;
 end;
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
@@ -891,7 +852,7 @@ begin
           end;
 
       replace_old_adsr(header2.patts);
-      import_old_songdata(old_songdata);
+      import_old_songdata(Addr(old_songdata));
     end;
 
   If (header.ffver in [5..8]) then
@@ -1059,7 +1020,7 @@ begin
             end;
             import_old_a2m_patterns2(SUCC(temp2),8);
           end;
-      import_old_songdata(old_songdata);
+      import_old_songdata(Addr(old_songdata));
     end;
 
   If (header.ffver in [9,10,11]) then
@@ -1587,7 +1548,7 @@ begin
           end;
 
       replace_old_adsr(header2.patts);
-      import_old_songdata(old_songdata);
+      import_old_songdata(Addr(old_songdata));
     end;
 
   If (header.ffver in [5..8]) then
@@ -1794,7 +1755,7 @@ begin
             end;
             import_old_a2m_patterns2(SUCC(temp2),8);
           end;
-      import_old_songdata(old_songdata);
+      import_old_songdata(Addr(old_songdata));
     end;
 
   If (header.ffver = 9) then
@@ -3503,10 +3464,6 @@ begin
   until (patt >= patterns) or (order > $40);
 end;
 
-var
-  _cff_heap: array[0..65535] of Byte;
-  _cff_dictionary: array[0..32767] of Pointer;
-
 procedure cff_file_loader;
 
 type
@@ -3569,6 +3526,7 @@ var
 
   _cff_heap_length: Word;
   _cff_dictionary_length: Word;
+  _cff_dictionary: array[0..32767] of Pointer;
 
 function get_code: Longint;
 
@@ -3636,8 +3594,8 @@ end;
 procedure expand__cff_dictionary(str: tSTRING);
 begin
   If (str[0] >= $0f0) then EXIT;
-  Move(str,_cff_heap[_cff_heap_length],str[0]+1);
-  _cff_dictionary[_cff_dictionary_length] := Addr(_cff_heap[_cff_heap_length]);
+  Move(str,buf3[_cff_heap_length],str[0]+1);
+  _cff_dictionary[_cff_dictionary_length] := Addr(buf3[_cff_heap_length]);
   Inc(_cff_dictionary_length);
   Inc(_cff_heap_length,str[0]+1);
 end;

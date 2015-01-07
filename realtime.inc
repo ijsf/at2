@@ -1,10 +1,11 @@
 {
-        function _decay_bar_str(value: Byte): String;
+        function  _decay_bar_str(value: Byte): String;
         procedure show_bar(chan,level,xpos,from_pos,to_pos,attr: Byte);
         procedure decay_bars_refresh;
-        function _vol_bar_str(value: Byte): String;
+        function  _vol_bar_str(value: Byte): String;
         procedure status_refresh;
         procedure slide_show;
+        procedure trace_update_proc;
 }
 
 function _decay_bar_str(value: Byte): String;
@@ -637,4 +638,44 @@ begin
       slide_pos := 0;
       do_slide := FALSE;
     end;
+end;
+
+procedure trace_update_proc;
+begin
+  If NOT _update_tracepr_pending_flag then _update_tracepr_pending_flag := TRUE
+  else EXIT;
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
+  _debug_str_ := 'IPATTERN.INC:trace_update_proc';
+{$ENDIF}
+  space_pressed := scankey(SC_SPACE);
+  If (play_status = isPlaying) then
+    If (_traceprc_last_order <> current_order) or
+       (_traceprc_last_pattern <> current_pattern) or
+       (_traceprc_last_line <> current_line) then
+      begin
+        _traceprc_last_order := current_order;
+        _traceprc_last_pattern := songdata.pattern_order[current_order];
+        _traceprc_last_line := current_line;
+
+        If tracing then
+          begin
+            If NOT play_single_patt then
+              pattern_patt := songdata.pattern_order[current_order];
+
+            pattern_page := current_line;
+            pattord_page := 0;
+            pattord_hpos := 1;
+            pattord_vpos := 1;
+
+            While (current_order <> pattord_vpos+4*(pattord_hpos+pattord_page-1)-1) do
+              If (pattord_vpos < 4) then Inc(pattord_vpos)
+              else If (pattord_hpos < MAX_ORDER_COLS) then begin Inc(pattord_hpos); pattord_vpos := 1; end
+                   else If (pattord_page < 23-(MAX_ORDER_COLS-9)) then begin Inc(pattord_page); pattord_vpos := 1; end;
+          end;
+
+        PATTERN_ORDER_page_refresh(pattord_page);
+        PATTERN_page_refresh(pattern_page);
+      end;
+  _update_tracepr_pending_flag := FALSE;
 end;

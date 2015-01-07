@@ -33,7 +33,7 @@ uses
 {$ELSE}
   DOS,
 {$ENDIF}
-  AdT2opl3,AdT2sys,AdT2keyb,AdT2unit,AdT2extn,AdT2ext2,AdT2ext3,AdT2text,AdT2apak,
+  AdT2opl3,AdT2sys,AdT2keyb,AdT2unit,AdT2extn,AdT2ext2,AdT2ext3,AdT2ext5,AdT2text,AdT2apak,
   StringIO,DialogIO,ParserIO,DepackIO,TxtScrIO;
 
 const

@@ -29,8 +29,6 @@ procedure INSTRUMENT_test(instr,instr2,chan: Byte; fkey: Word;
 procedure INSTRUMENT_CONTROL_page_refresh(page: Byte);
 procedure INSTRUMENT_CONTROL_edit;
 
-procedure update_trace;
-procedure update_without_trace;
 procedure PATTERN_ORDER_page_refresh(page: Byte);
 procedure PATTERN_ORDER_edit(var page,hpos,vpos: Byte);
 
@@ -289,11 +287,7 @@ begin
 
   Case play_status of
     isStopped: begin
-                 If trace_by_default then
-                   begin
-                     tracing := TRUE;
-                     trace_update_proc := update_trace;
-                   end;
+                 If trace_by_default then tracing := TRUE;
                  start_playing;
                end;
     isPaused:  begin

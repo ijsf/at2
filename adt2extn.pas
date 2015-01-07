@@ -91,7 +91,7 @@ uses
 {$ENDIF}
   AdT2opl3,
 {$ENDIF}
-  AdT2sys,AdT2keyb,AdT2unit,AdT2ext2,AdT2ext3,AdT2ext4,AdT2text,AdT2apak,
+  AdT2sys,AdT2keyb,AdT2unit,AdT2ext2,AdT2ext3,AdT2ext4,AdT2ext5,AdT2text,AdT2apak,
   StringIO,DialogIO,ParserIO,TxtScrIO,MenuLib1,MenuLib2;
 
 function _patts_marked: Byte;
@@ -2583,7 +2583,7 @@ end;
 
 function last_hpos: Byte;
 begin
-  last_hpos := max(PATEDIT_lastpos,songdata.nm_tracks*(PATEDIT_lastpos DIV MAX_TRACKS));
+  last_hpos := max(_pattedit_lastpos,songdata.nm_tracks*(_pattedit_lastpos DIV MAX_TRACKS));
 end;
 
 function _macro_str(str: String; null_byte: Byte): String;
@@ -3226,7 +3226,6 @@ _jmp1:
                 replay_forbidden := FALSE;
                 PATTERN_ORDER_page_refresh(pattord_page);
                 PATTERN_page_refresh(pattern_page);
-                trace_update_proc := update_trace;
                 tracing := TRUE;
               end;
           end
@@ -3239,14 +3238,12 @@ _jmp1:
                  start_line := pattern_page;
                  start_playing;
                  debugging := TRUE;
-                 trace_update_proc := update_trace;
                  tracing := TRUE;
                end
              else
       else If NOT tracing then
              begin
                debugging := TRUE;
-               trace_update_proc := update_trace;
                tracing := TRUE;
              end;
 
@@ -3288,9 +3285,9 @@ _jmp1:
                    PATTERN_ORDER_page_refresh(pattord_page);
                    PATTERN_page_refresh(pattern_page);
                  end
-               else If (pattern_hpos > PATEDIT_lastpos DIV MAX_TRACKS) then
+               else If (pattern_hpos > _pattedit_lastpos DIV MAX_TRACKS) then
                       begin
-                        Dec(pattern_hpos,PATEDIT_lastpos DIV MAX_TRACKS);
+                        Dec(pattern_hpos,_pattedit_lastpos DIV MAX_TRACKS);
                         PATTERN_ORDER_page_refresh(pattord_page);
                         PATTERN_page_refresh(pattern_page);
                       end;
@@ -3301,9 +3298,9 @@ _jmp1:
                    PATTERN_ORDER_page_refresh(pattord_page);
                    PATTERN_page_refresh(pattern_page);
                  end
-               else If (pattern_hpos <= last_hpos-PATEDIT_lastpos DIV MAX_TRACKS) then
+               else If (pattern_hpos <= last_hpos-_pattedit_lastpos DIV MAX_TRACKS) then
                       begin
-                        Inc(pattern_hpos,PATEDIT_lastpos DIV MAX_TRACKS);
+                        Inc(pattern_hpos,_pattedit_lastpos DIV MAX_TRACKS);
                         PATTERN_ORDER_page_refresh(pattord_page);
                         PATTERN_page_refresh(pattern_page);
                       end;

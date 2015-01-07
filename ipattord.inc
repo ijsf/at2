@@ -1,7 +1,7 @@
 {
         procedure pattern_list__proc;
-        function PATTERN_LIST(page: Byte): Byte;
-        function PATTERN_LIST_alt(page: Byte): Byte;
+        function  PATTERN_LIST(page: Byte): Byte;
+        function  PATTERN_LIST_alt(page: Byte): Byte;
         procedure PATTERN_ORDER_page_refresh(page: Byte);
         procedure PATTERN_ORDER_edit(var page,hpos,vpos: Byte);
 }
@@ -366,6 +366,8 @@ var
   xstart: Byte;
 
 begin
+  If NOT _update_pattord_pending_flag then _update_pattord_pending_flag := TRUE
+  else EXIT;
 {$IFDEF __TMT__}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'IPATTORD.INC:PATTERN_ORDER_page_refresh';
@@ -457,6 +459,7 @@ begin
                                  scrollbar_bckg+scrollbar_text,
                                  scrollbar_bckg+scrollbar_mark);
     end;
+  _update_pattord_pending_flag := FALSE;
 end;
 
 procedure PATTERN_ORDER_edit(var page,hpos,vpos: Byte);

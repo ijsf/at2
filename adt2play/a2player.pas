@@ -266,10 +266,56 @@ type
 type
   tDUMMY_BUFF = array[0..PRED(655350)] of Byte;
 
+type
+  tOLD_ADTRACK2_INS = Record
+                        fm_data: tFM_INST_DATA;
+                        panning: Byte;
+                        fine_tune: Shortint;
+                      end;
+type
+  pOLD_FIXED_SONGDATA = ^tOLD_FIXED_SONGDATA;
+  tOLD_FIXED_SONGDATA = Record
+                          songname:      String[42];
+                          composer:      String[42];
+                          instr_names:   array[1..250] of String[32];
+                          instr_data:    array[1..250] of tOLD_ADTRACK2_INS;
+                          pattern_order: array[0..$7f] of Byte;
+                          tempo:         Byte;
+                          speed:         Byte;
+                          common_flag:   Byte;
+                        end;
+type
+  tOLD_CHUNK = Record
+                 note:       Byte;
+                 instr_def:  Byte;
+                 effect_def: Byte;
+                 effect:     Byte;
+               end;
+type
+  tCHUNK = tADTRACK2_EVENT;
+
+type
+  tOLD_VARIABLE_DATA1 = array[0..$0f] of array[0..$3f] of
+                        array[1..9]   of tOLD_CHUNK;
+type
+  tOLD_VARIABLE_DATA2 = array[0..7]   of array[1..18] of
+                        array[0..$3f] of tOLD_CHUNK;
+type
+  tByteSet = Set of Byte;
+
+const
+  INSTRUMENT_SIZE = SizeOf(tADTRACK2_INS);
+  CHUNK_SIZE = SizeOf(tCHUNK);
+  PATTERN_SIZE = 20*256*CHUNK_SIZE;
+
 var
   time_playing: Real;
   pattdata: ^tPATTERN_DATA;
   songdata: tFIXED_SONGDATA;
+  old_songdata: tOLD_FIXED_SONGDATA;
+  old_hash_buffer: tOLD_VARIABLE_DATA1;
+  hash_buffer: tOLD_VARIABLE_DATA2;
+  buffer: array[0..PRED(SizeOf(tVARIABLE_DATA))] of Byte;
 
 const
   external_irq_hook: procedure = NIL;
@@ -294,6 +340,7 @@ var
 procedure start_playing;
 procedure set_overall_volume(level: Byte);
 procedure stop_playing;
+procedure init_old_songdata;
 procedure init_songdata;
 procedure init_irq;
 procedure done_irq;
@@ -304,6 +351,7 @@ procedure timer_poll_proc;
 procedure opl3exp(data: Word);
 
 function  calc_following_order(order: Byte): Integer;
+function  asciiz_string(str: String): String;
 
 implementation
 uses DOS,TimerInt,ParserIO;
@@ -321,11 +369,6 @@ const
                                    $0bd);
 type
   tTRACK_ADDR = array[1..20] of Word;
-
-const
-  INSTRUMENT_SIZE = SizeOf(tADTRACK2_INS);
-  CHUNK_SIZE = SizeOf(tADTRACK2_EVENT);
-  PATTERN_SIZE = 20*256*CHUNK_SIZE;
 
 const                    { 01 - 02 - 03 - 04 - 05 - 06 - 07 - 08 - 09 - 10 - 11 - 12 - 13 - 14 - 15 - 16 - 17 - 18 - 19 - 20 }
   _chmm_n: tTRACK_ADDR = ($003,$000,$004,$001,$005,$002,$006,$007,$008,$103,$100,$104,$101,$105,$102,$106,$107,$108,BYTE_NULL,BYTE_NULL);
@@ -697,10 +740,15 @@ asm
 @@1:
 end;
 
-function concw(lo,hi: Byte): Word; assembler;
-asm
-        mov     al,[lo]
-        mov     ah,[hi]
+function asciiz_string(str: String): String;
+begin
+  If (Pos(#0,str) <> 0) then asciiz_string := Copy(str,1,Pos(#0,str)-1)
+  else asciiz_string := '';
+end;
+
+function concw(lo,hi: Byte): Word;
+begin
+  concw := lo+(hi SHL 8);
 end;
 
 procedure synchronize_song_timer;
@@ -4227,6 +4275,14 @@ begin
 
   speed := songdata.speed;
   update_timer(songdata.tempo);
+end;
+
+procedure init_old_songdata;
+begin
+  _debug_str_ := 'A2PLAYER.PAS:init_old_songdata';
+  FillChar(old_songdata,SizeOf(old_songdata),0);
+  FillChar(old_songdata.pattern_order,SizeOf(old_songdata.pattern_order),$080);
+  FillChar(old_songdata.instr_data,SizeOf(old_songdata.instr_data),0);
 end;
 
 procedure init_songdata;

@@ -2342,10 +2342,11 @@ end;
 
 procedure move2screen;
 
-{$IFDEF __TMT__}
 var
+{$IFDEF __TMT__}
   wr_loop: Byte;
 {$ENDIF}
+  screen_ptr_backup: Pointer;
 
 begin
 {$IFDEF __TMT__}
@@ -2354,8 +2355,8 @@ begin
 {$ENDIF}
   HideCursor;
   toggle_waitretrace := TRUE;
-  move2screen_alt;
-  SetCursor(cursor_backup);
+  screen_ptr_backup := screen_ptr;
+  screen_ptr := move_to_screen_data;
   area_x1 := 0;
   area_y1 := 0;
   area_x2 := 0;
@@ -2367,6 +2368,9 @@ begin
   scroll_pos4 := BYTE_NULL;
   PATTERN_ORDER_page_refresh(pattord_page);
   PATTERN_page_refresh(pattern_page);
+  ScreenMemCopy(screen_ptr,screen_ptr_backup);
+  screen_ptr := screen_ptr_backup;
+  SetCursor(cursor_backup);
 {$IFDEF __TMT__}
   // smoothen next window content change
   For wr_loop := 1 to 5 do
@@ -2383,6 +2387,7 @@ var
   pos1,pos2: Byte;
 
 begin
+  If (move_to_screen_data <> NIL) then
 {$IFDEF __TMT}
   If toggle_waitretrace then
     begin
@@ -2390,7 +2395,8 @@ begin
       toggle_waitretrace := FALSE;
     end;
 {$ENDIF}
-  asm
+  If (move_to_screen_data <> NIL) then
+    asm
         mov     esi,dword ptr [screen_ptr]
         lea     edi,[temp_screen2]
         mov     ecx,SCREEN_MEM_SIZE
@@ -2422,7 +2428,7 @@ begin
         mov     edi,dword ptr [screen_ptr]
         mov     ecx,SCREEN_MEM_SIZE
         rep     movsb
-  end;
+    end;
 end;
 
 procedure TxtScrIO_Init;
@@ -2596,9 +2602,9 @@ begin
 
   SCREEN_MEM_SIZE := MaxCol*MaxLn*2;
   move_to_screen_routine := move2screen;
-  
-  If (command_typing = 0) then PATEDIT_lastpos := 4*MAX_TRACKS
-  else PATEDIT_lastpos := 10*MAX_TRACKS;
+
+  If (command_typing = 0) then _pattedit_lastpos := 4*MAX_TRACKS
+  else _pattedit_lastpos := 10*MAX_TRACKS;
 
   Case MAX_COLUMNS of
     120: temp := 1;

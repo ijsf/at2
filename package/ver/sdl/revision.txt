@@ -9,8 +9,8 @@ For complete AT2 revision history refer to:
 http://www.adlibtracker.net/files/revision.htm
 
 
-* SDL/Win32/Linux version 2.4.20
-  released: 12/23/2014 (* 12/30/2014)
+* version 2.4.20
+  released: 12/23/2014 (* 01/07/2015)
 
    . changed hotkey for toggle of typing modes (hotkey: F11)
    . added toggle of line feed (hotkey: F12)
@@ -46,9 +46,11 @@ http://www.adlibtracker.net/files/revision.htm
    . fixed treating of all +/- combos for keyboards without NUMPAD
    . fixed player calibration issue with pattern break command
    * fixed interface bugs in Instrument Editor window
+   * fixed fast-forward/rewind outside Pattern Editor window;
+     added functionality to Instrument Control panel
 
 
-* SDL/Win32/Linux version 2.4.19
+* version 2.4.19
   released: 10/27/2014 (* 11/04/2014)
 
    . fixed switchover from offline to normal Debug mode with ^Enter
@@ -66,7 +68,7 @@ http://www.adlibtracker.net/files/revision.htm
    * fixed interface bug in Remap window occuring with sdl_screen_mode=2
 
 
-* SDL/Win32/Linux version 2.4.18
+* version 2.4.18
   released: 09/05/2014
 
    . changes in Note Recorder feature:
@@ -78,7 +80,7 @@ http://www.adlibtracker.net/files/revision.htm
      - improved keyboard reference on Help screen
 
 
-* SDL/Win32/Linux version 2.4.17
+* version 2.4.17
   released: 07/28/2014 (* 07/30/2014)
 
    . fixed ADSR preview update with enhanced screen modes
@@ -88,7 +90,7 @@ http://www.adlibtracker.net/files/revision.htm
    * fixed some missing usage of non-NUMPAD +/- keys
 
 
-* SDL/Win32/Linux version 2.4.16
+* version 2.4.16
   released: 07/14/2014
 
    . fixed cursor blink speed for non-default sdl_frame_rate value
@@ -105,7 +107,7 @@ http://www.adlibtracker.net/files/revision.htm
    . small changes in user interface
 
 
-* SDL/Win32/Linux version 2.4.15
+* version 2.4.15
   released: 06/13/2014
 
    . added 'Set Custom Speed Table' effect command (`xx)

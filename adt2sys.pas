@@ -43,7 +43,14 @@ const
 
 const
   _force_program_quit: Boolean = FALSE;
-  PATEDIT_lastpos: Byte = 0;
+  _update_tracepr_pending_flag: Boolean = FALSE;
+  _update_pattern_pending_flag: Boolean = FALSE;
+  _update_pattord_pending_flag: Boolean = FALSE;
+  _update_statsln_pending_flag: Boolean = FALSE;
+  _traceprc_last_order: Byte = 0;
+  _traceprc_last_pattern: Byte = 0;
+  _traceprc_last_line: Byte = 0;
+  _pattedit_lastpos: Byte = 0;
 
 procedure sys_init;
 procedure sys_deinit;

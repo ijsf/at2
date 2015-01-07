@@ -8,8 +8,8 @@ interface
 
 const
 {__AT2VER__}at2ver  = '2.4.20';
-{__AT2DAT__}at2date = '12-30-2014';
-{__AT2LNK__}at2link = '9:16pm';
+{__AT2DAT__}at2date = '01-07-2015';
+{__AT2LNK__}at2link = '7:01pm';
 
 {$IFDEF __TMT__}
 
@@ -1207,7 +1207,7 @@ const
 
 {$ELSE}
 
-    'Florian Klaempfl and others [Free Pascal Compiler 2.6.2]',
+    'Florian Klaempfl and others [Free Pascal Compiler 2.6.4]',
     'Japheth [JWasm v2.11]',
 
     'Joergen Ibsen [aPLib 0.26b]',

@@ -9,7 +9,6 @@ interface
 const
   MAX_IRQ_FREQ = 1000;
 
-
 {$i typconst.inc}
 const
   IRQ_freq:          Longint   = 50;
@@ -31,7 +30,6 @@ const
   calibrating:       Boolean   = FALSE;
   no_status_refresh: Boolean   = FALSE;
   do_synchronize:    Boolean   = FALSE;
-  trace_update_proc: procedure = NIL;
   space_pressed:     Boolean   = FALSE;
   module_archived:   Boolean   = FALSE;
   force_scrollbars:  Boolean   = FALSE;
@@ -192,9 +190,9 @@ var
 
 var
   buf1: array[0..PRED(SizeOf(tVARIABLE_DATA))] of Byte;
-  buf2: array[0..PRED(65535)] of Byte;
-  buf3: array[0..PRED(65535)] of Byte;
-  buf4: array[0..PRED(65535)] of Byte;
+  buf2: array[WORD] of Byte;
+  buf3: array[WORD] of Byte;
+  buf4: array[WORD] of Byte;
 
 var
   pattdata: ^tPATTERN_DATA;
@@ -258,7 +256,7 @@ function  calc_pattern_pos(pattern: Byte): Byte;
 function  concw(Lo,Hi: Byte): Word;
 function  ins_parameter(ins,param: Byte): Byte;
 function  scale_volume(volume,scale_factor: Byte): Byte;
-function _macro_speedup: Word;
+function  _macro_speedup: Word;
 procedure calibrate_player(order,line: Byte; status_filter: Boolean;
                            line_dependent: Boolean);
 procedure update_timer(Hz: Longint);
@@ -285,6 +283,8 @@ procedure init_timer_proc;
 procedure done_timer_proc;
 procedure realtime_gfx_poll_proc;
 procedure status_refresh;
+procedure slide_show;
+procedure trace_update_proc;
 
 function  hscroll_bar(x,y: Byte; size: Byte; len1,len2,pos: Word;
                       atr1,atr2: Byte): Byte;
@@ -309,6 +309,7 @@ function  is_4op_chan(chan: Byte): Boolean;
 procedure count_order(var entries: Byte);
 procedure count_patterns(var patterns: Byte);
 procedure count_instruments(var instruments: Byte);
+procedure init_old_songdata;
 procedure init_songdata;
 procedure update_instr_data(ins: Byte);
 procedure load_instrument(var data; chan: Byte);
@@ -316,6 +317,7 @@ procedure output_note(note,ins,chan: Byte; restart_macro: Boolean);
 
 function  min(value: Longint; minimum: Longint): Longint;
 function  max(value: Longint; maximum: Longint): Longint;
+function  asciiz_string(str: String): String;
 
 const
   block_xstart: Byte = 1;
@@ -608,6 +610,12 @@ function max(value: Longint; maximum: Longint): Longint;
 begin
   If (value < maximum) then max := value
   else max := maximum;
+end;
+
+function asciiz_string(str: String): String;
+begin
+  If (Pos(#0,str) <> 0) then asciiz_string := Copy(str,1,Pos(#0,str)-1)
+  else asciiz_string := '';
 end;
 
 function concw(lo,hi: Byte): Word;
@@ -3666,15 +3674,18 @@ begin
         end;
 
       If fast_forward or rewind then
-        If (Abs(time_playing-time_playing0) > 0.5) or
-           NOT ((tracing and (scankey(SC_UP) or scankey(SC_DOWN))) or
-                (NOT tracing and ctrl_pressed and (scankey(SC_LEFT) or scankey(SC_RIGHT)))) then
-          begin
-            fast_forward := FALSE;
-            rewind := FALSE;
-            time_playing0 := time_playing;
-            synchronize_song_timer;
-          end;
+        begin
+{$IFDEF __TMT__}
+          keyboard_reset_buffer;
+{$ENDIF}
+          If (Abs(time_playing-time_playing0) > 0.5) then
+            begin
+              fast_forward := FALSE;
+              rewind := FALSE;
+              time_playing0 := time_playing;
+              synchronize_song_timer;
+            end;
+        end;
     end
   else
     begin
@@ -4703,8 +4714,6 @@ begin
 {$ELSE}
   flush_WAV_data;
 {$ENDIF}
-  tracing := FALSE;
-  trace_update_proc := NIL;
   replay_forbidden := TRUE;
   play_status := isStopped;
   fade_out_volume := 63;
@@ -4973,7 +4982,7 @@ var
 
 begin
   asm
-        mov     al,PATEDIT_lastpos
+        mov     al,_pattedit_lastpos
         xor     ah,ah
         mov     bl,MAX_TRACKS
         div     bl
@@ -4999,7 +5008,7 @@ var
 
 begin
   asm
-        mov     al,PATEDIT_lastpos
+        mov     al,_pattedit_lastpos
         xor     ah,ah
         mov     bl,MAX_TRACKS
         div     bl
@@ -5100,6 +5109,25 @@ begin
     If (temp <= MAX_IRQ_FREQ) then Inc(result);
   until NOT (temp <= MAX_IRQ_FREQ);
   calc_max_speedup := PRED(result);
+end;
+
+procedure init_old_songdata;
+
+var
+  temp: Byte;
+
+begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
+  _debug_str_ := 'ADT2UNIT.PAS:init_old_songdata';
+{$ENDIF}
+  FillChar(old_songdata,SizeOf(old_songdata),0);
+  FillChar(old_songdata.pattern_order,SizeOf(old_songdata.pattern_order),$080);
+  FillChar(old_songdata.instr_data,SizeOf(old_songdata.instr_data),0);
+
+  For temp := 1 to 250 do
+    old_songdata.instr_names[temp] :=
+      ' iNS_'+byte2hex(temp)+'÷ ';
 end;
 
 procedure init_songdata;
@@ -5427,10 +5455,7 @@ begin
 {$IFDEF __TMT__}
       reset_gfx_ticks := TRUE;
 {$ENDIF}
-
-      If tracing and (@trace_update_proc <> NIL) then trace_update_proc
-      else If (play_status = isPlaying) then update_without_trace;
-
+      trace_update_proc;
       If (@mn_environment.ext_proc_rt <> NIL) then
         mn_environment.ext_proc_rt;
 {$IFDEF __TMT__}

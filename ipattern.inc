@@ -2,13 +2,11 @@
         procedure cancel_note_recorder;
         procedure PATTERN_tabs_refresh;
         procedure STATUS_LINE_refresh;
-        function last_chan_pos: Byte;
-        function last_hpos: Byte;
+        function  last_chan_pos: Byte;
+        function  last_hpos: Byte;
         procedure PATTERN_page_refresh(page: Byte);
         procedure PATTERN_position_preview(pattern,line,channel,mode: Byte);
-        procedure update_trace;
-        procedure update_without_trace;
-        function PATTERN_trace: Word;
+        function  PATTERN_trace: Word;
         procedure PATTERN_edit(var pattern,page,hpos: Byte);
 }
 
@@ -73,6 +71,8 @@ var
   attr: Byte;
 
 begin
+  If NOT _update_statsln_pending_flag then _update_statsln_pending_flag := TRUE
+  else EXIT;
 {$IFDEF __TMT__}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'IPATTERN.INC:STATUS_LINE_refresh';
@@ -138,6 +138,7 @@ begin
   If jump_mark_mode then
     show_str(MAX_COLUMNS-17,MAX_PATTERN_ROWS+12,#23,main_background+main_behavior)
   else show_str(MAX_COLUMNS-17,MAX_PATTERN_ROWS+12,#23,main_background+main_behavior_dis);
+  _update_statsln_pending_flag := FALSE;
 end;
 
 function last_chan_pos: Byte;
@@ -149,7 +150,7 @@ end;
 
 function last_hpos: Byte;
 begin
-  last_hpos := max(PATEDIT_lastpos,songdata.nm_tracks*(PATEDIT_lastpos DIV MAX_TRACKS));
+  last_hpos := max(_pattedit_lastpos,songdata.nm_tracks*(_pattedit_lastpos DIV MAX_TRACKS));
 end;
 
 procedure PATTERN_page_refresh(page: Byte);
@@ -193,6 +194,8 @@ begin
 end;
 
 begin
+  If NOT _update_pattern_pending_flag then _update_pattern_pending_flag := TRUE
+  else EXIT;
 {$IFDEF __TMT__}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'IPATTERN.INC:PATTERN_page_refresh';
@@ -213,20 +216,20 @@ begin
     pattern_page := PRED(songdata.patt_len);
 
   While NOT ((chan_pos <= last_chan_pos) and (pattern_hpos <= last_hpos)) do
-    If (pattern_hpos > PATEDIT_lastpos DIV MAX_TRACKS) then
+    If (pattern_hpos > _pattedit_lastpos DIV MAX_TRACKS) then
       begin
-        Dec(pattern_hpos,PATEDIT_lastpos DIV MAX_TRACKS);
-        If (pattern_hpos MOD (PATEDIT_lastpos DIV MAX_TRACKS) > 0) then
-          temp := PRED(pattern_hpos MOD (PATEDIT_lastpos DIV MAX_TRACKS))
-        else temp := PRED(PATEDIT_lastpos DIV MAX_TRACKS);
+        Dec(pattern_hpos,_pattedit_lastpos DIV MAX_TRACKS);
+        If (pattern_hpos MOD (_pattedit_lastpos DIV MAX_TRACKS) > 0) then
+          temp := PRED(pattern_hpos MOD (_pattedit_lastpos DIV MAX_TRACKS))
+        else temp := PRED(_pattedit_lastpos DIV MAX_TRACKS);
         Dec(pattern_hpos,temp);
       end
     else If (chan_pos > 1) then
            begin
              Dec(chan_pos);
-             If (pattern_hpos MOD (PATEDIT_lastpos DIV MAX_TRACKS) > 0) then
-               temp := PRED(pattern_hpos MOD (PATEDIT_lastpos DIV MAX_TRACKS))
-             else temp := PRED(PATEDIT_lastpos DIV MAX_TRACKS);
+             If (pattern_hpos MOD (_pattedit_lastpos DIV MAX_TRACKS) > 0) then
+               temp := PRED(pattern_hpos MOD (_pattedit_lastpos DIV MAX_TRACKS))
+             else temp := PRED(_pattedit_lastpos DIV MAX_TRACKS);
              Dec(pattern_hpos,temp);
            end
          else If cycle_pattern then
@@ -758,6 +761,7 @@ begin
                                  scrollbar_bckg+scrollbar_text,
                                  scrollbar_bckg+scrollbar_mark);
     end;
+  _update_pattern_pending_flag := FALSE;
 end;
 
 var
@@ -817,66 +821,6 @@ begin
               end;
 end;
 
-var
-  last_order,last_pattern,
-  last_line: Byte;
-
-procedure update_trace;
-begin
-{$IFDEF __TMT__}
-  _last_debug_str_ := _debug_str_;
-  _debug_str_ := 'IPATTERN.INC:update_trace';
-{$ENDIF}
-  tracing := TRUE;
-  trace_update_proc := update_trace;
-  space_pressed := scankey(SC_SPACE);
-  If (play_status = isPlaying) then
-    If (last_order <> current_order) or
-       (last_pattern <> current_pattern) or
-       (last_line <> current_line) then
-      begin
-        last_order := current_order;
-        last_pattern := songdata.pattern_order[current_order];
-        last_line := current_line;
-
-        If NOT play_single_patt then
-          pattern_patt := songdata.pattern_order[current_order];
-
-        pattern_page := current_line;
-        pattord_page := 0;
-        pattord_hpos := 1;
-        pattord_vpos := 1;
-
-        While (current_order <> pattord_vpos+4*(pattord_hpos+pattord_page-1)-1) do
-          If (pattord_vpos < 4) then Inc(pattord_vpos)
-          else If (pattord_hpos < MAX_ORDER_COLS) then begin Inc(pattord_hpos); pattord_vpos := 1; end
-               else If (pattord_page < 23-(MAX_ORDER_COLS-9)) then begin Inc(pattord_page); pattord_vpos := 1; end;
-
-        PATTERN_ORDER_page_refresh(pattord_page);
-        PATTERN_page_refresh(pattern_page);
-      end;
-end;
-
-procedure update_without_trace;
-begin
-{$IFDEF __TMT__}
-  _last_debug_str_ := _debug_str_;
-  _debug_str_ := 'IPATTERN.INC:update_without_trace';
-{$ENDIF}
-  If (play_status = isPlaying) then
-    If (last_order <> current_order) or
-       (last_pattern <> current_pattern) or
-       (last_line <> current_line) then
-      begin
-        last_order := current_order;
-        last_pattern := songdata.pattern_order[current_order];
-        last_line := current_line;
-
-        PATTERN_ORDER_page_refresh(pattord_page);
-        PATTERN_page_refresh(pattern_page);
-      end;
-end;
-
 function PATTERN_trace: Word;
 
 var
@@ -911,9 +855,9 @@ begin
   _debug_str_ := 'IPATTERN.INC:PATTERN_trace';
 {$ENDIF}
   If (play_status = isStopped) then EXIT;
-  last_order := BYTE_NULL;
-  last_pattern := BYTE_NULL;
-  last_line := BYTE_NULL;
+  _traceprc_last_order := BYTE_NULL;
+  _traceprc_last_pattern := BYTE_NULL;
+  _traceprc_last_line := BYTE_NULL;
 
   HideCursor;
   old_pattord_page := pattord_page;
@@ -923,6 +867,7 @@ begin
   old_pattern_page := pattern_page;
   old_pattern_hpos := pattern_hpos;
   reset_pos := TRUE;
+  tracing := TRUE;
 
   If marking then
     begin
@@ -931,12 +876,9 @@ begin
       tracing_block_yend := pattern_page;
     end;
 
-  tracing := TRUE;
-  trace_update_proc := update_trace;
-
   Repeat
     nope := FALSE;
-    update_trace;
+    trace_update_proc;
     If ctrl_pressed and alt_pressed then
       begin
         DEBUG_INFO;
@@ -1240,9 +1182,9 @@ begin
                      PATTERN_ORDER_page_refresh(pattord_page);
                      PATTERN_page_refresh(pattern_page);
                    end
-                 else If (pattern_hpos > PATEDIT_lastpos DIV MAX_TRACKS) then
+                 else If (pattern_hpos > _pattedit_lastpos DIV MAX_TRACKS) then
                         begin
-                          Dec(pattern_hpos,PATEDIT_lastpos DIV MAX_TRACKS);
+                          Dec(pattern_hpos,_pattedit_lastpos DIV MAX_TRACKS);
                           PATTERN_ORDER_page_refresh(pattord_page);
                           PATTERN_page_refresh(pattern_page);
                         end;
@@ -1254,9 +1196,9 @@ begin
                      PATTERN_ORDER_page_refresh(pattord_page);
                      PATTERN_page_refresh(pattern_page);
                    end
-                 else If (pattern_hpos <= last_hpos-PATEDIT_lastpos DIV MAX_TRACKS) then
+                 else If (pattern_hpos <= last_hpos-_pattedit_lastpos DIV MAX_TRACKS) then
                         begin
-                          Inc(pattern_hpos,PATEDIT_lastpos DIV MAX_TRACKS);
+                          Inc(pattern_hpos,_pattedit_lastpos DIV MAX_TRACKS);
                           PATTERN_ORDER_page_refresh(pattord_page);
                           PATTERN_page_refresh(pattern_page);
                         end;
@@ -1504,7 +1446,8 @@ begin
                                 replay_forbidden := TRUE;
                                 play_status := isPaused;
                               end;
-                            update_trace;
+                            PATTERN_ORDER_page_refresh(pattord_page);
+                            PATTERN_page_refresh(pattern_page);
                           end;
                       end;
                end;
@@ -1674,7 +1617,6 @@ _end:
 
   PATTERN_trace := fkey2;
   If (fkey2 = kF10) or _force_program_quit then EXIT;
-  trace_update_proc := NIL;
   ThinCursor;
   tracing := FALSE;
   If (play_status <> isStopped) then cancel_note_recorder;
@@ -2238,20 +2180,20 @@ begin
       page := PRED(songdata.patt_len);
 
     While NOT ((chan_pos <= last_chan_pos) and (hpos <= last_hpos)) do
-      If (hpos > PATEDIT_lastpos DIV MAX_TRACKS) then
+      If (hpos > _pattedit_lastpos DIV MAX_TRACKS) then
         begin
-          Dec(hpos,PATEDIT_lastpos DIV MAX_TRACKS);
-          If (hpos MOD (PATEDIT_lastpos DIV MAX_TRACKS) > 0) then
-            temp := PRED(hpos MOD (PATEDIT_lastpos DIV MAX_TRACKS))
-          else temp := PRED(PATEDIT_lastpos DIV MAX_TRACKS);
+          Dec(hpos,_pattedit_lastpos DIV MAX_TRACKS);
+          If (hpos MOD (_pattedit_lastpos DIV MAX_TRACKS) > 0) then
+            temp := PRED(hpos MOD (_pattedit_lastpos DIV MAX_TRACKS))
+          else temp := PRED(_pattedit_lastpos DIV MAX_TRACKS);
           Dec(hpos,temp);
         end
       else If (chan_pos > 1) then
              begin
                Dec(chan_pos);
-               If (hpos MOD (PATEDIT_lastpos DIV MAX_TRACKS) > 0) then
-                 temp := PRED(hpos MOD (PATEDIT_lastpos DIV MAX_TRACKS))
-               else temp := PRED(PATEDIT_lastpos DIV MAX_TRACKS);
+               If (hpos MOD (_pattedit_lastpos DIV MAX_TRACKS) > 0) then
+                 temp := PRED(hpos MOD (_pattedit_lastpos DIV MAX_TRACKS))
+               else temp := PRED(_pattedit_lastpos DIV MAX_TRACKS);
                Dec(hpos,temp);
              end
            else If cycle_pattern then
@@ -2277,7 +2219,7 @@ begin
                      else If (chan_pos > 1) then
                             begin
                               Dec(chan_pos);
-                              hpos := PATEDIT_lastpos DIV MAX_TRACKS;
+                              hpos := _pattedit_lastpos DIV MAX_TRACKS;
                             end
                           else If cycle_pattern then
                                  begin
@@ -2296,14 +2238,14 @@ begin
                begin
                  If marking then
                    begin
-                     If (hpos > PATEDIT_lastpos DIV MAX_TRACKS) then Dec(hpos,PATEDIT_lastpos DIV MAX_TRACKS)
+                     If (hpos > _pattedit_lastpos DIV MAX_TRACKS) then Dec(hpos,_pattedit_lastpos DIV MAX_TRACKS)
                      else If (chan_pos > 1) then Dec(chan_pos);
                    end
                  else If hpos > 1 then Dec(hpos)
                       else If (chan_pos > 1) then
                              begin
                                Dec(chan_pos);
-                               hpos := PATEDIT_lastpos DIV MAX_TRACKS;
+                               hpos := _pattedit_lastpos DIV MAX_TRACKS;
                              end
                            else If cycle_pattern then
                                   begin
@@ -2433,14 +2375,14 @@ begin
 
       kLEFT:   If marking then
                  begin
-                   If (hpos > PATEDIT_lastpos DIV MAX_TRACKS) then Dec(hpos,PATEDIT_lastpos DIV MAX_TRACKS)
+                   If (hpos > _pattedit_lastpos DIV MAX_TRACKS) then Dec(hpos,_pattedit_lastpos DIV MAX_TRACKS)
                    else If (chan_pos > 1) then Dec(chan_pos);
                  end
                else If hpos > 1 then Dec(hpos)
                     else If (chan_pos > 1) then
                            begin
                              Dec(chan_pos);
-                             hpos := PATEDIT_lastpos DIV MAX_TRACKS;
+                             hpos := _pattedit_lastpos DIV MAX_TRACKS;
                            end
                          else If cycle_pattern then
                                 begin
@@ -2450,15 +2392,15 @@ begin
 
       kRIGHT:  If marking then
                  begin
-                   If (hpos <= last_hpos-PATEDIT_lastpos DIV MAX_TRACKS) then
-                     Inc(hpos,PATEDIT_lastpos DIV MAX_TRACKS)
+                   If (hpos <= last_hpos-_pattedit_lastpos DIV MAX_TRACKS) then
+                     Inc(hpos,_pattedit_lastpos DIV MAX_TRACKS)
                    else If (chan_pos < last_chan_pos) then Inc(chan_pos);
                  end
                else If hpos < last_hpos then Inc(hpos)
                     else If (chan_pos < last_chan_pos) then
                            begin
                              Inc(chan_pos);
-                             hpos := last_hpos-PRED(PATEDIT_lastpos DIV MAX_TRACKS);
+                             hpos := last_hpos-PRED(_pattedit_lastpos DIV MAX_TRACKS);
                            end
                          else If cycle_pattern then
                                 begin
@@ -2762,20 +2704,20 @@ begin
                                end;
                            end;
 
-      kShTAB:  If (hpos > PATEDIT_lastpos DIV MAX_TRACKS) then
+      kShTAB:  If (hpos > _pattedit_lastpos DIV MAX_TRACKS) then
                  begin
-                   Dec(hpos,PATEDIT_lastpos DIV MAX_TRACKS);
-                   If (hpos MOD (PATEDIT_lastpos DIV MAX_TRACKS) > 0) then
-                     temp := PRED(hpos MOD (PATEDIT_lastpos DIV MAX_TRACKS))
-                   else temp := PRED(PATEDIT_lastpos DIV MAX_TRACKS);
+                   Dec(hpos,_pattedit_lastpos DIV MAX_TRACKS);
+                   If (hpos MOD (_pattedit_lastpos DIV MAX_TRACKS) > 0) then
+                     temp := PRED(hpos MOD (_pattedit_lastpos DIV MAX_TRACKS))
+                   else temp := PRED(_pattedit_lastpos DIV MAX_TRACKS);
                    Dec(hpos,temp);
                  end
                else If (chan_pos > 1) then
                       begin
                         Dec(chan_pos);
-                        If (hpos MOD (PATEDIT_lastpos DIV MAX_TRACKS) > 0) then
-                          temp := PRED(hpos MOD (PATEDIT_lastpos DIV MAX_TRACKS))
-                        else temp := PRED(PATEDIT_lastpos DIV MAX_TRACKS);
+                        If (hpos MOD (_pattedit_lastpos DIV MAX_TRACKS) > 0) then
+                          temp := PRED(hpos MOD (_pattedit_lastpos DIV MAX_TRACKS))
+                        else temp := PRED(_pattedit_lastpos DIV MAX_TRACKS);
                         Dec(hpos,temp);
                       end
                     else If cycle_pattern then
@@ -2784,20 +2726,20 @@ begin
                              hpos := last_hpos;
                            end;
 
-      kTAB:    If (hpos <= last_hpos-PATEDIT_lastpos DIV MAX_TRACKS) then
+      kTAB:    If (hpos <= last_hpos-_pattedit_lastpos DIV MAX_TRACKS) then
                  begin
-                   Inc(hpos,PATEDIT_lastpos DIV MAX_TRACKS);
-                   If (hpos MOD (PATEDIT_lastpos DIV MAX_TRACKS) > 0) then
-                     temp := PRED(hpos MOD (PATEDIT_lastpos DIV MAX_TRACKS))
-                   else temp := PRED(PATEDIT_lastpos DIV MAX_TRACKS);
+                   Inc(hpos,_pattedit_lastpos DIV MAX_TRACKS);
+                   If (hpos MOD (_pattedit_lastpos DIV MAX_TRACKS) > 0) then
+                     temp := PRED(hpos MOD (_pattedit_lastpos DIV MAX_TRACKS))
+                   else temp := PRED(_pattedit_lastpos DIV MAX_TRACKS);
                    Dec(hpos,temp);
                  end
                else If (chan_pos < last_chan_pos) then
                       begin
                         Inc(chan_pos);
-                        If (hpos MOD (PATEDIT_lastpos DIV MAX_TRACKS) > 0) then
-                          temp := PRED(hpos MOD (PATEDIT_lastpos DIV MAX_TRACKS))
-                        else temp := PRED(PATEDIT_lastpos DIV MAX_TRACKS);
+                        If (hpos MOD (_pattedit_lastpos DIV MAX_TRACKS) > 0) then
+                          temp := PRED(hpos MOD (_pattedit_lastpos DIV MAX_TRACKS))
+                        else temp := PRED(_pattedit_lastpos DIV MAX_TRACKS);
                         Dec(hpos,temp);
                       end
                     else If cycle_pattern then

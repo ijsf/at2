@@ -1,26 +1,26 @@
 {
     procedure INSTRUMENT_test(instr,instr2: Byte; chan: Byte; fkey: Word;
-                          process_macros: Boolean);
-    function marked_instruments: Byte;
-    function _1st_marked: Byte;
-    function _2nd_marked: Byte;
-    function _4op_to_test: Word;
+                              process_macros: Boolean);
+    function  marked_instruments: Byte;
+    function  _1st_marked: Byte;
+    function  _2nd_marked: Byte;
+    function  _4op_to_test: Word;
     procedure reset_4op_to_test(_4op_type,ins2: Byte);
     procedure INSTRUMENT_CONTROL_page_refresh(page: Byte);
     procedure _show_adsr(var dest; xstart,ystart: Byte;
-                     attack,decay,sustain,release,attenuation: Byte;
-                     eg_type: Byte;
-                     attr,attr_hi: Byte;
-                     reset: Boolean);
+                         attack,decay,sustain,release,attenuation: Byte;
+                         eg_type: Byte;
+                         attr,attr_hi: Byte;
+                         reset: Boolean);
     procedure INSTRUMENT_CONTROL_page_refresh_alt(page: Byte);
     procedure INSTRUMENT_CONTROL_edit;
     procedure copy_object;
     procedure paste_object(mode: Byte);
     procedure instr_control_ai;
     procedure instr_control_proc;
-    function INSTRUMENT_CONTROL: Byte;
+    function  INSTRUMENT_CONTROL: Byte;
     procedure instr_control_proc_alt;
-    function INSTRUMENT_CONTROL_alt(instr: Byte; title: String): Byte;
+    function  INSTRUMENT_CONTROL_alt(instr: Byte; title: String): Byte;
 }
 
 procedure INSTRUMENT_test(instr,instr2: Byte; chan: Byte; fkey: Word;
@@ -2291,6 +2291,11 @@ begin
   _debug_str_ := 'INSTEDIT.INC:instr_control_proc';
 {$ENDIF}
   Case mn_environment.keystroke of
+      kCtLEFT: If NOT debugging and (play_status = isPlaying) then
+                 rewind := TRUE;
+
+      kCtRGHT: If NOT debugging and (play_status = isPlaying) then
+                 fast_forward := TRUE;
       kCHmins,
       kNPmins,
       kCtHOME: If (play_status <> isStopped) then

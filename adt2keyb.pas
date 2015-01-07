@@ -111,19 +111,22 @@ end;
 
 function keypressed: Boolean;
 begin
-  Repeat
-    realtime_gfx_poll_proc;
-    emulate_screen;
-    // filter out CTRL+TAB combo as it is handled within timer routine
-    If ctrl_tab_pressed then keyboard_reset_buffer;
-    keypressed := CRT.keypressed;
-  until NOT ctrl_tab_pressed;
+  realtime_gfx_poll_proc;
+  emulate_screen;
+  // filter out CTRL+TAB combo as it is handled within timer routine
+  If ctrl_tab_pressed then
+    begin
+      keyboard_reset_buffer;
+      keypressed := FALSE;
+    end
+  else keypressed := CRT.KeyPressed;
 end;
 
 function getkey: Word;
 
 var
   result: Word;
+  key_c,scan_c: Byte;
 
 begin
   no_status_refresh := FALSE;
@@ -133,11 +136,13 @@ begin
       emulate_screen;
       If (seconds_counter >= ssaver_time) then screen_saver;
     end;
-  asm
-        xor     ah,ah
-        int     16h
-        mov     result,ax
-  end;
+  key_c := BYTE(CRT.ReadKey);
+  If (key_c = 0) then result := BYTE(CRT.ReadKey) SHL 8
+  else begin
+         scan_c := PORT[$60];
+         If (scan_c > $80) then scan_c := scan_c-$80;
+         result := key_c+(scan_c SHL 8);
+       end;
   getkey := result;
 end;
 

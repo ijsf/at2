@@ -91,6 +91,7 @@ type
   tDIS_FMREG_COL = array[0..27] of Boolean;
 
 type
+  pOLD_FIXED_SONGDATA = ^tOLD_FIXED_SONGDATA;
   tOLD_FIXED_SONGDATA = Record
                           songname:      String[42];
                           composer:      String[42];
@@ -102,6 +103,7 @@ type
                           common_flag:   Byte;
                         end;
 type
+  pFIXED_SONGDATA = ^tFIXED_SONGDATA;
   tFIXED_SONGDATA = Record
                       songname:      String[42];
                       composer:      String[42];

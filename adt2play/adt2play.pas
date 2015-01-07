@@ -20,53 +20,6 @@ const
   _pos_str_ypos = 186;
   _pos_str_color = 252;
 
-type
-  tOLD_ADTRACK2_INS = Record
-                        fm_data: tFM_INST_DATA;
-                        panning: Byte;
-                        fine_tune: Shortint;
-                      end;
-type
-  tOLD_FIXED_SONGDATA = Record
-                          songname:      String[42];
-                          composer:      String[42];
-                          instr_names:   array[1..250] of String[32];
-                          instr_data:    array[1..250] of tOLD_ADTRACK2_INS;
-                          pattern_order: array[0..$7f] of Byte;
-                          tempo:         Byte;
-                          speed:         Byte;
-                          common_flag:   Byte;
-                        end;
-type
-  tOLD_CHUNK = Record
-                 note:       Byte;
-                 instr_def:  Byte;
-                 effect_def: Byte;
-                 effect:     Byte;
-               end;
-type
-  tCHUNK = tADTRACK2_EVENT;
-
-type
-  tOLD_VARIABLE_DATA1 = array[0..$0f] of array[0..$3f] of
-                        array[1..9]   of tOLD_CHUNK;
-type
-  tOLD_VARIABLE_DATA2 = array[0..7]   of array[1..18] of
-                        array[0..$3f] of tOLD_CHUNK;
-type
-  tVARIABLE_DATA = array[0..7]    of array[1..20] of
-                   array[0..$0ff] of tCHUNK;
-type
-  tPATTERN_DATA = array[0..15] of tVARIABLE_DATA;
-
-type
-  tByteSet = Set of Byte;
-
-const
-  INSTRUMENT_SIZE = SizeOf(tADTRACK2_INS);
-  CHUNK_SIZE = SizeOf(tCHUNK);
-  PATTERN_SIZE = 20*256*CHUNK_SIZE;
-
 const
   decay_bar_rise: Real = 10.0;
   decay_bar_fall: Real = 0.50;
@@ -90,10 +43,6 @@ const
                                          'Surprise! AdLib Tracker module',
                                          'Surprise! AdLib Tracker 2.0 module');
 var
-  old_songdata: tOLD_FIXED_SONGDATA;
-  old_hash_buffer: tOLD_VARIABLE_DATA1;
-  hash_buffer: tOLD_VARIABLE_DATA2;
-  buffer: array[0..PRED(SizeOf(tVARIABLE_DATA))] of Byte;
   songdata_source: String;
   songdata_title: String;
   load_flag: Byte;
