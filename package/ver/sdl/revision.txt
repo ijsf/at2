@@ -51,6 +51,7 @@ http://www.adlibtracker.net/files/revision.htm
    * fixed interface bug with ~xy effect command in 2nd effect column
    * fixed bug when entering notes for 4OP tracks in midiboard mode
      caused putting wrong instrument in left track of the pair
+   * fixed rearrange function (faulty reordering of tracks)
 
 
 * version 2.4.19

@@ -1595,7 +1595,7 @@ _jmp1:
         begin
           For temp2 := 0 to PRED(songdata.patt_len) do
             For temp1 := 1 to _rearrange_nm_tracks do
-              get_chunk(temp3,temp2,temp1,temp_pattern[_rearrange_tracklist_idx[temp1]][temp2]);
+              get_chunk(temp3,temp2,_rearrange_tracklist_idx[temp1],temp_pattern[temp1][temp2]);
           For temp2 := 0 to PRED(songdata.patt_len) do
             For temp1 := 1 to _rearrange_nm_tracks do
               put_chunk(temp3,temp2,temp1,temp_pattern[temp1][temp2]);
