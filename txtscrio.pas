@@ -903,7 +903,7 @@ end;
 procedure ShowCStr2(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; atr1,atr2: Byte);
 begin
   asm
-        mov     esi,dword ptr [str]
+        lea     esi,[str]
         mov     edi,dword ptr [dest]
         lodsb
         xor     ecx,ecx
