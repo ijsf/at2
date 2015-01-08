@@ -4420,6 +4420,7 @@ begin
         If (macro_ticklooper = 0) then
           macro_poll_proc;
 
+        fast_forward := FALSE;
         Inc(ticklooper);
         If (ticklooper >= IRQ_freq DIV tempo) then
               ticklooper := 0;

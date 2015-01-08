@@ -7,7 +7,7 @@ http://www.adlibtracker.net/files/revision.htm
 
 
 * version 2.3.53
-  released: 12/23/2014 (* 01/07/2015)
+  released: 12/23/2014 (* 01/08/2015)
 
    . changed hotkey for toggle of typing modes (hotkey: F11)
    . added toggle of line feed (hotkey: F12)
@@ -48,6 +48,9 @@ http://www.adlibtracker.net/files/revision.htm
    * fixed interface bugs in Instrument Editor window
    * fixed fast-forward/rewind outside Pattern Editor window;
      added functionality to Instrument Control panel
+   * fixed interface bug with ~xy effect command in 2nd effect column
+   * fixed bug when entering notes for 4OP tracks in midiboard mode
+     caused putting wrong instrument in left track of the pair
 
 
 * version 2.3.52

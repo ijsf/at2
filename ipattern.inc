@@ -622,8 +622,8 @@ begin
             begin
               show_str(08+pos3[(temp2-PRED(chan_pos))*4-2],10+temp1,'   ',attr2);
               show_str(08+pos3[(temp2-PRED(chan_pos))*4-1],10+temp1,'    ',LO(attr));
-              show_cstr(08+pos3[(temp2-PRED(chan_pos))*4], 10+temp1,'   '+
-                        '~'+dummy_str+'~',attr3,dummy_atr);
+              show_cstr_alt(08+pos3[(temp2-PRED(chan_pos))*4], 10+temp1,'   '+
+                            #10+dummy_str+#10,attr3,dummy_atr);
             end
           else
             Case pattern_layout of
@@ -641,12 +641,12 @@ begin
                               fx_digits[chunk.effect_def]+byte2hex(chunk.effect)+' ',LO(attr));
 
                    If (chunk.effect_def2 = 0) and (chunk.effect2 = 0) then
-                     show_cstr(08+pos3[(temp2-PRED(chan_pos))*4],10+temp1,'תתת'+
-                               '~'+dummy_str+'~',attr3,dummy_atr)
+                     show_cstr_alt(08+pos3[(temp2-PRED(chan_pos))*4],10+temp1,'תתת'+
+                                   #10+dummy_str+#10,attr3,dummy_atr)
                    else
-                     show_cstr(08+pos3[(temp2-PRED(chan_pos))*4],10+temp1,
-                               fx_digits[chunk.effect_def2]+byte2hex(chunk.effect2)+
-                               '~'+dummy_str+'~',attr3,dummy_atr);
+                     show_cstr_alt(08+pos3[(temp2-PRED(chan_pos))*4],10+temp1,
+                                   fx_digits[chunk.effect_def2]+byte2hex(chunk.effect2)+
+                                   #10+dummy_str+#10,attr3,dummy_atr);
                  end;
 
               1: begin
@@ -663,12 +663,12 @@ begin
                               fx_digits[chunk.effect_def]+byte2hex(chunk.effect)+' ',LO(attr));
 
                    If (chunk.effect_def2 = 0) and (chunk.effect2 = 0) then
-                     show_cstr(08+pos3[(temp2-PRED(chan_pos))*4],10+temp1,'ששש'+
-                               '~'+dummy_str+'~',attr3,dummy_atr)
+                     show_cstr_alt(08+pos3[(temp2-PRED(chan_pos))*4],10+temp1,'ששש'+
+                                   #10+dummy_str+#10,attr3,dummy_atr)
                    else
-                     show_cstr(08+pos3[(temp2-PRED(chan_pos))*4],10+temp1,
-                               fx_digits[chunk.effect_def2]+byte2hex(chunk.effect2)+
-                               '~'+dummy_str+'~',attr3,dummy_atr);
+                     show_cstr_alt(08+pos3[(temp2-PRED(chan_pos))*4],10+temp1,
+                                   fx_digits[chunk.effect_def2]+byte2hex(chunk.effect2)+
+                                   #10+dummy_str+#10,attr3,dummy_atr);
                  end;
 
               2: begin
@@ -685,12 +685,12 @@ begin
                               fx_digits[chunk.effect_def]+byte2hex(chunk.effect)+' ',LO(attr));
 
                    If (chunk.effect_def2 = 0) and (chunk.effect2 = 0) then
-                     show_cstr(08+pos3[(temp2-PRED(chan_pos))*4],10+temp1,'תשש'+
-                               '~'+dummy_str+'~',attr3,dummy_atr)
+                     show_cstr_alt(08+pos3[(temp2-PRED(chan_pos))*4],10+temp1,'תשש'+
+                                   #10+dummy_str+#10,attr3,dummy_atr)
                    else
-                     show_cstr(08+pos3[(temp2-PRED(chan_pos))*4],10+temp1,
-                               fx_digits[chunk.effect_def2]+byte2hex(chunk.effect2)+
-                               '~'+dummy_str+'~',attr3,dummy_atr);
+                     show_cstr_alt(08+pos3[(temp2-PRED(chan_pos))*4],10+temp1,
+                                   fx_digits[chunk.effect_def2]+byte2hex(chunk.effect2)+
+                                   #10+dummy_str+#10,attr3,dummy_atr);
                  end;
 
             end;
@@ -966,7 +966,7 @@ begin
                                   begin
                                     get_chunk(patt_nm,line_nm,PRED(curr_ch)+idx-1,chunk2);
                                     chunk2.note := 0;
-                                    If track_notes_ins then
+                                    If NOT track_notes or track_notes_ins then
                                       chunk2.instr_def := HI(_4op_to_test)
                                     else chunk2.instr_def := min(voice_table[PRED(curr_ch)+idx-1],1);
                                     If channel_flag[PRED(curr_ch)+idx-1] then
@@ -4065,7 +4065,7 @@ begin
                                   begin
                                     get_chunk(pattern,pattern_page,PRED(curr_ch)+idx-1,chunk2);
                                     chunk2.note := 0;
-                                    If track_notes_ins then
+                                    If NOT track_notes or track_notes_ins then
                                       chunk2.instr_def := HI(_4op_to_test)
                                     else chunk2.instr_def := min(voice_table[PRED(curr_ch)+idx-1],1);
                                     If channel_flag[PRED(curr_ch)+idx-1] then
