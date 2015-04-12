@@ -4791,7 +4791,8 @@ begin
 
       If (temp1 = 2) then
         begin
-          FillChar(pattdata^,SizeOf(pattdata^),0);
+          For temp := 1 to max_patterns DIV 8 do
+            FillChar(pattdata^[PRED(temp)],8*PATTERN_SIZE,0);
           PATTERN_ORDER_page_refresh(pattord_page);
           PATTERN_page_refresh(pattern_page);
           For temp2 := 0 to $7f do
@@ -4906,6 +4907,13 @@ begin
           add_bank_position('?song_variables_window?pos',-1,1);
           add_bank_position('?replace_window?pos',-1,1);
           add_bank_position('?replace_window?posfx',-1,1);
+          For temp := 1 to 255 do
+            begin
+              add_bank_position('?instrument_editor?'+byte2hex(temp)+'?carrier?hpos',-1,1);
+              add_bank_position('?instrument_editor?'+byte2hex(temp)+'?carrier?vpos',-1,1);
+              add_bank_position('?instrument_editor?'+byte2hex(temp)+'?modulator?hpos',-1,1);
+              add_bank_position('?instrument_editor?'+byte2hex(temp)+'?modulator?vpos',-1,1);
+            end;
           For temp := 1 to _rearrange_nm_tracks do _rearrange_tracklist_idx[temp] := temp;
           _rearrange_track_pos := 1;
         end

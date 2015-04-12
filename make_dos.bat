@@ -1,6 +1,6 @@
 @echo off
 rem -------------------------------------
-set VERSION=2.3.53
+set VERSION=2.3.54
 rem -------------------------------------
 if not exist *.exe goto :no_exe_file
 del *.exe >nul

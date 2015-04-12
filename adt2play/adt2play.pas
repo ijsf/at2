@@ -674,7 +674,7 @@ begin
       CWriteLn('   subz3ro''s',$09,0);
       CWriteLn('       ÄÂÄ       ÄÄ',$09,0);
       CWriteLn('  /´DLiB³R/´CK3R ³³ G3 PLAYER',$09,0);
-      CWriteLn('   ³       ³     ÄÄ      0.42',$09,0);
+      CWriteLn('   ³       ³     ÄÄ      0.43',$09,0);
       CWriteLn('',$07,0);
     end
   else begin
@@ -682,7 +682,7 @@ begin
          WriteLn('   subz3ro''s');
          WriteLn('       ÄÂÄ       ÄÄ');
          WriteLn('  /´DLiB³R/´CK3R ³³ G3 PLAYER');
-         WriteLn('   ³       ³     ÄÄ      0.42');
+         WriteLn('   ³       ³     ÄÄ      0.43');
          WriteLn;
        end;
 end;

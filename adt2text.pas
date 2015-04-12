@@ -7,14 +7,19 @@ unit AdT2text;
 interface
 
 const
-{__AT2VER__}at2ver  = '2.4.20';
-{__AT2DAT__}at2date = '01-08-2015';
-{__AT2LNK__}at2link = '9:11pm';
-
-{$IFDEF __TMT__}
+{__AT2VER__}at2ver  = '2.4.21';
+{__AT2DAT__}at2date = '04-12-2015';
+{__AT2LNK__}at2link = '5:50pm';
 
 const
+  _ADT2_TITLE_STRING_ = '/´DLiB TR/´CK3R ][';
+{$IFDEF __TMT__}
   _PLATFORM_STR_ = 'DOS';
+{$ELSE}
+  _PLATFORM_STR_ = 'SDL';
+{$ENDIF}
+
+{$IFDEF __TMT__}
 
 const
   ascii_line_01 = '           Ú-ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ--ùú               úù-¿';
@@ -35,18 +40,15 @@ const
   ascii_line_16 = '           ³ ~subz3ro/Altair~                 ~/´DLiB³R/´CK3R ³³ G3~  ú';
   ascii_line_17 = '           ³ `additional ideas:`               ~³       ³     ÄÄ~      ';
   ascii_line_18 = '           ³ ~Malfunction/Altair~                        ~'+at2ver+'~      ';
-  ascii_line_19 = '           ³ `special thanks:`                                      ú';
-  ascii_line_20 = '           ³ ~encore~                                               ù';
-  ascii_line_21 = '           ³ ~insane/Altair~        HOMEPAGE   www.adlibtracker.net ³';
-  ascii_line_22 = '           ³ ~ijsf~                 EMAiL  subz3ro.altair@gmail.com ³';
+  ascii_line_19 = '           ³ `special thanks:                                       ú';
+  ascii_line_20 = '           ³ ~Mikkel Hastrup~                                               ú';
+  ascii_line_21 = '           ³ ~Maan M. Hamze~        HOMEPAGE   www.adlibtracker.net ³';
+  ascii_line_22 = '           ³ ~Janwillem Jagersma~   EMAiL  subz3ro.alrair@gmail.com ³';
   ascii_line_23 = '           À-ÄÄÄÄÄÄÄÄÄÄ--ùú    úù-ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ-Ù';
 
 procedure C3WriteLn(str: String; atr1,atr2,atr3: Byte);
 
 {$ELSE}
-
-const
-  _PLATFORM_STR_ = 'SDL';
 
 const
   ascii_line_01 = 'Ú-ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ--ùú               úù-¿';
@@ -68,11 +70,10 @@ const
   ascii_line_17 = '³ `additional ideas:`               ~³       ³     ÄÄ~      ';
   ascii_line_18 = '³ ~Malfunction/Altair~                        ~'+at2ver+'~      ';
   ascii_line_19 = '³ `special thanks:`';
-  ascii_line_20 = '³ ~Dmitry Smagin~                                        ú';
-  ascii_line_21 = '³ ~Windfisch~                                            ù';
-  ascii_line_22 = '³ ~insane/Altair~        HOMEPAGE   www.adlibtracker.net ³';
-  ascii_line_23 = '³ ~encore~               EMAiL  subz3ro.alrair@gmail.com ³';
-
+  ascii_line_20 = '³ ~insane/Altair~                                        ù';
+  ascii_line_21 = '³ ~Florian Jung~                                         ú';
+  ascii_line_22 = '³ ~Dmitry Smagin~        HOMEPAGE   www.adlibtracker.net ³';
+  ascii_line_23 = '³ ~Janwillem Jagersma~   EMAiL  subz3ro.alrair@gmail.com ³';
   ascii_line_24 = 'À-ÄÄÄÄÄÄÄÄÄÄ--ùú    úù-ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ-Ù';
 
 procedure C3WriteLn(posX,PosY: Byte; str: String; atr1,atr2,atr3: Byte);
@@ -90,9 +91,9 @@ uses
 
 const
 {$IFDEF __TMT__}
-  LINES = 1071;
+  LINES = 1072;
 {$ELSE}
-  LINES = 1098;
+  LINES = 1099;
 {$ENDIF}
   help_data: array[1..LINES] of String[128] = (
     '@topic:general',
@@ -176,7 +177,7 @@ const
     '~^T~                       Toggle Transpose window',
     '~^X~                       Toggle Rearrange Tracks window',
     '~^1..^8~                   Quick-set octave',
-    '~[Alt] +,-~                Adjust overall volume',
+    '~[Alt] +,- (Up,Down)~      Adjust volume level of sound output',
     '~[Alt] C~                  Copy object to clipboard (with selection)',
     '~[Alt] P~                  Paste object from clipboard',
     '~[Alt] M~                  Toggle marking lines ON/OFF',
@@ -1225,7 +1226,8 @@ const
     'Slawomir Bubel (Malfunction/Altair), Daniel Illgen (insane/Altair),',
     'Mikkel Hastrup (encore), Florian Jung (Windfisch), Dmitry Smagin,',
     'Cecill Etheredge (ijsf), Sven Renner (NeuralNET),',
-    'Tyler Montbriand (Corona688), PissMasterPlus and Maan M. Hamze',
+    'Tyler Montbriand (Corona688), Janwillem Jagersma, PissMasterPlus,',
+    'and Mr. Maan M. Hamze :-)',
     '',
     '`Greetz fly to the following people:`',
     'Dragan Espenschied (drx/Bodenstandig 2000), Carl Peczynski (OxygenStar),',
@@ -1528,22 +1530,10 @@ end;
 {$ENDIF}
 
 procedure ShowStartMessage;
-
-var
-  temp: Byte;
-
 begin
-  For temp := 0 to 18 do
-    adt2_title[temp] := RotStrL('/´DLiB TR/´CK3R ][', ' ['+_PLATFORM_STR_+'] VER.'+at2ver+' ',temp);
-
-  adt2_title[18] := ' ['+_PLATFORM_STR_+'] VER.'+at2ver+' ';
-
-  For temp := 19 to 36 do
-     adt2_title[temp] := RotStrL(' ['+_PLATFORM_STR_+'] VER.'+at2ver+' ', '/´DLiB TR/´CK3R ][',temp-18);
-
 {$IFDEF __TMT__}
   WriteLn;
-  WriteLn(adt2_title[0],' coded by subz3ro/Altair');
+  WriteLn(_ADT2_TITLE_STRING_,' coded by subz3ro/Altair');
   WriteLn('            ',at2ver,' ',at2date,' ',at2link,'');
   WriteLn;
 {$ENDIF}

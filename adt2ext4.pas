@@ -2847,14 +2847,6 @@ _jmp2:
                kDOWN: If (fmreg_page < 255) then Inc(fmreg_page)
                       else If cycle_pattern then fmreg_page := 1;
 
-               kShUP: If shift_pressed then
-                        If (fmreg_page > 1) then Dec(fmreg_page)
-                        else If cycle_pattern then fmreg_page := 255;
-
-               kShDOWN: If shift_pressed then
-                          If (fmreg_page < 255) then Inc(fmreg_page)
-                          else If cycle_pattern then fmreg_page := 1;
-
                kPgUP: If (fmreg_page > 16) then Dec(fmreg_page,16)
                       else fmreg_page := 1;
 
@@ -3531,7 +3523,7 @@ _jmp2:
                  end;
 
              If (UpCase(CHAR(LO(is_environment.keystroke))) in ['+','-']) and
-                NOT shift_pressed and (fmreg_hpos in [29..32]) then
+                (fmreg_hpos = 29) then
                With songdata.instr_macros[instr].data[fmreg_page] do
                  begin
                    Case UpCase(CHAR(LO(is_environment.keystroke))) of
@@ -3541,10 +3533,9 @@ _jmp2:
 
                    If (fmreg_page < 255) then Inc(fmreg_page)
                    else If cycle_pattern then fmreg_page := 1;
-                  end;
+                 end;
 
-             If shift_pressed and ((is_environment.keystroke = kUP) or (is_environment.keystroke = kDOWN) or
-                                   (is_environment.keystroke = kShUP) or (is_environment.keystroke = kShDOWN)) then
+             If shift_pressed and ((is_environment.keystroke = kUP) or (is_environment.keystroke = kDOWN)) then
                begin
                  If (ptr_arpeggio_table <> 0) then
                    arpeggio_page := fmreg_page;
@@ -3913,11 +3904,11 @@ _jmp2:
                                arpeggio_page := min(1,songdata.macro_table[ptr_arpeggio_table].arpeggio.length)
                              else arpeggio_page := 255;
 
-               kUP,kShUP: If (arpeggio_page > 1) then Dec(arpeggio_page)
-                          else If cycle_pattern then arpeggio_page := 255;
+               kUP: If (arpeggio_page > 1) then Dec(arpeggio_page)
+                    else If cycle_pattern then arpeggio_page := 255;
 
-               kDOWN,kShDOWN: If (arpeggio_page < 255) then Inc(arpeggio_page)
-                              else If cycle_pattern then arpeggio_page := 1;
+               kDOWN: If (arpeggio_page < 255) then Inc(arpeggio_page)
+                      else If cycle_pattern then arpeggio_page := 1;
 
                kPgUP: If (arpeggio_page > 16) then Dec(arpeggio_page,16)
                       else arpeggio_page := 1;
@@ -4012,8 +4003,7 @@ _jmp2:
                         end;
              end;
 
-             If shift_pressed and ((is_environment.keystroke = kUP) or (is_environment.keystroke = kDOWN) or
-                                   (is_environment.keystroke = kShUP) or (is_environment.keystroke = kShDOWN)) then
+             If shift_pressed and ((is_environment.keystroke = kUP) or (is_environment.keystroke = kDOWN)) then
                begin
                  fmreg_page := arpeggio_page;
                  If (ptr_vibrato_table <> 0) then
@@ -4620,11 +4610,11 @@ _jmp2:
                                vibrato_page := min(1,songdata.macro_table[ptr_vibrato_table].vibrato.length)
                              else vibrato_page := 255;
 
-               kUP,kShUP: If (vibrato_page > 1) then Dec(vibrato_page)
-                          else If cycle_pattern then vibrato_page := 255;
+               kUP: If (vibrato_page > 1) then Dec(vibrato_page)
+                    else If cycle_pattern then vibrato_page := 255;
 
-               kDOWN,kShDOWN: If (vibrato_page < 255) then Inc(vibrato_page)
-                              else If cycle_pattern then vibrato_page := 1;
+               kDOWN: If (vibrato_page < 255) then Inc(vibrato_page)
+                      else If cycle_pattern then vibrato_page := 1;
 
                kPgUP: If (vibrato_page > 16) then Dec(vibrato_page,16)
                       else vibrato_page := 1;
@@ -4662,17 +4652,6 @@ _jmp2:
                           else If cycle_pattern then vibrato_page := 1;
                       end;
 
-               kCHplus,
-               kNPplus: If (songdata.macro_table[ptr_vibrato_table].
-                            vibrato.data[vibrato_page] < 127) then
-                          Inc(songdata.macro_table[ptr_vibrato_table].
-                              vibrato.data[vibrato_page]);
-               kCHmins,
-               kNPmins: If (songdata.macro_table[ptr_vibrato_table].
-                            vibrato.data[vibrato_page] > -127) then
-                          Dec(songdata.macro_table[ptr_vibrato_table].
-                              vibrato.data[vibrato_page]);
-
                kBkSPC: begin
                          songdata.macro_table[ptr_vibrato_table].
                          vibrato.data[vibrato_page] := 0;
@@ -4709,16 +4688,14 @@ _jmp2:
                         end;
              end;
 
-             If shift_pressed and ((is_environment.keystroke = kUP) or (is_environment.keystroke = kDOWN) or
-                                   (is_environment.keystroke = kShUP) or (is_environment.keystroke = kShDOWN)) then
+             If shift_pressed and ((is_environment.keystroke = kUP) or (is_environment.keystroke = kDOWN)) then
                begin
                  fmreg_page := vibrato_page;
                  If (ptr_arpeggio_table <> 0) then
                    arpeggio_page := vibrato_page;
                end;
 
-             If (UpCase(CHAR(LO(is_environment.keystroke))) in ['0'..'9','A'..'F','+','-']) and
-                NOT shift_pressed then
+             If (UpCase(CHAR(LO(is_environment.keystroke))) in ['0'..'9','A'..'F','+','-']) then
                With songdata.macro_table[ptr_vibrato_table].vibrato do
                  begin
                    nope := TRUE;
@@ -4746,8 +4723,14 @@ _jmp2:
                                       data[vibrato_page] := $7f
                                     else data[vibrato_page] := -$7f;
 
-                          '+': data[vibrato_page] := Abs(data[vibrato_page]);
-                          '-': data[vibrato_page] := -Abs(data[vibrato_page]);
+                          '+': begin
+                                 If (data[vibrato_page] < $7f) then Inc(data[vibrato_page]);
+                                 nope := FALSE;
+                               end;
+                          '-': begin
+                                 If (data[vibrato_page] > -$7f) then Dec(data[vibrato_page]);
+                                 nope := FALSE;
+                               end;
                         end;
 
                      3: Case UpCase(CHAR(LO(is_environment.keystroke))) of
@@ -4761,9 +4744,14 @@ _jmp2:
                                     else data[vibrato_page] :=
                                          -(Abs(data[vibrato_page]) AND $0f0+
                                            hex(CHAR(LO(is_environment.keystroke))));
-
-                          '+': data[vibrato_page] := Abs(data[vibrato_page]);
-                          '-': data[vibrato_page] := -Abs(data[vibrato_page]);
+                          '+': begin
+                                 If (data[vibrato_page] < $7f) then Inc(data[vibrato_page]);
+                                 nope := FALSE;
+                               end;
+                          '-': begin
+                                 If (data[vibrato_page] > -$7f) then Dec(data[vibrato_page]);
+                                 nope := FALSE;
+                               end;
                         end;
 
                    end;

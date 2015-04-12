@@ -942,17 +942,11 @@ begin { PATTERN_ORDER_edit }
                           end;
                       end;
 
-      kF7:     If (play_status <> isStopped) then
-                 begin
-                   fade_out_playback(FALSE);
-                   stop_playing;
-                   FillChar(ai_table,SizeOf(ai_table),0);
-                 end
-               else If debugging and replay_forbidden then
-                      begin
-                        fade_out_playback(FALSE);
-                        stop_playing;
-                 end;
+      kF7:     begin
+                 fade_out_playback(FALSE);
+                 stop_playing;
+                 If (play_status <> isStopped) then FillChar(ai_table,SizeOf(ai_table),0);
+               end;
       kF8,
       kAltF8,
       kShF8:   If play_single_patt and (play_status = isPaused) then

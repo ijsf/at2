@@ -57,7 +57,7 @@ uses
 {$IFNDEF __TMT__}
   SDL_Timer,
 {$ENDIF}
-  AdT2opl3,AdT2unit,AdT2sys,AdT2extn,AdT2ext4,AdT2text,AdT2apak,AdT2keyb,
+  AdT2opl3,AdT2unit,AdT2sys,AdT2extn,AdT2ext4,AdT2ext5,AdT2text,AdT2apak,AdT2keyb,
   TxtScrIO,StringIO,DialogIO,ParserIO;
 
 {$i instedit.inc}
@@ -372,8 +372,8 @@ begin
                       main_background+main_hi_stat_line);
     end;
 
-  If scankey(SC_LALT) or scankey(SC_RALT) then
-    If scankey(SC_PLUS) then
+  If alt_pressed and NOT ctrl_pressed then
+    If scankey(SC_PLUS) or scankey(SC_UP) then
       begin
         If (overall_volume < 63) then
           begin
@@ -381,7 +381,7 @@ begin
             set_global_volume;
           end;
       end
-    else If scankey(SC_MINUS2) then
+    else If scankey(SC_MINUS2) or scankey(SC_DOWN) then
            begin
              If (overall_volume > 0) then
                begin
@@ -438,7 +438,7 @@ begin
         main_background+main_border,'',
         main_background+main_title,double);
   Frame(screen_ptr,01,01,MAX_COLUMNS,MAX_PATTERN_ROWS+12,
-        main_background+main_border,'-'+ExpStrL('',20,' ')+'-',
+        main_background+main_border,'- '+_ADT2_TITLE_STRING_+' -',
         main_background+main_border,single);
   Frame(screen_ptr,02,02,24,07,
         status_background+status_border,' STATUS ',
@@ -585,17 +585,18 @@ begin
   If SameName(str+'=??,??,??',data) and
      (Length(data) < Length(str)+10) then
     begin
-{$IFDEF __TMT__}
       result.r := Str2num(Copy(data,Length(str)+2,2),10);
       result.g := Str2num(Copy(data,Length(str)+5,2),10);
       result.b := Str2num(Copy(data,Length(str)+8,2),10);
-{$ELSE}
-      result.r := Str2num(Copy(data,Length(str)+2,2),10) SHL 2;
-      result.g := Str2num(Copy(data,Length(str)+5,2),10) SHL 2;
-      result.b := Str2num(Copy(data,Length(str)+8,2),10) SHL 2;
-{$ENDIF}
       If (result.r <= 63) and (result.g <= 63) and (result.b <= 63) then
-        default := result;
+        begin
+          default := result;
+{$IFNDEF __TMT__}
+          default.r := default.r SHL 2;
+          default.g := default.g SHL 2;
+          default.b := default.b SHL 2;
+{$ENDIF}
+        end;
     end;
 end;
 

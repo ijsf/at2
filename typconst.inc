@@ -235,9 +235,9 @@ const
   kShF3   = $5600; kShRGHT = $4d36; kShTAB  = $0f00; kCtRbr  = $1b1d;
   kF4     = $3e00; kCtRGHT = $7400; kSPACE  = $3920; kCtrlF3 = $6000;
   kF5     = $3f00; kUP     = $4800; kBkSPC  = $0e08; kAltV   = $2f00;
-  kShF5   = $5800; kShUP   = $4838; kNPastr = $372a; kAstrsk = $092a;
+  kShF5   = $5800; kNPUp   = $4838; kNPastr = $372a; kAstrsk = $092a;
   kF6     = $4000; kDOWN   = $5000; kNPplus = $4e2b;
-  kShF6   = $5900; kShDOWN = $5032; kNPmins = $4a2d;
+  kShF6   = $5900; kNPDown = $5032; kNPmins = $4a2d;
   kF7     = $4100; kPgUP   = $4900; kAlt1   = $7800;
   kF8     = $4200; kNPPgUP = $4939; kAlt2   = $7900;
   kShF8   = $5b00; kCtPgUP = $8400; kAlt3   = $7a00;
@@ -982,7 +982,7 @@ const
   instrument_hi_mod:  Byte    = $0a;
   instrument_hi_car:  Byte    = $0b;
   instrument_context: Byte    = $0e;
-  instrument_adsr:    Byte    = $10;
+  instrument_adsr:    Byte    = $60;
   instrument_ai_off:  Byte    = $06;
   instrument_ai_on:   Byte    = $0d;
   instrument_ai_trig: Byte    = $0e;

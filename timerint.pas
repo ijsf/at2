@@ -32,19 +32,19 @@ procedure int08; interrupt;
 begin
   asm
 {$IFNDEF _32BIT}
-        cmp     word ptr timer_handler,0
+        cmp     word ptr [timer_handler],0
         jnz     @@1
-        cmp     word ptr timer_handler+2,0
+        cmp     word ptr [timer_handler+2],0
         jz      @@2
 @@1:    push    ds
         call    [timer_handler]
         pop     ds
-@@2:    mov     ax,word ptr ticks
-        mov     bx,word ptr ticks+2
+@@2:    mov     ax,word ptr [ticks]
+        mov     bx,word ptr [ticks+2]
         add     ax,1
         adc     bx,0
-        mov     word ptr ticks,ax
-        mov     word ptr ticks+2,bx
+        mov     word ptr [ticks],ax
+        mov     word ptr [ticks+2],bx
         inc     clock_ticks
         mov     ax,clock_ticks
         cmp     ax,clock_flag
@@ -70,7 +70,7 @@ begin
         jnz     @@2
         mov     clock_ticks,0
         pushfd
-        call    [oldint08]
+        call    oldint08
         jmp     @@ret
 @@2:    mov     al,60h
         out     20h,al

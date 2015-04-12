@@ -1503,19 +1503,13 @@ begin
                  PATTERN_page_refresh(pattern_page);
                end;
 
-      kF7:     If (play_status <> isStopped) then
-                 begin
-                   fade_out_playback(FALSE);
-                   debugging := FALSE;
-                   stop_playing;
-                   nope := TRUE;
-                   FillChar(ai_table,SizeOf(ai_table),0);
-                 end
-               else If debugging and replay_forbidden then
-                      begin
-                        fade_out_playback(FALSE);
-                        stop_playing;
-                      end;
+      kF7:     begin
+                 fade_out_playback(FALSE);
+                 debugging := FALSE;
+                 stop_playing;
+                 nope := TRUE;
+                 If (play_status <> isStopped) then FillChar(ai_table,SizeOf(ai_table),0);
+               end;
       kF8,
       kAltF8,
       kShF8:   If play_single_patt and (play_status = isPaused) then
@@ -2408,16 +2402,14 @@ begin
                                   hpos := 1;
                                 end;
 
-      kUP,
-      kShUP:   If shift_pressed and track_notes then
+      kUP:     If shift_pressed and track_notes then
                  If NOT (jump_mark_mode and mark_lines) and
                     (rec_correction < 9) then Inc(rec_correction)
                  else
                else If (page > 0) then Dec(page)
                     else If NOT marking and cycle_pattern then
                            page := PRED(songdata.patt_len);
-      kDOWN,
-      kShDOWN: If shift_pressed and track_notes then
+      kDOWN:   If shift_pressed and track_notes then
                  If NOT (jump_mark_mode and mark_lines) and
                     (rec_correction > 0) then Dec(rec_correction)
                  else
@@ -2483,6 +2475,9 @@ begin
                    else page := PRED(songdata.patt_len);
                  end
                else If pattern < PRED(max_patterns) then Inc(pattern);
+
+      kNPUp,
+      kNPDown: If NumLock then nope := TRUE;
 
       kNPPgUP: If NumLock then nope := TRUE
                else
@@ -3650,17 +3645,11 @@ begin
                         end;
                     end;
 
-      kF7:     If (play_status <> isStopped) then
-                 begin
-                   fade_out_playback(FALSE);
-                   stop_playing;
-                   FillChar(ai_table,SizeOf(ai_table),0);
-                 end
-               else If debugging and replay_forbidden then
-                      begin
-                        fade_out_playback(FALSE);
-                        stop_playing;
-                      end;
+      kF7:     begin
+                 fade_out_playback(FALSE);
+                 stop_playing;
+                 If (play_status <> isStopped) then FillChar(ai_table,SizeOf(ai_table),0);
+               end;
       kF8,
       kAltF8,
       kShF8:   If play_single_patt and (play_status = isPaused) then

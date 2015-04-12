@@ -155,8 +155,6 @@ procedure newint09; interrupt;
 begin
   asm
         mov     dword ptr [seconds_counter],0
-        push    eax
-        push    ebx
         in      al,60h
         xor     ebx,ebx
         mov     bx,ax
@@ -220,12 +218,8 @@ begin
         out     61h,al
         mov     al,20h
         out     20h,al
-        pop     ebx
-        pop     eax
         jmp     @@6
-@@5:    pop     ebx
-        pop     eax
-        pushfd
+@@5:    pushfd
         call    oldint09
 @@6:
   end;

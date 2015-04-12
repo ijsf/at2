@@ -4,7 +4,6 @@
         procedure decay_bars_refresh;
         function  _vol_bar_str(value: Byte): String;
         procedure status_refresh;
-        procedure slide_show;
         procedure trace_update_proc;
 }
 
@@ -602,41 +601,6 @@ begin
                       pattern_bckg+pattern_border);
            end;
       Inc(chan);
-    end;
-end;
-
-procedure slide_show;
-begin
-{$IFDEF __TMT__}
-  _last_debug_str_ := _debug_str_;
-  _debug_str_ := 'REALTIME.INC:slide_show';
-{$ENDIF}
-  Case slide_pos of
-    00..17: show_str(01+(MAX_COLUMNS-18) DIV 2,01,adt2_title[slide_pos],
-                     main_background+main_title);
-    18..80: show_str(01+(MAX_COLUMNS-18) DIV 2,01,adt2_title[18],
-                     main_background+main_title);
-    81..98: show_str(01+(MAX_COLUMNS-18) DIV 2,01,adt2_title[slide_pos-62],
-                     main_background+main_title);
-    else ;
-  end;
-
-  If (slide_pos < 150) then
-{$IFDEF __TMT__}
-    begin
-      Inc(slide_pos,SUCC(fps_down_factor DIV 3));
-      If (slide_pos >= 98) then
-        show_str(01+(MAX_COLUMNS-18) DIV 2,01,adt2_title[0],
-                 main_background+main_title);
-      If (slide_pos > 150) then slide_pos := 150;
-    end
-{$ELSE}
-    Inc(slide_pos)
-{$ENDIF}
-  else
-    begin
-      slide_pos := 0;
-      do_slide := FALSE;
     end;
 end;
 

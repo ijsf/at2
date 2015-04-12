@@ -2501,6 +2501,8 @@ begin
   scroll_pos4 := BYTE_NULL;
   PATTERN_ORDER_page_refresh(pattord_page);
   PATTERN_page_refresh(pattern_page);
+  status_refresh;
+  decay_bars_refresh;
   ScreenMemCopy(screen_ptr,screen_ptr_backup);
   screen_ptr := screen_ptr_backup;
   SetCursor(cursor_backup);

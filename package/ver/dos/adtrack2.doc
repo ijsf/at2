@@ -6,7 +6,7 @@
                                   ÄÂÄ       ÄÄ                              ³
                              /´DLiB³R/´CK3R ³³ G3                           ³
                               ³       ³     ÄÄ                              ³
-                                        2.3.53                              ³
+                                        2.3.54                              ³
                                                                             ³
                                                                             ³
                                                                             ³
@@ -330,7 +330,7 @@
  ^T                       Toggle Transpose window
  ^X                       Toggle Rearrange Tracks window
  ^1..^8                   Quick-set octave
- [Alt] +,-                Adjust overall volume
+ [Alt] +,- (Up,Down)      Adjust volume level of sound output
  [Alt] C                  Copy object to clipboard (with selection)
  [Alt] P                  Paste object from clipboard
  [Alt] M                  Toggle marking lines ON/OFF
@@ -2657,6 +2657,7 @@
 
  Cecill Etheredge (ijsf)
  Daniel Illgen (insane/Altair)
+ Janwillem Jagersma
  Maan M. Hamze
  Mikkel Hastrup (encore)
  PissMasterPlus
@@ -2686,4 +2687,4 @@
 ù                                                                           ³
 À-ÄÄÄÄÄÄÄÄÄÄÄÄÄ--ùú           úù-ÄÄÄÄÄÄÄ--ùú                 úù-ÄÄÄÄÄÄÄÄÄÄÄ-Ù
 
- This document was last updated on December 23, 2014.
+ This document was last updated on February 13, 2015.

@@ -22,6 +22,7 @@ const
 var
   fade_buf,fade_buf2: tFADE_BUF;
   temp,index: Word;
+  free_mem: Longint;
   opl3detected: Boolean;
   dos_dir: String;
 
@@ -160,20 +161,21 @@ begin { MAIN }
   If _debug_ then WriteLn('--- detecting available linear frame buffer');
   If _debug_ then WriteLn('--- ## ',MemAvail/1024/1000:0:2,'MB lfb found');
 
-  If NOT (MemAvail DIV 1024 > 5*1024) then
+  free_mem := MemAvail;
+  If NOT (free_mem DIV 1024 > 5*1024) then
     begin
       WriteLn('ERROR(1) - Insufficient memory!');
       HALT(1);
     end;
 
-  temp := $80;
+  temp := 128;
   Repeat
-    If (MemAvail > PATTERN_SIZE*temp) then
+    If (free_mem > PATTERN_SIZE*temp) then
       begin
         max_patterns := temp;
         BREAK;
       end
-    else If (temp-$10 >= $10) then Dec(temp,$10)
+    else If (temp-16 >= 16) then Dec(temp,16)
          else begin
                 WriteLn('ERROR(1) - Insufficient memory!');
                 HALT(1);
@@ -298,7 +300,7 @@ begin { MAIN }
 
 {$IFDEF __TMT__}
 
-  WriteLn('Available memory: ',MemAvail DIV 1024,'k (DOS: ',dos_memavail*16 DIV 1024,'k)');
+  WriteLn('Available memory: ',free_mem DIV 1024,'k (DOS: ',dos_memavail*16 DIV 1024,'k)');
   Delay(3000);
   fade_speed := 16;
   fade_buf.action := first;
@@ -422,7 +424,6 @@ begin { MAIN }
   keyboard_init;
   stop_playing;
 
-  do_slide := TRUE;
   do_synchronize := FALSE;
 
 {$IFDEF __TMT__}

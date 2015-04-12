@@ -6,6 +6,24 @@ For complete AT2 revision history refer to:
 http://www.adlibtracker.net/files/revision.htm
 
 
+* version 2.3.54
+  released: 04/12/2015
+
+  . improved program stability (hopefully :)
+  . fixed/improved precision of playback calibration with pattern jumps
+  . fixed typing in effect columns with NUMPAD keys
+  . fixed note trailing of some instruments when playback is stopped
+  . added alternative key combo for setting volume level of sound output
+    on keyboards without NUMPAD keys (hotkey: [Alt] Up,Down)
+  . numerous changes of code for improving program stability under DPMI
+  . fixed occasional playback mute issue with F7 key in MBoard mode
+  . fixed occasional messy behavior of +/- keys in Macro Editor window
+  . fixed/improved fast-forward/rewind speed
+  . added 'per instrument' positional memory to Instrument Editor window
+  . improved track data processing during playback
+  . AT2 player updated to version 0.43
+
+
 * version 2.3.53
   released: 12/23/2014 (* 01/08/2015)
 
