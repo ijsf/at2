@@ -40,8 +40,8 @@ const
   ascii_line_16 = '           ³ ~subz3ro/Altair~                 ~/´DLiB³R/´CK3R ³³ G3~  ú';
   ascii_line_17 = '           ³ `additional ideas:`               ~³       ³     ÄÄ~      ';
   ascii_line_18 = '           ³ ~Malfunction/Altair~                        ~'+at2ver+'~      ';
-  ascii_line_19 = '           ³ `special thanks:                                       ú';
-  ascii_line_20 = '           ³ ~Mikkel Hastrup~                                               ú';
+  ascii_line_19 = '           ³ `special thanks:`                                      ú';
+  ascii_line_20 = '           ³ ~Mikkel Hastrup~                                       ú';
   ascii_line_21 = '           ³ ~Maan M. Hamze~        HOMEPAGE   www.adlibtracker.net ³';
   ascii_line_22 = '           ³ ~Janwillem Jagersma~   EMAiL  subz3ro.alrair@gmail.com ³';
   ascii_line_23 = '           À-ÄÄÄÄÄÄÄÄÄÄ--ùú    úù-ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ-Ù';
