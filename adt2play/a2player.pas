@@ -328,6 +328,7 @@ const
   next_line: Byte = 0;
   play_status: tPLAY_STATUS = isStopped;
   replay_forbidden: Boolean = TRUE;
+  force_macro_keyon: Boolean = FALSE;
 
 type
   tDECAY_BAR = Record
@@ -459,6 +460,7 @@ var
                                    fmreg_pos,arpg_pos,vib_pos: Word;
                                    fmreg_count,fmreg_duration,arpg_count,
                                    vib_count,vib_delay: Byte;
+                                   vib_paused: Boolean;
                                    fmreg_table,arpg_table,vib_table: Byte;
                                    arpg_note: Byte;
                                    vib_freq: Word;
@@ -760,8 +762,12 @@ end;
 
 procedure change_frequency(chan: Byte; freq: Word);
 begin
+  macro_table[chan].vib_paused := TRUE;
   change_freq(chan,freq);
+  macro_table[chan].vib_count := 1;
+  macro_table[chan].vib_pos := 0;
   macro_table[chan].vib_freq := freq;
+  macro_table[chan].vib_paused := FALSE;
 end;
 
 function _macro_speedup: Word; assembler;
@@ -789,7 +795,7 @@ procedure key_off(chan: Byte);
 begin
   freq_table[chan] := LO(freq_table[chan])+
                      (HI(freq_table[chan]) AND NOT $20) SHL 8;
-  change_frequency(chan,freq_table[chan]);
+  change_freq(chan,freq_table[chan]);
   event_table[chan].note := event_table[chan].note OR keyoff_flag;
 end;
 
@@ -826,6 +832,19 @@ var
   temp: Byte;
 
 begin
+{$IFNDEF __TMT__}
+  // ** OPL3 emulation workaround **
+  // force muted instrument volume with missing ADSR instrument data
+  // when there is additionally no FM-reg macro defined for the instrument
+  If is_ins_adsr_data_empty(voice_table[chan]) and
+     NOT (songdata.instr_macros[voice_table[chan]].length <> 0) and
+	 NOT replay_forbidden then
+    begin
+      modulator := 63;
+      carrier := 63;
+    end;
+{$ENDIF}
+
   If (modulator <> BYTE_NULL) then
     begin
       temp := modulator;
@@ -900,6 +919,7 @@ begin
   macro_table[chan].arpg_table := songdata.instr_macros[ins].arpeggio_table;
   macro_table[chan].arpg_note := note;
   macro_table[chan].vib_count := 1;
+  macro_table[chan].vib_paused := FALSE;
   macro_table[chan].vib_pos := 0;
   macro_table[chan].vib_table := songdata.instr_macros[ins].vibrato_table;
   macro_table[chan].vib_freq := freq;
@@ -3810,7 +3830,6 @@ var
 
 var
   _debug_str_bak_: String;
-  _force_macro_key_on: Boolean;
 
 function _ins_adsr_data_empty(ins: Byte): Boolean;
 begin
@@ -3867,7 +3886,7 @@ begin
                            With data[fmreg_pos] do
                              begin
                                // force KEY-ON with missing ADSR instrument data
-                               _force_macro_key_on := FALSE;
+                               force_macro_keyon := FALSE;
                                If (fmreg_pos = 1) then
                                  If _ins_adsr_data_empty(voice_table[chan]) and
                                     NOT (songdata.dis_fmreg_col[fmreg_table][0] and
@@ -3878,7 +3897,7 @@ begin
                                          songdata.dis_fmreg_col[fmreg_table][13] and
                                          songdata.dis_fmreg_col[fmreg_table][14] and
                                          songdata.dis_fmreg_col[fmreg_table][15]) then
-                                   _force_macro_key_on := TRUE;
+                                   force_macro_keyon := TRUE;
 
                                If NOT songdata.dis_fmreg_col[fmreg_table][0] then
                                  fmpar_table[chan].adsrw_mod.attck := fm_data.ATTCK_DEC_modulator SHR 4;
@@ -3968,7 +3987,7 @@ begin
                                update_carrier_adsrw(chan);
                                update_fmpar(chan);
 
-                               If _force_macro_key_on or
+                               If force_macro_keyon or
                                   NOT (fm_data.FEEDBACK_FM OR $80 <> fm_data.FEEDBACK_FM) then
                                  output_note(event_table[chan].note,
                                              event_table[chan].instr_def,chan,FALSE);
@@ -4026,7 +4045,8 @@ begin
               else Inc(arpg_count);
 
           With songdata.macro_table[vib_table].vibrato do
-            If (vib_table <> 0) and (speed <> 0) then
+            If NOT vib_paused and
+               (vib_table <> 0) and (speed <> 0) then
               If (vib_count = speed) then
                 If (vib_delay <> 0) then Dec(vib_delay)
                 else begin

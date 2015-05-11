@@ -1,7 +1,5 @@
 unit AdT2unit;
-{$IFDEF __TMT__}
-{$S-,Q-,R-,V-,B-,X+}
-{$ELSE}
+{$IFNDEF __TMT__}
 {$PACKRECORDS 1}
 {$ENDIF}
 interface
@@ -40,6 +38,7 @@ const
   skip_macro_flag:   Boolean   = FALSE;
   max_patterns:      Byte      = 128;
   jump_mark_mode:    Boolean   = FALSE;
+  force_macro_keyon: Boolean   = FALSE;
 
 const
   def_vibtrem_speed_factor: Byte = 1;
@@ -126,6 +125,7 @@ var
                                    fmreg_pos,arpg_pos,vib_pos: Word;
                                    fmreg_count,fmreg_duration,arpg_count,
                                    vib_count,vib_delay: Byte;
+                                   vib_paused: Boolean;
                                    fmreg_table,arpg_table,vib_table: Byte;
                                    arpg_note: Byte;
                                    vib_freq: Word;
@@ -256,6 +256,8 @@ function  nFreq(note: Byte): Word;
 function  calc_pattern_pos(pattern: Byte): Byte;
 function  concw(Lo,Hi: Byte): Word;
 function  ins_parameter(ins,param: Byte): Byte;
+function  is_chan_adsr_data_empty(chan: Byte): Boolean;
+function  is_ins_adsr_data_empty(ins: Byte): Boolean;
 function  scale_volume(volume,scale_factor: Byte): Byte;
 function  _macro_speedup: Word;
 procedure calibrate_player(order,line: Byte; status_filter: Boolean;
@@ -336,6 +338,23 @@ procedure fade_out_playback(fade_screen: Boolean);
 const
   ticklooper: Longint = 0;
   macro_ticklooper: Longint = 0;
+
+const
+  MAX_NUM_BANK_POSITIONS = 1000;
+
+const
+  bank_position_list_size: Longint = 0;
+
+var
+  bank_position_list:
+    array[1..MAX_NUM_BANK_POSITIONS] of Record
+                                          bank_name: String;
+                                          bank_size: Longint;
+                                          bank_position: Longint;
+                                        end;
+
+function  get_bank_position(bank_name: String; bank_size: Longint): Longint;
+procedure add_bank_position(bank_name: String; bank_size: Longint; bank_position: Longint);
 
 implementation
 
@@ -553,6 +572,32 @@ begin
   ins_parameter := result;
 end;
 
+function is_chan_adsr_data_empty(chan: Byte): Boolean;
+begin
+  is_chan_adsr_data_empty :=
+    (fmpar_table[chan].adsrw_car.attck = 0) and
+    (fmpar_table[chan].adsrw_mod.attck = 0) and
+    (fmpar_table[chan].adsrw_car.dec = 0) and
+    (fmpar_table[chan].adsrw_mod.dec = 0) and
+    (fmpar_table[chan].adsrw_car.sustn = 0) and
+    (fmpar_table[chan].adsrw_mod.sustn = 0) and
+    (fmpar_table[chan].adsrw_car.rel = 0) and
+    (fmpar_table[chan].adsrw_mod.rel = 0);
+end;
+
+function is_ins_adsr_data_empty(ins: Byte): Boolean;
+begin
+  is_ins_adsr_data_empty :=
+    (ins_parameter(ins,5) SHR 4 = 0) and
+    (ins_parameter(ins,4) SHR 4 = 0) and
+    (ins_parameter(ins,5) AND $0f = 0) and
+    (ins_parameter(ins,4) AND $0f = 0) and
+    (ins_parameter(ins,7) SHR 4 = 0) and
+    (ins_parameter(ins,6) SHR 4 = 0) and
+    (ins_parameter(ins,7) AND $0f = 0) and
+    (ins_parameter(ins,6) AND $0f = 0);
+end;
+
 function get_event(pattern,line,channel: Byte): tCHUNK;
 begin
   asm
@@ -629,8 +674,12 @@ end;
 
 procedure change_frequency(chan: Byte; freq: Word);
 begin
+  macro_table[chan].vib_paused := TRUE;
   change_freq(chan,freq);
+  macro_table[chan].vib_count := 1;
+  macro_table[chan].vib_pos := 0;
   macro_table[chan].vib_freq := freq;
+  macro_table[chan].vib_paused := FALSE;
 end;
 
 procedure update_timer(Hz: Longint);
@@ -652,7 +701,7 @@ procedure key_off(chan: Byte);
 begin
   freq_table[chan] := LO(freq_table[chan])+
                      (HI(freq_table[chan]) AND NOT $20) SHL 8;
-  change_frequency(chan,freq_table[chan]);
+  change_freq(chan,freq_table[chan]);
   event_table[chan].note := event_table[chan].note OR keyoff_flag;
 end;
 
@@ -689,6 +738,18 @@ var
   temp: Byte;
 
 begin
+{$IFNDEF __TMT__}
+  // ** OPL3 emulation workaround **
+  // force muted instrument volume with missing channel ADSR data
+  // when there is additionally no FM-reg macro defined for this instrument
+  If is_chan_adsr_data_empty(chan) and
+     NOT (songdata.instr_macros[voice_table[chan]].length <> 0) then
+    begin
+      modulator := 63;
+      carrier := 63;
+    end;
+{$ENDIF}
+
   If (modulator <> BYTE_NULL) then
     begin
       temp := modulator;
@@ -888,6 +949,7 @@ begin
   macro_table[chan].arpg_table := songdata.instr_macros[ins].arpeggio_table;
   macro_table[chan].arpg_note := note;
   macro_table[chan].vib_count := 1;
+  macro_table[chan].vib_paused := FALSE;
   macro_table[chan].vib_pos := 0;
   macro_table[chan].vib_table := songdata.instr_macros[ins].vibrato_table;
   macro_table[chan].vib_freq := freq;
@@ -3730,24 +3792,10 @@ var
   chan: Byte;
   finished_flag: Word;
 
-var
-  _force_macro_key_on: Boolean;
 {$IFDEF __TMT__}
+var
   _debug_str_bak_: String;
 {$ENDIF}
-
-function _ins_adsr_data_empty(ins: Byte): Boolean;
-begin
-  _ins_adsr_data_empty :=
-    (ins_parameter(ins,5) SHR 4 = 0) and
-    (ins_parameter(ins,4) SHR 4 = 0) and
-    (ins_parameter(ins,5) AND $0f = 0) and
-    (ins_parameter(ins,4) AND $0f = 0) and
-    (ins_parameter(ins,7) SHR 4 = 0) and
-    (ins_parameter(ins,6) SHR 4 = 0) and
-    (ins_parameter(ins,7) AND $0f = 0) and
-    (ins_parameter(ins,6) AND $0f = 0);
-end;
 
 begin
 {$IFDEF __TMT__}
@@ -3793,9 +3841,9 @@ begin
                            With data[fmreg_pos] do
                              begin
                                // force KEY-ON with missing ADSR instrument data
-                               _force_macro_key_on := FALSE;
+                               force_macro_keyon := FALSE;
                                If (fmreg_pos = 1) then
-                                 If _ins_adsr_data_empty(voice_table[chan]) and
+                                 If is_ins_adsr_data_empty(voice_table[chan]) and
                                     NOT (songdata.dis_fmreg_col[fmreg_table][0] and
                                          songdata.dis_fmreg_col[fmreg_table][1] and
                                          songdata.dis_fmreg_col[fmreg_table][2] and
@@ -3804,7 +3852,7 @@ begin
                                          songdata.dis_fmreg_col[fmreg_table][13] and
                                          songdata.dis_fmreg_col[fmreg_table][14] and
                                          songdata.dis_fmreg_col[fmreg_table][15]) then
-                                   _force_macro_key_on := TRUE;
+                                   force_macro_keyon := TRUE;
 
                                If NOT songdata.dis_fmreg_col[fmreg_table][0] then
                                  fmpar_table[chan].adsrw_mod.attck := fm_data.ATTCK_DEC_modulator SHR 4;
@@ -3894,7 +3942,7 @@ begin
                                update_carrier_adsrw(chan);
                                update_fmpar(chan);
 
-                               If _force_macro_key_on or
+                               If force_macro_keyon or
                                   NOT (fm_data.FEEDBACK_FM OR $80 <> fm_data.FEEDBACK_FM) then
                                  output_note(event_table[chan].note,
                                              event_table[chan].instr_def,chan,FALSE);
@@ -3952,7 +4000,8 @@ begin
               else Inc(arpg_count);
 
           With songdata.macro_table[vib_table].vibrato do
-            If (vib_table <> 0) and (speed <> 0) then
+            If NOT vib_paused and
+               (vib_table <> 0) and (speed <> 0) then
               If (vib_count = speed) then
                 If (vib_delay <> 0) then Dec(vib_delay)
                 else begin
@@ -5456,6 +5505,73 @@ begin
 {$IFDEF __TMT__}
     end;
 {$ENDIF}
+end;
+
+function get_bank_position(bank_name: String; bank_size: Longint): Longint;
+
+var
+  idx: Longint;
+  result: Longint;
+
+begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
+  _debug_str_ := 'ADT2UNIT.PAS:get_bank_position';
+{$ENDIF}
+  result := 0;
+  bank_name := CutStr(Upper_filename(bank_name));
+  For idx := 1 to bank_position_list_size do
+    If (bank_position_list[idx].bank_name = bank_name) and
+       ((bank_position_list[idx].bank_size = bank_size) or
+        (bank_size = -1)) then
+      begin
+        result := bank_position_list[idx].bank_position;
+        BREAK;
+      end;
+  get_bank_position := result;
+end;
+
+procedure add_bank_position(bank_name: String; bank_size: Longint; bank_position: Longint);
+
+var
+  idx,idx2: Longint;
+  found_flag: Boolean;
+
+begin
+{$IFDEF __TMT__}
+  _last_debug_str_ := _debug_str_;
+  _debug_str_ := 'ADT2UNIT.PAS:add_bank_position';
+{$ENDIF}
+  found_flag := FALSE;
+  bank_name := CutStr(Upper_filename(bank_name));
+  For idx := 1 to bank_position_list_size do
+    If (bank_position_list[idx].bank_name = bank_name) and
+       ((bank_position_list[idx].bank_size = bank_size) or
+        (bank_size = -1)) then
+      begin
+        found_flag := TRUE;
+        idx2 := idx;
+        BREAK;
+      end;
+
+  If found_flag then
+    begin
+      bank_position_list[idx2].bank_position := bank_position;
+      EXIT;
+    end;
+
+  If (bank_position_list_size < MAX_NUM_BANK_POSITIONS) then
+    Inc(bank_position_list_size)
+  else
+    begin
+      bank_position_list_size := MAX_NUM_BANK_POSITIONS;
+      For idx := 1 to PRED(bank_position_list_size) do
+        bank_position_list[idx] := bank_position_list[idx+1];
+    end;
+
+  bank_position_list[bank_position_list_size].bank_name := bank_name;
+  bank_position_list[bank_position_list_size].bank_size := bank_size;
+  bank_position_list[bank_position_list_size].bank_position := bank_position;
 end;
 
 end.

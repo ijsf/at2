@@ -10,7 +10,7 @@ http://www.adlibtracker.net/files/revision.htm
 
 
 * version 2.4.21
-  released: 04/12/2015
+  released: 04/12/2015 (* 05/11/2015)
 
   . fixed/improved precision of playback calibration with pattern jumps
   . fixed typing in effect columns with NUMPAD keys
@@ -22,6 +22,11 @@ http://www.adlibtracker.net/files/revision.htm
   . fixed/improved fast-forward/rewind speed
   . added 'per instrument' positional memory to Instrument Editor window
   . improved track data processing during playback
+  * fixed interface bug (misplaced cursor) in Instrument Editor window
+  * added option to turn off positional memory for Instrument Editor (refer to
+    option 'remember_ins_pos' in config file)
+  * fixed sound glitch in OPL3 emulation for channels with null ADSR data
+  * fixed some bugs in Macro Arpeggio / Vibrato performer
 
 
 * version 2.4.20

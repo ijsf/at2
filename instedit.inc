@@ -1448,15 +1448,21 @@ begin { INSTRUMENT_CONTROL_edit }
   inst := Addr(songdata.instr_data[instrum_page]);
   If (inst^.perc_voice in [0,1]) then carrier := TRUE
   else carrier := FALSE;
-  If carrier then
+  If NOT remember_ins_pos then
     begin
-      hpos := min(get_bank_position('?instrument_editor?'+byte2hex(instrum_page)+'?carrier?hpos',-1),1);
-      vpos := min(get_bank_position('?instrument_editor?'+byte2hex(instrum_page)+'?carrier?vpos',-1),1);
+      hpos := 1;
+      vpos := 1;
     end
-  else begin
-         hpos := min(get_bank_position('?instrument_editor?'+byte2hex(instrum_page)+'?modulator?hpos',-1),1);
-         vpos := min(get_bank_position('?instrument_editor?'+byte2hex(instrum_page)+'?modulator?vpos',-1),1);
-       end;
+  else
+    If carrier then
+      begin
+        hpos := min(get_bank_position('?instrument_editor?'+byte2hex(instrum_page)+'?carrier?hpos',-1),1);
+        vpos := min(get_bank_position('?instrument_editor?'+byte2hex(instrum_page)+'?carrier?vpos',-1),1);
+      end
+    else begin
+           hpos := min(get_bank_position('?instrument_editor?'+byte2hex(instrum_page)+'?modulator?hpos',-1),1);
+           vpos := min(get_bank_position('?instrument_editor?'+byte2hex(instrum_page)+'?modulator?vpos',-1),1);
+         end;
 _jmp1:
   If _force_program_quit then EXIT;
 
@@ -2075,27 +2081,29 @@ _jmp1:
                  end;
 
         kENTER:  begin
-                   If carrier then
-                     begin
-                       add_bank_position('?instrument_editor?'+byte2hex(instrum_page)+'?carrier?hpos',-1,hpos);
-                       add_bank_position('?instrument_editor?'+byte2hex(instrum_page)+'?carrier?vpos',-1,vpos);
-                     end
-                   else begin
-                          add_bank_position('?instrument_editor?'+byte2hex(instrum_page)+'?modulator?hpos',-1,hpos);
-                          add_bank_position('?instrument_editor?'+byte2hex(instrum_page)+'?modulator?vpos',-1,vpos);
-                        end;
+                   If remember_ins_pos then
+                     If carrier then
+                       begin
+                         add_bank_position('?instrument_editor?'+byte2hex(instrum_page)+'?carrier?hpos',-1,hpos);
+                         add_bank_position('?instrument_editor?'+byte2hex(instrum_page)+'?carrier?vpos',-1,vpos);
+                       end
+                     else begin
+                            add_bank_position('?instrument_editor?'+byte2hex(instrum_page)+'?modulator?hpos',-1,hpos);
+                            add_bank_position('?instrument_editor?'+byte2hex(instrum_page)+'?modulator?vpos',-1,vpos);
+                          end;
                    If (inst^.perc_voice in [0,1]) then
                      begin
                        carrier := NOT carrier;
-                       If carrier then
-                         begin
-                           hpos := get_bank_position('?instrument_editor?'+byte2hex(instrum_page)+'?carrier?hpos',-1);
-                           vpos := get_bank_position('?instrument_editor?'+byte2hex(instrum_page)+'?carrier?vpos',-1);
-                         end
-                       else begin
-                              hpos := get_bank_position('?instrument_editor?'+byte2hex(instrum_page)+'?modulator?hpos',-1);
-                              vpos := get_bank_position('?instrument_editor?'+byte2hex(instrum_page)+'?modulator?vpos',-1);
-                            end;
+                       If remember_ins_pos then
+                         If carrier then
+                           begin
+                             hpos := min(get_bank_position('?instrument_editor?'+byte2hex(instrum_page)+'?carrier?hpos',-1),1);
+                             vpos := min(get_bank_position('?instrument_editor?'+byte2hex(instrum_page)+'?carrier?vpos',-1),1);
+                           end
+                         else begin
+                                hpos := min(get_bank_position('?instrument_editor?'+byte2hex(instrum_page)+'?modulator?hpos',-1),1);
+                                vpos := min(get_bank_position('?instrument_editor?'+byte2hex(instrum_page)+'?modulator?vpos',-1),1);
+                              end;
                      end;
                  end;
         else nope := TRUE;
@@ -2125,15 +2133,16 @@ _end:
 {$ENDIF}
   until (nope and (fkey = kESC)) or _force_program_quit;
 
-  If carrier then
-    begin
-      add_bank_position('?instrument_editor?'+byte2hex(instrum_page)+'?carrier?hpos',-1,hpos);
-      add_bank_position('?instrument_editor?'+byte2hex(instrum_page)+'?carrier?vpos',-1,vpos);
-    end
-  else begin
-         add_bank_position('?instrument_editor?'+byte2hex(instrum_page)+'?modulator?hpos',-1,hpos);
-         add_bank_position('?instrument_editor?'+byte2hex(instrum_page)+'?modulator?vpos',-1,vpos);
-       end;
+  If remember_ins_pos then
+    If carrier then
+      begin
+        add_bank_position('?instrument_editor?'+byte2hex(instrum_page)+'?carrier?hpos',-1,hpos);
+        add_bank_position('?instrument_editor?'+byte2hex(instrum_page)+'?carrier?vpos',-1,vpos);
+      end
+    else begin
+           add_bank_position('?instrument_editor?'+byte2hex(instrum_page)+'?modulator?hpos',-1,hpos);
+           add_bank_position('?instrument_editor?'+byte2hex(instrum_page)+'?modulator?vpos',-1,vpos);
+         end;
 
   Dec(xstart);
   HideCursor;

@@ -780,6 +780,7 @@ const
   linefeed:           Boolean = TRUE;
   update_ins:         Boolean = FALSE;
   cycle_pattern:      Boolean = TRUE;
+  remember_ins_pos:   Boolean = TRUE;
   command_typing:     Byte    = 1;
   backspace_dir:      Byte    = 1;
   mark_line:          Byte    = 4;

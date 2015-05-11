@@ -1,15 +1,13 @@
 unit AdT2text;
-{$IFDEF __TMT__}
-{$S-,Q-,R-,V-,B-,X+}
-{$ELSE}
+{$IFNDEF __TMT__}
 {$PACKRECORDS 1}
 {$ENDIF}
 interface
 
 const
 {__AT2VER__}at2ver  = '2.4.21';
-{__AT2DAT__}at2date = '04-12-2015';
-{__AT2LNK__}at2link = '5:50pm';
+{__AT2DAT__}at2date = '05-11-2015';
+{__AT2LNK__}at2link = '12:24pm';
 
 const
   _ADT2_TITLE_STRING_ = '/´DLiB TR/´CK3R ][';

@@ -1,13 +1,8 @@
 unit AdT2ext5;
-{$IFDEF __TMT__}
-{$S-,Q-,R-,V-,B-,X+}
-{$ELSE}
+{$IFNDEF __TMT__}
 {$PACKRECORDS 1}
 {$ENDIF}
 interface
-
-function  get_bank_position(bank_name: String; bank_size: Longint): Longint;
-procedure add_bank_position(bank_name: String; bank_size: Longint; bank_position: Longint);
 
 const
   arp_tab_selected: Boolean = FALSE;
@@ -37,87 +32,6 @@ uses
 {$ENDIF}
   AdT2opl3,AdT2sys,AdT2keyb,AdT2unit,AdT2extn,AdT2ext2,AdT2ext3,AdT2ext4,AdT2text,AdT2apak,
   StringIO,DialogIO,ParserIO,DepackIO,TxtScrIO;
-
-const
-  MAX_NUM_BANK_POSITIONS = 1000;
-
-const
-  bank_position_list_size: Longint = 0;
-
-var
-  bank_position_list:
-    array[1..MAX_NUM_BANK_POSITIONS] of Record
-                                          bank_name: String;
-                                          bank_size: Longint;
-                                          bank_position: Longint;
-                                        end;
-
-function get_bank_position(bank_name: String; bank_size: Longint): Longint;
-
-var
-  idx: Longint;
-  result: Longint;
-
-begin
-{$IFDEF __TMT__}
-  _last_debug_str_ := _debug_str_;
-  _debug_str_ := 'ADT2EXT5.PAS:get_bank_position';
-{$ENDIF}
-  result := 0;
-  bank_name := CutStr(Upper_filename(bank_name));
-  For idx := 1 to bank_position_list_size do
-    If (bank_position_list[idx].bank_name = bank_name) and
-       ((bank_position_list[idx].bank_size = bank_size) or
-        (bank_size = -1)) then
-      begin
-        result := bank_position_list[idx].bank_position;
-        BREAK;
-      end;
-  get_bank_position := result;
-end;
-
-procedure add_bank_position(bank_name: String; bank_size: Longint; bank_position: Longint);
-
-var
-  idx,idx2: Longint;
-  found_flag: Boolean;
-
-begin
-{$IFDEF __TMT__}
-  _last_debug_str_ := _debug_str_;
-  _debug_str_ := 'ADT2EXT5.PAS:add_bank_position';
-{$ENDIF}
-  found_flag := FALSE;
-  bank_name := CutStr(Upper_filename(bank_name));
-  For idx := 1 to bank_position_list_size do
-    If (bank_position_list[idx].bank_name = bank_name) and
-       ((bank_position_list[idx].bank_size = bank_size) or
-        (bank_size = -1)) then
-      begin
-        found_flag := TRUE;
-        idx2 := idx;
-        BREAK;
-      end;
-
-  If found_flag then
-    begin
-      bank_position_list[idx2].bank_position := bank_position;
-      EXIT;
-    end;
-
-  If (bank_position_list_size < MAX_NUM_BANK_POSITIONS) then
-    Inc(bank_position_list_size)
-  else
-    begin
-      bank_position_list_size := MAX_NUM_BANK_POSITIONS;
-      For idx := 1 to PRED(bank_position_list_size) do
-        bank_position_list[idx] := bank_position_list[idx+1];
-    end;
-
-  bank_position_list[bank_position_list_size].bank_name := bank_name;
-  bank_position_list[bank_position_list_size].bank_size := bank_size;
-  bank_position_list[bank_position_list_size].bank_position := bank_position;
-end;
 
 procedure a2b_lister_external_proc; forward;
 procedure a2w_lister_external_proc_callback; forward;

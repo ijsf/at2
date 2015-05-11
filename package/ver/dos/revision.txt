@@ -7,7 +7,7 @@ http://www.adlibtracker.net/files/revision.htm
 
 
 * version 2.3.54
-  released: 04/12/2015
+  released: 04/12/2015 (* 05/11/2015)
 
   . improved program stability (hopefully :)
   . fixed/improved precision of playback calibration with pattern jumps
@@ -22,6 +22,11 @@ http://www.adlibtracker.net/files/revision.htm
   . added 'per instrument' positional memory to Instrument Editor window
   . improved track data processing during playback
   . AT2 player updated to version 0.43
+  * fixed interface bug (misplaced cursor) in Instrument Editor window
+  * added option to turn off positional memory for Instrument Editor (refer to
+    option 'remember_ins_pos' in config file)
+  * fixed some program stability issues
+  * fixed some bugs in Macro Arpeggio / Vibrato performer
 
 
 * version 2.3.53

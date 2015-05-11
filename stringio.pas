@@ -1,7 +1,5 @@
 unit StringIO;
-{$IFDEF __TMT__}
-{$S-,Q-,R-,V-,B-,X+}
-{$ELSE}
+{$IFNDEF __TMT__}
 {$PACKRECORDS 1}
 {$ENDIF}
 interface

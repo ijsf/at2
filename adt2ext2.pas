@@ -1,7 +1,5 @@
 unit AdT2ext2;
-{$IFDEF __TMT__}
-{$S-,Q-,R-,V-,B-,X+}
-{$ELSE}
+{$IFNDEF __TMT__}
 {$PACKRECORDS 1}
 {$ENDIF}
 interface
@@ -710,6 +708,9 @@ begin
 
   cycle_pattern :=
     check_boolean('cycle_pattern',cycle_pattern);
+
+  remember_ins_pos :=
+    check_boolean('remember_ins_pos',remember_ins_pos);
 
   backspace_dir :=
     check_number('backspace_dir',10,1,2,backspace_dir);
