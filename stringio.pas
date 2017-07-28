@@ -1,11 +1,10 @@
 unit StringIO;
-{$IFNDEF __TMT__}
+{$S-,Q-,R-,V-,B-,X+}
 {$PACKRECORDS 1}
-{$ENDIF}
 interface
 
 type
-  characters = Set of Char;
+  tCHARSET = Set of Char;
 
 function byte2hex(value: Byte): String;
 function byte2dec(value: Byte): String;
@@ -19,9 +18,12 @@ function ExpStrL(str: String; size: Byte; chr: Char): String;
 function ExpStrR(str: String; size: Byte; chr: Char): String;
 function DietStr(str: String; size: Byte): String;
 function CutStr(str: String): String;
+function CutStrL(str: String; margin: Byte): String;
+function CutStrR(str: String; margin: Byte): String;
 function FlipStr(str: String): String;
 function FilterStr(str: String; chr0,chr1: Char): String;
-function FilterStr2(str: String; chr0: characters; chr1: Char): String;
+function FilterStr1(str: String; chr0: Char): String;
+function FilterStr2(str: String; chr0: tCHARSET; chr1: Char): String;
 function Num2str(num: Longint; base: Byte): String;
 function Str2num(str: String; base: Byte): Longint;
 
@@ -33,22 +35,23 @@ type
                          char_filter,
                          character_set,
                          valid_chars,
-                         word_characters: characters;
-                         terminate_keys:  array[1..50] of Word
+                         word_characters: tCHARSET;
+                         terminate_keys:  array[1..50] of Word;
                        end;
 type
   tINPUT_STR_ENVIRONMENT = Record
                              keystroke: Word;
                              locate_pos: Byte;
+                             insert_mode: Boolean;
                            end;
 const
   is_setting: tINPUT_STR_SETTING =
     (insert_mode:     TRUE;
      replace_enabled: TRUE;
      append_enabled:  TRUE;
-     char_filter:     [#$20..#$ff];
-     character_set:   [#$20..#$ff];
-     valid_chars:     [#$20..#$ff];
+     char_filter:     [#32..#255];
+     character_set:   [#32..#255];
+     valid_chars:     [#32..#255];
      word_characters: ['A'..'Z','a'..'z','0'..'9','_'];
      terminate_keys:  ($011b,$1c0d,$0000,$0000,$0000,
                        $0000,$0000,$0000,$0000,$0000,
@@ -359,9 +362,43 @@ end;
 
 function CutStr(str: String): String;
 begin
-  While (str[0] <> #0) and (str[1] in [#00,#32]) do Delete(str,1,1);
-  While (str[0] <> #0) and (str[Length(str)] in [#00,#32]) do Delete(str,Length(str),1);
+  While (BYTE(str[0]) <> 0) and (str[1] = ' ') do
+    Delete(str,1,1);
+  While (BYTE(str[0]) <> 0) and (str[BYTE(str[0])] = ' ') do
+    Delete(str,BYTE(str[0]),1);
   CutStr := str;
+end;
+
+function CutStrL(str: String; margin: Byte): String;
+
+var
+  idx: Byte;
+
+begin
+  If (margin = 0) then margin := Length(str)
+  else If (margin > Length(str)) then
+         margin := Length(str);
+  idx := 0;
+  While (idx+1 <= margin) and (str[idx+1] = ' ') do
+    Inc(idx);
+  If (idx <> 0) then Delete(str,1,idx);
+  CutStrL := str;
+end;
+
+function CutStrR(str: String; margin: Byte): String;
+
+var
+  idx: Byte;
+
+begin
+  If (margin > Length(str)) then
+    margin := Length(str);
+  idx := 0;
+  While (str[BYTE(str[0])-idx] = ' ') and
+        (BYTE(str[0])-idx >= margin) do
+    Inc(idx);
+  Dec(BYTE(str[0]),idx);
+  CutStrR := str;
 end;
 
 function FlipStr(str: String): String;
@@ -411,11 +448,38 @@ begin
   end;
 end;
 
+function FilterStr1(str: String; chr0: Char): String;
+begin
+  asm
+        lea     esi,[str]
+        mov     edi,@RESULT
+        mov     al,[esi]
+        inc     esi
+        inc     edi
+        xor     ecx,ecx
+        mov     cl,al
+        mov     ebx,ecx
+        jecxz   @@4
+@@1:    mov     al,[esi]
+        inc     esi
+        cmp     al,chr0
+        jnz     @@2
+        dec     ebx
+        jmp     @@3
+@@2:    mov     [edi],al
+        inc     edi
+@@3:    loop    @@1
+@@4:    mov     eax,ebx
+        mov     edi,@RESULT
+        mov     [edi],al
+  end;
+end;
+
 const
   _treat_char: array[$80..$a5] of Char =
     'CueaaaaceeeiiiAAE_AooouuyOU_____aiounN';
 
-function FilterStr2(str: String; chr0: characters; chr1: Char): String;
+function FilterStr2(str: String; chr0: tCHARSET; chr1: Char): String;
 
 var
   temp: Byte;
@@ -423,7 +487,7 @@ var
 begin
   For temp := 1 to Length(str) do
     If NOT (str[temp] in chr0) then
-      If (str[temp] >= #$80) and (str[temp] <= #$a5) then
+      If (str[temp] >= #128) and (str[temp] <= #165) then
         str[temp] := _treat_char[BYTE(str[temp])]
       else If (str[temp] = #0) then str[temp] := ' '
            else str[temp] := chr1;
@@ -533,7 +597,7 @@ end;
 label _end;
 
 begin { InputStr }
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'STRINGIO.PAS:InputStr';
 {$ENDIF}
@@ -578,7 +642,7 @@ begin { InputStr }
 
     If (ln1 < ln) then
       If (cloc-xloc > 0) and (Length(s) > 0) then
-        ShowStr(screen_ptr,xint,y,'',(attr AND $0f0)+$0f)
+        ShowStr(screen_ptr,xint,y,#17,(attr AND $0f0)+$0f)
       else If (cloc-xloc = 0) and (Length(s) <> 0) then
              ShowStr(screen_ptr,xint,y,s[1],attr)
            else
@@ -586,7 +650,7 @@ begin { InputStr }
 
     If (ln1 < ln) then
       If (cloc-xloc+ln1 < Length(s)) then
-        ShowStr(screen_ptr,xint+ln1-1,y,'',(attr AND $0f0)+$0f)
+        ShowStr(screen_ptr,xint+ln1-1,y,#16,(attr AND $0f0)+$0f)
       else If (cloc-xloc+ln1 = Length(s)) then
              ShowStr(screen_ptr,xint+ln1-1,y,FilterStr2(s[Length(s)],is_setting.char_filter,'_'),attr)
            else
@@ -597,125 +661,137 @@ begin { InputStr }
     If LookupKey(key,is_setting.terminate_keys,50) then qflg := TRUE;
 
     If NOT qflg then
-      Case LO(key) of
-        $09: appn := TRUE;
-        $19: begin appn := TRUE; s := ''; cloc := 1; xloc := 1; end;
+      Case key of
+        kTAB: appn := TRUE;
 
-        $14: begin
-               appn := TRUE;
-               While (s[cloc] in is_setting.word_characters) and
-                     (cloc <= Length(s)) do Delete(s,cloc,1);
+        kCtrlY: begin
+                  appn := TRUE;
+                  s := '';
+                  cloc := 1;
+                  xloc := 1;
+                end;
 
-               While NOT (s[cloc] in is_setting.word_characters) and
-                         (cloc <= Length(s)) do Delete(s,cloc,1);
-             end;
+        kCtrlT: begin
+                  appn := TRUE;
+                  While (s[cloc] in is_setting.word_characters) and
+                        (cloc <= Length(s)) do Delete(s,cloc,1);
 
-        $7f: begin
-               appn := TRUE;
-               While (s[cloc-1] in is_setting.word_characters) and
-                     (cloc > 1) do
-                 begin
-                   Dec(cloc); Delete(s,cloc,1);
-                   If (xloc > 1) then Dec(xloc);
-                 end;
+                  While NOT (s[cloc] in is_setting.word_characters) and
+                            (cloc <= Length(s)) do Delete(s,cloc,1);
+                end;
 
-               While NOT (s[cloc-1] in is_setting.word_characters) and
+        kCtrlK: begin
+                  appn := TRUE;
+                  Delete(s,cloc,Length(s));
+                end;
+
+        kCtBkSp: begin
+                   appn := TRUE;
+                   While (s[cloc-1] in is_setting.word_characters) and
                          (cloc > 1) do
-                 begin
-                   Dec(cloc); Delete(s,cloc,1);
-                   If (xloc > 1) then Dec(xloc);
+                     begin
+                       Dec(cloc); Delete(s,cloc,1);
+                       If (xloc > 1) then Dec(xloc);
+                     end;
+
+                   While NOT (s[cloc-1] in is_setting.word_characters) and
+                             (cloc > 1) do
+                     begin
+                       Dec(cloc); Delete(s,cloc,1);
+                       If (xloc > 1) then Dec(xloc);
+                     end;
                  end;
-             end;
 
-        $11: begin appn := TRUE; Delete(s,cloc,Length(s)); end;
+        kBkSPC: begin
+                  appn := TRUE;
+                  If (cloc > 1) then
+                    begin
+                      If (xloc > 1) then Dec(xloc);
+                      Dec(cloc); Delete(s,cloc,1);
+                    end;
+                end;
 
-        $08: begin
-               appn := TRUE;
-               If (cloc > 1) then
-                 begin
-                   If (xloc > 1) then Dec(xloc);
-                   Dec(cloc); Delete(s,cloc,1);
+        kDELETE: begin
+                   appn := TRUE;
+                   If (cloc <= Length(s)) then Delete(s,cloc,1);
                  end;
-             end;
 
-        $00: begin
-               If (HI(key) in [$73,$74,$4b,$4d,$52,$47,$4f]) then
+        kCtLEFT: begin
+                   appn := TRUE;
+                   While (s[cloc] in is_setting.word_characters) and
+                         (cloc > 1) do
+                     begin
+                       Dec(cloc);
+                       If (xloc > 1) then Dec(xloc);
+                     end;
+
+                   While NOT (s[cloc] in is_setting.word_characters) and
+                             (cloc > 1) do
+                     begin
+                       Dec(cloc);
+                       If (xloc > 1) then Dec(xloc);
+                     end;
+                 end;
+
+        kCtRGHT: begin
+                   appn := TRUE;
+                   While (s[cloc] in is_setting.word_characters) and
+                         (cloc < Length(s)) do
+                     begin
+                       Inc(cloc);
+                       If (xloc < ln1) then Inc(xloc);
+                     end;
+
+                   While NOT (s[cloc] in is_setting.word_characters) and
+                             (cloc < Length(s)) do
+                     begin
+                       Inc(cloc);
+                       If (xloc < ln1) then Inc(xloc);
+                     end;
+                 end;
+
+        kLEFT: begin
                  appn := TRUE;
-
-               Case (HI(key)) of
-                 $73: begin
-                        While (s[cloc] in is_setting.word_characters) and
-                              (cloc > 1) do
-                          begin
-                            Dec(cloc);
-                            If (xloc > 1) then Dec(xloc);
-                          end;
-
-                        While NOT (s[cloc] in is_setting.word_characters) and
-                                  (cloc > 1) do
-                          begin
-                            Dec(cloc);
-                            If (xloc > 1) then Dec(xloc);
-                          end;
-                      end;
-
-                 $74: begin
-                        While (s[cloc] in is_setting.word_characters) and
-                              (cloc < Length(s)) do
-                          begin
-                            Inc(cloc);
-                            If (xloc < ln1) then Inc(xloc);
-                          end;
-
-                        While NOT (s[cloc] in is_setting.word_characters) and
-                                  (cloc < Length(s)) do
-                          begin
-                            Inc(cloc);
-                            If (xloc < ln1) then Inc(xloc);
-                          end;
-                      end;
-
-                 $4b: begin
-                        If (cloc > 1) then Dec(cloc);
-                        If (xloc > 1) then Dec(xloc);
-                      end;
-
-                 $4d: begin
-                        If (cloc < Length(s)) or ((cloc = Length(s)) and
-                             ((Length(s) < more(ln,ln1)))) then
-                          Inc(cloc);
-                        If (xloc < ln1) and (xloc <= Length(s)) then Inc(xloc);
-                      end;
-
-                 $53: begin
-                        appn := TRUE;
-                        If (cloc <= Length(s)) then Delete(s,cloc,1);
-                      end;
-
-                 $52: If is_setting.replace_enabled then
-                        begin
-                          ins := NOT ins;
-                          If ins then ThinCursor else WideCursor;
-                        end;
-
-                 $47: begin cloc := 1; xloc := 1; end;
-
-                 $4f: begin
-                        If (Length(s) < more(ln,ln1)) then cloc := Succ(Length(s))
-                        else cloc := Length(s);
-                        If (cloc < ln1) then xloc := cloc else xloc := ln1;
-                      end;
+                 If (cloc > 1) then Dec(cloc);
+                 If (xloc > 1) then Dec(xloc);
                end;
-             end;
 
-        else If NOT (LO(key) in [$09,$19,$0d,$14,$0b,$7f]) and
-                    (CHR(LO(key)) in characters(is_setting.character_set)) then
+        kRIGHT: begin
+                  appn := TRUE;
+                  If (cloc < Length(s)) or ((cloc = Length(s)) and
+                       ((Length(s) < more(ln,ln1)))) then
+                    Inc(cloc);
+                  If (xloc < ln1) and (xloc <= Length(s)) then Inc(xloc);
+                end;
+
+        kINSERT: If is_setting.replace_enabled then
+                   begin
+                     ins := NOT ins;
+                     If ins then ThinCursor else WideCursor;
+                   end;
+
+        kHOME: begin
+                 appn := TRUE;
+                 cloc := 1;
+                 xloc := 1;
+               end;
+
+        kEND: begin
+                appn := TRUE;
+                If (Length(s) < more(ln,ln1)) then cloc := Succ(Length(s))
+                else cloc := Length(s);
+                If (cloc < ln1) then xloc := cloc else xloc := ln1;
+              end;
+
+        else If (CHR(LO(key)) in tCHARSET(is_setting.character_set)) then
                begin
                  If NOT appn then begin s := ''; cloc := 1; xloc := 1; end;
                  appn := TRUE;
-                 If ins and (Length(s) < ln) then
+                 If ins and (Length(CutStrR(s,cloc)) < ln) then
                    begin
-                     Insert(CHR(LO(key)),s,cloc);
+                     If (Length(CutStrR(s,cloc)) < ln) then
+                       Insert(CHR(LO(key)),s,cloc)
+                     else s[cloc] := CHR(LO(key));
                      s := FilterStr2(s,is_setting.valid_chars,'_');
                      If (cloc < ln) then Inc(cloc);
                      If (xloc < ln) and (xloc < ln1) then Inc(xloc)
@@ -725,7 +801,6 @@ begin { InputStr }
                      begin
                        If (cloc > Length(s)) and (Length(s) < ln) then
                          Inc(BYTE(s[0]));
-
                        s[cloc] := CHR(LO(key));
                        s := FilterStr2(s,is_setting.valid_chars,'_');
                        If (cloc < ln) then Inc(cloc);
@@ -734,11 +809,11 @@ begin { InputStr }
                end;
       end;
 _end:
-{$IFDEF __TMT__}
-      // emulate_screen;
+{$IFDEF GO32V2}
+      // draw_screen;
       keyboard_reset_buffer_alt;
 {$ELSE}
-      emulate_screen;
+      draw_screen;
       // keyboard_reset_buffer;
 {$ENDIF}
   until qflg;
@@ -746,6 +821,7 @@ _end:
   If (cloc = 0) then is_environment.locate_pos := 1
   else is_environment.locate_pos := cloc;
   is_environment.keystroke := key;
+  is_environment.insert_mode := ins;
   InputStr := s;
 end;
 

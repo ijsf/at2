@@ -1,95 +1,24 @@
 unit ParserIO;
+{$S-,Q-,R-,V-,B-,X+}
+{$PACKRECORDS 1}
 interface
 
-type
-  tDUMMY_BUFF = array[0..PRED(655350)] of Byte;
-
-function Scan(var buf; skip,size: Longint; str: String): Longint;
 function SensitiveScan(var buf; skip,size: Longint; str: String): Longint;
-function Compare(var buf1,buf2; size: Longint): Boolean;
-function Empty(var buf; size: Longint): Boolean;
-function CountLines(var buf; size: Longint): Longint;
 function Update16(var buf; size: Longint; crc: Word): Word;
 function Update32(var buf; size: Longint; crc: Longint): Longint;
 
 implementation
 
+function SensitiveScan(var buf; skip,size: Longint; str: String): Longint;
+
 var
-  CRC16_table: array[BYTE] of Word;
-  CRC32_table: array[BYTE] of Longint;
+  result: Longint;
 
-function Scan(var buf; skip,size: Longint; str: String): Longint; assembler;
-asm
-        mov     edi,[str]
-        mov     esi,[str]
-        xor     eax,eax
-        lodsb
-        stosb
-        xor     ecx,ecx
-        mov     ecx,eax
-        xor     ebx,ebx
-        mov     ebx,eax
-        jecxz    @@9
-@@1:    lodsb
-        cmp     al,'a'
-        jb      @@2
-        cmp     al,'z'
-        ja      @@2
-        sub     al,20h
-@@2:    stosb
-        loop    @@1
-        sub     edi,ebx
-        mov     esi,[buf]
-        add     esi,skip
-        mov     ecx,size
-        sub     ecx,skip
-        jecxz   @@8
-        cld
-        sub     ecx,ebx
-        jb      @@8
-        inc     ecx
-@@4:    mov     ah,[edi]
-        and     ah,NOT 20h
-@@5:    lodsb
-        and     al,NOT 20h
-        cmp     al,ah
-        loopne  @@5
-        jne     @@8
-        dec     esi
-        mov     edx,ecx
-        mov     ecx,ebx
-@@6:    repe    cmpsb
-        je      @@10
-        mov     al,[esi-1]
-        cmp     al,'a'
-        jb      @@7
-        cmp     al,'z'
-        ja      @@7
-        sub     al,20h
-@@7:    cmp     al,[edi-1]
-        je      @@6
-        sub     ecx,ebx
-        add     esi,ecx
-        add     edi,ecx
-        inc     esi
-        mov     ecx,edx
-        jne     @@4
-@@8:    xor     eax,eax
-        jmp     @@11
-@@9:    mov     eax,1
-        jmp     @@11
-@@10:   sub     esi,ebx
-        mov     eax,esi
-        sub     eax,dword ptr buf
-        inc     eax
-@@11:   dec     eax
-end;
-
-function SensitiveScan(var buf; skip,size: Longint; str: String): Longint; assembler;
-asm
+begin
+  asm
         mov     edi,[buf]
         add     edi,skip
-        mov     esi,[str]
+        lea     esi,[str]
         mov     ecx,size
         sub     ecx,skip
         xor     eax,eax
@@ -129,102 +58,24 @@ asm
         jmp     @@6
 @@4:    sub     edi,ebx
 @@5:    mov     eax,edi
-        sub     eax,dword ptr buf
+        sub     eax,dword ptr [buf]
 @@6:    dec     eax
+        mov     result,eax
+  end;
+  SensitiveScan := result;
 end;
 
-function Compare(var buf1,buf2; size: Longint): Boolean; assembler;
-asm
-        xor     edx,edx
-        mov     eax,size
-        cmp     eax,16
-        jb      @@3
-        mov     ecx,4
-        div     ecx
-        mov     ecx,eax
-        jecxz   @@1
-        mov     esi,[buf1]
-        mov     edi,[buf2]
-        cld
-        repz    cmpsd
-        jnz     @@2
-        mov     ecx,edx
-        jecxz   @@1
-        repz    cmpsb
-        jnz     @@2
-@@1:    mov     al,1
-        jmp     @@6
-@@2:    xor     al,al
-        jmp     @@6
-@@3:    mov     ecx,size
-        jecxz   @@4
-        mov     esi,[buf1]
-        mov     edi,[buf2]
-        cld
-        repz    cmpsb
-        jnz     @@5
-@@4:    mov     al,1
-        jmp     @@6
-@@5:    xor     al,al
-@@6:
-end;
+var
+  CRC16_table: array[BYTE] of Word;
+  CRC32_table: array[BYTE] of Longint;
 
-function Empty(var buf; size: Longint): Boolean; assembler;
-asm
-        xor     edx,edx
-        mov     eax,size
-        cmp     eax,16
-        jb      @@3
-        mov     ecx,4
-        div     ecx
-        mov     ecx,eax
-        jecxz   @@1
-        mov     edi,[buf]
-        xor     eax,eax
-        repz    scasd
-        jnz     @@2
-        mov     ecx,edx
-        jecxz   @@1
-        repz    scasb
-        jnz     @@2
-@@1:    mov     al,1
-        jmp     @@6
-@@2:    xor     al,al
-        jmp     @@6
-@@3:    mov     ecx,size
-        jecxz   @@4
-        mov     edi,[buf]
-        xor     eax,eax
-        repz    scasb
-        jnz     @@5
-@@4:    mov     al,1
-        jmp     @@6
-@@5:    xor     al,al
-@@6:
-end;
+function Update16(var buf; size: Longint; crc: Word): Word;
 
-function CountLines(var buf; size: Longint): Longint; assembler;
-asm
-        mov     edi,[buf]
-        mov     ecx,size
-        mov     edx,edi
-        add     edx,ecx
-        xor     ebx,ebx
-        jecxz   @@3
-@@1:    mov     al,0dh
-        repnz   scasb
-        jnz     @@3
-        cmp     byte ptr [edi],0ah
-        jnz     @@2
-        inc     edi
-        inc     ebx
-@@2:    cmp     edi,edx
-        jb      @@1
-@@3:    mov     eax,ebx
-end;
+var
+  result: Word;
 
-function Update16(var buf; size: Longint; crc: Word): Word; assembler;
-asm
+begin
+  asm
         mov     esi,[buf]
         lea     edi,[CRC16_table]
         mov     bx,crc
@@ -242,10 +93,18 @@ asm
         xor     bx,dx
         loop    @@1
 @@2:    mov     ax,bx
+        mov     result,ax
+  end;
+  Update16 := result;
 end;
 
-function Update32(var buf; size: Longint; crc: Longint): Longint; assembler;
-asm
+function Update32(var buf; size: Longint; crc: Longint): Longint;
+
+var
+  result: Longint;
+
+begin
+  asm
         mov     esi,[buf]
         lea     edi,[CRC32_table]
         mov     ebx,crc
@@ -263,6 +122,9 @@ asm
         xor     ebx,edx
         loop    @@1
 @@2:    mov     eax,ebx
+        mov     result,eax
+  end;
+  Update32 := result;
 end;
 
 procedure make_table_16bit;
@@ -285,7 +147,7 @@ end;
 procedure make_table_32bit;
 
 var
-  crc: DWord;
+  crc: Dword;
   n,index: Byte;
 
 begin

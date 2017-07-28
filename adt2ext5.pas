@@ -1,7 +1,6 @@
 unit AdT2ext5;
-{$IFNDEF __TMT__}
+{$S-,Q-,R-,V-,B-,X+}
 {$PACKRECORDS 1}
-{$ENDIF}
 interface
 
 const
@@ -25,13 +24,17 @@ procedure a2w_file_loader(loadFromFile: Boolean; loadMacros: Boolean; bankSelect
 implementation
 
 uses
-{$IFDEF __TMT__}
-  DOS,DPMI,
-{$ELSE}
-  DOS,
+{$IFNDEF UNIX}
+  CRT,
 {$ENDIF}
-  AdT2opl3,AdT2sys,AdT2keyb,AdT2unit,AdT2extn,AdT2ext2,AdT2ext3,AdT2ext4,AdT2text,AdT2apak,
-  StringIO,DialogIO,ParserIO,DepackIO,TxtScrIO;
+{$IFDEF GO32V2}
+  GO32,
+{$ELSE}
+  SDL_Timer,
+{$ENDIF}
+  DOS,
+  AdT2opl3,AdT2sys,AdT2keyb,AdT2unit,AdT2extn,AdT2ext2,AdT2ext3,AdT2ext4,AdT2text,AdT2pack,
+  StringIO,DialogIO,ParserIO,TxtScrIO,DepackIO;
 
 procedure a2b_lister_external_proc; forward;
 procedure a2w_lister_external_proc_callback; forward;
@@ -43,8 +46,7 @@ procedure ibk_lister_external_proc; forward;
 var
   xstart,ystart: Byte;
   window_xsize,window_ysize: Byte;
-  context_str: String;
-  context_str2: String;
+  context_str,context_str2,context_str3: String;
 
 var
   temp_marks: array[1..255] of Char;
@@ -71,7 +73,7 @@ var
   temp: Byte;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2EXT5.PAS:import_old_instruments';
 {$ENDIF}
@@ -92,13 +94,14 @@ var
   result: Byte;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2EXT5.PAS:count_instruments';
 {$ENDIF}
   result := 255;
   While (result > 0) and
-        Empty(temp_songdata.instr_data[result],INSTRUMENT_SIZE) do
+        Empty(temp_songdata.instr_data[result],INSTRUMENT_SIZE) and
+        (CutStr(Copy(temp_songdata.instr_names[result],10,32)) = '') do
     Dec(result);
   count_instruments := result;
 end;
@@ -125,7 +128,7 @@ var
   free_flag: Boolean;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2EXT5.PAS:get_free_arpeggio_table_idx';
 {$ENDIF}
@@ -160,7 +163,7 @@ var
   free_flag: Boolean;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2EXT5.PAS:get_free_vibrato_table_idx';
 {$ENDIF}
@@ -217,6 +220,73 @@ begin
   _gfx_bar_str := flipstr(result);
 end;
 
+const
+  _4op_flag_chr_beg = #172;
+  _4op_flag_chr_end = #173;
+  _4op_flag_chars: Set of Char = [_4op_flag_chr_beg,_4op_flag_chr_end];
+  _4op_flag_column: array[1..255] of Char = '';
+  _a2b_lister_count: Byte = 0;
+  _a2w_lister_count: Byte = 0;
+
+var
+  _4op_idx11,_4op_idx12,
+  _4op_idx21,_4op_idx22: Byte;
+  _4op_ins_flag: Boolean;
+
+function check_4op_flag_temp(ins: Byte): Boolean;
+
+var
+  result: Boolean;
+  idx: Byte;
+
+begin
+  result := FALSE;
+  For idx := 1 to temp_songdata.ins_4op_flags.num_4op do
+    If (temp_songdata.ins_4op_flags.idx_4op[idx] = ins) then
+      begin
+        result := TRUE;
+        BREAK;
+      end;
+  check_4op_flag_temp := result;
+end;
+
+function get_4op_to_test_temp: Word;
+
+var
+  result: Word;
+  curr_inst: Byte;
+
+begin
+  result := 0;
+  curr_inst := mn_environment.curr_pos;
+  If (curr_inst in [1..255]) and (songdata.flag_4op <> 0) then
+    If (_4op_flag_column[curr_inst] = _4op_flag_chr_beg) then
+      result := SUCC(curr_inst)+curr_inst SHL 8
+    else If (curr_inst > 1) and (_4op_flag_column[curr_inst] = _4op_flag_chr_end) then
+           result := curr_inst+PRED(curr_inst) SHL 8;
+  get_4op_to_test_temp := result;
+end;
+
+procedure a2b_lister_external_proc_callback; forward;
+procedure a2b_lister_external_proc;
+
+var
+  temp: Byte;
+  attr: Byte;
+
+begin
+  For temp := 1 to _a2b_lister_count do
+    begin
+      If (mn_environment.curr_pos = mn_environment.curr_page+temp-1) then
+        attr := mn_setting.text2_attr
+      else attr := mn_setting.text_attr;
+      ShowStr(mn_environment.v_dest,mn_environment.xpos+1,mn_environment.ypos+3+temp,
+              _4op_flag_column[mn_environment.curr_page+temp-1],
+              attr);
+    end;
+  a2b_lister_external_proc_callback;
+end;
+
 procedure a2b_file_loader(bankSelector: Boolean; loadBankPossible: Boolean);
 
 type
@@ -246,6 +316,7 @@ var
   old_cycle_moves: Boolean;
   idx,index,nm_valid: Byte;
   temp_str: String;
+  ysize: Byte;
 
 const
   new_keys: array[1..3] of Word = (kESC,kENTER,kCtENTR);
@@ -254,11 +325,13 @@ var
   old_keys: array[1..3] of Word;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2EXT5.PAS:a2b_file_loader';
 {$ENDIF}
-  {$i-}
+  progress_num_steps := 0;
+  progress_step := 0;
+ {$i-}
   Assign(f,instdata_source);
   ResetF(f);
   {$i+}
@@ -282,7 +355,7 @@ begin
       EXIT;
     end;
 
-  If NOT (header.ffver in [1..9]) then
+  If NOT (header.ffver in [1..FFVER_A2B]) then
     begin
       CloseF(f);
       Dialog('UNKNOWN FiLE FORMAT VERSiON$'+
@@ -408,7 +481,60 @@ begin
       APACK_decompress(buf1,temp_songdata.instr_names);
       For temp := 1 to 255 do
         Insert(temp_marks[temp]+
-               'iNS_'+byte2hex(temp)+'๗ ',
+               'iNS_'+byte2hex(temp)+#247' ',
+               temp_songdata.instr_names[temp],1);
+    end;
+
+  If (header.ffver = FFVER_A2B) then
+    begin
+      ResetF(f);
+      BlockReadF(f,header2,SizeOf(header2),temp);
+      If NOT ((temp = SizeOf(header2)) and (header2.ident = id)) then
+        begin
+          CloseF(f);
+          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
+                 'LOADiNG STOPPED$',
+                 '~O~KAY$',' A2B LOADER ',1);
+          EXIT;
+        end;
+
+      FillChar(buf1,SizeOf(buf1),0);
+      BlockReadF(f,buf1,header2.b0len,temp);
+      If NOT (temp = header2.b0len) then
+        begin
+          CloseF(f);
+          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
+                 'LOADiNG STOPPED$',
+                 '~O~KAY$',' A2B LOADER ',1);
+          EXIT;
+        end;
+
+      crc := DWORD_NULL;
+      crc := Update32(header2.b0len,2,crc);
+      crc := Update32(buf1,header2.b0len,crc);
+
+      If (crc <> header2.crc32) then
+        begin
+          CloseF(f);
+          Dialog('CRC FAiLED - FiLE CORRUPTED$'+
+                 'LOADiNG STOPPED$',
+                 '~O~KAY$',' A2B LOADER ',1);
+          EXIT;
+        end;
+
+      For temp := 1 to 255 do
+        temp_marks[temp] := temp_songdata.instr_names[temp][1];
+
+      progress_num_steps := 0;
+      LZH_decompress(buf1,buf2,header2.b0len);
+      Move(buf2,temp_songdata.instr_names,SizeOf(songdata.instr_names)+
+                                          SizeOf(songdata.instr_data));
+      Move(buf2[SizeOf(songdata.instr_names)+
+                SizeOf(songdata.instr_data)],temp_songdata.ins_4op_flags,
+                SizeOf(songdata.ins_4op_flags));
+      For temp := 1 to 255 do
+        Insert(temp_marks[temp]+
+               'iNS_'+byte2hex(temp)+#247' ',
                temp_songdata.instr_names[temp],1);
     end;
 
@@ -423,12 +549,23 @@ begin
       EXIT;
     end;
 
-  a2b_queue[1]       := ' iNSTRUMENT                                 PANNiNG            iNSTRUMENT ';
-  a2b_queue[2]       := ' NAME    DESCRiPTiON                        ฉ  c  ช   F.TUNE   VOiCE      ';
-  a2b_queue[3]       := 'ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ';
-  a2b_queue_more[1]  := ' iNSTRUMENT                                                               PANNiNG            iNSTRUMENT ';
-  a2b_queue_more[2]  := ' NAME    DESCRiPTiON                        ฺ20ฟ ฺ40ฟ ฺ60ฟ ฺ80ฟ ฺE0ฟ C0   ฉ  c  ช   F.TUNE   VOiCE      ';
-  a2b_queue_more[3]  := 'ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ';
+  // init 4OP flags
+  FillChar(_4op_flag_column,SizeOf(_4op_flag_column),0);
+  For temp := 1 to PRED(255) do
+    If check_4op_flag_temp(temp) then
+      begin
+        If NOT (_4op_flag_column[temp] in _4op_flag_chars) then
+          _4op_flag_column[temp] := _4op_flag_chr_beg;
+        If NOT (_4op_flag_column[SUCC(temp)] in _4op_flag_chars) then
+          _4op_flag_column[SUCC(temp)] := _4op_flag_chr_end;
+      end;
+
+  a2b_queue[1] := a2b_header_str[1];
+  a2b_queue[2] := a2b_header_str[2];
+  a2b_queue[3] := a2b_header_str[3];
+  a2b_queue_more[1] := a2b_header_hires_str[1];
+  a2b_queue_more[2] := a2b_header_hires_str[2];
+  a2b_queue_more[3] := a2b_header_hires_str[3];
 
   nm_valid := count_instruments;
   If (nm_valid = 0) then nm_valid := 1;
@@ -455,11 +592,9 @@ begin
             byte2hex(FEEDBACK_FM)+'   ';
         end;
 
-      temp_str := '๚๚๚๚๚๚๚';
       Case temp_songdata.instr_data[idx].panning of
-        0: temp_str := '๚๚๚๚';
-        1: temp_str := '๚๚๚๚';
-        2: temp_str := '๚๚๚๚';
+        0..2: temp_str := ins_pan_str2[temp_songdata.instr_data[idx].panning];
+        else  temp_str := ExpStrL('',7,#250);
       end;
 
       a2b_queue[3+idx] := a2b_queue[3+idx]+temp_str+'   ';
@@ -470,16 +605,12 @@ begin
              temp_str := '-'+ExpStrR(Num2str(0-temp_songdata.instr_data[idx].fine_tune,16),5,' ')
            else temp_str := ExpStrR('',6,' ');
 
-          a2b_queue[3+idx] := a2b_queue[3+idx]+temp_str+'   ';
-          a2b_queue_more[3+idx] := a2b_queue_more[3+idx]+temp_str+'   ';
-      temp_str := '       ';
+      a2b_queue[3+idx] := a2b_queue[3+idx]+temp_str+'   ';
+      a2b_queue_more[3+idx] := a2b_queue_more[3+idx]+temp_str+'   ';
+
       Case temp_songdata.instr_data[idx].perc_voice of
-        0: temp_str := 'MELODiC';
-        1: temp_str := 'PERC:BD';
-        2: temp_str := 'PERC:SD';
-        3: temp_str := 'PERC:TT';
-        4: temp_str := 'PERC:TC';
-        5: temp_str := 'PERC:HH';
+        0..5: temp_str := perc_voice_str[temp_songdata.instr_data[idx].perc_voice];
+        else  temp_str := ExpStrL('',7,' ');
       end;
 
       a2b_queue[3+idx] := a2b_queue[3+idx]+temp_str;
@@ -497,14 +628,18 @@ begin
   mn_setting.cycle_moves := FALSE;
 
   If loadBankPossible then
-    mn_environment.context := ' ~[~'+Num2str(nm_valid,10)+'~/255]~ ^ENTER ฤ LOAD COMPLETE BANK '
+    mn_environment.context := ' ~[~'+Num2str(nm_valid,10)+'~/255]~ ^ENTER '#196#16' LOAD COMPLETE BANK '
   else mn_environment.context := '~[~'+Num2str(nm_valid,10)+'~/255]~';
 
   keyboard_reset_buffer;
+  If is_default_screen_mode then ysize := 20
+  else ysize := 30;
+  _a2b_lister_count := ysize-3;
+
   If NOT _force_program_quit then
     If (program_screen_mode in [0,3,4,5]) then
       index := Menu(a2b_queue,01,01,min(1,get_bank_position(instdata_source,nm_valid)),
-                    74,20,nm_valid+3,' '+iCASE(NameOnly(instdata_source))+' ')
+                    74,ysize,nm_valid+3,' '+iCASE(NameOnly(instdata_source))+' ')
     else index := Menu(a2b_queue_more,01,01,min(1,get_bank_position(instdata_source,nm_valid)),
                        104,30,nm_valid+3,' '+iCASE(NameOnly(instdata_source))+' ');
 
@@ -519,13 +654,97 @@ begin
     begin
       If (mn_environment.keystroke = kENTER) then
         begin
-          songdata.instr_data[current_inst] := temp_songdata.instr_data[index];
-          songdata.instr_names[current_inst] := Copy(songdata.instr_names[current_inst],1,9)+
-                                                Copy(temp_songdata.instr_names[index],10,32);
+          If shift_pressed then
+            begin
+              // put 4op instrument (alternate)
+              _4op_ins_flag := FALSE;
+              If (_4op_flag_column[index] = _4op_flag_chr_beg) then
+                If check_4op_flag(current_inst) then
+                  begin
+                    _4op_ins_flag := TRUE;
+                    _4op_idx11 := current_inst;
+                    _4op_idx12 := SUCC(current_inst);
+                    _4op_idx21 := index;
+                    _4op_idx22 := SUCC(index);
+                  end
+                else If check_4op_flag(PRED(current_inst)) then
+                       begin
+                         _4op_ins_flag := TRUE;
+                         _4op_idx11 := PRED(min(current_inst,2));
+                         _4op_idx12 := min(current_inst,2);
+                         _4op_idx21 := index;
+                         _4op_idx22 := SUCC(index);
+                       end
+                     else
+              else If (_4op_flag_column[index] = _4op_flag_chr_end) then
+                     If check_4op_flag(current_inst) then
+                       begin
+                         _4op_ins_flag := TRUE;
+                         _4op_idx11 := current_inst;
+                         _4op_idx12 := SUCC(current_inst);
+                         _4op_idx21 := PRED(index);
+                         _4op_idx22 := index;
+                       end
+                     else If check_4op_flag(PRED(current_inst)) then
+                            begin
+                              _4op_ins_flag := TRUE;
+                              _4op_idx11 := PRED(min(current_inst,2));
+                              _4op_idx12 := min(current_inst,2);
+                              _4op_idx21 := PRED(index);
+                              _4op_idx22 := index;
+                            end;
+              If _4op_ins_flag then
+                begin
+                  songdata.instr_data[_4op_idx11] := temp_songdata.instr_data[_4op_idx21];
+                  songdata.instr_names[_4op_idx11] := Copy(songdata.instr_names[_4op_idx11],1,9)+
+                                                      Copy(temp_songdata.instr_names[_4op_idx21],10,32);
+                  songdata.instr_data[_4op_idx12] := temp_songdata.instr_data[_4op_idx22];
+                  songdata.instr_names[_4op_idx12] := Copy(songdata.instr_names[_4op_idx12],1,9)+
+                                                      Copy(temp_songdata.instr_names[_4op_idx22],10,32);
+                end;
+            end
+          else begin
+                 // put 4op instrument (force)
+                 _4op_ins_flag := FALSE;
+                 If (_4op_flag_column[index] = _4op_flag_chr_beg) then
+                   begin
+                     _4op_ins_flag := TRUE;
+                     _4op_idx11 := current_inst;
+                     _4op_idx12 := SUCC(current_inst);
+                     _4op_idx21 := index;
+                     _4op_idx22 := SUCC(index);
+                   end
+                 else If (_4op_flag_column[index] = _4op_flag_chr_end) then
+                        begin
+                          _4op_ins_flag := TRUE;
+                          _4op_idx11 := PRED(min(current_inst,2));
+                          _4op_idx12 := min(current_inst,2);
+                          _4op_idx21 := PRED(index);
+                          _4op_idx22 := index;
+                        end;
+                 If _4op_ins_flag then
+                   begin
+                     songdata.instr_data[_4op_idx11] := temp_songdata.instr_data[_4op_idx21];
+                     songdata.instr_names[_4op_idx11] := Copy(songdata.instr_names[_4op_idx11],1,9)+
+                                                         Copy(temp_songdata.instr_names[_4op_idx21],10,32);
+                     songdata.instr_data[_4op_idx12] := temp_songdata.instr_data[_4op_idx22];
+                     songdata.instr_names[_4op_idx12] := Copy(songdata.instr_names[_4op_idx12],1,9)+
+                                                         Copy(temp_songdata.instr_names[_4op_idx22],10,32);
+                     set_4op_flag(_4op_idx11);
+                   end;
+               end;
+          // put 2op instrument
+          If NOT _4op_ins_flag then
+            begin
+              songdata.instr_data[current_inst] := temp_songdata.instr_data[index];
+              songdata.instr_names[current_inst] := Copy(songdata.instr_names[current_inst],1,9)+
+                                                    Copy(temp_songdata.instr_names[index],10,32);
+            end;
         end
       else
         begin
           songdata.instr_data := temp_songdata.instr_data;
+          songdata.ins_4op_flags := temp_songdata.ins_4op_flags;
           For idx := 1 to 255 do
             songdata.instr_names[idx] := Copy(songdata.instr_names[idx],1,9)+
                                          Copy(temp_songdata.instr_names[idx],10,32);
@@ -629,22 +848,22 @@ begin
 end;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2EXT5.PAS:_macro_preview_refresh';
 {$ENDIF}
   // arpeggio preview
   ShowStr(centered_frame_vdest,xstart_arp+15,ystart_arp,
-          'ý',
+          #253,
           macro_background+macro_topic2);
   ShowStr(centered_frame_vdest,xstart_arp+15,ystart_arp+7,
-          'ü',
+          #252,
           macro_background+macro_topic2);
   ShowVStr(centered_frame_vdest,xstart_arp,ystart_arp+1,
-           'ณณณณณ',
+           #179#179#179#179#179#158,
            macro_background+macro_text);
   ShowVStr(centered_frame_vdest,xstart_arp+30,ystart_arp+1,
-           'ณณณณณ',
+           #179#179#179#179#179#158,
            macro_background+macro_text);
 
   max_value := 0;
@@ -674,7 +893,7 @@ begin
                  LO(arpeggio_def_attr(arpeggio_table_pos+temp)))
       else ShowVStr(centered_frame_vdest,xstart_arp+15+temp,ystart_arp+1,
                     ExpStrL(FilterStr(note_layout[temp_songdata.macro_table[arpeggio_table_idx].
-                                                  arpeggio.data[arpeggio_table_pos+temp]-$80],'-','๑'),6,' '),
+                                                  arpeggio.data[arpeggio_table_pos+temp]-$80],'-',#241),6,' '),
                     LO(arpeggio_def_attr(arpeggio_table_pos+temp)))
     else ShowVStr(centered_frame_vdest,xstart_arp+15+temp,ystart_arp+1,
                   ExpStrL('',6,' '),
@@ -682,16 +901,16 @@ begin
 
   // vibrato preview
   ShowStr(centered_frame_vdest,xstart_vib+15,ystart_vib,
-          'ý',
+          #253,
           macro_background+macro_topic2);
   ShowStr(centered_frame_vdest,xstart_vib+15,ystart_vib+7,
-          'ü',
+          #252,
           macro_background+macro_topic2);
   ShowVStr(centered_frame_vdest,xstart_vib,ystart_vib+1,
-           'ณณณณณ',
+           #179#179#158#179#179#179,
            macro_background+macro_text);
   ShowVStr(centered_frame_vdest,xstart_vib+30,ystart_vib+1,
-           'ณณณณณ',
+           #179#179#158#179#179#179,
            macro_background+macro_text);
 
   max_value := 0;
@@ -735,7 +954,7 @@ end;
 procedure a2w_macro_lister_external_proc;
 
 const
-  _check_chr: array[BOOLEAN] of Char = ('๛',' ');
+  _check_chr: array[BOOLEAN] of Char = (#251,' ');
 
 var
   temp,idx: Byte;
@@ -743,7 +962,7 @@ var
   temps: String;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2EXT5.PAS:a2w_macro_lister_external_proc';
 {$ENDIF}
@@ -765,43 +984,43 @@ begin
                  begin
                    arp_tab_selected := NOT arp_tab_selected;
                    If alt_pressed then
-                                     begin
+                     begin
                        temp_songdata.instr_macros[current_inst].arpeggio_table := 0;
-                                           arp_tab_selected := FALSE;
-                                         end;
-                               If arp_tab_selected then
-                                 temp_songdata.instr_macros[current_inst].arpeggio_table := arpeggio_table_idx
-                               else If NOT alt_pressed then
-                                      temp_songdata.instr_macros[current_inst].arpeggio_table := songdata.instr_macros[current_inst].arpeggio_table;
+                       arp_tab_selected := FALSE;
+                     end;
+                   If arp_tab_selected then
+                     temp_songdata.instr_macros[current_inst].arpeggio_table := arpeggio_table_idx
+                   else If NOT alt_pressed then
+                          temp_songdata.instr_macros[current_inst].arpeggio_table := songdata.instr_macros[current_inst].arpeggio_table;
                  end;
                If ctrl_pressed then
                  begin
                    vib_tab_selected := NOT vib_tab_selected;
                    If alt_pressed then
-                                     begin
+                     begin
                        temp_songdata.instr_macros[current_inst].vibrato_table := 0;
-                                           vib_tab_selected := FALSE;
-                                         end;
-                               If vib_tab_selected then
-                                 temp_songdata.instr_macros[current_inst].vibrato_table := vibrato_table_idx
-                               else If NOT alt_pressed then
-                                      temp_songdata.instr_macros[current_inst].vibrato_table := songdata.instr_macros[current_inst].vibrato_table;
+                       vib_tab_selected := FALSE;
+                     end;
+                     If vib_tab_selected then
+                       temp_songdata.instr_macros[current_inst].vibrato_table := vibrato_table_idx
+                     else If NOT alt_pressed then
+                            temp_songdata.instr_macros[current_inst].vibrato_table := songdata.instr_macros[current_inst].vibrato_table;
                  end;
              end;
 
-        kESC:    begin
-                   temp_songdata.instr_macros[current_inst].arpeggio_table := songdata.instr_macros[current_inst].arpeggio_table;
-                           temp_songdata.instr_macros[current_inst].vibrato_table := songdata.instr_macros[current_inst].vibrato_table;
-                           EXIT;
-                 end;
+    kESC:    begin
+               temp_songdata.instr_macros[current_inst].arpeggio_table := songdata.instr_macros[current_inst].arpeggio_table;
+               temp_songdata.instr_macros[current_inst].vibrato_table := songdata.instr_macros[current_inst].vibrato_table;
+               EXIT;
+             end;
 
-        kENTER:  begin
-                   If NOT arp_tab_selected and (temp_songdata.instr_macros[current_inst].arpeggio_table = 0) then
-                             songdata.instr_macros[current_inst].arpeggio_table := 0;
-                   If NOT vib_tab_selected and (temp_songdata.instr_macros[current_inst].vibrato_table = 0) then
-                             songdata.instr_macros[current_inst].vibrato_table := 0;
-                           EXIT;
-                 end;
+    kENTER:  begin
+               If NOT arp_tab_selected and (temp_songdata.instr_macros[current_inst].arpeggio_table = 0) then
+                 songdata.instr_macros[current_inst].arpeggio_table := 0;
+               If NOT vib_tab_selected and (temp_songdata.instr_macros[current_inst].vibrato_table = 0) then
+                 songdata.instr_macros[current_inst].vibrato_table := 0;
+               EXIT;
+             end;
     kLEFT,
     kShLEFT: If shift_pressed then
                If (arpeggio_table_pos > 1) then
@@ -882,31 +1101,31 @@ begin
                  macro_speedup := songdata.macro_speedup;
                  keyboard_reset_buffer;
                end
-             else If (_4op_to_test = 0) then
-                    If (current_inst > 1) and update_current_inst then
-                      begin
-                        Dec(current_inst);
-                        instrum_page := current_inst;
-                        STATUS_LINE_refresh;
-                        keyboard_reset_buffer;
-                      end;
+             else If update_current_inst and (current_inst > 1) then
+                    begin
+                      Dec(current_inst);
+                      If NOT (marked_instruments = 2) then reset_marked_instruments;
+                      instrum_page := current_inst;
+                      STATUS_LINE_refresh;
+                      keyboard_reset_buffer;
+                    end;
 
     kCtRbr:  If shift_pressed then
                begin
                  Inc(songdata.macro_speedup);
-                 If (calc_max_speedup(tempo) < songdata.macro_speedup) then
-                   songdata.macro_speedup := calc_max_speedup(tempo);
+                 If (calc_max_speedup(songdata.tempo) < songdata.macro_speedup) then
+                   songdata.macro_speedup := calc_max_speedup(songdata.tempo);
                  macro_speedup := songdata.macro_speedup;
                  keyboard_reset_buffer;
                end
-             else If (_4op_to_test = 0) then
-                    If (current_inst < 255) and update_current_inst then
-                      begin
-                        Inc(current_inst);
-                        instrum_page := current_inst;
-                        STATUS_LINE_refresh;
-                        keyboard_reset_buffer;
-                      end;
+             else If update_current_inst and (current_inst < 255) then
+                    begin
+                      Inc(current_inst);
+                      If NOT (marked_instruments = 2) then reset_marked_instruments;
+                      instrum_page := current_inst;
+                      STATUS_LINE_refresh;
+                      keyboard_reset_buffer;
+                    end;
    end;
 
   If arp_tab_selected then
@@ -954,27 +1173,27 @@ begin
             attr,attr2,attr3);
 
   If (arpeggio_table_pos > 15) then
-    ShowStr(centered_frame_vdest,xstart_arp+6,ystart_arp+8,'',
+    ShowStr(centered_frame_vdest,xstart_arp+6,ystart_arp+8,#17,
             macro_background+macro_text)
-  else ShowStr(centered_frame_vdest,xstart_arp+6,ystart_arp+8,'',
+  else ShowStr(centered_frame_vdest,xstart_arp+6,ystart_arp+8,#17,
                macro_background+macro_text_dis);
 
   If (arpeggio_table_pos < temp_songdata.macro_table[idx].arpeggio.length-15+1) then
-    ShowStr(centered_frame_vdest,xstart_arp+25,ystart_arp+8,'',
+    ShowStr(centered_frame_vdest,xstart_arp+25,ystart_arp+8,#16,
             macro_background+macro_text)
-  else ShowStr(centered_frame_vdest,xstart_arp+25,ystart_arp+8,'',
+  else ShowStr(centered_frame_vdest,xstart_arp+25,ystart_arp+8,#16,
                macro_background+macro_text_dis);
 
   If (vibrato_table_pos > 15) then
-    ShowStr(centered_frame_vdest,xstart_vib+6,ystart_vib+8,'',
+    ShowStr(centered_frame_vdest,xstart_vib+6,ystart_vib+8,#17,
             macro_background+macro_text)
-  else ShowStr(centered_frame_vdest,xstart_vib+6,ystart_vib+8,'',
+  else ShowStr(centered_frame_vdest,xstart_vib+6,ystart_vib+8,#17,
                macro_background+macro_text_dis);
 
   If (vibrato_table_pos < temp_songdata.macro_table[idx].vibrato.length-15+1) then
-    ShowStr(centered_frame_vdest,xstart_vib+24,ystart_vib+8,'',
+    ShowStr(centered_frame_vdest,xstart_vib+24,ystart_vib+8,#16,
             macro_background+macro_text)
-  else ShowStr(centered_frame_vdest,xstart_vib+24,ystart_vib+8,'',
+  else ShowStr(centered_frame_vdest,xstart_vib+24,ystart_vib+8,#16,
                macro_background+macro_text_dis);
 
   ShowCStr(centered_frame_vdest,xstart_arp+10,ystart_vib+8,
@@ -986,7 +1205,16 @@ begin
            macro_background+macro_text,
            macro_background+macro_hi_text);
 
-  temps := '`'+ExpStrL('`'+context_str2+context_str+' [SPEED:'+Num2str(tempo*songdata.macro_speedup,10)+#3+'] ',40,'อ');
+  context_str3 := '';
+  If update_current_inst and (get_4op_to_test <> 0) and
+     ((current_inst = HI(get_4op_to_test)) or (current_inst = LO(get_4op_to_test))) then
+      If (LO(get_4op_to_test) = HI(get_4op_to_test)) then
+        context_str3 := ' ~[~'#244+byte2hex(HI(get_4op_to_test))+'~,~'#245+byte2hex(HI(get_4op_to_test))+'~]~'
+      else If (current_inst = HI(get_4op_to_test)) then
+             context_str3 := ' ~[~'#244+byte2hex(HI(get_4op_to_test))+'~,'#245+byte2hex(LO(get_4op_to_test))+']~'
+           else context_str3 := ' ~['#244+byte2hex(HI(get_4op_to_test))+',~'#245+byte2hex(LO(get_4op_to_test))+'~]~';
+
+  temps := '`'+ExpStrL('`'+context_str3+context_str2+context_str+' `[`SPEED:'+Num2str(tempo*songdata.macro_speedup,10)+#174+'`]` ',52,#205);
   ShowC3Str(centered_frame_vdest,xstart+window_xsize-C3StrLen(temps),ystart+window_ysize,
             temps,
             macro_background+macro_context,
@@ -1006,7 +1234,7 @@ begin
 end;
 
 const
-  _panning: array[0..2] of Char = '๑<>';
+  _panning: array[0..2] of Char = #241'<>';
   _hex: array[0..15] of Char = '0123456789ABCDEF';
   _fmreg_add_prev_size: Byte = 0;
 
@@ -1081,16 +1309,16 @@ begin
                    _hex[KSL_VOLUM_modulator SHR 6]+' '+
                    _hex[AM_VIB_EG_modulator AND $0f]+' ';
 
-      If (AM_VIB_EG_modulator SHR 7 = 0) then fmreg_str := fmreg_str+'๚'
+      If (AM_VIB_EG_modulator SHR 7 = 0) then fmreg_str := fmreg_str+#250
       else fmreg_str := fmreg_str+'T';
 
-      If (AM_VIB_EG_modulator SHR 6 AND 1 = 0) then fmreg_str := fmreg_str+'๚'
+      If (AM_VIB_EG_modulator SHR 6 AND 1 = 0) then fmreg_str := fmreg_str+#250
       else fmreg_str := fmreg_str+'V';
 
-      If (AM_VIB_EG_modulator SHR 4 AND 1 = 0) then fmreg_str := fmreg_str+'๚'
+      If (AM_VIB_EG_modulator SHR 4 AND 1 = 0) then fmreg_str := fmreg_str+#250
       else fmreg_str := fmreg_str+'K';
 
-      If (AM_VIB_EG_modulator SHR 5 AND 1 = 0) then fmreg_str := fmreg_str+'๚ '
+      If (AM_VIB_EG_modulator SHR 5 AND 1 = 0) then fmreg_str := fmreg_str+#250' '
       else fmreg_str := fmreg_str+'S ';
 
       fmreg_str := fmreg_str+
@@ -1103,16 +1331,16 @@ begin
                    _hex[KSL_VOLUM_carrier SHR 6]+' '+
                    _hex[AM_VIB_EG_carrier AND $0f]+' ';
 
-      If (AM_VIB_EG_carrier SHR 7 = 0) then fmreg_str := fmreg_str+'๚'
+      If (AM_VIB_EG_carrier SHR 7 = 0) then fmreg_str := fmreg_str+#250
       else fmreg_str := fmreg_str+'T';
 
-      If (AM_VIB_EG_carrier SHR 6 AND 1 = 0) then fmreg_str := fmreg_str+'๚'
+      If (AM_VIB_EG_carrier SHR 6 AND 1 = 0) then fmreg_str := fmreg_str+#250
       else fmreg_str := fmreg_str+'V';
 
-      If (AM_VIB_EG_carrier SHR 4 AND 1 = 0) then fmreg_str := fmreg_str+'๚'
+      If (AM_VIB_EG_carrier SHR 4 AND 1 = 0) then fmreg_str := fmreg_str+#250
       else fmreg_str := fmreg_str+'K';
 
-      If (AM_VIB_EG_carrier SHR 5 AND 1 = 0) then fmreg_str := fmreg_str+'๚ '
+      If (AM_VIB_EG_carrier SHR 5 AND 1 = 0) then fmreg_str := fmreg_str+#250' '
       else fmreg_str := fmreg_str+'S ';
 
       fmreg_str := fmreg_str+_hex[FEEDBACK_FM AND 1]+' ';
@@ -1178,7 +1406,7 @@ end;
 function _str1(def_chr: Char): String;
 
 const
-  _on_off: array[BOOLEAN] of Char = ('อ','þ');
+  _on_off: array[BOOLEAN] of Char = (#205,#254);
 
 var
   temp: Byte;
@@ -1283,7 +1511,7 @@ var
   dummy_str: String;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2EXT5.PAS:fmreg_page_refresh';
 {$ENDIF}
@@ -1305,15 +1533,11 @@ begin
 
   temps := Copy(fmreg_str2,fmreg_left_margin+index2,
                 Length(fmreg_str2)-fmreg_left_margin-index2+1);
-
-  If (temp_songdata.instr_macros[fmreg_instr].data[page AND $0ff].fm_data.
-      FEEDBACK_FM OR $80 <> temp_songdata.instr_macros[fmreg_instr].data[page AND $0ff].fm_data.
-                            FEEDBACK_FM) then
-    dummy_str := '`'+#$0d+'`'
-  else dummy_str := #$0d;
+  dummy_str :=  macro_retrig_str[temp_songdata.instr_macros[fmreg_instr].data[page AND $0ff].fm_data.
+                                 FEEDBACK_FM SHR 5];
 
   ShowC3Str(centered_frame_vdest,xpos+3,ypos,
-            'ณ~'+dummy_str+'~๖~'+
+            #179'~'+dummy_str+'~'#246'~'+
             _str2(temps,31+window_xsize-82-_fmreg_add_prev_size)+'~',
             macro_background+macro_text,
             attr,
@@ -1322,7 +1546,7 @@ end;
 
 procedure _scroll_cur_left;
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2EXT5.PAS:_scroll_cur_left';
 {$ENDIF}
@@ -1336,7 +1560,7 @@ end;
 
 procedure _scroll_cur_right;
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2EXT5.PAS:_scroll_cur_right';
 {$ENDIF}
@@ -1355,7 +1579,7 @@ var
   new_hpos_idx: Byte;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2EXT5.PAS:_dec_fmreg_hpos';
 {$ENDIF}
@@ -1380,7 +1604,7 @@ var
   new_hpos_idx: Byte;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2EXT5.PAS:_inc_fmreg_hpos';
 {$ENDIF}
@@ -1412,7 +1636,7 @@ begin
 
     {sw}
     10,11,12,13,23,24,
-    25,26: If (fmreg_str[pos5[fmreg_hpos]] = '๛') then result := 1
+    25,26: If (fmreg_str[pos5[fmreg_hpos]] = #251) then result := 1
               else result := 0;
 
     {fsl}
@@ -1437,32 +1661,32 @@ var
   d_factor: Real;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2EXT5.PAS:_fmreg_macro_preview_refresh';
 {$ENDIF}
   ShowStr(centered_frame_vdest,xstart+10+(_fmreg_add_prev_size DIV 2),ystart,
-          'ý',
+          #253,
           macro_background+macro_topic2);
   ShowStr(centered_frame_vdest,xstart+10+(_fmreg_add_prev_size DIV 2),ystart+7,
-          'ü',
+          #252,
           macro_background+macro_topic2);
 
   If NOT (fmreg_hpos in [29..33]) then
     begin
       ShowVStr(centered_frame_vdest,xstart,ystart+1,
-               'ณณณณณ',
+               #179#179#179#179#179#158,
                macro_background+macro_text);
       ShowVStr(centered_frame_vdest,xstart+20+_fmreg_add_prev_size,ystart+1,
-               'ณณณณณ',
+               #179#179#179#179#179#158,
                macro_background+macro_text);
     end
   else begin
          ShowVStr(centered_frame_vdest,xstart,ystart+1,
-                  'ณณณณณ',
+                  #179#179#158#179#179#179,
                   macro_background+macro_text);
          ShowVStr(centered_frame_vdest,xstart+20+_fmreg_add_prev_size,ystart+1,
-                  'ณณณณณ',
+                  #179#179#158#179#179#179,
                   macro_background+macro_text);
        end;
 
@@ -1517,41 +1741,46 @@ begin
           ShowVStr(centered_frame_vdest,xstart+10+temp+(_fmreg_add_prev_size DIV 2),ystart+1,
                    ExpStrL(_gfx_bar_str(Round(_fmreg_param(page+temp,fmreg_hpos)*d_factor),FALSE),6,' '),
                    macro_background+macro_text_dis)
-      else ShowVStr(centered_frame_vdest,xstart+10+temp+(_fmreg_add_prev_size DIV 2),ystart+1,
-                    ExpStrL('',6,' '),
-                    macro_background+macro_text)
-  else For temp := -9-(_fmreg_add_prev_size DIV 2) to 9+(_fmreg_add_prev_size DIV 2) do
-         If (page+temp >= 1) and (page+temp <= 255) then
-           If (Round(_fmreg_param(page+temp,fmreg_hpos)*d_factor) >= 0) then
-             If NOT _dis_fmreg_col(fmreg_hpos) then
+      else
+        ShowVStr(centered_frame_vdest,xstart+10+temp+(_fmreg_add_prev_size DIV 2),ystart+1,
+                 ExpStrL('',6,' '),
+                 macro_background+macro_text)
+  else
+    For temp := -9-(_fmreg_add_prev_size DIV 2) to 9+(_fmreg_add_prev_size DIV 2) do
+      If (page+temp >= 1) and (page+temp <= 255) then
+        If (Round(_fmreg_param(page+temp,fmreg_hpos)*d_factor) >= 0) then
+          If NOT _dis_fmreg_col(fmreg_hpos) then
+            ShowVStr(centered_frame_vdest,xstart+10+temp+(_fmreg_add_prev_size DIV 2),ystart+1,
+                     ExpStrR(ExpStrL(_gfx_bar_str(Round(_fmreg_param(page+temp,fmreg_hpos)*d_factor),FALSE),3,' '),6,' '),
+                     LO(fmreg_def_attr(page+temp)))
+          else
+            ShowVStr(centered_frame_vdest,xstart+10+temp+(_fmreg_add_prev_size DIV 2),ystart+1,
+                     ExpStrR(ExpStrL(_gfx_bar_str(Round(_fmreg_param(page+temp,fmreg_hpos)*d_factor),FALSE),3,' '),6,' '),
+                     macro_background+macro_text_dis)
+        else If NOT _dis_fmreg_col(fmreg_hpos) then
                ShowVStr(centered_frame_vdest,xstart+10+temp+(_fmreg_add_prev_size DIV 2),ystart+1,
-                        ExpStrR(ExpStrL(_gfx_bar_str(Round(_fmreg_param(page+temp,fmreg_hpos)*d_factor),FALSE),3,' '),6,' '),
+                        ExpStrL(ExpStrR(_gfx_bar_str(Round(Abs(_fmreg_param(page+temp,fmreg_hpos))*d_factor),TRUE),3,' '),6,' '),
                         LO(fmreg_def_attr(page+temp)))
              else
                ShowVStr(centered_frame_vdest,xstart+10+temp+(_fmreg_add_prev_size DIV 2),ystart+1,
-                        ExpStrR(ExpStrL(_gfx_bar_str(Round(_fmreg_param(page+temp,fmreg_hpos)*d_factor),FALSE),3,' '),6,' '),
+                        ExpStrL(ExpStrR(_gfx_bar_str(Round(Abs(_fmreg_param(page+temp,fmreg_hpos))*d_factor),TRUE),3,' '),6,' '),
                         macro_background+macro_text_dis)
-           else If NOT _dis_fmreg_col(fmreg_hpos) then
-                  ShowVStr(centered_frame_vdest,xstart+10+temp+(_fmreg_add_prev_size DIV 2),ystart+1,
-                           ExpStrL(ExpStrR(_gfx_bar_str(Round(Abs(_fmreg_param(page+temp,fmreg_hpos))*d_factor),TRUE),3,' '),6,' '),
-                           LO(fmreg_def_attr(page+temp)))
-                else
-                  ShowVStr(centered_frame_vdest,xstart+10+temp+(_fmreg_add_prev_size DIV 2),ystart+1,
-                           ExpStrL(ExpStrR(_gfx_bar_str(Round(Abs(_fmreg_param(page+temp,fmreg_hpos))*d_factor),TRUE),3,' '),6,' '),
-                           macro_background+macro_text_dis)
-         else ShowVStr(centered_frame_vdest,xstart+10+temp+(_fmreg_add_prev_size DIV 2),ystart+1,
-                       ExpStrL('',6,' '),
-                       macro_background+macro_text);
+      else
+        ShowVStr(centered_frame_vdest,xstart+10+temp+(_fmreg_add_prev_size DIV 2),ystart+1,
+                 ExpStrL('',6,' '),
+                 macro_background+macro_text);
 end;
 
 procedure a2w_lister_external_proc;
 
 var
-  idx: Byte;
+  idx,temp: Byte;
   temps: String;
+  songdata_ptr: Pointer;
+  attr: Byte;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2EXT5.PAS:a2w_lister_external_proc';
 {$ENDIF}
@@ -1619,47 +1848,43 @@ begin
                          fmreg_cursor_pos := 1;
                          fmreg_left_margin := 1;
                        end;
-
     kCtLbr:  If shift_pressed then
                begin
                  If (songdata.macro_speedup > 1) then
                    Dec(songdata.macro_speedup);
                  macro_speedup := songdata.macro_speedup;
                  keyboard_reset_buffer;
-               end
-             else If (_4op_to_test = 0) then
-                    If (current_inst > 1) and update_current_inst then
-                      begin
-                        Dec(current_inst);
-                        instrum_page := current_inst;
-                        STATUS_LINE_refresh;
-                        keyboard_reset_buffer;
-                      end;
+               end;
 
     kCtRbr:  If shift_pressed then
                begin
                  Inc(songdata.macro_speedup);
-                 If (calc_max_speedup(tempo) < songdata.macro_speedup) then
-                   songdata.macro_speedup := calc_max_speedup(tempo);
+                 If (calc_max_speedup(songdata.tempo) < songdata.macro_speedup) then
+                   songdata.macro_speedup := calc_max_speedup(songdata.tempo);
                  macro_speedup := songdata.macro_speedup;
                  keyboard_reset_buffer;
-               end
-             else If (_4op_to_test = 0) then
-                    If (current_inst < 255) and update_current_inst then
-                      begin
-                        Inc(current_inst);
-                        instrum_page := current_inst;
-                        STATUS_LINE_refresh;
-                        keyboard_reset_buffer;
-                      end;
-   end;
+               end;
+  end;
+
+  For temp := 1 to _a2w_lister_count do
+    begin
+      If (mn_environment.curr_pos = mn_environment.curr_page+temp-1) then
+        attr := mn_setting.text2_attr
+      else attr := mn_setting.text_attr;
+      ShowStr(mn_environment.v_dest,mn_environment.xpos+1,mn_environment.ypos+3+temp,
+              _4op_flag_column[mn_environment.curr_page+temp-1],
+              attr);
+    end;
 
   fmreg_instr := Str2num(Copy(mn_environment.curr_item,7,2),16);
+  songdata_ptr := Addr(temp_songdata);
+
   If update_current_inst then
     begin
       current_inst := fmreg_instr;
       instrum_page := fmreg_instr;
       STATUS_LINE_refresh;
+      songdata_ptr := Addr(songdata);
     end;
 
   If (a2w_institle_pos <> 0) then
@@ -1667,7 +1892,16 @@ begin
             byte2hex(current_inst),
             macro_background+macro_title);
 
-  temps := '`'+ExpStrL('`'+context_str2+context_str+' [SPEED:'+Num2str(tempo*songdata.macro_speedup,10)+#3+'] ',40,'อ');
+ context_str3 := '';
+  If update_current_inst and (get_4op_to_test <> 0) and
+     ((current_inst = HI(get_4op_to_test)) or (current_inst = LO(get_4op_to_test))) then
+      If (LO(get_4op_to_test) = HI(get_4op_to_test)) then
+        context_str3 := ' ~[~'#244+byte2hex(HI(get_4op_to_test))+'~,~'#245+byte2hex(HI(get_4op_to_test))+'~]~'
+      else If (current_inst = HI(get_4op_to_test)) then
+             context_str3 := ' ~[~'#244+byte2hex(HI(get_4op_to_test))+'~,'#245+byte2hex(LO(get_4op_to_test))+']~'
+           else context_str3 := ' ~['#244+byte2hex(HI(get_4op_to_test))+',~'#245+byte2hex(LO(get_4op_to_test))+'~]~';
+
+  temps := '`'+ExpStrL('`'+context_str3+context_str2+context_str+' `[`SPEED:'+Num2str(tempo*songdata.macro_speedup,10)+#174+'`]` ',52,#205);
   ShowC3Str(centered_frame_vdest,xstart+window_xsize-C3StrLen(temps),ystart+window_ysize,
             temps,
             macro_background+macro_context,
@@ -1676,37 +1910,37 @@ begin
 
   ShowCStr(centered_frame_vdest,xstart+2,ystart+window_ysize-10+2,
            'LENGTH:    ~'+
-           byte2hex(temp_songdata.instr_macros[fmreg_instr].length)+' ~',
+           byte2hex(tFIXED_SONGDATA(songdata_ptr^).instr_macros[fmreg_instr].length)+' ~',
            macro_background+macro_topic,
            macro_background+macro_text);
 
   ShowCStr(centered_frame_vdest,xstart+2,ystart+window_ysize-10+3,
            'LOOP BEG.: ~'+
-           byte2hex(temp_songdata.instr_macros[fmreg_instr].loop_begin)+' ~',
+           byte2hex(tFIXED_SONGDATA(songdata_ptr^).instr_macros[fmreg_instr].loop_begin)+' ~',
            macro_background+macro_topic,
            macro_background+macro_text);
 
   ShowCStr(centered_frame_vdest,xstart+2,ystart+window_ysize-10+4,
            'LOOP LEN.: ~'+
-           byte2hex(temp_songdata.instr_macros[fmreg_instr].loop_length)+' ~',
+           byte2hex(tFIXED_SONGDATA(songdata_ptr^).instr_macros[fmreg_instr].loop_length)+' ~',
            macro_background+macro_topic,
            macro_background+macro_text);
 
   ShowCStr(centered_frame_vdest,xstart+2,ystart+window_ysize-10+5,
            'KEY-OFF:   ~'+
-           byte2hex(temp_songdata.instr_macros[fmreg_instr].keyoff_pos)+' ~',
+           byte2hex(tFIXED_SONGDATA(songdata_ptr^).instr_macros[fmreg_instr].keyoff_pos)+' ~',
            macro_background+macro_topic,
            macro_background+macro_text);
 
   ShowCStr(centered_frame_vdest,xstart+2,ystart+window_ysize-10+6,
            'ARP.TABLE: ~'+
-           byte2hex(temp_songdata.instr_macros[fmreg_instr].arpeggio_table)+' ~',
+           byte2hex(tFIXED_SONGDATA(songdata_ptr^).instr_macros[fmreg_instr].arpeggio_table)+' ~',
            macro_background+macro_topic,
            macro_background+macro_text);
 
   ShowCStr(centered_frame_vdest,xstart+2,ystart+window_ysize-10+7,
            'ViB.TABLE: ~'+
-           byte2hex(temp_songdata.instr_macros[fmreg_instr].vibrato_table)+' ~',
+           byte2hex(tFIXED_SONGDATA(songdata_ptr^).instr_macros[fmreg_instr].vibrato_table)+' ~',
            macro_background+macro_topic,
            macro_background+macro_text);
 
@@ -1721,13 +1955,13 @@ begin
 
   _fmreg_macro_preview_refresh(xstart+17,ystart+window_ysize-10+1,fmreg_page+fmreg_vpos-1);
   ShowCStr(centered_frame_vdest,xstart+49+_fmreg_add_prev_size,ystart+window_ysize-10+1,
-           ExpStrL('',fmreg_cursor_pos,'อ')+'~'+#31+'~'+
-           ExpStrL('',window_xsize-49-_fmreg_add_prev_size-fmreg_cursor_pos-1,'อ'),
+           ExpStrL('',fmreg_cursor_pos,#205)+'~'+#31+'~'+
+           ExpStrL('',window_xsize-49-_fmreg_add_prev_size-fmreg_cursor_pos-1,#205),
            macro_background+macro_topic2,
            macro_background+macro_hi_text);
   ShowCStr(centered_frame_vdest,xstart+49+_fmreg_add_prev_size,ystart+window_ysize-2,
-           ExpStrL('',fmreg_cursor_pos,'อ')+'~'+#30+'~'+
-           ExpStrL('',window_xsize-49-_fmreg_add_prev_size-fmreg_cursor_pos-1,'อ'),
+           ExpStrL('',fmreg_cursor_pos,#205)+'~'+#30+'~'+
+           ExpStrL('',window_xsize-49-_fmreg_add_prev_size-fmreg_cursor_pos-1,#205),
            macro_background+macro_topic2,
            macro_background+macro_hi_text);
   ShowStr(centered_frame_vdest,xstart+2,ystart+window_ysize-1,
@@ -1782,6 +2016,7 @@ var
   arpvib_arpeggio_table_bak: Byte;
   arpvib_vibrato_table_bak: Byte;
   browser_flag: Boolean;
+  ysize: Byte;
 
   // backup of Menu settings / variables
   old_external_proc: procedure;
@@ -1809,33 +2044,174 @@ const
 var
   old_keys: array[1..50] of Word;
 
+procedure _put_2op_instrument;
+begin
+  songdata.instr_data[current_inst] := temp_songdata.instr_data[index];
+  songdata.instr_macros[current_inst] := temp_songdata.instr_macros[index];
+  songdata.dis_fmreg_col[current_inst] := temp_songdata.dis_fmreg_col[index];
+  songdata.instr_names[current_inst] := Copy(songdata.instr_names[current_inst],1,9)+
+                                        Copy(temp_songdata.instr_names[index],10,32);
+  idx1 := -1;
+  idx2 := -1;
+  If (songdata.instr_macros[current_inst].arpeggio_table <> 0) then
+    idx1 := get_free_arpeggio_table_idx(temp_songdata.macro_table[
+                                        songdata.instr_macros[current_inst].arpeggio_table].arpeggio);
+  If (songdata.instr_macros[current_inst].vibrato_table <> 0) then
+    idx2 := get_free_vibrato_table_idx(temp_songdata.macro_table[
+                                       songdata.instr_macros[current_inst].vibrato_table].vibrato);
+  temp_str := '';
+  If (idx1 = 0) then
+    If (idx2 = 0) then
+      temp_str := '~ARPEGGiO/ViBRATO'
+    else temp_str := '~ARPEGGiO'
+  else If (idx2 = 0) then
+         temp_str := '~ViBRATO';
+
+  If NOT (temp_str <> '') then
+    begin
+      If (idx1 > 0) then
+        begin
+          songdata.macro_table[idx1].arpeggio :=
+          temp_songdata.macro_table[songdata.instr_macros[current_inst].arpeggio_table].arpeggio;
+          songdata.instr_macros[current_inst].arpeggio_table := idx1;
+        end;
+      If (idx2 > 0) then
+        begin
+          songdata.macro_table[idx2].vibrato :=
+          temp_songdata.macro_table[songdata.instr_macros[current_inst].vibrato_table].vibrato;
+          songdata.instr_macros[current_inst].vibrato_table := idx2;
+        end
+    end
+  else Dialog('RELATED '+temp_str+' DATA~ WAS NOT LOADED!$'+
+              'FREE SOME SPACE iN MACRO TABLES AND ~REPEAT THiS ACTiON~$',
+              '~O~K$',' A2W LOADER ',1);
+end;
+
+procedure _put_4op_instrument;
+begin
+  songdata.instr_data[_4op_idx11] := temp_songdata.instr_data[_4op_idx21];
+  songdata.instr_macros[_4op_idx11] := temp_songdata.instr_macros[_4op_idx21];
+  songdata.dis_fmreg_col[_4op_idx11] := temp_songdata.dis_fmreg_col[_4op_idx21];
+  songdata.instr_names[_4op_idx11] := Copy(songdata.instr_names[_4op_idx11],1,9)+
+                                        Copy(temp_songdata.instr_names[_4op_idx21],10,32);
+  idx1 := -1;
+  idx2 := -1;
+  If (songdata.instr_macros[_4op_idx11].arpeggio_table <> 0) then
+    idx1 := get_free_arpeggio_table_idx(temp_songdata.macro_table[
+                                        songdata.instr_macros[_4op_idx11].arpeggio_table].arpeggio);
+  If (songdata.instr_macros[_4op_idx11].vibrato_table <> 0) then
+    idx2 := get_free_vibrato_table_idx(temp_songdata.macro_table[
+                                       songdata.instr_macros[_4op_idx11].vibrato_table].vibrato);
+  temp_str := '';
+  If (idx1 = 0) then
+    If (idx2 = 0) then
+      temp_str := '~ARPEGGiO/ViBRATO'
+    else temp_str := '~ARPEGGiO'
+  else If (idx2 = 0) then
+         temp_str := '~ViBRATO';
+
+  If NOT (temp_str <> '') then
+    begin
+      If (idx1 > 0) then
+        begin
+          songdata.macro_table[idx1].arpeggio :=
+          temp_songdata.macro_table[songdata.instr_macros[_4op_idx11].arpeggio_table].arpeggio;
+          songdata.instr_macros[_4op_idx11].arpeggio_table := idx1;
+        end;
+      If (idx2 > 0) then
+        begin
+          songdata.macro_table[idx2].vibrato :=
+          temp_songdata.macro_table[songdata.instr_macros[_4op_idx11].vibrato_table].vibrato;
+          songdata.instr_macros[_4op_idx11].vibrato_table := idx2;
+        end
+    end
+  else Dialog('RELATED '+temp_str+' DATA~ WAS NOT LOADED!$'+
+              'FREE SOME SPACE iN MACRO TABLES AND ~REPEAT THiS ACTiON~$',
+              '~O~K$',' A2W LOADER ',1);
+
+  songdata.instr_data[_4op_idx12] := temp_songdata.instr_data[_4op_idx22];
+  songdata.instr_macros[_4op_idx12] := temp_songdata.instr_macros[_4op_idx22];
+  songdata.dis_fmreg_col[_4op_idx12] := temp_songdata.dis_fmreg_col[_4op_idx22];
+  songdata.instr_names[_4op_idx12] := Copy(songdata.instr_names[_4op_idx12],1,9)+
+                                        Copy(temp_songdata.instr_names[_4op_idx22],10,32);
+  idx1 := -1;
+  idx2 := -1;
+  If (songdata.instr_macros[_4op_idx12].arpeggio_table <> 0) then
+    idx1 := get_free_arpeggio_table_idx(temp_songdata.macro_table[
+                                        songdata.instr_macros[_4op_idx12].arpeggio_table].arpeggio);
+  If (songdata.instr_macros[_4op_idx12].vibrato_table <> 0) then
+    idx2 := get_free_vibrato_table_idx(temp_songdata.macro_table[
+                                       songdata.instr_macros[_4op_idx12].vibrato_table].vibrato);
+  temp_str := '';
+  If (idx1 = 0) then
+    If (idx2 = 0) then
+      temp_str := '~ARPEGGiO/ViBRATO'
+    else temp_str := '~ARPEGGiO'
+  else If (idx2 = 0) then
+         temp_str := '~ViBRATO';
+
+  If NOT (temp_str <> '') then
+    begin
+      If (idx1 > 0) then
+        begin
+          songdata.macro_table[idx1].arpeggio :=
+          temp_songdata.macro_table[songdata.instr_macros[_4op_idx12].arpeggio_table].arpeggio;
+          songdata.instr_macros[_4op_idx12].arpeggio_table := idx1;
+        end;
+      If (idx2 > 0) then
+        begin
+          songdata.macro_table[idx2].vibrato :=
+          temp_songdata.macro_table[songdata.instr_macros[_4op_idx12].vibrato_table].vibrato;
+          songdata.instr_macros[_4op_idx12].vibrato_table := idx2;
+        end
+    end
+  else Dialog('RELATED '+temp_str+' DATA~ WAS NOT LOADED!$'+
+              'FREE SOME SPACE iN MACRO TABLES AND ~REPEAT THiS ACTiON~$',
+              '~O~K$',' A2W LOADER ',1);
+end;
+
 label _jmp1,_jmp1e,_jmp2,_jmp2e,_end;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2EXT5.PAS:a2w_file_loader';
 {$ENDIF}
-  songdata_bak := songdata;
   arpvib_arpeggio_table_bak := arpvib_arpeggio_table;
   arpvib_vibrato_table_bak := arpvib_vibrato_table;
+  songdata_bak := songdata;
   temp_songdata := songdata_bak;
   update_current_inst := updateCurInstr;
+  browser_flag := FALSE;
+  progress_num_steps := 0;
+  progress_step := 0;
 
   If NOT loadFromFile and bankSelector and
      NOT loadBankPossible then
     begin
       a2w_instdata_source := '';
-      If loadMacros and _arp_vib_mode then
+      If loadMacros then
         begin
-          arp_tab_selected := TRUE;
-          vib_tab_selected := TRUE;
+          arp_tab_selected := _macro_editor__pos[_arp_vib_mode] in [8..13];
+          vib_tab_selected := _macro_editor__pos[_arp_vib_mode] in [14..20];
         end
       else
         begin
           arp_tab_selected := songdata.instr_macros[current_inst].arpeggio_table <> 0;
           vib_tab_selected := songdata.instr_macros[current_inst].vibrato_table <> 0;
         end;
+
+      // init 4OP flags (no file bank)
+      temp_songdata.ins_4op_flags := songdata.ins_4op_flags;
+      FillChar(_4op_flag_column,SizeOf(_4op_flag_column),0);
+      For temp := 1 to PRED(255) do
+        If check_4op_flag_temp(temp) then
+          begin
+            If NOT (_4op_flag_column[temp] in _4op_flag_chars) then
+              _4op_flag_column[temp] := _4op_flag_chr_beg;
+            If NOT (_4op_flag_column[SUCC(temp)] in _4op_flag_chars) then
+              _4op_flag_column[SUCC(temp)] := _4op_flag_chr_end;
+          end;
 
       If loadMacros then
         GOTO _jmp1 // Arpeggio/Vibrato Macro Browser
@@ -1868,7 +2244,7 @@ begin
       EXIT;
     end;
 
-  If NOT (header.ffver in [1,2]) then
+  If NOT (header.ffver in [1..FFVER_A2W]) then
     begin
       CloseF(f);
       Dialog('UNKNOWN FiLE FORMAT VERSiON$'+
@@ -1951,7 +2327,7 @@ begin
       APACK_decompress(buf1,temp_songdata.instr_names);
       For temp := 1 to 255 do
         Insert(temp_marks[temp]+
-               'iNS_'+byte2hex(temp)+'๗ ',
+               'iNS_'+byte2hex(temp)+#247' ',
                temp_songdata.instr_names[temp],1);
 
       BlockReadF(f,buf1,header2.b1len,temp);
@@ -2043,7 +2419,7 @@ begin
       APACK_decompress(buf1,temp_songdata.instr_names);
       For temp := 1 to 255 do
         Insert(temp_marks[temp]+
-               'iNS_'+byte2hex(temp)+'๗ ',
+               'iNS_'+byte2hex(temp)+#247' ',
                temp_songdata.instr_names[temp],1);
 
       BlockReadF(f,buf1,header.b1len,temp);
@@ -2070,8 +2446,128 @@ begin
       APACK_decompress(buf1,temp_songdata.dis_fmreg_col);
     end;
 
+  If (header.ffver = FFVER_A2W) then
+    begin
+      crc := DWORD_NULL;
+      BlockReadF(f,buf1,header.b0len,temp);
+      If NOT (temp = header.b0len) then
+        begin
+          CloseF(f);
+          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
+                 'LOADiNG STOPPED$',
+                 '~O~KAY$',' A2W LOADER ',1);
+          EXIT;
+        end;
+
+      crc := Update32(buf1,temp,crc);
+      BlockReadF(f,buf1,header.b1len,temp);
+      If NOT (temp = header.b1len) then
+        begin
+          CloseF(f);
+          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
+                 'LOADiNG STOPPED$',
+                 '~O~KAY$',' A2W LOADER ',1);
+          EXIT;
+        end;
+
+      crc := Update32(buf1,temp,crc);
+      BlockReadF(f,buf1,header.b2len,temp);
+      If NOT (temp = header.b2len) then
+        begin
+          CloseF(f);
+          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
+                 'LOADiNG STOPPED$',
+                 '~O~KAY$',' A2W LOADER ',1);
+          EXIT;
+        end;
+
+      crc := Update32(buf1,temp,crc);
+      crc := Update32(header.b0len,2,crc);
+      crc := Update32(header.b1len,2,crc);
+      crc := Update32(header.b2len,2,crc);
+
+      If (crc <> header.crc32) then
+        begin
+          CloseF(f);
+          Dialog('CRC FAiLED - FiLE CORRUPTED$'+
+                 'LOADiNG STOPPED$',
+                 '~O~KAY$',' A2W LOADER ',1);
+          EXIT;
+        end;
+
+      SeekF(f,SizeOf(header));
+      If (IOresult <> 0) then
+        begin
+          CloseF(f);
+          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
+                 'LOADiNG STOPPED$',
+                 '~O~KAY$',' A2W LOADER ',1);
+          EXIT;
+        end;
+
+      BlockReadF(f,buf1,header.b0len,temp);
+      If NOT (temp = header.b0len) then
+        begin
+          CloseF(f);
+          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
+                 'LOADiNG STOPPED$',
+                 '~O~KAY$',' A2W LOADER ',1);
+          EXIT;
+        end;
+
+      For temp := 1 to 255 do
+        temp_marks[temp] := temp_songdata.instr_names[temp][1];
+
+      progress_num_steps := 0;
+      LZH_decompress(buf1,buf2,header.b0len);
+      Move(buf2,temp_songdata.instr_names,SizeOf(songdata.instr_names)+
+                                          SizeOf(songdata.instr_data)+
+                                          SizeOf(songdata.instr_macros));
+      Move(buf2[SizeOf(songdata.instr_names)+
+                SizeOf(songdata.instr_data)+
+                SizeOf(songdata.instr_macros)],temp_songdata.ins_4op_flags,
+                SizeOf(songdata.ins_4op_flags));
+      For temp := 1 to 255 do
+        Insert(temp_marks[temp]+
+               'iNS_'+byte2hex(temp)+#247' ',
+               temp_songdata.instr_names[temp],1);
+
+      BlockReadF(f,buf1,header.b1len,temp);
+      If NOT (temp = header.b1len) then
+        begin
+          CloseF(f);
+          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
+                 'LOADiNG STOPPED$',
+                 '~O~KAY$',' A2W LOADER ',1);
+          EXIT;
+        end;
+
+      LZH_decompress(buf1,temp_songdata.macro_table,header.b1len);
+      BlockReadF(f,buf1,header.b2len,temp);
+      If NOT (temp = header.b2len) then
+        begin
+          CloseF(f);
+          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
+                 'LOADiNG STOPPED$',
+                 '~O~KAY$',' A2W LOADER ',1);
+          EXIT;
+        end;
+
+      LZH_decompress(buf1,temp_songdata.dis_fmreg_col,header.b2len);
+    end;
+
   CloseF(f);
-  browser_flag := FALSE;
+
+  // init 4OP flags (file bank)
+  FillChar(_4op_flag_column,SizeOf(_4op_flag_column),0);
+  For temp := 1 to PRED(255) do
+    If check_4op_flag_temp(temp) then
+      begin
+        If NOT (_4op_flag_column[temp] in _4op_flag_chars) then
+          _4op_flag_column[temp] := _4op_flag_chr_beg;
+        If NOT (_4op_flag_column[SUCC(temp)] in _4op_flag_chars) then
+          _4op_flag_column[SUCC(temp)] := _4op_flag_chr_end;
+      end;
 
   If loadMacros then
     begin
@@ -2089,9 +2585,9 @@ _jmp1:
         end;
 
       window_xsize := 73;
-      If (program_screen_mode in [0,3,4,5]) then window_ysize := max(nm_valid+5,15)+10
+      If is_default_screen_mode then window_ysize := max(nm_valid+5,15)+10
       else window_ysize := max(nm_valid+5,20)+10;
-      If (a2w_instdata_source <> '') theN temp_str := ' '+iCASE(NameOnly(a2w_instdata_source))+'  A/V MACROS '
+      If (a2w_instdata_source <> '') theN temp_str := ' '+iCASE(NameOnly(a2w_instdata_source))+' '#16' A/V MACROS '
       else temp_str := ' ARPEGGiO/ViBRATO MACRO BROWSER ';
 
       If update_current_inst then temp_str := temp_str + '(iNS_  ) '
@@ -2103,14 +2599,15 @@ _jmp1:
       centered_frame(xstart,ystart,window_xsize,window_ysize,
                      temp_str,
                      macro_background+macro_border,
-                     macro_background+macro_title,double);
+                     macro_background+macro_title,
+                     frame_double);
 
       ShowStr(centered_frame_vdest,xstart+1,ystart+window_ysize-10+1,
-              'ออออสอออออฯอออออฯอออออฯอออออฯออออออสอออออฯอออออฯอออออฯอออออฯอออออฯออออออ',
+              av_browser_str[6],
               macro_background+macro_topic2);
 
       ShowStr(centered_frame_vdest,xstart+1,ystart+window_ysize-2,
-              ExpStrR('',72,'อ'),
+              ExpStrR('',72,#205),
               macro_background+macro_topic2);
 
       context_str := ' ~[~'+Num2str(nm_valid,10)+'~/255]~';
@@ -2129,69 +2626,69 @@ _jmp1:
       arpeggio_table_pos := min(1,get_bank_position(temp_str+'?macro_av?arp_pos',nm_valid));
       vibrato_table_pos := min(1,get_bank_position(temp_str+'?macro_av?vib_pos',nm_valid));
 
-      a2w_queue_m[1] := 'ฤฤฤฤาฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤาฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ';
-      a2w_queue_m[2] := '    บ     ~ARPEGGiO MACRO TABLE~     บ        ~ViBRATO MACRO TABLE~';
-      a2w_queue_m[3] := '    วฤฤฤฤฤยฤฤฤฤฤยฤฤฤฤฤยฤฤฤฤฤยฤฤฤฤฤฤืฤฤฤฤฤยฤฤฤฤฤยฤฤฤฤฤยฤฤฤฤฤยฤฤฤฤฤยฤฤฤฤฤฤ';
-      a2w_queue_m[4] := ' NO.บLEN. ณSPEEDณL.BEGณL.LENณK.OFF บLEN. ณSPEEDณDELAYณL.BEGณL.LENณK.OFF ';
-      a2w_queue_m[5] := 'ออออฮอออออุอออออุอออออุอออออุออออออฮอออออุอออออุอออออุอออออุอออออุออออออ';
+      a2w_queue_m[1] := av_browser_str[1];
+      a2w_queue_m[2] := av_browser_str[2];
+      a2w_queue_m[3] := av_browser_str[3];
+      a2w_queue_m[4] := av_browser_str[4];
+      a2w_queue_m[5] := av_browser_str[5];
 
       For idx := 1 to nm_valid do
         begin
-          a2w_queue_m[5+idx] := ' ~'+byte2hex(idx)+'~ บ';
+          a2w_queue_m[5+idx] := ' ~'+byte2hex(idx)+'~ '#186;
           If Empty(temp_songdata.macro_table[idx].arpeggio,SizeOf(tARPEGGIO_TABLE)) then
-            a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' ๚๚  ณ'+
-                                                     ' ๚๚  ณ'+
-                                                     ' ๚๚  ณ'+
-                                                     ' ๚๚  ณ'+
-                                                     ' ๚๚   บ'
+            a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' '#250#250'  '#179+
+                                                     ' '#250#250'  '#179+
+                                                     ' '#250#250'  '#179+
+                                                     ' '#250#250'  '#179+
+                                                     ' '#250#250'   '#186
           else
             With temp_songdata.macro_table[idx].arpeggio do
               begin
                 If (length > 0) then
-                  a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' '+byte2hex(length)+'  ณ'
-                else a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' ๙๙  ณ';
+                  a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' '+byte2hex(length)+'  '#179
+                else a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' '#249#249'  '#179;
                 If (speed > 0) then
-                  a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' '+byte2hex(speed)+'  ณ'
-                else a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' ๙๙  ณ';
+                  a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' '+byte2hex(speed)+'  '#179
+                else a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' '#249#249'  '#179;
                 If (loop_begin > 0) then
-                  a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' '+byte2hex(loop_begin)+'  ณ'
-                else a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' ๙๙  ณ';
+                  a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' '+byte2hex(loop_begin)+'  '#179
+                else a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' '#249#249'  '#179;
                 If (loop_length > 0) then
-                  a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' '+byte2hex(loop_length)+'  ณ'
-                else a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' ๙๙  ณ';
+                  a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' '+byte2hex(loop_length)+'  '#179
+                else a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' '#249#249'  '#179;
                 If (keyoff_pos > 0) then
-                  a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' '+byte2hex(keyoff_pos)+'   บ'
-                else a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' ๙๙   บ';
+                  a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' '+byte2hex(keyoff_pos)+'   '#186
+                else a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' '#249#249'   '#186;
               end;
 
           If Empty(temp_songdata.macro_table[idx].vibrato,SizeOf(tViBRATO_TABLE)) then
-            a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' ๚๚  ณ'+
-                                                     ' ๚๚  ณ'+
-                                                     ' ๚๚  ณ'+
-                                                     ' ๚๚  ณ'+
-                                                     ' ๚๚  ณ'+
-                                                     ' ๚๚'
+            a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' '#250#250'  '#179+
+                                                     ' '#250#250'  '#179+
+                                                     ' '#250#250'  '#179+
+                                                     ' '#250#250'  '#179+
+                                                     ' '#250#250'  '#179+
+                                                     ' '#250#250
           else
             With temp_songdata.macro_table[idx].vibrato do
               begin
                 If (length > 0) then
-                  a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' '+byte2hex(length)+'  ณ'
-                else a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' ๙๙  ณ';
+                  a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' '+byte2hex(length)+'  '#179
+                else a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' '#249#249'  '#179;
                 If (speed > 0) then
-                  a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' '+byte2hex(speed)+'  ณ'
-                else a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' ๙๙  ณ';
+                  a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' '+byte2hex(speed)+'  '#179
+                else a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' '#249#249'  '#179;
                 If (delay > 0) then
-                  a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' '+byte2hex(delay)+'  ณ'
-                else a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' ๙๙  ณ';
+                  a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' '+byte2hex(delay)+'  '#179
+                else a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' '#249#249'  '#179;
                 If (loop_begin > 0) then
-                  a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' '+byte2hex(loop_begin)+'  ณ'
-                else a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' ๙๙  ณ';
+                  a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' '+byte2hex(loop_begin)+'  '#179
+                else a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' '#249#249'  '#179;
                 If (loop_length > 0) then
-                  a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' '+byte2hex(loop_length)+'  ณ'
-                else a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' ๙๙  ณ';
+                  a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' '+byte2hex(loop_length)+'  '#179
+                else a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' '#249#249'  '#179;
                 If (keyoff_pos > 0) then
-                  a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' '+byte2hex(keyoff_pos)+'   บ'
-                else a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' ๙๙';
+                  a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' '+byte2hex(keyoff_pos)+'   '#186
+                else a2w_queue_m[5+idx] := a2w_queue_m[5+idx]+' '#249#249;
               end;
         end;
 
@@ -2223,7 +2720,7 @@ _jmp1:
       mn_environment.ext_proc := a2w_macro_lister_external_proc;
       mn_setting.topic_len := 5;
       mn_setting.cycle_moves := FALSE;
-      mn_setting.topic_mask_chr := ['ณ','บ'];
+      mn_setting.topic_mask_chr := [#179,#186];
       mn_setting.frame_enabled := FALSE;
       mn_setting.shadow_enabled := FALSE;
       mn_environment.winshade := FALSE;
@@ -2245,10 +2742,13 @@ _jmp1:
       If (a2w_instdata_source <> '') then temp_str := a2w_instdata_source
       else temp_str := '?internal_instrument_data';
 
+      If is_default_screen_mode then ysize := 15
+      else ysize := 20;
+
       If (program_screen_mode in [0,3,4,5]) then
         Menu(a2w_queue_m,xstart,ystart,
              min(1,get_bank_position(temp_str+'?macro_av?pos',nm_valid)),
-             72,max(nm_valid+5,15),nm_valid+5,'')
+             72,max(nm_valid+5,ysize),nm_valid+5,'')
       else Menu(a2w_queue_m,xstart,ystart,
                     min(1,get_bank_position(temp_str+'?macro_av?pos',nm_valid)),
                 72,max(nm_valid+5,20),nm_valid+5,'');
@@ -2258,9 +2758,6 @@ _jmp1:
       move_to_screen_area[2] := ystart;
       move_to_screen_area[3] := xstart+window_xsize+2+1;
       move_to_screen_area[4] := ystart+window_ysize+1;
-{$IFDEF __TMT__}
-      toggle_waitretrace := TRUE;
-{$ENDIF}
       move2screen_alt;
 
       mn_environment.unpolite := FALSE;
@@ -2268,12 +2765,15 @@ _jmp1:
       mn_environment.v_dest := screen_ptr;
       centered_frame_vdest := mn_environment.v_dest;
 
+      If is_default_screen_mode then ysize := 15
+      else ysize := 20;
+
       keyboard_reset_buffer;
       If NOT _force_program_quit then
         If (program_screen_mode in [0,3,4,5]) then
           index := Menu(a2w_queue_m,xstart,ystart,
                         min(1,get_bank_position(temp_str+'?macro_av?pos',nm_valid)),
-                        72,max(nm_valid+5,15),nm_valid+5,'')
+                        72,max(nm_valid+5,ysize),nm_valid+5,'')
         else index := Menu(a2w_queue_m,xstart,ystart,
                            min(1,get_bank_position(temp_str+'?macro_av?pos',nm_valid)),
                            72,max(nm_valid+5,20),nm_valid+5,'');
@@ -2315,9 +2815,15 @@ _jmp1:
           If NOT _force_program_quit then GOTO _jmp1;
         end;
 
-      If NOT loadMacros and (mn_environment.keystroke = kESC) then
-        begin
+      If NOT update_current_inst and (mn_environment.keystroke = kENTER) then
+            begin
           songdata := songdata_bak;
+                  temp_songdata := songdata_bak;
+                  mn_environment.keystroke := kESC;
+                end;
+
+          If NOT loadMacros and (mn_environment.keystroke = kESC) then
+            begin
           load_flag := BYTE_NULL;
           load_flag_alt := BYTE_NULL;
           GOTO _jmp2;
@@ -2421,15 +2927,15 @@ _jmp2:
       browser_flag := FALSE;
       ScreenMemCopy(screen_ptr,ptr_screen_backup);
 
-      a2w_queue[1]       := ' iNSTRUMENT                                 iNSTRUMENT                  ';
-      a2w_queue[2]       := ' NAME    DESCRiPTiON                        VOiCE     MACROS            ';
-      a2w_queue[3]       := 'ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ';
-      a2w_queue_more[1]  := ' iNSTRUMENT                                                               iNSTRUMENT                  ';
-      a2w_queue_more[2]  := ' NAME    DESCRiPTiON                        ฺ20ฟ ฺ40ฟ ฺ60ฟ ฺ80ฟ ฺE0ฟ C0   VOiCE     MACROS            ';
-      a2w_queue_more[3]  := 'ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ';
-      a2w_queue_more2[1] := ' iNSTRUMENT                                                               PANNiNG            iNSTRUMENT                  ';
-      a2w_queue_more2[2] := ' NAME    DESCRiPTiON                        ฺ20ฟ ฺ40ฟ ฺ60ฟ ฺ80ฟ ฺE0ฟ C0   ฉ  c  ช   F.TUNE   VOiCE     MACROS            ';
-      a2w_queue_more2[3] := 'อออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ';
+      a2w_queue[1] := a2w_header_str[1];
+      a2w_queue[2] := a2w_header_str[2];
+      a2w_queue[3] := a2w_header_str[3];
+      a2w_queue_more[1] := a2w_header_hires1_str[1];
+      a2w_queue_more[2] := a2w_header_hires1_str[2];
+      a2w_queue_more[3] := a2w_header_hires1_str[3];
+      a2w_queue_more2[1] := a2w_header_hires2_str[1];
+      a2w_queue_more2[2] := a2w_header_hires2_str[2];
+      a2w_queue_more2[3] := a2w_header_hires2_str[3];
 
       nm_valid := count_instruments;
       If (nm_valid = 0) then nm_valid := 1;
@@ -2451,8 +2957,8 @@ _jmp2:
 
       For idx := 1 to nm_valid do
         begin
-          a2w_queue[3+idx] := '~'+ExpStrR(Copy(temp_songdata.instr_names[idx],1,9)+'~'+
-                              Copy(temp_songdata.instr_names[idx],10,32),45,' ');
+          a2w_queue[3+idx] := '~ '+ExpStrR(Copy(temp_songdata.instr_names[idx],2,8)+'~'+
+                              Copy(temp_songdata.instr_names[idx],10,32),44,' ');
           a2w_queue_more[3+idx] := a2w_queue[3+idx];
 
           With temp_songdata.instr_data[idx].fm_data do
@@ -2471,11 +2977,9 @@ _jmp2:
                 byte2hex(FEEDBACK_FM)+'   ';
             end;
 
-          temp_str := '๚๚๚๚๚๚๚';
           Case temp_songdata.instr_data[idx].panning of
-            0: temp_str := '๚๚๚๚';
-            1: temp_str := '๚๚๚๚';
-            2: temp_str := '๚๚๚๚';
+            0..2: temp_str := ins_pan_str2[temp_songdata.instr_data[idx].panning];
+            else  temp_str := ExpStrL('',7,#250);
           end;
 
           a2w_queue_more2[3+idx] := a2w_queue_more[3+idx]+temp_str+'   ';
@@ -2486,14 +2990,9 @@ _jmp2:
                else temp_str := ExpStrR('',6,' ');
 
           a2w_queue_more2[3+idx] := a2w_queue_more2[3+idx]+temp_str+'   ';
-          temp_str := '       ';
           Case temp_songdata.instr_data[idx].perc_voice of
-            0: temp_str := 'MELODiC';
-            1: temp_str := 'PERC:BD';
-            2: temp_str := 'PERC:SD';
-            3: temp_str := 'PERC:TT';
-            4: temp_str := 'PERC:TC';
-            5: temp_str := 'PERC:HH';
+            0..5: temp_str := perc_voice_str[temp_songdata.instr_data[idx].perc_voice];
+            else  temp_str := ExpStrL('',7,' ');
           end;
 
           a2w_queue[3+idx] := a2w_queue[3+idx]+temp_str;
@@ -2537,10 +3036,17 @@ _jmp2:
            end;
 
       Case program_screen_mode of
-        0,3,4,
+        0,
+        3: begin
+             window_xsize := 73;
+             If is_default_screen_mode then
+               window_ysize := max(nm_valid+3,15)+10
+             else window_ysize := max(nm_valid+3,20)+10;
+           end;
+        4,
         5: begin
              window_xsize := 73;
-             window_ysize := max(nm_valid+3,15)+10;
+             window_ysize := max(nm_valid+3,20)+10;
            end;
         1: begin
              window_xsize := 103;
@@ -2572,16 +3078,17 @@ _jmp2:
       centered_frame(xstart,ystart,window_xsize,window_ysize,
                      temp_str,
                      macro_background+macro_border,
-                     macro_background+macro_title,double);
+                     macro_background+macro_title,
+                     frame_double);
 
       ShowStr(centered_frame_vdest,xstart+1,ystart+window_ysize-10+1,
-              ExpStrR('',window_xsize-1,'อ'),
+              ExpStrR('',window_xsize-1,#205),
               macro_background+macro_topic2);
       ShowStr(centered_frame_vdest,xstart+1,ystart+window_ysize-2,
-              ExpStrR('',window_xsize-1,'อ'),
+              ExpStrR('',window_xsize-1,#205),
               macro_background+macro_topic2);
       ShowVStr(centered_frame_vdest,xstart+42+_fmreg_add_prev_size,ystart+window_ysize-10+1,
-               'หบบบบบบส',
+               #203#186#186#186#186#186#186#202,
                macro_background+macro_topic2);
 
       Move(mn_setting.terminate_keys,old_keys,SizeOf(old_keys));
@@ -2605,6 +3112,8 @@ _jmp2:
       old_hi_topic_attr := mn_setting.hi_topic_attr;
 
       Move(new_keys,mn_setting.terminate_keys,SizeOf(new_keys));
+      If NOT update_current_inst then
+        mn_setting.terminate_keys[4] := 0; // TAB not possible when called from Macro Browser
       If NOT loadBankPossible then
         mn_setting.terminate_keys[5] := 0; // ^ENTER possible only in Instrument Control
 
@@ -2629,9 +3138,13 @@ _jmp2:
       mn_setting.topic_attr := macro_background+macro_topic2;
       mn_setting.hi_topic_attr := macro_background+macro_hi_topic;
 
+      If is_default_screen_mode then ysize := 15
+      else ysize := 20;
+      _a2w_lister_count := max(nm_valid+3,ysize)-3;
+
       If NOT _force_program_quit then
         If (program_screen_mode in [0,3,4,5]) then
-          index := Menu(a2w_queue,xstart,ystart,idx+3,72,max(nm_valid+3,15),nm_valid+3,temp_str)
+          index := Menu(a2w_queue,xstart,ystart,idx+3,72,max(nm_valid+3,ysize),nm_valid+3,temp_str)
         else If (program_screen_mode = 1) then
                index := Menu(a2w_queue_more,xstart,ystart,idx+3,102,max(nm_valid+3,20),nm_valid+3,temp_str)
              else index := Menu(a2w_queue_more2,xstart,ystart,idx+3,121,max(nm_valid+3,20),nm_valid+3,temp_str);
@@ -2641,9 +3154,6 @@ _jmp2:
       move_to_screen_area[2] := ystart;
       move_to_screen_area[3] := xstart+window_xsize+2+1;
       move_to_screen_area[4] := ystart+window_ysize+1;
-{$IFDEF __TMT__}
-      toggle_waitretrace := TRUE;
-{$ENDIF}
       move2screen_alt;
 
       mn_environment.unpolite := FALSE;
@@ -2654,7 +3164,7 @@ _jmp2:
       keyboard_reset_buffer;
       If NOT _force_program_quit then
         If (program_screen_mode in [0,3,4,5]) then
-          index := Menu(a2w_queue,xstart,ystart,idx+3,72,max(nm_valid+3,15),nm_valid+3,temp_str)
+          index := Menu(a2w_queue,xstart,ystart,idx+3,72,max(nm_valid+3,ysize),nm_valid+3,temp_str)
         else If (program_screen_mode = 1) then
                index := Menu(a2w_queue_more,xstart,ystart,idx+3,102,max(nm_valid+3,20),nm_valid+3,temp_str)
              else index := Menu(a2w_queue_more2,xstart,ystart,idx+3,121,max(nm_valid+3,20),nm_valid+3,temp_str);
@@ -2702,11 +3212,6 @@ _jmp2:
 
       If (mn_environment.keystroke = kTAB) then
         begin
-          songdata.instr_data[current_inst] := temp_songdata.instr_data[index];
-          songdata.instr_macros[current_inst] := temp_songdata.instr_macros[index];
-          songdata.dis_fmreg_col[current_inst] := temp_songdata.dis_fmreg_col[index];
-          songdata.instr_names[current_inst] := Copy(songdata.instr_names[current_inst],1,9)+
-                                                Copy(temp_songdata.instr_names[index],10,32);
           arp_tab_selected := songdata.instr_macros[current_inst].arpeggio_table <> 0;
           vib_tab_selected := songdata.instr_macros[current_inst].vibrato_table <> 0;
           loadMacros := FALSE;
@@ -2725,45 +3230,77 @@ _jmp2e:
         begin
           If (mn_environment.keystroke = kENTER) then
             begin
-              songdata.instr_data[current_inst] := temp_songdata.instr_data[index];
-              songdata.instr_macros[current_inst] := temp_songdata.instr_macros[index];
-              songdata.dis_fmreg_col[current_inst] := temp_songdata.dis_fmreg_col[index];
-              songdata.instr_names[current_inst] := Copy(songdata.instr_names[current_inst],1,9)+
-                                                    Copy(temp_songdata.instr_names[index],10,32);
-              idx1 := -1;
-              idx2 := -1;
-              If (songdata.instr_macros[current_inst].arpeggio_table <> 0) then
-                idx1 := get_free_arpeggio_table_idx(temp_songdata.macro_table[
-                                                    songdata.instr_macros[current_inst].arpeggio_table].arpeggio);
-              If (songdata.instr_macros[current_inst].vibrato_table <> 0) then
-                idx2 := get_free_vibrato_table_idx(temp_songdata.macro_table[
-                                                   songdata.instr_macros[current_inst].vibrato_table].vibrato);
-              temp_str := '';
-              If (idx1 = 0) then
-                If (idx2 = 0) then
-                  temp_str := '~ARPEGGiO/ViBRATO'
-                else temp_str := '~ARPEGGiO'
-              else If (idx2 = 0) then
-                     temp_str := '~ViBRATO';
-
-              If NOT (temp_str <> '') then
+              If shift_pressed then
                 begin
-                  If (idx1 > 0) then
-                    begin
-                      songdata.macro_table[idx1].arpeggio :=
-                      temp_songdata.macro_table[songdata.instr_macros[current_inst].arpeggio_table].arpeggio;
-                      songdata.instr_macros[current_inst].arpeggio_table := idx1;
-                    end;
-                  If (idx2 > 0) then
-                    begin
-                      songdata.macro_table[idx2].vibrato :=
-                      temp_songdata.macro_table[songdata.instr_macros[current_inst].vibrato_table].vibrato;
-                      songdata.instr_macros[current_inst].vibrato_table := idx2;
-                    end
+                  // put 4op instrument (alternate)
+                  _4op_ins_flag := FALSE;
+                  If (_4op_flag_column[index] = _4op_flag_chr_beg) then
+                    If check_4op_flag(current_inst) then
+                      begin
+                        _4op_ins_flag := TRUE;
+                        _4op_idx11 := current_inst;
+                        _4op_idx12 := SUCC(current_inst);
+                        _4op_idx21 := index;
+                        _4op_idx22 := SUCC(index);
+                      end
+                    else If check_4op_flag(PRED(current_inst)) then
+                           begin
+                             _4op_ins_flag := TRUE;
+                             _4op_idx11 := PRED(min(current_inst,2));
+                             _4op_idx12 := min(current_inst,2);
+                             _4op_idx21 := index;
+                             _4op_idx22 := SUCC(index);
+                           end
+                         else
+                  else If (_4op_flag_column[index] = _4op_flag_chr_end) then
+                         If check_4op_flag(current_inst) then
+                           begin
+                             _4op_ins_flag := TRUE;
+                             _4op_idx11 := current_inst;
+                             _4op_idx12 := SUCC(current_inst);
+                             _4op_idx21 := PRED(index);
+                             _4op_idx22 := index;
+                           end
+                         else If check_4op_flag(PRED(current_inst)) then
+                                begin
+                                  _4op_ins_flag := TRUE;
+                                  _4op_idx11 := PRED(min(current_inst,2));
+                                  _4op_idx12 := min(current_inst,2);
+                                  _4op_idx21 := PRED(index);
+                                  _4op_idx22 := index;
+                                end;
+                  If _4op_ins_flag then
+                    _put_4op_instrument;
                 end
-              else Dialog('RELATED '+temp_str+' DATA~ WAS NOT LOADED!$'+
-                          'FREE SOME SPACE iN MACRO TABLES AND ~REPEAT THiS ACTiON~$',
-                          '~O~K$',' A2W LOADER ',1);
+              else begin
+                     // put 4op instrument (force)
+                     _4op_ins_flag := FALSE;
+                     If (_4op_flag_column[index] = _4op_flag_chr_beg) then
+                       begin
+                         _4op_ins_flag := TRUE;
+                         _4op_idx11 := current_inst;
+                         _4op_idx12 := SUCC(current_inst);
+                         _4op_idx21 := index;
+                         _4op_idx22 := SUCC(index);
+                       end
+                     else If (_4op_flag_column[index] = _4op_flag_chr_end) then
+                            begin
+                              _4op_ins_flag := TRUE;
+                              _4op_idx11 := PRED(min(current_inst,2));
+                              _4op_idx12 := min(current_inst,2);
+                              _4op_idx21 := PRED(index);
+                              _4op_idx22 := index;
+                            end;
+                     If _4op_ins_flag then
+                       begin
+                         _put_4op_instrument;
+                         set_4op_flag(_4op_idx11);
+                       end;
+                   end;
+              // put 2op instrument
+              If NOT _4op_ins_flag then
+                _put_2op_instrument;
+
               load_flag := 1;
               load_flag_alt := BYTE_NULL;
             end
@@ -2823,9 +3360,10 @@ _jmp2e:
                            FillChar(songdata.instr_data[idx],SizeOf(songdata.instr_data[idx]),0);
                            FillChar(songdata.instr_macros[idx],SizeOf(songdata.instr_macros[idx]),0);
                            FillChar(songdata.dis_fmreg_col[idx],SizeOf(songdata.dis_fmreg_col[idx]),0);
-                           songdata.instr_names[idx] := Copy(songdata.instr_names[current_inst],1,9);
+                           songdata.instr_names[idx] := Copy(songdata.instr_names[idx],1,9);
                          end;
 
+                  songdata.ins_4op_flags := temp_songdata.ins_4op_flags;
                   If (temp_str <> '') then
                     Dialog('RELATED '+temp_str+' DATA~ WAS NOT LOADED!$'+
                            'FREE SOME SPACE iN MACRO TABLES AND ~REPEAT THiS ACTiON~$',
@@ -2840,7 +3378,7 @@ _end:
   If browser_flag then GOTO _jmp2;
   arpvib_arpeggio_table := arpvib_arpeggio_table_bak;
   arpvib_vibrato_table := arpvib_vibrato_table_bak;
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   keyboard_reset_buffer_alt;
 {$ENDIF}
 end;
@@ -2899,7 +3437,7 @@ var
 
 procedure import_instrument_from_data_record;
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2EXT5.PAS:import_instrument_from_data_record';
 {$ENDIF}
@@ -2967,7 +3505,7 @@ var
   temp: Longint;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2EXT5.PAS:bnk_file_loader_alt';
 {$ENDIF}
@@ -3051,7 +3589,7 @@ type
 procedure fib_file_loader_alt(instr: Word);
 
 const
-  id = 'FIB'+#$f4;
+  id = 'FIB'+#244;
 
 var
   f: File;
@@ -3061,7 +3599,7 @@ var
   instrument_data: tFIN_DATA;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2EXT5.PAS:fib_file_loader_alt';
 {$ENDIF}
@@ -3115,24 +3653,24 @@ var
 
 procedure import_sbi_instrument_alt(var data);
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2EXT5.PAS:import_sbi_instrument_alt';
 {$ENDIF}
   FillChar(temp_instrument,SizeOf(temp_instrument),0);
   With temp_instrument do
     begin
-      fm_data.AM_VIB_EG_modulator := tDUMMY_BUFF(data)[0];
-      fm_data.AM_VIB_EG_carrier   := tDUMMY_BUFF(data)[1];
-      fm_data.KSL_VOLUM_modulator := tDUMMY_BUFF(data)[2];
-      fm_data.KSL_VOLUM_carrier   := tDUMMY_BUFF(data)[3];
-      fm_data.ATTCK_DEC_modulator := tDUMMY_BUFF(data)[4];
-      fm_data.ATTCK_DEC_carrier   := tDUMMY_BUFF(data)[5];
-      fm_data.SUSTN_REL_modulator := tDUMMY_BUFF(data)[6];
-      fm_data.SUSTN_REL_carrier   := tDUMMY_BUFF(data)[7];
-      fm_data.WAVEFORM_modulator  := tDUMMY_BUFF(data)[8]  AND 3;
-      fm_data.WAVEFORM_carrier    := tDUMMY_BUFF(data)[9]  AND 3;
-      fm_data.FEEDBACK_FM         := tDUMMY_BUFF(data)[10] AND $0f;
+      fm_data.AM_VIB_EG_modulator := pBYTE(@data)[0];
+      fm_data.AM_VIB_EG_carrier   := pBYTE(@data)[1];
+      fm_data.KSL_VOLUM_modulator := pBYTE(@data)[2];
+      fm_data.KSL_VOLUM_carrier   := pBYTE(@data)[3];
+      fm_data.ATTCK_DEC_modulator := pBYTE(@data)[4];
+      fm_data.ATTCK_DEC_carrier   := pBYTE(@data)[5];
+      fm_data.SUSTN_REL_modulator := pBYTE(@data)[6];
+      fm_data.SUSTN_REL_carrier   := pBYTE(@data)[7];
+      fm_data.WAVEFORM_modulator  := pBYTE(@data)[8]  AND 3;
+      fm_data.WAVEFORM_carrier    := pBYTE(@data)[9]  AND 3;
+      fm_data.FEEDBACK_FM         := pBYTE(@data)[10] AND $0f;
     end;
 
   temp_instrument.panning := 0;
@@ -3142,7 +3680,7 @@ end;
 procedure ibk_file_loader_alt(instr: Word);
 
 const
-  id = 'IBK'+#$1a;
+  id = 'IBK'+#26;
 
 var
   f: File;
@@ -3154,7 +3692,7 @@ var
                    end;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2EXT5.PAS:ibk_file_loader_alt';
 {$ENDIF}
@@ -3206,10 +3744,11 @@ var
   old_cycle_moves: Boolean;
   xstart,ystart: Byte;
   nm_valid: Word;
+  ysize: Byte;
 
 procedure _restore;
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2EXT5.PAS:bnk_file_loader:_restore';
 {$ENDIF}
@@ -3222,7 +3761,7 @@ begin
 end;
 
 begin { bnk_file_loader }
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2EXT5.PAS:bnk_file_loader';
 {$ENDIF}
@@ -3269,28 +3808,30 @@ begin { bnk_file_loader }
     end;
 
   ScreenMemCopy(screen_ptr,ptr_screen_backup);
-  dl_environment.context := ' ESC ฤ STOP ';
+  centered_frame_vdest := screen_ptr;
+  dl_environment.context := ' ESC '#196#16' STOP ';
   centered_frame(xstart,ystart,43,3,' '+iCASE(NameOnly(instdata_source))+' ',
                  dialog_background+dialog_border,
-                 dialog_background+dialog_title,double);
+                 dialog_background+dialog_title,
+                 frame_double);
   ShowStr(screen_ptr,xstart+43-Length(dl_environment.context),ystart+3,
           dl_environment.context,
           dialog_background+dialog_border);
   dl_environment.context := '';
 
-  bnk_queue[1] := ' iNSTRUMENT                                  MELODiC/                   ';
-  bnk_queue[2] := ' NAME         ฺ20ฟ ฺ40ฟ ฺ60ฟ ฺ80ฟ ฺE0ฟ C0    PERCUSSiON (VOiCE)         ';
-  bnk_queue[3] := 'ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ';
+  bnk_queue[1] := bnk_header_str[1];
+  bnk_queue[2] := bnk_header_str[2];
+  bnk_queue[3] := bnk_header_str[3];
 
+  progress_num_steps := 1;
+  progress_step := 1;
+  progress_value := max(header.total_entries,MAX_TIMBRES);
   progress_old_value := BYTE_NULL;
-  progress_step := 40/max(header.total_entries,MAX_TIMBRES);
   progress_xstart := xstart+2;
   progress_ystart := ystart+2;
 
   ShowCStr(screen_ptr,xstart+2,ystart+1,
-           'LOADiNG CONTENTS [RECORD ~'+
-           ExpStrL(Num2str(0,10),5,'0')+'~ OF ~'+
-           ExpStrL(Num2str(max(header.total_entries,MAX_TIMBRES),10),5,'0')+'~]',
+           'LOADiNG DATA FROM BANK FiLE...',
            dialog_background+dialog_text,
            dialog_background+dialog_hi_text);
 
@@ -3300,23 +3841,19 @@ begin { bnk_file_loader }
 
   For index := 1 to max(header.total_entries,MAX_TIMBRES) do
     begin
-      If keypressed and (index > 1) then
-        begin
-          fkey := getkey;
-          If (fkey = kESC) then
-            begin
-              Dec(index);
-              BREAK;
-            end;
-        end;
+      If (ticklooper = 0) then
+        If keypressed and (index > 1) then
+          begin
+            fkey := getkey;
+            If (fkey = kESC) then
+              begin
+                Dec(index);
+                BREAK;
+              end;
+          end;
 
-      ShowCStr(screen_ptr,xstart+2+25,ystart+1,
-               '~'+
-               ExpStrL(Num2str(index,10),5,'0')+'~ OF ~'+
-               ExpStrL(Num2str(max(header.total_entries,MAX_TIMBRES),10),5,'0')+'~]',
-               dialog_background+dialog_text,
-               dialog_background+dialog_hi_text);
-      show_progress(index);
+      If (ticklooper = 0) then
+        show_progress(index);
 
       SeekF(f,header.name_offset+PRED(index)*SizeOf(name_record));
       If (IOresult <> 0) then
@@ -3424,6 +3961,13 @@ begin { bnk_file_loader }
     end;
 
   CloseF(f);
+  show_progress(index);
+  // delay for awhile to show progress bar
+  {$IFDEF GO32V2}
+  CRT.Delay(500);
+  {$ELSE}
+  SDL_Delay(200);
+  {$ENDIF}
   _restore;
   If (nm_valid = 0) then EXIT;
 
@@ -3443,10 +3987,13 @@ begin { bnk_file_loader }
   mn_setting.topic_len := 3;
   mn_setting.cycle_moves := FALSE;
 
+  If is_default_screen_mode then ysize := 20
+  else ysize := 30;
+
   keyboard_reset_buffer;
   If NOT _force_program_quit then
     index := Menu(bnk_queue,01,01,min(1,get_bank_position(instdata_source,nm_valid)),
-                  72,20,nm_valid+3,' '+iCASE(NameOnly(instdata_source))+' ');
+                  72,ysize,nm_valid+3,' '+iCASE(NameOnly(instdata_source))+' ');
 
   add_bank_position(instdata_source,nm_valid,index+3);
   mn_environment.ext_proc := old_external_proc;
@@ -3471,7 +4018,7 @@ end;
 procedure fib_file_loader;
 
 const
-  id = 'FIB'+#$f4;
+  id = 'FIB'#244;
 
 var
   f: File;
@@ -3485,10 +4032,11 @@ var
   xstart,ystart: Byte;
   instrument_data: tFIN_DATA;
   nm_valid: Word;
+  ysize: Byte;
 
 procedure _restore;
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2EXT5.PAS:fib_file_loader:_restore';
 {$ENDIF}
@@ -3501,7 +4049,7 @@ begin
 end;
 
 begin { fib_file_loader }
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2EXT5.PAS:fib_file_loader';
 {$ENDIF}
@@ -3530,28 +4078,30 @@ begin { fib_file_loader }
     end;
 
   ScreenMemCopy(screen_ptr,ptr_screen_backup);
-  dl_environment.context := ' ESC ฤ STOP ';
+  centered_frame_vdest := screen_ptr;
+  dl_environment.context := ' ESC '#196#16' STOP ';
   centered_frame(xstart,ystart,43,3,' '+iCASE(NameOnly(instdata_source))+' ',
                  dialog_background+dialog_border,
-                 dialog_background+dialog_title,double);
+                 dialog_background+dialog_title,
+                 frame_double);
   ShowStr(screen_ptr,xstart+43-Length(dl_environment.context),ystart+3,
           dl_environment.context,
           dialog_background+dialog_border);
   dl_environment.context := '';
 
-  bnk_queue[1] := ' DOS       iNSTRUMENT                                                   ';
-  bnk_queue[2] := ' NAME      NAME                          ฺ20ฟ ฺ40ฟ ฺ60ฟ ฺ80ฟ ฺE0ฟ C0    ';
-  bnk_queue[3] := 'ออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ';
+  bnk_queue[1] := fib_header_str[1];
+  bnk_queue[2] := fib_header_str[2];
+  bnk_queue[3] := fib_header_str[3];
 
+  progress_num_steps := 1;
+  progress_step := 1;
+  progress_value := max(header.nmins,MAX_TIMBRES);
   progress_old_value := BYTE_NULL;
-  progress_step := 40/max(header.nmins,MAX_TIMBRES);
   progress_xstart := xstart+2;
   progress_ystart := ystart+2;
 
   ShowCStr(screen_ptr,xstart+2,ystart+1,
-           'LOADiNG CONTENTS [RECORD ~'+
-           ExpStrL(Num2str(0,10),5,'0')+'~ OF ~'+
-           ExpStrL(Num2str(max(header.nmins,MAX_TIMBRES),10),5,'0')+'~]',
+           'LOADiNG DATA FROM BANK FiLE...',
            dialog_background+dialog_text,
            dialog_background+dialog_hi_text);
 
@@ -3561,23 +4111,19 @@ begin { fib_file_loader }
 
   For index := 1 to max(header.nmins,MAX_TIMBRES) do
     begin
-      If keypressed and (index > 1) then
-        begin
-          fkey := getkey;
-          If (fkey = kESC) then
-            begin
-              Dec(index);
-              BREAK;
-            end;
-        end;
+      If (ticklooper = 0) then
+        If keypressed and (index > 1) then
+          begin
+            fkey := getkey;
+            If (fkey = kESC) then
+              begin
+                Dec(index);
+                BREAK;
+              end;
+          end;
 
-      ShowCStr(screen_ptr,xstart+2+25,ystart+1,
-               '~'+
-               ExpStrL(Num2str(index,10),5,'0')+'~ OF ~'+
-               ExpStrL(Num2str(max(header.nmins,MAX_TIMBRES),10),5,'0')+'~]',
-               dialog_background+dialog_text,
-               dialog_background+dialog_hi_text);
-      show_progress(index);
+      If (ticklooper = 0) then
+        show_progress(index);
 
       BlockReadF(f,instrument_data,SizeOf(instrument_data),temp);
       If (temp <> SizeOf(instrument_data)) then
@@ -3662,6 +4208,13 @@ begin { fib_file_loader }
     end;
 
   CloseF(f);
+  show_progress(index);
+  // delay for awhile to show progress bar
+  {$IFDEF GO32V2}
+  CRT.Delay(500);
+  {$ELSE}
+  SDL_Delay(200);
+  {$ENDIF}
   _restore;
 
   If (nm_valid = 0) then EXIT;
@@ -3680,10 +4233,13 @@ begin { fib_file_loader }
   mn_setting.topic_len := 3;
   mn_setting.cycle_moves := FALSE;
 
+  If is_default_screen_mode then ysize := 20
+  else ysize := 30;
+
   keyboard_reset_buffer;
   If NOT _force_program_quit then
     index := Menu(bnk_queue,01,01,min(1,get_bank_position(instdata_source,nm_valid)),
-                  72,20,nm_valid+3,' '+iCASE(NameOnly(instdata_source))+' ');
+                  72,ysize,nm_valid+3,' '+iCASE(NameOnly(instdata_source))+' ');
 
   add_bank_position(instdata_source,nm_valid,index+3);
   mn_environment.ext_proc := old_external_proc;
@@ -3713,7 +4269,7 @@ end;
 procedure ibk_file_loader;
 
 const
-  id = 'IBK'+#$1a;
+  id = 'IBK'#26;
 
 var
   f: File;
@@ -3725,6 +4281,7 @@ var
   old_cycle_moves: Boolean;
   xstart,ystart: Byte;
   nm_valid: Word;
+  ysize: Byte;
   instrument_name: array[1..9] of Char;
   instrument_data: Record
                      idata: tFM_INST_DATA;
@@ -3733,7 +4290,7 @@ var
 
 procedure _restore;
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2EXT5.PAS:ibk_file_loader:_restore';
 {$ENDIF}
@@ -3746,7 +4303,7 @@ begin
 end;
 
 begin { ibk_file_loader }
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2EXT5.PAS:ibk_file_loader';
 {$ENDIF}
@@ -3775,28 +4332,30 @@ begin { ibk_file_loader }
     end;
 
   ScreenMemCopy(screen_ptr,ptr_screen_backup);
-  dl_environment.context := ' ESC ฤ STOP ';
+  centered_frame_vdest := screen_ptr;
+  dl_environment.context := ' ESC '#196#16' STOP ';
   centered_frame(xstart,ystart,43,3,' '+iCASE(NameOnly(instdata_source))+' ',
                  dialog_background+dialog_border,
-                 dialog_background+dialog_title,double);
+                 dialog_background+dialog_title,
+                 frame_double);
   ShowStr(screen_ptr,xstart+43-Length(dl_environment.context),ystart+3,
           dl_environment.context,
           dialog_background+dialog_border);
   dl_environment.context := '';
 
-  ibk_queue[1] := ' iNSTRUMENT                                 ';
-  ibk_queue[2] := ' NAME         ฺ20ฟ ฺ40ฟ ฺ60ฟ ฺ80ฟ ฺE0ฟ C0   ';
-  ibk_queue[3] := 'ออออออออออออออออออออออออออออออออออออออออออออ';
+  ibk_queue[1] := ibk_header_str[1];
+  ibk_queue[2] := ibk_header_str[2];
+  ibk_queue[3] := ibk_header_str[3];
 
+  progress_num_steps := 1;
+  progress_step := 1;
+  progress_value := 128;
   progress_old_value := BYTE_NULL;
-  progress_step := 40/128;
   progress_xstart := xstart+2;
   progress_ystart := ystart+2;
 
   ShowCStr(screen_ptr,xstart+2,ystart+1,
-           'LOADiNG CONTENTS [RECORD ~'+
-           ExpStrL(Num2str(0,10),5,'0')+'~ OF ~'+
-           ExpStrL(Num2str(128,10),5,'0')+'~]',
+           'LOADiNG DATA FROM BANK FiLE...',
            dialog_background+dialog_text,
            dialog_background+dialog_hi_text);
 
@@ -3806,23 +4365,19 @@ begin { ibk_file_loader }
 
   For index := 1 to 128 do
     begin
-      If keypressed and (index > 1) then
-        begin
-          fkey := getkey;
-          If (fkey = kESC) then
-            begin
-              Dec(index);
-              BREAK;
-            end;
-        end;
+      If (ticklooper = 0) then
+        If keypressed and (index > 1) then
+          begin
+            fkey := getkey;
+            If (fkey = kESC) then
+              begin
+                Dec(index);
+                BREAK;
+              end;
+          end;
 
-      ShowCStr(screen_ptr,xstart+2+25,ystart+1,
-               '~'+
-               ExpStrL(Num2str(index,10),5,'0')+'~ OF ~'+
-               ExpStrL(Num2str(128,10),5,'0')+'~]',
-               dialog_background+dialog_text,
-               dialog_background+dialog_hi_text);
-      show_progress(index);
+      If (ticklooper = 0) then
+        show_progress(index);
 
       SeekF(f,$004+PRED(index)*SizeOf(instrument_data));
       If (IOresult <> 0) then
@@ -3915,7 +4470,13 @@ begin { ibk_file_loader }
     end;
 
   CloseF(f);
-
+  show_progress(index);
+  // delay for awhile to show progress bar
+  {$IFDEF GO32V2}
+  CRT.Delay(500);
+  {$ELSE}
+  SDL_Delay(200);
+  {$ENDIF}
   _restore;
 
   If (nm_valid = 0) then EXIT;
@@ -3934,10 +4495,13 @@ begin { ibk_file_loader }
   mn_setting.topic_len := 3;
   mn_setting.cycle_moves := FALSE;
 
+  If is_default_screen_mode then ysize := 20
+  else ysize := 30;
+
   keyboard_reset_buffer;
   If NOT _force_program_quit then
     index := Menu(ibk_queue,01,01,min(1,get_bank_position(instdata_source,nm_valid)),
-                  45,20,nm_valid+3,' '+iCASE(NameOnly(instdata_source))+' ');
+                  45,ysize,nm_valid+3,' '+iCASE(NameOnly(instdata_source))+' ');
 
   add_bank_position(instdata_source,nm_valid,index+3);
   mn_environment.ext_proc := old_external_proc;
@@ -3959,47 +4523,102 @@ begin { ibk_file_loader }
     end;
 end;
 
-procedure a2b_lister_external_proc;
+procedure a2b_lister_external_proc_callback;
+
+var
+  test_ins1: Byte;
+  test_ins2: Byte;
+  curr_inst: Byte;
+
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
-  _debug_str_ := 'ADT2EXT5.PAS:a2b_lister_external_proc';
+  _debug_str_ := 'ADT2EXT5.PAS:a2b_lister_external_proc_callback';
 {$ENDIF}
+  If (get_4op_to_test_temp <> 0) then
+    begin
+      test_ins1 := LO(get_4op_to_test_temp);
+      test_ins2 := HI(get_4op_to_test_temp);
+    end
+  else
+    begin
+      curr_inst := mn_environment.curr_pos;
+      If NOT (curr_inst in [1..255]) then EXIT;
+      test_ins1 := curr_inst;
+      test_ins2 := 0;
+    end;
   If NOT shift_pressed and NOT alt_pressed and NOT ctrl_pressed then
     test_instrument_alt(count_channel(pattern_hpos),
                         mn_environment.keystroke,
-                        FALSE,TRUE,FALSE); // test instrument from bank, without any macros
+                        FALSE,TRUE,FALSE, // test instrument from bank, without any macros
+                        test_ins1,test_ins2);
 end;
 
 procedure a2w_lister_external_proc_callback;
+
+var
+  test_ins1: Byte;
+  test_ins2: Byte;
+  curr_inst: Byte;
+
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2EXT5.PAS:a2w_lister_external_proc';
 {$ENDIF}
+  If (get_4op_to_test_temp <> 0) then
+    begin
+      test_ins1 := LO(get_4op_to_test_temp);
+      test_ins2 := HI(get_4op_to_test_temp);
+    end
+  else
+    begin
+      curr_inst := mn_environment.curr_pos;
+      If NOT (curr_inst in [1..255]) then EXIT;
+      test_ins1 := curr_inst;
+      test_ins2 := 0;
+    end;
   If NOT shift_pressed and NOT alt_pressed and NOT ctrl_pressed then
     test_instrument_alt(count_channel(pattern_hpos),
                         mn_environment.keystroke,
-                        TRUE,TRUE,FALSE); // test instrument from bank, with chosen FM-data and macro
-                                          // and current Arp./Vib. macro tables
+                        TRUE,TRUE,FALSE,      // test instrument from bank, with chosen FM-data and macro
+                        test_ins1,test_ins2); // and current Arp./Vib. macro tables
 end;
 
 procedure a2w_macro_lister_external_proc_callback;
+
+var
+  test_ins1: Byte;
+  test_ins2: Byte;
+  curr_inst: Byte;
+
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2EXT5.PAS:a2w_macro_lister_external_proc_callback';
 {$ENDIF}
+  If (get_4op_to_test_temp <> 0) then
+    begin
+      test_ins1 := LO(get_4op_to_test_temp);
+      test_ins2 := HI(get_4op_to_test_temp);
+    end
+  else
+    begin
+      curr_inst := mn_environment.curr_pos;
+      If NOT (curr_inst in [1..255]) then EXIT;
+      test_ins1 := curr_inst;
+      test_ins2 := 0;
+    end;
   If NOT shift_pressed and NOT alt_pressed and NOT ctrl_pressed then
     test_instrument_alt(count_channel(pattern_hpos),
                         mn_environment.keystroke,
-                        FALSE,FALSE,TRUE);  // test current instr, with current FM-data and macro
-                                            // and chosen Arp./Vib. macro tables from bank
+                        FALSE,FALSE,TRUE,     // test current instr, with current FM-data and macro
+                        test_ins1,test_ins2); // and chosen Arp./Vib. macro tables from bank
 end;
 
 procedure bnk_lister_external_proc;
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2EXT5.PAS:bnk_lister_external_proc';
 {$ENDIF}
@@ -4012,7 +4631,7 @@ end;
 
 procedure fib_lister_external_proc;
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2EXT5.PAS:fib_lister_external_proc';
 {$ENDIF}
@@ -4025,7 +4644,7 @@ end;
 
 procedure ibk_lister_external_proc;
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2EXT5.PAS:ibk_lister_external_proc';
 {$ENDIF}

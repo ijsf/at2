@@ -1,13 +1,27 @@
 unit DepackIO;
-{$IFNDEF __TMT__}
+{$S-,Q-,R-,V-,B-,X+}
 {$PACKRECORDS 1}
-{$ENDIF}
 interface
 
+// Compression algorithm: RDC
+// Algorithm developed by Ed Ross
 function RDC_decompress(var source,dest; size: Word): Word;
+
+// Compression algorithm: LZSS
+// Algorithm developed by Lempel-Ziv-Storer-Szymanski
 function LZSS_decompress(var source,dest; size: Word): Word;
+
+// Compression algorithm: LZW
+// Algorithm developed by Lempel-Ziv-Welch
 function LZW_decompress(var source,dest): Word;
+
+// Compression algorithm: SixPack
+// Algorithm developed by Philip G. Gage
 function SIXPACK_decompress(var source,dest; size: Word): Word;
+
+// Compression algorithm: aPack
+// Algorithm developed by Joergen Ibsen
+function APACK_decompress(var source,dest): Dword;
 
 implementation
 
@@ -170,7 +184,7 @@ end;
 const
   N = 4096;
   F = 18;
-  THRESHOLD = 2;
+  T = 2;
 
 procedure GetChar; assembler;
 asm
@@ -247,7 +261,7 @@ begin
         mov     bl,ch
         mov     cl,al
         and     cl,0fh
-        add     cl,THRESHOLD
+        add     cl,T
         inc     cl
 @@4:    and     ebx,N-1
         push    esi
@@ -318,7 +332,7 @@ function LZW_decode: Word;
 
 var
   result: Word;
-  
+
 begin
   asm
         xor     eax,eax
@@ -418,7 +432,7 @@ begin
 @@9:    mov     output_size,ax
         mov     result,ax
   end;
-  LZW_decode := result;  
+  LZW_decode := result;
 end;
 
 function LZW_decompress(var source,dest): Word;
@@ -453,7 +467,7 @@ const
 
 var
   leftC,rghtC: array[0..MAXCHAR] of Word;
-  dad,freq: array[0..TWICEMAX] of Word;
+  dad,frq: array[0..TWICEMAX] of Word;
   index,ibitCount,ibitBuffer,obufCount: Word;
 
 procedure InitTree;
@@ -469,7 +483,7 @@ begin
         push    edi
         shl     di,1
         mov     word ptr dad[edi],ax
-        mov     word ptr freq[edi],cx
+        mov     word ptr frq[edi],cx
         pop     edi
         inc     di
         cmp     di,TWICEMAX
@@ -497,16 +511,16 @@ begin
         xor     edi,edi
 @@1:    mov     di,a
         shl     di,1
-        mov     bx,word ptr freq[edi]
+        mov     bx,word ptr frq[edi]
         mov     di,b
         shl     di,1
-        add     bx,word ptr freq[edi]
+        add     bx,word ptr frq[edi]
         mov     di,a
         shl     di,1
         mov     dx,word ptr dad[edi]
         mov     di,dx
         shl     di,1
-        mov     word ptr freq[edi],bx
+        mov     word ptr frq[edi],bx
         mov     a,dx
         cmp     a,ROOT
         jz      @@3
@@ -532,10 +546,10 @@ begin
         mov     bx,MAXFREQ
         mov     di,ROOT
         shl     di,1
-        cmp     word ptr freq[edi],bx
+        cmp     word ptr frq[edi],bx
         jnz     @@5
-        lea     esi,[freq]
-        lea     edi,[freq]
+        lea     esi,[frq]
+        lea     edi,[frq]
         mov     cx,TWICEMAX
         movsw
 @@4:    lodsw
@@ -556,9 +570,9 @@ begin
         mov     di,bx
         shl     di,1
         mov     ax,di
-        mov     cx,word ptr freq[edi]
+        mov     cx,word ptr frq[edi]
         inc     cx
-        mov     word ptr freq[edi],cx
+        mov     word ptr frq[edi],cx
         mov     di,ax
         mov     cx,ROOT
         cmp     word ptr dad[edi],cx
@@ -600,12 +614,12 @@ begin
         mov     di,bx
         shl     di,1
         push    eax
-        mov     ax,word ptr freq[edi]
+        mov     ax,word ptr frq[edi]
         mov     di,si
         shl     di,1
         mov     cx,ax
         pop     eax
-        cmp     cx,word ptr freq[edi]
+        cmp     cx,word ptr frq[edi]
         jbe     @@9
         mov     di,ax
         shl     di,1
@@ -880,6 +894,125 @@ begin
   input_size := size;
   SIXPACK_decode;
   SIXPACK_decompress := output_size;
+end;
+
+function APACK_decompress(var source,dest): Dword;
+
+var
+  temp,result: Dword;
+
+begin
+  asm
+        mov     esi,[source]
+        mov     edi,[dest]
+        cld
+        mov     dl,80h
+@@1:    movsb
+@@2:    add     dl,dl
+        jnz     @@3
+        mov     dl,[esi]
+        inc     esi
+        adc     dl,dl
+@@3:    jnc     @@1
+        xor     ecx,ecx
+        add     dl,dl
+        jnz     @@4
+        mov     dl,[esi]
+        inc     esi
+        adc     dl,dl
+@@4:    jnc     @@8
+        xor     eax,eax
+        add     dl,dl
+        jnz     @@5
+        mov     dl,[esi]
+        inc     esi
+        adc     dl,dl
+@@5:    jnc     @@15
+        inc     ecx
+        mov     al,10h
+@@6:    add     dl,dl
+        jnz     @@7
+        mov     dl,[esi]
+        inc     esi
+        adc     dl,dl
+@@7:    adc     al,al
+        jnc     @@6
+        jnz     @@24
+        stosb
+        jmp     @@2
+@@8:    inc     ecx
+@@9:    add     dl,dl
+        jnz     @@10
+        mov     dl,[esi]
+        inc     esi
+        adc     dl,dl
+@@10:   adc     ecx,ecx
+        add     dl,dl
+        jnz     @@11
+        mov     dl,[esi]
+        inc     esi
+        adc     dl,dl
+@@11:   jc      @@9
+        dec     ecx
+        loop    @@16
+        xor     ecx,ecx
+        inc     ecx
+@@12:   add     dl,dl
+        jnz     @@13
+        mov     dl,[esi]
+        inc     esi
+        adc     dl,dl
+@@13:   adc     ecx,ecx
+        add     dl,dl
+        jnz     @@14
+        mov     dl,[esi]
+        inc     esi
+        adc     dl,dl
+@@14:   jc      @@12
+        jmp     @@23
+@@15:   lodsb
+        shr     eax,1
+        jz      @@25
+        adc     ecx,ecx
+        jmp     @@20
+@@16:   xchg    eax,ecx
+        dec     eax
+        shl     eax,8
+        lodsb
+        xor     ecx,ecx
+        inc     ecx
+@@17:   add     dl,dl
+        jnz     @@18
+        mov     dl,[esi]
+        inc     esi
+        adc     dl,dl
+@@18:   adc     ecx,ecx
+        add     dl,dl
+        jnz     @@19
+        mov     dl,[esi]
+        inc     esi
+        adc     dl,dl
+@@19:   jc      @@17
+        cmp     eax,32000
+        jae     @@20
+        cmp     ah,5
+        jae     @@21
+        cmp     eax,7fh
+        ja      @@22
+@@20:   inc     ecx
+@@21:   inc     ecx
+@@22:   xchg    eax,temp
+@@23:   mov     eax,temp
+@@24:   push    esi
+        mov     esi,edi
+        sub     esi,eax
+        rep     movsb
+        pop     esi
+        jmp     @@2
+@@25:   sub     edi,[dest]
+        mov     result,edi
+  end;
+  APACK_decompress := result;
 end;
 
 end.

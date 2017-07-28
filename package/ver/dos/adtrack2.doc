@@ -6,7 +6,7 @@
                                   ÄÂÄ       ÄÄ                              ³
                              /´DLiB³R/´CK3R ³³ G3                           ³
                               ³       ³     ÄÄ                              ³
-                                        2.3.54                              ³
+                                        2.3.56                              ³
                                                                             ³
                                                                             ³
                                                                             ³
@@ -103,7 +103,7 @@
  ş supports 4-op instruments, melodic and percussion instruments
 
  ş supports up to 255 instruments, 128 patterns, 128 order list entries,
-   89 effect commands, and 16 extended commands
+   89 effect commands, and 21 extended commands
 
  ş features 2 effect columns, instrument macro-definitions,
    MPU-401 MIDI slave mode (SYNTH!)
@@ -288,6 +288,7 @@
  ³ MBoard keys      Write notes to corresponding tracks           ³ (*)  ³
  ³ F8,F9            Toggle pattern repeat OFF/ON                  Ù      ³
  ³ Backspace        Clear note/instrument sequence in tracks             ³
+ ³ ^Backspace       Clear complete note/instrument columns               ³
  ³ Up,Down          Rewind/Fast-Forward while recording                  ³
  ³ [Shift] Up,Down  Increase/Decrease row correction for writing notes   ³
  ³ [Shift] F6       Continue in Debug mode from position at cursor       ³
@@ -318,12 +319,14 @@
  ^Left  (Up)              Rewind current pattern (with Trace)
  ^Right (Down)            Fast-Forward (with Trace)
  [Ctrl][Alt] <hold down>  Temporarily show Debug Info window
+ ^B                       Toggle Message Board window
  ^D                       Toggle Debug Info window
  ^Q                       Toggle Instrument Macro Editor window
- ^E                       Toggle Arpeggio/Vibrato Macro Editor window
+ ^G                       Toggle Arpeggio/Vibrato Macro Editor window
  ^F                       Toggle Song Variables window
  ^H                       Toggle Replace window
  ^I                       Toggle Instrument Control panel
+ ^E                       Toggle Instrument Editor window
  ^O                       Toggle Octave Control panel
  ^P                       Toggle Pattern List window
  ^R                       Toggle Remap Instrument window
@@ -390,7 +393,8 @@
  ^K                       Insert Key-Off
  ^C                       Copy object at cursor to clipboard
  ^V                       Paste object from clipboard
- [Ctrl][Tab] V            Multiple paste object from clipboard
+ [Alt][Shift] P           Paste object from clipboard to more patterns
+ ^Z                       Undo last operation (if possible)
  {Ctrl} "[","]"           Change current instrument
  [Alt] F2                 Save current pattern to file
  ^F2                      Save module in tiny format
@@ -458,6 +462,8 @@
  [Alt] P (^V)             Paste pattern from clipboard
  [Shift] ^V               Paste pattern data from clipboard
  [Alt] ^V                 Paste pattern name from clipboard
+ ^N                       Nuke current pattern
+ [Shift] ^N               Nuke all marked patterns
  ^W                       Swap marked patterns
  [Shift] ^W               Swap marked patterns w/o names
  [Shift] Insert           Insert new pattern
@@ -485,6 +491,7 @@
  [Shift] ^W               Swap marked instruments W/o names
  Tab                      Toggle Instrument Editor window
  [Shift] Tab              Toggle Macro Editor window
+ [Shift] O                Toggle operator mode 4OP / 2OP
  [Shift] M,B,S,T,C,H      Toggle melodic and percussion (BD,SD,TT,TC,HH)
  [Shift] F2               Save instrument w/ fm-register macro to file
  [Alt] F2                 Save instrument bank to file
@@ -498,18 +505,26 @@
 
  Up,Down,Left,Right,
  Home,End                 Cursor navigation
+ [Alt] <section hotkey>~  Jump to section
  Tab                      Jump to next setting
  [Shift] Tab              Jump to previous setting
  +,- (PgUp,PgDn)          Adjust value
  Space                    Select item
- ^Space                   Toggle ADSR preview ON/OFF (if necessary)
+ ^Space (opt.)            Toggle ADSR preview ON/OFF
  [Ctrl] "[","]"           Change current instrument
  [Ctrl][Shift] "[","]"    Change macro speed
+ [Alt]{Shift} 1..4,0      Set operators for instrument preview (*)
  MBoard keys <hold down>  Preview instrument
- Enter                    Toggle carrier and modulator slot settings
+ Enter                    Toggle carrier/modulator/4OP slot settings
+ [Shift] O                Toggle operator mode 4OP / 2OP
  [Shift] M,B,S,T,C,H      Toggle melodic and percussion (BD,SD,TT,TC,HH)
  [Shift] F2               Save instrument w/ fm-register macro to file
+ [Shift] Enter            Copy values from carrier/modulator slot
  Esc                      Return to Instrument Control panel
+
+ (*) [Alt] 1..4           Set solo operator
+     [Alt][Shift] 1..4    Toggle operator ON/OFF
+     [Alt] 0              Reset
 
 
  III/7. iNSTRUMENT MACRO EDiTOR WiNDOW KEY REFERENCE
@@ -527,6 +542,9 @@
  ^PgUp,^PgDown            Change current arpeggio/vibrato table
  [Ctrl] "[","]"           Change current instrument
  [Ctrl][Shift] "[","]"    Change macro speed
+ [Alt]{Shift} 1..4,0      Set operators for instrument preview (*)
+ [Alt] ^C                 Copy values from carrier column
+ [Alt] ^M                 Copy values from modulator column
  ^C                       Copy line in table (whole table respectively)
  [Shift] ^C               Copy column in table
  ^V                       Paste object from clipboard
@@ -541,10 +559,12 @@
  [Shift] ^PgUp,^PgDown    Quick-adjust loop length
  Insert                   Insert new line in table
  Delete                   Delete line in table
- ^N                       Toggle note retrigger ON/OFF       ¿
- [Alt] ^N                 Reset flags on all rows            ³
- ^Backspace               Toggle corresponding column ON/OFF Ã FM-register
- [Alt] S                  Set all OFF except current column  ³ table
+ ^E                       Toggle envelope restart ON/OFF     ¿
+ ^N                       Toggle note retrigger ON/OFF       ³
+ ^Z                       Toggle ZERO frequency ON/OFF       ³
+ [Alt] ^E,^N,^Z           Reset all alike flags in table     Ã FM-register
+ ^Backspace               Toggle corresponding column ON/OFF ³ table
+ [Alt] S                  Set all OFF except current column  ³
  [Alt] R                  Reset flags on all columns         ³
  *                        Reverse ON/OFF on all columns      Ù
  \                        Toggle current item (switch types only)
@@ -552,6 +572,10 @@
  ^Space                   Toggle Key-Off loop within macro-preview mode
  ^F2                      Save instrument bank w/ all macros to file
  Esc                      Leave Instrument Macro Editor window
+
+ (*) [Alt] 1..4           Set solo operator
+     [Alt][Shift] 1..4    Toggle operator ON/OFF
+     [Alt] 0              Reset
 
 
  III/8. APREGGiO/ViBRATO MACRO EDiTOR WiNDOW KEY REFERENCE
@@ -568,6 +592,7 @@
  ^PgUp,^PgDown            Change current arpeggio/vibrato table
  [Ctrl] "[","]"           Change current instrument
  [Ctrl][Shift] "[","]"    Change macro speed
+ [Alt]{Shift} 1..4,0      Set operators for instrument preview (*)
  ^C                       Copy line in table (whole table respectively)
  [Shift] ^C               Copy column in table
  ^V                       Paste object from clipboard
@@ -577,7 +602,12 @@
  ^Home,^End               Quick-adjust table length
  [Shift] ^Home,^End       Quick-adjust loop begin position
  [Shift] ^PgUp,^PgDown    Quick-adjust loop length
+ [Shift] Esc              Apply table indexes to current instrument
  Esc                      Leave Arpeggio/Vibrato Macro Editor window
+
+ (*) [Alt] 1..4           Set solo operator
+     [Alt][Shift] 1..4    Toggle operator ON/OFF
+     [Alt] 0              Reset
 
 
  III/9. iNSTRUMENT MACRO BROWSER KEY REFERENCE
@@ -591,11 +621,10 @@
  [Shift] Home,End         Move to the start/end of macro table
  [Ctrl] Home,End          Move to the start/end of line in macro table
  Enter                    Load selected macro data
- ^Enter                   Load all macro data from bank (if available)
- [Ctrl] "[","]"           Change current instrument (if possible)
+ ^Enter (opt.)            Load all macro data from bank
  [Ctrl][Shift] "[","]"    Change macro speed
  MBoard keys <hold down>  Preview instrument with selected macro data
- Tab                      Switch to Arpeggio/Vibrato Macro Browser window
+ Tab (opt.)               Switch to Arpeggio/Vibrato Macro Browser window
  Esc                      Leave Instrument Macro Browser window
 
 
@@ -612,11 +641,11 @@
  [Ctrl] {Alt} Space       Toggle vibrato table selection  (**)   Ù
  [Shift] Home,End         Navigate to start/end of arpeggio table
  ^Home,^End               Navigate to start/end of vibrato table
- [Ctrl] "[","]"           Change current instrument (if possible)
+ [Ctrl] "[","]"           Change current instrument
  [Ctrl][Shift] "[","]"    Change macro speed
  MBoard keys <hold down>  Preview instrument with selected macro data
  Enter                    Load selected macro data
- ^Enter                   Load all macro data from bank (if available)
+ ^Enter (opt.)            Load all macro data from bank
  Esc                      Leave Arpeggio/Vibrato Macro Browser window
 
  (*)  Key combination with Ctrl+Shift applies action to both tables
@@ -630,7 +659,7 @@
  Home,End                 Change current track
  Tab                      Toggle details
  Backspace                Toggle pattern repeat
- Space                    Enter Debug mode / Proceed step (if possible)
+ Space                    Enter Debug mode / Proceed step
  ^Space                   Exit Debug mode
  [Ctrl] Home,End          Skip to previous/next pattern
  +,-                      Same as above; play pattern from start
@@ -700,7 +729,7 @@
  III/16. FiLE BROWSER KEY REFERENCE
  ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
  Up,Down,Left,Right,
- Home,End                 Cursor navigation
+ PgUp,PgDown,Home,End     Cursor navigation
  \                        Navigate to drive root
  Backspace                Navigate to parent directory
  [Shift] Backspace        Navigate to program home directory
@@ -709,7 +738,27 @@
  Esc                      Leave without choosing file
 
 
- III/17. iNPUT FiELD KEY REFERENCE
+ III/17. MESSAGE BOARD WiNDOW KEY REFERENCE
+ ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+
+ Up,Down,Left,Right,
+ ^PgUp,^PgDown,
+ Home,End,^Home,^End      Cursor navigation
+ PgUp,PgDown              Move backwards/forwards over text
+ ^Left,^Right             Move word left/right
+ Backspace,Delete         Delete character left/right
+ ^Backspace,^T            Delete word left/right
+ ^K                       Delete characters to end
+ ^Y                       Delete current line
+ Tab                      Indent current line
+ ^Space                   Insert row for text at cursor
+ [Shift] ^Backspace       Delete row for text at cursor
+ Insert                   Toggle input and overwrite mode
+ Enter                    Wrap line of text
+ Esc                      Return to Pattern Editor or Pattern Order
+
+
+ III/18. iNPUT FiELD KEY REFERENCE
  ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
 
  Left,Right               Move left/right
@@ -717,11 +766,12 @@
  ^Left,^Right             Move word left/right
  Backspace,Delete         Delete character left/right
  ^Backspace,^T            Delete word left/right
+ ^K                       Delete characters to end
  ^Y                       Delete string
  Insert                   Toggle input and overwrite mode
 
 
- III/18. MiDiBOARD KEY REFERENCE
+ III/19. MiDiBOARD KEY REFERENCE
  ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
 
  Use to enter notes while in MBoard mode (if not already active,
@@ -1002,6 +1052,13 @@
  because the combination of two instrument connections specifies
  the connection of the 4-op instrument as shown below:
 
+ ÚÄÄÄÄÄÄÄÄÄÄÄÄÒÄÄÄÄÄÂÄÄÄÄÄÂÄÄÄÄÄÂÄÄÄÄÄ¿
+ ³ SLOT       º  M1 ³  C1 ³  M2 ³  C2 ³
+ ÃÄÄÄÄÄÄÄÄÄÄÄÄ×ÄÄÄÄÄÅÄÄÄÄÄÅÄÄÄÄÄÅÄÄÄÄÄ´
+ ³ OPERATOR   º  1  ³  2  ³  3  ³  4  ³
+ ÀÄÄÄÄÄÄÄÄÄÄÄÄĞÄÄÄÄÄÁÄÄÄÄÄÁÄÄÄÄÄÁÄÄÄÄÄÙ
+
+
  [FM/FM]
 
          ÚÄÄÄÄÄÄÄÄÄÄÄÄ¿
@@ -1032,7 +1089,7 @@
 
                            P4
 
- [AM/FM]
+ [AM/FM] (*)
 
          ÚÄÄÄÄÄÄÄÄÄÄÄÄ¿
          ³            ³
@@ -1049,7 +1106,7 @@
 
                            P3             P4
 
- [AM/AM]
+ [AM/AM] (*)
 
          ÚÄÄÄÄÄÄÄÄÄÄÄÄ¿
          ³            ³
@@ -1068,6 +1125,14 @@
               ÉÍÍÍÍ»                      ³
   P4 ÄÄÄÄÄÄÄÄº C2 ÇÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
               ÈÍÍÍÍ¼
+
+
+ (*) REMARK ABOUT 4OP CONNECTiONS
+ Please note, that since order of 4OP tracks in the tracker is 2) and 1),
+ these non-symmetrical instrument connections are reversed.',
+ The preview diagrams in the Instrument Editor window show actual order,
+ but here this information is kept in conformity with the official
+ Yamaha YMF262 data specification to prevent further confusion.
 
 
  TREMOLO (AMPLiTUDE MODULATiON)
@@ -1162,11 +1227,11 @@
  ³  [8]  ³  8  ³ 3 octaves above                    ³
  ³  [9]  ³  9  ³ 3 octaves and a Major 2nd above    ³
  ³  [A]  ³ 10  ³ 3 octaves and a Major 3rd above    ³
- ³  [B]  ³ 11  ³ " "       "   " "     "   "        ³
+ ³  [B]  ³ 10  ³             ...                    ³
  ³  [C]  ³ 12  ³ 3 octaves and a 5th above          ³
- ³  [D]  ³ 13  ³ " "       "   "     "              ³
- ³  [E]  ³ 14  ³ 3 octaves and a Major 7th above    ³
- ³  [F]  ³ 15  ³ " "       "   " "     "   "        ³
+ ³  [D]  ³ 12  ³             ...                    ³
+ ³  [E]  ³ 15  ³ 3 octaves and a Major 7th above    ³
+ ³  [F]  ³ 15  ³             ...                    ³
  ÀÄÄÄÄÄÄÄÁÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
 
 
@@ -1660,18 +1725,60 @@
  endless loop.
 
 
- [ZEx] MACRO KEY-OFF LOOP
- ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+ [ZE0/ZE1] TOGGLE MACRO KEY-OFF LOOP
+ ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
 
  This command temporarily turns on-or-off looping
  of Key-Off phase in macro-table for current instrument.
- Parameter 'x' gives the state of looping:
+ Parameter 'x' gives the state to toggle:
 
    '0' is OFF,
    '1' is ON.
 
- Note that "temporarily" means that the change is valid until there is
- different than the current instrument set.
+ Note that "temporarily" means that the change is valid until there will be
+ set different instrument than is the current one, for which this command
+ is to be used.
+
+
+ [ZE2/ZE3] TOGGLE RESTART ENVOLOPE WiTH TONE PORTAMENTO
+ ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+
+ This command turns on-or-off restarting of ADSR envelope for current track.
+ It means, that the note key will be retriggered for every row with non-empty
+ input in the note column (rows where note culumn is empty are not affected).
+ Parameter 'x' gives the state to toggle:
+
+   '2' is OFF,
+   '3' is ON.
+
+
+ [ZE4] PERFORM RESTART ENVELOPE
+ ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+
+ This command restarts ADSR envelope for current instrument.
+
+
+ [ZE5/ZE6] TOGGLE 4OP TRACK VOLUME LOCK
+ ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+
+ This command turns on-or-off 4OP Track Volume Lock.
+ If 4OP Track Volume Lock is set, some of the volume effect commands
+ will work in 4OP mode instead of default (2OP) mode. This means,
+ that volume attenuation is calculated according 4OP connection
+ of the 2 used instruments in track 2) and 1), and you don't have to
+ manage carrier/modulator output level to get desired volume level
+ during playback.
+ Parameter 'x' gives the state to toggle:
+
+   '5' is OFF,
+   '6' is ON.
+
+ Here is a complete list of commands that are affected by this lock:
+ 5xy/6xy, Axy, Cxx, Gxy/Hxy, Kxy, Mxy, Rxy/Sxy, Txy/Uxy,
+ Vxy/Wxy, Xxy/Yxy, ^xy, %xx
+
+ Please note that when the 4OP Track Volume Lock is set for particular
+ 4OP tracks, setting of 'Volume Scaling' is ignored (it is mandatory ON).
 
 
  [ZF0] RELEASE SUSTAiNiNG SOUND
@@ -1689,36 +1796,32 @@
  defined in modulator and carrier slot of current instrument.
 
 
- [ZF2] LOCK TRACK VOLUME
- ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+ [ZF2/ZF3] TOGGLE TRACK VOLUME LOCK
+ ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
 
- This command enables the Volume Lock.
+ This command turns on-or-off the Volume Lock for current track.
  It means, that the track volume will remain constant for entire track.
- This constance is updated when using volume effect commands,
+ This constant is updated when using volume effect commands,
  or when using new instrument.
+ Parameter 'x' gives the state to toggle:
+
+   '2' is ON,
+   '3' is OFF.
 
 
- [ZF3] DiSABLE VOLUME LOCK
- ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+ [ZF4/ZF5] TOGGLE VOLUME PEAK LOCK
+ ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
 
- This command disables the Volume Lock.
-
-
- [ZF4] LOCK VOLUME PEAK
- ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
-
- This command enables the Peak Lock.
+ This command turns on-or-off the Volume Peak Lock for current track.
  It means, that when performing a Volume Slide, the upper limit of track
  volume will remain lower or equal to volume level specified in carrier
  and modulator slot of corresponding instrument.
  Note that lock affects Volume Slide and Fine Volume Slide effects
  as well as Tremolo, Tremor and Multi Retrig Note effects.
+ Parameter 'x' gives the state of lock to toggle:
 
-
- [ZF5] DiSABLE PEAK LOCK
- ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
-
- This command disables the Peak Lock.
+   '4' is ON,
+   '5' is OFF.
 
 
  [ZF6] TOGGLE MODULATOR VOLUME SLiDES
@@ -1749,12 +1852,16 @@
  as well as Tremolo, Tremor and Multi Retrig Note effects.
 
 
- [ZF9] LOCK TRACK PANNiNG
- ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+ [ZF9/ZFA] TOGGLE TRACK PANNiNG LOCK
+ ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
 
- This command enables the Panning Lock.
- It means, that the panning position is forced for entire track,
+ This command turns on-or-off the Panning Lock for current track.
+ It means, that current panning position is forced for entire track,
  and can be updated only by ZBx effect command.
+ Parameter 'x' gives the state of lock to toggle:
+
+   '9' is ON,
+   'A' is OFF.
 
 
  [ZFA] DiSABLE PANNiNG LOCK
@@ -2163,9 +2270,6 @@
            ³ [FC]..[FF] ³ 256  ³ FF     ³ x1..x4 ³
            ÀÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÙ
 
- For more information about mentioned speed tables please refer
- to file "techinfo.doc", chapter C. ViBRATO/TREMOLO SPEED TABLES.
-
 
 Ú-ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ--ùú  ú
 ù VI. SONG VARiABLES         ù
@@ -2513,12 +2617,12 @@
          first in order to use it. You can do that with ^Enter key, which
          pastes default instrument data to current row.
 
- TiP 14  While working with clipboard, you can use multiple paste to a single
-         or multiple destination--pattern(s) with [Ctrl][Tab] V key:
-         Simply copy the object to clipboard as usual, and press
-         [Ctrl][Tab] V key. Then the Pattern List will appear, where
-         you can select a single pattern or multiple patterns with [Space]
-         as a destination. Then press Enter key to apply.
+ TiP 14  While working with clipboard, you can use paste same copied object
+         to more pattern(s) quite easily. Simply copy the object to clipboard
+         as usual, and press [Alt][Shift] P key.
+         Then the Pattern List will appear, where you can select a single pattern
+         or multiple patterns with [Space] as a destination.
+         Then press Enter key to apply.
 
  TiP 15  You can load a pattern to a multiple destination--pattern(s) when
          in Pattern List and there are some marked patterns.
@@ -2532,11 +2636,12 @@
 
  TiP 17  While testing/previewing an instrument within Instrument Control,
          Instrument Editor or bank browser, you can check the key-off
-         phase of this instrument. Simply hold [Ctrl] key before releasing
-         the MBoard key. To stop key-off phase, release the [Ctrl] key.
-         Furthermore, you can check the key-off phase with "key-off loop"
-         if using macro-definitions. In this case, hold the Ctrl+Alt keys
-         pressed when releasing the MBoard key.
+         phase of this instrument. In order to do that,
+         hold [Ctrl] key before releasing the MBoard key, and note(s) will
+         trail in key-off phase until you release [Ctrl] key.
+         Furthermore, you can check the key-off phase with "key-off loop".
+         In this case, hold the Ctrl+Alt keys pressed when releasing
+         the MBoard key.
 
  TiP 18  The tracker features both simple playback mode and playback mode
          with synchronization. The advantage of synchro-playback is that
@@ -2602,6 +2707,17 @@
  TiP 26  When deleting notes in Note Recorder mode, you can fast-forward
          or rewind playback while deleting them. All you need to do is
          press Up or Down key while still holding the Backspace key.
+         Furthermore, you can delete all notes within marked group of tracks
+         at once with pressing Ctrl+Backspace.
+
+ TiP 27  When deleting notes in Note Recorder mode, you can fast-forward
+         or rewind playback while deleting them. All you need to do is
+         press Up or Down key while still holding the Backspace key.
+
+ TiP 28  When working with banks containing 4OP instruments, it may be
+         sometimes useful to put instrument data from one of the 2 paired
+         instruments only. This can be done by pressing Shift+Enter
+         instead of Enter (which puts instrument data for complete 4OP pair).
 
 
 Ú-ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ--ùú  ú
@@ -2646,20 +2762,20 @@
 
  (in random order)
 
- TMT Development Corp. [TMT Pascal Compiler Lite 3.90]
- Borland International [Turbo Assembler 4.1]
- Charles Scheffold & Thomas Pytel [PMODE/W 1.33]
- Joergen Ibsen [aPLib 0.26b]
+ Florian Klaempfl and others [Free Pascal Compiler 2.6.4]
+ Karoly Balogh [Inquisition's Timer Services Unit 1.1.0]
+ Haruhiko Okomura & Haruyasu Yoshizaki [LZH algorithm]
  Markus Oberhumer, Laszlo Molnar & John Reiser [UPX 3.91d]
- Virtual Research independent group production [VESA 2.0 LFB library]
 
  (further in alphabetical order :)
 
  Cecill Etheredge (ijsf)
  Daniel Illgen (insane/Altair)
+ David Cohen (Diode Milliampere)
  Janwillem Jagersma
  Maan M. Hamze
  Mikkel Hastrup (encore)
+ Nick Balega
  PissMasterPlus
  Slawomir Bubel (Malfunction/Altair)
  Sven Renner (NeuralNET)
@@ -2687,4 +2803,4 @@
 ù                                                                           ³
 À-ÄÄÄÄÄÄÄÄÄÄÄÄÄ--ùú           úù-ÄÄÄÄÄÄÄ--ùú                 úù-ÄÄÄÄÄÄÄÄÄÄÄ-Ù
 
- This document was last updated on February 13, 2015.
+ This document was last updated on July 24, 2016.

@@ -1,7 +1,6 @@
 unit TxtScrIO;
-{$IFNDEF __TMT__}
+{$S-,Q-,R-,V-,B-,X+}
 {$PACKRECORDS 1}
-{$ENDIF}
 interface
 
 const
@@ -13,8 +12,10 @@ const
   MAX_ORDER_COLS: Byte = 9;
   MAX_PATTERN_ROWS: Byte = 18;
   INSCTRL_xshift: Byte = 0;
-  INSCTRL_yshift: Byte = 0;
+  INSCTRL_yshift: Shortint = 0;
+  INSEDIT_yshift: Byte = 0;
   PATTORD_xshift: Byte = 0;
+  GOTOXY_xshift: Byte = 0;
 
 const
   MAX_SCREEN_MEM_SIZE = 180*60*2;
@@ -33,9 +34,10 @@ var
   screen_mirror:        tSCREEN_MEM;
   screen_emulator:      tSCREEN_MEM;
   centered_frame_vdest: tSCREEN_MEM_PTR;
-  screen_ptr:           Pointer;
+  text_screen_shadow:   tSCREEN_MEM;
 
 const
+  screen_ptr:          Pointer = Addr(text_screen_shadow);
   ptr_temp_screen:     Pointer = Addr(temp_screen);
   ptr_temp_screen2:    Pointer = Addr(temp_screen2);
   ptr_screen_backup:   Pointer = Addr(screen_backup);
@@ -72,7 +74,6 @@ const
   scroll_pos2: Byte = BYTE(NOT 0);
   scroll_pos3: Byte = BYTE(NOT 0);
   scroll_pos4: Byte = BYTE(NOT 0);
-  toggle_waitretrace: Boolean = TRUE;
 
 var
   cursor_backup: Longint;
@@ -96,6 +97,7 @@ procedure ShowVCStr(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; atr1,atr2: By
 procedure ShowVCStr2(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; atr1,atr2: Byte);
 procedure ShowC3Str(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; atr1,atr2,atr3: Byte);
 procedure ShowVC3Str(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; atr1,atr2,atr3: Byte);
+procedure ShowC4Str(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; atr1,atr2,atr3,atr4: Byte);
 procedure show_str(xpos,ypos: Byte; str: String; color: Byte);
 procedure show_cstr(xpos,ypos: Byte; str: String; attr1,attr2: Byte);
 procedure show_cstr_alt(xpos,ypos: Byte; str: String; attr1,attr2: Byte);
@@ -107,10 +109,15 @@ function  CStr2Len(str: String): Byte;
 function  C3StrLen(str: String): Byte;
 
 procedure ScreenMemCopy(source,dest: tSCREEN_MEM_PTR);
-procedure CleanScreen(dest: tSCREEN_MEM_PTR);
 procedure move2screen;
 procedure move2screen_alt;
 procedure TxtScrIO_Init;
+function  is_default_screen_mode: Boolean;
+{$IFDEF GO32V2}
+function  is_VESA_emulated_mode: Boolean;
+function  get_VESA_emulated_mode_idx: Byte;
+{$ENDIF}
+function  is_scrollable_screen_mode: Boolean;
 
 type
   tFRAME_SETTING = Record
@@ -129,14 +136,6 @@ const
 procedure Frame(dest: tSCREEN_MEM_PTR; x1,y1,x2,y2,atr1: Byte;
                 title: String; atr2: Byte; border: String);
 
-const
-  solid1 = '        ';
-  solid2 = '€ﬂ€€€€‹€';
-  single = '⁄ƒø≥≥¿ƒŸ';
-  double = '…Õª∫∫»Õº';
-  dbside = '÷ƒ∑∫∫”ƒΩ';
-  dbtop  = '’Õ∏≥≥‘Õæ';
-
 function WhereX: Byte;
 function WhereY: Byte;
 procedure GotoXY(x,y: Byte);
@@ -148,32 +147,23 @@ procedure HideCursor;
 function  GetCursorShape: Word;
 procedure SetCursorShape(shape: Word);
 
-{$IFDEF __TMT__}
+const
+  v_seg:  Word = $0b800;
+  v_ofs:  Word = 0;
+  v_mode: Byte = $03;
+
+{$IFDEF GO32V2}
 
 var
-  v_mode: Byte;
   DispPg: Byte;
-  v_seg,v_ofs: Longint;
 
 type
   tCUSTOM_VIDEO_MODE = 0..52;
-
-type
-  tVIDEO_STATE = Record
-                   font: Byte;
-                   cursor: Longint;
-                   MaxLn,MaxCol,v_mode: Byte;
-                   v_ofs: Longint;
-                   screen: tSCREEN_MEM;
-                   data: array[0..PRED(4096)] of Byte;
-                 end;
 
 function  iVGA: Boolean;
 procedure initialize;
 procedure ResetMode;
 procedure SetCustomVideoMode(vmode: tCUSTOM_VIDEO_MODE);
-procedure GetVideoState(var data: tVIDEO_STATE);
-procedure SetVideoState(var data: tVIDEO_STATE; restore_screen: Boolean);
 procedure GetRGBitem(color: Byte; var red,green,blue: Byte);
 procedure SetRGBitem(color: Byte; red,green,blue: Byte);
 procedure WaitRetrace;
@@ -201,14 +191,61 @@ procedure Split2Static;
 procedure SplitScr(line: Word);
 procedure SetSize(columns,lines: Word);
 procedure SetTextDisp(x,y: Word);
+procedure set_vga_txtmode_80x25;
+procedure set_svga_txtmode_100x38;
+procedure set_svga_txtmode_128x48;
+procedure set_custom_svga_txtmode;
+
+type
+  VGA_REGISTER = Record
+                   port: Word;
+                   idx: Byte;
+                   val: Byte;
+                 end;
+type
+  VGA_REG_DATA = array[1..29] of VGA_REGISTER;
+
+const
+  svga_txtmode_cols: Byte = 100;
+  svga_txtmode_rows: Byte = 37;
+  svga_txtmode_regs: VGA_REG_DATA = (
+    (port: $3c2; idx: $00; val: $06b),  // Miscellaneous output
+    (port: $3d4; idx: $00; val: $070),  // Horizontal total
+    (port: $3d4; idx: $01; val: $063),  // Horizontal display enable end
+    (port: $3d4; idx: $02; val: $064),  // Horizontal blank start
+    (port: $3d4; idx: $03; val: $082),  // Horizontal blank end
+    (port: $3d4; idx: $04; val: $065),  // Horizontal retrace start
+    (port: $3d4; idx: $05; val: $082),  // Horizontal retrace end
+    (port: $3d4; idx: $06; val: $070),  // Vertical total
+    (port: $3d4; idx: $07; val: $0f0),  // Overflow register
+    (port: $3d4; idx: $08; val: $000),  // Preset row scan
+    (port: $3d4; idx: $09; val: $04f),  // Maximum scan line/char height
+    (port: $3d4; idx: $10; val: $05b),  // Vertical retrace start
+    (port: $3d4; idx: $11; val: $08c),  // Vertical retrace end
+    (port: $3d4; idx: $12; val: $04f),  // Vertical display enable end
+    (port: $3d4; idx: $13; val: $03c),  // Offset/logical width
+    (port: $3d4; idx: $14; val: $000),  // Underline location
+    (port: $3d4; idx: $15; val: $058),  // Vertical blank start
+    (port: $3d4; idx: $16; val: $070),  // Vertical blank end
+    (port: $3d4; idx: $17; val: $0a3),  // Mode control
+    (port: $3c4; idx: $01; val: $001),  // Clock mode register
+    (port: $3c4; idx: $03; val: $000),  // Character generator select
+    (port: $3c4; idx: $04; val: $000),  // Memory mode register
+    (port: $3ce; idx: $05; val: $010),  // Mode register
+    (port: $3ce; idx: $06; val: $00e),  // Miscellaneous register
+    (port: $3c0; idx: $10; val: $002),  // Mode control
+    (port: $3c0; idx: $11; val: $000),  // Screen border color
+    (port: $3c0; idx: $12; val: $00f),  // Color plane enable
+    (port: $3c0; idx: $13; val: $000),  // Horizontal panning
+    (port: $3c0; idx: $14; val: $000)); // Color select
 
 {$ENDIF}
 
 implementation
 
 uses
-{$IFDEF __TMT__}
-  CRT,DPMI,
+{$IFDEF GO32V2}
+  CRT,GO32,
 {$ENDIF}
   AdT2unit,AdT2sys,AdT2ext2,
   DialogIO,ParserIO;
@@ -1048,6 +1085,50 @@ begin
   end;
 end;
 
+procedure ShowC4Str(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; atr1,atr2,atr3,atr4: Byte);
+begin
+  asm
+        lea     esi,[str]
+        mov     edi,dword ptr [dest]
+        lodsb
+        xor     ecx,ecx
+        mov     cl,al
+        jecxz   @@5
+        push    ecx
+        mov     al,x
+        mov     ah,y
+        xor     ecx,ecx
+        call    DupChar
+        xor     edx,edx
+        mov     dx,absolute_pos
+        pop     ecx
+        add     edi,edx
+        mov     ah,atr1
+        mov     bl,atr2
+        mov     bh,atr3
+        mov     dl,atr4
+@@1:    lodsb
+        cmp     al,'~'
+        jz      @@2
+        cmp     al,'`'
+        jz      @@3
+        cmp     al,'^'
+        jz      @@4
+        stosw
+        loop    @@1
+        jmp     @@5
+@@2:    xchg    ah,bl
+        loop    @@1
+        jmp     @@5
+@@3:    xchg    ah,bh
+        loop    @@1
+        jmp     @@5
+@@4:    xchg    ah,dl
+        loop    @@1
+@@5:
+  end;
+end;
+
 procedure ShowVC3Str(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; atr1,atr2,atr3: Byte);
 begin
   asm
@@ -1179,9 +1260,6 @@ end;
 procedure ScreenMemCopy(source,dest: tSCREEN_MEM_PTR);
 begin
   cursor_backup := GetCursor;
-{$IFDEF __TMT__}
-  HideCursor;
-{$ENDIF}
   asm
         xor     edx,edx
         mov     eax,SCREEN_MEM_SIZE
@@ -1208,16 +1286,6 @@ begin
   end;
 end;
 
-procedure CleanScreen(dest: tSCREEN_MEM_PTR);
-begin
-  asm
-        mov     edi,dword ptr [dest]
-        mov     ecx,MAX_SCREEN_MEM_SIZE/2
-        mov     ax,07h
-        rep     stosw
-  end;
-end;
-
 procedure Frame(dest: tSCREEN_MEM_PTR; x1,y1,x2,y2,atr1: Byte;
                 title: String; atr2: Byte; border: String);
 var
@@ -1226,12 +1294,6 @@ var
 
 begin
   asm
-{$IFDEF __TMT__}
-        cmp     byte ptr [toggle_waitretrace],TRUE
-        jnz     @no_wr
-        call    WaitRetrace
-@no_wr:
-{$ENDIF}
         cmp     fr_setting.update_area,1
         jnz     @@0
         mov     al,x1
@@ -1428,7 +1490,7 @@ begin
   end;
 end;
 
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
 
 function WhereX: Byte;
 
@@ -1471,6 +1533,7 @@ begin
         stosw
         mov     dh,y
         mov     dl,x
+        add     dl,GOTOXY_xshift
         dec     dh
         dec     dl
         mov     bh,DispPg
@@ -1500,7 +1563,6 @@ begin
   end;
   GetCursor := result;
 end;
-
 
 procedure SetCursor(cursor: Longint);
 begin
@@ -1569,7 +1631,7 @@ begin
         out     dx,al
         inc     dx
         in      al,dx
-        mov     ah,BYTE(shape)[1]
+        mov     ah,byte ptr [shape+1]
         and     al,0e0h
         or      al,ah
         out     dx,al
@@ -1578,7 +1640,7 @@ begin
         out     dx,al
         inc     dx
         in      al,dx
-        mov     ah,BYTE(shape)[0]
+        mov     ah,byte ptr [shape]
         and     al,0e0h
         or      al,ah
         out     dx,al
@@ -1640,11 +1702,10 @@ end;
 
 {$ENDIF}
 
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
 
 procedure initialize;
 begin
-
   asm
         mov     ah,0fh
         int     10h
@@ -1653,13 +1714,12 @@ begin
         mov     DispPg,bh
   end;
 
-  v_seg := $0b800;
-  v_ofs := MEM[0:$44e];
-  screen_ptr := Ptr(v_seg,v_ofs);
-  MaxCol := MEM[0:$44a];
-  MaxLn := SUCC(MEM[0:$484]);
+  MaxCol := MEM[SEG0040:$4a];
+  MaxLn := SUCC(MEM[SEG0040:$84]);
   work_MaxLn  := MaxLn;
   work_MaxCol := MaxCol;
+  FillWord(screen_ptr^,MAX_SCREEN_MEM_SIZE DIV 2,$0700);
+  dosmemput(v_seg,v_ofs,screen_ptr^,MAX_SCREEN_MEM_SIZE);
 end;
 
 function iVGA: Boolean;
@@ -1693,81 +1753,28 @@ begin
         mov     bh,DispPg
         int     10h
   end;
-end;
-
-var
-  dos_seg: Word;
-  bios_data_backup: array[0..167] of Byte;
-  regs: tRmRegs;
-
-procedure GetVideoState(var data: tVIDEO_STATE);
-begin
-  ScreenMemCopy(screen_ptr,Addr(data.screen));
-  data.cursor := GetCursor;
-  data.font := MEMW[0:$0485];
-  data.v_mode := v_mode;
-  data.MaxLn := MaxLn;
-  data.MaxCol := MaxCol;
-  data.v_ofs := v_ofs;
-  Move(MEM[$40:0],bios_data_backup,168);
-  dos_seg := DosMemoryAlloc(SizeOf(tVIDEO_STATE(data).data));
-  ClearRmRegs(regs);
-  regs.cx := 7;
-  regs.es := dos_seg;
-  regs.ax := $1c01;
-  RealModeInt($10,regs);
-  Move(bios_data_backup,MEM[$40:0],168);
-  Move(POINTER(DWORD(dos_seg)*16)^,tVIDEO_STATE(data).data,
-       SizeOf(tVIDEO_STATE(data).data));
-  DosMemoryFree(dos_seg);
-end;
-
-procedure SetVideoState(var data: tVIDEO_STATE; restore_screen: Boolean);
-begin
-  v_mode := data.v_mode;
-  ResetMode;
-  Move(MEM[$40:0],bios_data_backup,168);
-  dos_seg := DosMemoryAlloc(SizeOf(tVIDEO_STATE(data).data));
-  Move(tVIDEO_STATE(data).data,POINTER(DWORD(dos_seg)*16)^,
-       SizeOf(tVIDEO_STATE(data).data));
-  ClearRmRegs(regs);
-  regs.cx := 7;
-  regs.es := dos_seg;
-  regs.ax := $1c02;
-  RealModeInt($10,regs);
-  DosMemoryFree(dos_seg);
-  Move(bios_data_backup,MEM[$40:0],168);
-
-  MEM[0:$44e] := data.v_ofs;
-  MEM[0:$484] := PRED(data.MaxLn);
-  MEM[0:$44a] := data.MaxCol;
-
-  Case data.font of
-     8:  asm mov ax,1112h; xor bl,bl; int 10h end;
-    14:  asm mov ax,1111h; xor bl,bl; int 10h end;
-    else asm mov ax,1114h; xor bl,bl; int 10h end;
-  end;
-
-  initialize;
-  SetCursor(data.cursor);
-  If restore_screen then
-    Move(data.screen,screen_ptr,SizeOf(data.screen));
+  v_seg := $0b800;
+  v_ofs := 0;
+  MaxCol := MEM[SEG0040:$4a];
+  MaxLn := SUCC(MEM[SEG0040:$84]);
+  FillWord(screen_ptr^,MAX_SCREEN_MEM_SIZE DIV 2,$0700);
+  dosmemput(v_seg,v_ofs,screen_ptr^,MAX_SCREEN_MEM_SIZE);
 end;
 
 procedure GetRGBitem(color: Byte; var red,green,blue: Byte);
 begin
-  PORT[$3c7] := color;
-  red   := PORT[$3c9];
-  green := PORT[$3c9];
-  blue  := PORT[$3c9];
+  outportb($3c7,color);
+  red   := inportb($3c9);
+  green := inportb($3c9);
+  blue  := inportb($3c9);
 end;
 
 procedure SetRGBitem(color: Byte; red,green,blue: Byte);
 begin
-  PORT[$3c8] := color;
-  PORT[$3c9] := red;
-  PORT[$3c9] := green;
-  PORT[$3c9] := blue;
+  outportb($3c8,color);
+  outportb($3c9,red);
+  outportb($3c9,green);
+  outportb($3c9,blue);
 end;
 
 procedure WaitRetrace;
@@ -1833,10 +1840,6 @@ begin
   end;
 end;
 
-const
-  fade_first: Byte = 0;
-  fade_last:  Byte = 255;
-
 procedure VgaFade(var data: tFADE_BUF; fade: tFADE; delay: tDELAY);
 
 var
@@ -1845,23 +1848,23 @@ var
 begin
   If (fade = fadeOut) and (data.action in [first,fadeIn]) then
     begin
-      GetPalette(data.pal0,fade_first,fade_last);
+      GetPalette(data.pal0,0,255);
       If delay = delayed then
         For i := fade_speed downto 0 do
           begin
-            For j := fade_first to fade_last do
+            For j := 0 to 255 do
               begin
                 data.pal1[j].r := data.pal0[j].r * i DIV fade_speed;
                 data.pal1[j].g := data.pal0[j].g * i DIV fade_speed;
                 data.pal1[j].b := data.pal0[j].b * i DIV fade_speed;
               end;
-            SetPalette(data.pal1,fade_first,fade_last);
+            SetPalette(data.pal1,0,255);
             CRT.Delay(1);
           end
       else
         begin
           FillChar(data.pal1,SizeOf(data.pal1),0);
-          SetPalette(data.pal1,fade_first,fade_last);
+          SetPalette(data.pal1,0,255);
         end;
       data.action := fadeOut;
     end;
@@ -1871,17 +1874,17 @@ begin
       If delay = delayed then
         For i := 0 to fade_speed do
           begin
-            For j := fade_first to fade_last do
+            For j := 0 to 255 do
               begin
                 data.pal1[j].r := data.pal0[j].r * i DIV fade_speed;
                 data.pal1[j].g := data.pal0[j].g * i DIV fade_speed;
                 data.pal1[j].b := data.pal0[j].b * i DIV fade_speed;
               end;
-            SetPalette(data.pal1,fade_first,fade_last);
+            SetPalette(data.pal1,0,255);
             CRT.Delay(1);
           end
       else
-        SetPalette(data.pal0,fade_first,fade_last);
+        SetPalette(data.pal0,0,255);
       data.action := fadeIn;
     end;
 end;
@@ -1905,14 +1908,10 @@ begin
 end;
 
 procedure Split2Static;
-
-var
-  temp: Byte;
-
 begin
-  temp := PORT[$3da];
-  PORT[$3c0] := $10 OR $20;
-  PORT[$3c0] := PORT[$3c1] OR $20;
+  inportb($3da);
+  outportb($3c0,$10 OR $20);
+  outportb($3c0,inportb($3c1) OR $20);
 end;
 
 procedure SplitScr(line: Word);
@@ -1921,48 +1920,52 @@ var
   temp: Byte;
 
 begin
-  PORT[$3d4] := $18;
-  PORT[$3d5] := LO(line);
-  PORT[$3d4] := $07;
-  temp := PORT[$3d5];
+  outportb($3d4,$18);
+  outportb($3d5,LO(line));
+  outportb($3d4,$07);
+  temp := inportb($3d5);
 
   If (line < $100) then temp := temp AND $0ef
   else temp := temp OR $10;
 
-  PORT[$3d5] := temp;
-  PORT[$3d4] := $09;
-  temp := PORT[$3d5];
+  outportb($3d5,temp);
+  outportb($3d4,$09);
+  temp := inportb($3d5);
 
   If (line < $200) then temp := temp AND $0bf
   else temp := temp OR $40;
 
-  PORT[$3d5] := temp;
+  outportb($3d5,temp);
 end;
 
 procedure SetSize(columns,lines: Word);
 begin
-  PORT[$3d4] := $13;
-  PORT[$3d5] := columns SHR 1;
-  MEMW[$0000:$44a] := columns;
-  MEMW[$0000:$484] := lines-1;
-  MEMW[$0000:$44c] := columns*lines;
+  outportb($3d4,$13);
+  outportb($3d5,columns SHR 1);
+  MEMW[Seg0040:$4a] := columns;
+  MEMW[Seg0040:$84] := lines-1;
+  MEMW[Seg0040:$4c] := columns*lines;
 end;
 
 procedure SetTextDisp(x,y: Word);
 
 var
-  temp: Byte;
+  maxcol_val: Byte;
 
 begin
-  While (PORT[$3da] AND 1 =  1) do ;
-  While (PORT[$3da] AND 1 <> 1) do ;
+  While (inportb($3da) AND 1 = 1) do ;
+  While (inportb($3da) AND 1 <> 1) do ;
 
-  PORT[$3d4] := $0c;
-  PORT[$3d5] := HI((y DIV scr_font_height)*MaxCol+(x DIV scr_font_width));
-  PORT[$3d4] := $0d;
-  PORT[$3d5] := LO((y DIV scr_font_height)*MaxCol+(x DIV scr_font_width));
-  PORT[$3d4] := $08;
-  PORT[$3d5] := (PORT[$3d5] AND $0e0) OR (y AND $0f);
+  If NOT (program_screen_mode in [4,5]) then
+    maxcol_val := MaxCol
+  else maxcol_val := SCREEN_RES_X DIV scr_font_width;
+
+  outportb($3d4,$0c);
+  outportw($3d5,HI(WORD((y DIV scr_font_height)*maxcol_val+(x DIV scr_font_width))));
+  outportb($3d4,$0d);
+  outportw($3d5,LO(WORD((y DIV scr_font_height)*maxcol_val+(x DIV scr_font_width))));
+  outportb($3d4,$08);
+  outportb($3d5,(inportb($3d5) AND $0e0) OR (y AND $0f));
 end;
 
 procedure SetCustomVideoMode(vmode: tCUSTOM_VIDEO_MODE);
@@ -2360,7 +2363,12 @@ const
 
 );
 
+var
+  _seg0040: Dword;
+  temp: Byte;
+
 begin
+  _seg0040 := Seg0040;
   asm
         movzx   eax,vmode
         shl     eax,6
@@ -2372,7 +2380,7 @@ begin
         test    al,1
         jnz     @@1
         mov     dl,0b4h
-  @@1:  add     dx,6
+@@1:    add     dx,6
         in      al,dx
         xor     al,al
         mov     dx,3c0h
@@ -2384,7 +2392,7 @@ begin
         mov     ecx,4
         mov     al,1
         mov     dx,3c4h
-  @@2:  mov     ah,[esi]
+@@2:    mov     ah,[esi]
         inc     esi
         out     dx,ax
         inc     al
@@ -2402,7 +2410,7 @@ begin
         test    al,1
         jnz     @@3
         mov     dl,0b4h
-  @@3:  movzx   edi,SEG0040
+@@3:    mov     edi,_seg0040
         shl     edi,4
         add     edi,63h
         shl     edi,4
@@ -2418,7 +2426,7 @@ begin
         out     dx,ax
         mov     ecx,25
         xor     al,al
-  @@4:  mov     ah,[esi]
+@@4:    mov     ah,[esi]
         inc     esi
         out     dx,ax
         inc     al
@@ -2428,7 +2436,7 @@ begin
         xor     ah,ah
         mov     ecx,20
         mov     dx,3c0h
-  @@5:  mov     al,ah
+@@5:    mov     al,ah
         out     dx,al
         inc     ah
         mov     al,[esi]
@@ -2438,7 +2446,7 @@ begin
         xor     al,al
         mov     ecx,9
         mov     dx,3ceh
-  @@6:  mov     ah,[esi]
+@@6:    mov     ah,[esi]
         inc     esi
         out     dx,ax
         inc     al
@@ -2453,7 +2461,7 @@ begin
   MEM[SEG0040:$85] := vmode_data[vmode,2];
   MEM[SEG0040:$4c] := vmode_data[vmode,3];
   MEM[SEG0040:$4d] := vmode_data[vmode,4];
-  FillChar(MEM[SEG0040:$4e],17,0);
+  For temp := 0 to 16 do MEM[SEG0040:$4e+temp] := 0;
 
   MEM[SEG0040:$60] := vmode_data[vmode,20];
   MEM[SEG0040:$61] := vmode_data[vmode,21];
@@ -2466,7 +2474,282 @@ begin
   end;
 
   initialize;
-  CleanScreen(screen_ptr);
+  dosmemput(v_seg,v_ofs,screen_ptr^,MAX_SCREEN_MEM_SIZE);
+end;
+
+procedure set_vga_txtmode_80x25;
+begin
+  asm
+        mov     ax,03h
+        xor     bh,bh
+        int     10h
+  end;
+
+  v_seg := $0b800;
+  v_ofs := 0;
+  MaxCol := 80;
+  MaxLn := 25;
+
+  FillWord(screen_ptr^,MAX_SCREEN_MEM_SIZE DIV 2,$0700);
+  dosmemput(v_seg,v_ofs,screen_ptr^,MAX_SCREEN_MEM_SIZE);
+end;
+
+procedure set_svga_txtmode_100x38;
+
+var
+  crt_address: Word;
+
+begin
+  // set VESA gfx mode 102h (800x600)
+  asm
+      mov  ax,4f02h
+      mov  bx,102h
+      int  10h
+  end;
+
+  // rerogram CRT controller
+  crt_address := MEMW[SEG0040:$63];
+  asm
+      cli
+      mov  dx,crt_address
+      // clear write protection for CRT register 0-7
+      mov  al,11h        // vertical retrace end register bit 7 reset
+      out  dx,al
+      inc  dx
+      in   al,dx
+      and  al,7fh
+      out  dx,al
+      dec  dx
+      mov  al,9
+      out  dx,al
+      inc  dx
+      in   al,dx
+      and  al,0e0h       // clear bits 0-4
+      or   al,0fh        // set max scan line to 15
+      out  dx,al
+      dec  dx
+      mov  ax,0e0ah
+      out  dx,ax
+      mov  ax,0f0bh
+      out  dx,ax
+      mov  al,17h       // mode control register
+      out  dx,al
+      inc  dx
+      in   al,dx
+      and  al,not 40h   // set byte mode
+      out  dx,al
+      dec  dx
+      // restore write protection for CRT register 0-7
+      mov  al,11h
+      out  dx,al
+      inc  dx
+      in   al,dx
+      or   al,80h
+      out  dx,al
+      dec  dx
+      // write sequencer: make planes 2+3 write protected
+      mov  dx,3c4h
+      mov  al,2
+      mov  ah,3
+      out  dx,ax
+      // set odd/even mode, reset chain 4, more than 64 kB
+      mov  dx,3c4h
+      mov  al,4
+      mov  ah,2
+      out  dx,ax
+      // write graphics controller
+      mov  dx,3ceh
+      mov  ax,1005h  // set write mode 0, read mode 0, odd/even addressing
+      out  dx,ax
+      mov  dx,3ceh
+      mov  al,6
+      out  dx,al
+      inc  dx
+      in   al,dx
+      and  al,0f0h
+      or   al,0eh    // set B800h as base, set text mode, set odd/even
+      out  dx,al
+      // write attribute controller
+      mov  dx,3cch
+      in   al,dx
+      mov  dx,3dah
+      test al,1
+      jnz  @@1
+      mov  dx,3bah
+@@1:  in   al,dx     // reset attribute controller
+      mov  dx,3c0h
+      mov  al,10h    // select mode register
+      out  dx,al
+      mov  al,0      // set text mode [bit 0=0]
+      out  dx,al
+      mov  al,20h    // turn screen on again
+      out  dx,al
+      sti
+  end;
+
+  MaxCol := 100;
+  MaxLn := 38;
+  MEM[SEG0040:$4a] := MaxCol;
+  MEM[SEG0040:$84] := MaxLn-1;
+
+  initialize;
+  dosmemput(v_seg,v_ofs,screen_ptr^,MAX_SCREEN_MEM_SIZE);
+end;
+
+procedure set_svga_txtmode_128x48;
+
+var
+  crt_address: Word;
+
+begin
+  // set VESA gfx mode 104h (1024x768)
+  asm
+      mov  ax,4f02h
+      mov  bx,104h
+      int  10h
+  end;
+
+  // rerogram CRT controller
+  crt_address := MEMW[SEG0040:$63];
+  asm
+      cli
+      mov  dx,crt_address
+      // clear write protection for CRT register 0-7
+      mov  al,11h        // vertical retrace end register bit 7 reset
+      out  dx,al
+      inc  dx
+      in   al,dx
+      and  al,7fh
+      out  dx,al
+      dec  dx
+      mov  al,9
+      out  dx,al
+      inc  dx
+      in   al,dx
+      and  al,0e0h       // clear bits 0-4
+      or   al,0fh        // set max scan line to 15
+      out  dx,al
+      dec  dx
+      mov  ax,0e0ah
+      out  dx,ax
+      mov  ax,0f0bh
+      out  dx,ax
+      mov  al,17h       // mode control register
+      out  dx,al
+      inc  dx
+      in   al,dx
+      and  al,not 40h   // set byte mode
+      out  dx,al
+      dec  dx
+      // restore write protection for CRT register 0-7
+      mov  al,11h
+      out  dx,al
+      inc  dx
+      in   al,dx
+      or   al,80h
+      out  dx,al
+      dec  dx
+      // write sequencer: make planes 2+3 write protected
+      mov  dx,3c4h
+      mov  al,2
+      mov  ah,3
+      out  dx,ax
+      // set odd/even mode, reset chain 4, more than 64 kB
+      mov  dx,3c4h
+      mov  al,4
+      mov  ah,2
+      out  dx,ax
+      // write graphics controller
+      mov  dx,3ceh
+      mov  ax,1005h  // set write mode 0, read mode 0, odd/even addressing
+      out  dx,ax
+      mov  dx,3ceh
+      mov  al,6
+      out  dx,al
+      inc  dx
+      in   al,dx
+      and  al,0f0h
+      or   al,0eh    // set B800h as base, set text mode, set odd/even
+      out  dx,al
+      // write attribute controller
+      mov  dx,3cch
+      in   al,dx
+      mov  dx,3dah
+      test al,1
+      jnz  @@1
+      mov  dx,3bah
+@@1:  in   al,dx     // reset attribute controller
+      mov  dx,3c0h
+      mov  al,10h    // select mode register
+      out  dx,al
+      mov  al,0      // set text mode [bit 0=0]
+      out  dx,al
+      mov  al,20h    // turn screen on again
+      out  dx,al
+      sti
+  end;
+
+  MaxCol := 128;
+  MaxLn := 48;
+  MEM[SEG0040:$4a] := MaxCol;
+  MEM[SEG0040:$84] := MaxLn-1;
+
+  initialize;
+  dosmemput(v_seg,v_ofs,screen_ptr^,MAX_SCREEN_MEM_SIZE);
+end;
+
+const
+  ATTRCON_ADDR   = $3c0; // Attribute Controller
+  MISC_ADDR      = $3c2; // Miscellaneous Register
+  VGAENABLE_ADDR = $3c3; // VGA Enable Register
+  SEQ_ADDR       = $3c4; // Sequencer
+  GRACON_ADDR    = $3ce; // Graphics Controller
+  CRTC_ADDR      = $3d4; // CRT Controller
+  STATUS_ADDR    = $3da; // Status Register
+
+procedure LoadVgaRegisters(reg: VGA_REG_DATA);
+
+procedure out_reg(reg: VGA_REGISTER);
+begin
+  Case (reg.port) of
+    ATTRCON_ADDR:
+      begin
+        inportb(STATUS_ADDR);
+        outportb(ATTRCON_ADDR,reg.idx OR $20);
+        outportb(ATTRCON_ADDR,reg.val);
+      end;
+
+    MISC_ADDR,
+    VGAENABLE_ADDR:
+      outportb(reg.port,reg.val);
+
+    else begin
+           outportb(reg.port,reg.idx);
+           outportb(reg.port+1,reg.val);
+         end;
+  end;
+end;
+
+var
+  idx,temp: Byte;
+
+begin
+  outportb($3d4,$11);
+  temp := inportb($3d5) AND $7f;
+  outportb($3d4,$11);
+  outportb($3d5,temp);
+  For idx := 1 to 29 do out_reg(reg[idx]);
+end;
+
+procedure set_custom_svga_txtmode;
+begin
+  LoadVgaRegisters(svga_txtmode_regs);
+  MaxCol := svga_txtmode_cols;
+  MaxLn := svga_txtmode_rows;
+  MEM[SEG0040:$4a] := MaxCol;
+  MEM[SEG0040:$84] := MaxLn-1;
+  initialize;
+  dosmemput(v_seg,v_ofs,screen_ptr^,MAX_SCREEN_MEM_SIZE);
 end;
 
 {$ENDIF}
@@ -2474,18 +2757,14 @@ end;
 procedure move2screen;
 
 var
-{$IFDEF __TMT__}
-  wr_loop: Byte;
-{$ENDIF}
   screen_ptr_backup: Pointer;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'TXTSCRIO.PAS:move2screen';
 {$ENDIF}
   HideCursor;
-  toggle_waitretrace := TRUE;
   screen_ptr_backup := screen_ptr;
   screen_ptr := move_to_screen_data;
   area_x1 := 0;
@@ -2504,14 +2783,6 @@ begin
   ScreenMemCopy(screen_ptr,screen_ptr_backup);
   screen_ptr := screen_ptr_backup;
   SetCursor(cursor_backup);
-{$IFDEF __TMT__}
-  // smoothen next window content change
-  For wr_loop := 1 to 5 do
-    begin
-      WaitRetrace;
-      realtime_gfx_poll_proc;
-    end;
-{$ENDIF}
 end;
 
 procedure move2screen_alt;
@@ -2520,13 +2791,6 @@ var
   pos1,pos2: Byte;
 
 begin
-{$IFDEF __TMT}
-  If toggle_waitretrace then
-    begin
-      WaitRetrace;
-      toggle_waitretrace := FALSE;
-    end;
-{$ENDIF}
   If (move_to_screen_data <> NIL) then
     asm
         mov     esi,dword ptr [screen_ptr]
@@ -2563,13 +2827,49 @@ begin
     end;
 end;
 
+function is_default_screen_mode: Boolean;
+begin
+{$IFDEF GO32V2}
+  is_default_screen_mode :=
+    (program_screen_mode = 0) or
+    ((program_screen_mode = 3) and (comp_text_mode < 4));
+{$ELSE}
+  is_default_screen_mode := (program_screen_mode = 0);
+{$ENDIF}
+end;
+
+{$IFDEF GO32V2}
+function is_VESA_emulated_mode: Boolean;
+begin
+  is_VESA_emulated_mode := (program_screen_mode = 3) and
+                           (comp_text_mode > 1);
+end;
+
+function get_VESA_emulated_mode_idx: Byte;
+begin
+  get_VESA_emulated_mode_idx := min(comp_text_mode-2,0);
+end;
+{$ENDIF}
+
+function is_scrollable_screen_mode: Boolean;
+begin
+{$IFDEF GO32V2}
+  is_scrollable_screen_mode :=
+    (program_screen_mode = 0) or
+        ((program_screen_mode = 3) and (comp_text_mode < 2)) or
+    (is_VESA_emulated_mode and (get_VESA_emulated_mode_idx in [0,1]));
+{$ELSE}
+  is_scrollable_screen_mode := (program_screen_mode = 0);
+{$ENDIF}
+end;
+
 procedure TxtScrIO_Init;
 
 var
   temp: Byte;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'TXTSCRIO.PAS:TxtScrIO_Init';
   program_screen_mode := screen_mode;
@@ -2578,161 +2878,224 @@ begin
   mn_environment.v_dest := screen_ptr;
   centered_frame_vdest := screen_ptr;
 
-  Case program_screen_mode of
-    0: begin
-         SCREEN_RES_X := 720;
-         SCREEN_RES_Y := 480;
-         MAX_COLUMNS := 90;
-         MAX_ROWS := 40;
-         MAX_ORDER_COLS := 9;
-         MAX_TRACKS := 5;
-         MAX_PATTERN_ROWS := 18;
-         INSCTRL_xshift := 0;
-         INSCTRL_yshift := 0;
-         PATTORD_xshift := 0;
-         MaxCol := MAX_COLUMNS;
-         MaxLn := MAX_ROWS;
-         hard_maxcol := MAX_COLUMNS;
-         hard_maxln := 30;
-         work_MaxCol := MAX_COLUMNS;
-         work_MaxLn := 30;
-         scr_font_width := 8;
-         scr_font_height := 16;
-       end;
-    // full-screen view
-    1: begin
-         SCREEN_RES_X := 960;
-         SCREEN_RES_Y := 800;
-         MAX_COLUMNS := 120;
-         MAX_ROWS := 50;
-         MAX_ORDER_COLS := 13;
-         MAX_TRACKS := 7;
-         MAX_PATTERN_ROWS := 28;
-         INSCTRL_xshift := 15;
-         INSCTRL_yshift := 6;
-         PATTORD_xshift := 1;
-         MaxCol := MAX_COLUMNS;
-         MaxLn := MAX_ROWS;
-         hard_maxcol := MAX_COLUMNS;
-         hard_maxln := 50;
-         work_MaxCol := MAX_COLUMNS;
-         work_MaxLn := 40;
-         scr_font_width := 8;
-         scr_font_height := 16;
-       end;
-    // wide full-screen view
-    2: begin
-         SCREEN_RES_X := 1440;
-         SCREEN_RES_Y := 960;
-         MAX_COLUMNS := 180;
-         MAX_ROWS := 60;
-         MAX_ORDER_COLS := 22;
-         MAX_TRACKS := 11;
-         MAX_PATTERN_ROWS := 38;
-         INSCTRL_xshift := 45;
-         INSCTRL_yshift := 12;
-         PATTORD_xshift := 0;
-         MaxCol := MAX_COLUMNS;
-         MaxLn := MAX_ROWS;
-         hard_maxcol := MAX_COLUMNS;
-         hard_maxln := 60;
-         work_MaxCol := MAX_COLUMNS;
-         work_MaxLn := 50;
-         scr_font_width := 8;
-         scr_font_height := 16;
-       end;
-{$IFDEF __TMT__}
-    // compatibility text-mode
-    3: Case comp_text_mode of
-         0,
-         1: begin
-              SCREEN_RES_X := 720;
-              SCREEN_RES_Y := 480;
-              MAX_COLUMNS := 90;
-              MAX_ROWS := 40;
-              MAX_ORDER_COLS := 9;
-              MAX_TRACKS := 5;
-              MAX_PATTERN_ROWS := 18;
-              INSCTRL_xshift := 0;
-              INSCTRL_yshift := 0;
-              PATTORD_xshift := 0;
-              MaxCol := MAX_COLUMNS;
-              MaxLn := MAX_ROWS;
-              hard_maxcol := MAX_COLUMNS;
-              hard_maxln := 30;
-              work_MaxCol := MAX_COLUMNS;
-              work_MaxLn := 30;
-              scr_font_width := 9;
-              scr_font_height := 16;
-            end;
-         // VESA compatibility mode
-         2: begin
-              SCREEN_RES_X := 800;
-              SCREEN_RES_Y := 600;
-              MAX_COLUMNS := 90;
-              MAX_ROWS := 40;
-              MAX_ORDER_COLS := 9;
-              MAX_TRACKS := 5;
-              MAX_PATTERN_ROWS := 18;
-              INSCTRL_xshift := 0;
-              INSCTRL_yshift := 0;
-              PATTORD_xshift := 0;
-              MaxCol := MAX_COLUMNS;
-              MaxLn := MAX_ROWS;
-              hard_maxcol := MAX_COLUMNS;
-              hard_maxln := 30;
-              work_MaxCol := MAX_COLUMNS;
-              work_MaxLn := 30;
-              scr_font_width := 8;
-              scr_font_height := 16;
-            end;
-       end;
-    // VESA mode #1
-    4: begin
-         SCREEN_RES_X := 800;
-         SCREEN_RES_Y := 600;
-         MAX_COLUMNS := 90;
-         MAX_ROWS := 46;
-         MAX_ORDER_COLS := 9;
-         MAX_TRACKS := 5;
-         MAX_PATTERN_ROWS := 24;
-         INSCTRL_xshift := 0;
-         INSCTRL_yshift := 4;
-         PATTORD_xshift := 0;
-         MaxCol := MAX_COLUMNS;
-         MaxLn := MAX_ROWS;
-         hard_maxcol := MAX_COLUMNS;
-         hard_maxln := 36;
-         work_MaxCol := MAX_COLUMNS;
-         work_MaxLn := 36;
-         scr_font_width := 8;
-         scr_font_height := 16;
-       end;
-    // VESA mode #2
-    5: begin
-         SCREEN_RES_X := 1024;
-         SCREEN_RES_Y := 768;
-         MAX_COLUMNS := 120;
-         MAX_ROWS := 46;
-         MAX_ORDER_COLS := 13;
-         MAX_TRACKS := 7;
-         MAX_PATTERN_ROWS := 24;
-         INSCTRL_xshift := 15;
-         INSCTRL_yshift := 4;
-         PATTORD_xshift := 1;
-         MaxCol := MAX_COLUMNS;
-         MaxLn := MAX_ROWS;
-         hard_maxcol := MAX_COLUMNS;
-         hard_maxln := 47;
-         work_MaxCol := MAX_COLUMNS;
-         work_MaxLn := 36;
-         scr_font_width := 8;
-         scr_font_height := 16;
-       end;
+{$IFDEF GO32V2}
+  If NOT is_VESA_emulated_mode then
 {$ENDIF}
-  end;
+    Case program_screen_mode of
+      0: begin
+           SCREEN_RES_X := 720;
+           SCREEN_RES_Y := 480;
+           MAX_COLUMNS := 90;
+           MAX_ROWS := 40;
+           MAX_ORDER_COLS := 9;
+           MAX_TRACKS := 5;
+           MAX_PATTERN_ROWS := 18;
+           INSCTRL_xshift := 0;
+           INSCTRL_yshift := 0;
+           INSEDIT_yshift := 0;
+           PATTORD_xshift := 0;
+           MaxCol := MAX_COLUMNS;
+           MaxLn := MAX_ROWS;
+           hard_maxcol := MAX_COLUMNS;
+           hard_maxln := 30;
+           work_MaxCol := MAX_COLUMNS;
+           work_MaxLn := 30;
+           scr_font_width := 8;
+           scr_font_height := 16;
+         end;
+      // full-screen view
+      1: begin
+           SCREEN_RES_X := 960;
+           SCREEN_RES_Y := 800;
+           MAX_COLUMNS := 120;
+           MAX_ROWS := 50;
+           MAX_ORDER_COLS := 13;
+           MAX_TRACKS := 7;
+           MAX_PATTERN_ROWS := 28;
+           INSCTRL_xshift := 15;
+           INSCTRL_yshift := 6;
+           INSEDIT_yshift := 12;
+           PATTORD_xshift := 1;
+           MaxCol := MAX_COLUMNS;
+           MaxLn := MAX_ROWS;
+           hard_maxcol := MAX_COLUMNS;
+           hard_maxln := 50;
+           work_MaxCol := MAX_COLUMNS;
+           work_MaxLn := 40;
+           scr_font_width := 8;
+           scr_font_height := 16;
+         end;
+      // wide full-screen view
+      2: begin
+           SCREEN_RES_X := 1440;
+           SCREEN_RES_Y := 960;
+           MAX_COLUMNS := 180;
+           MAX_ROWS := 60;
+           MAX_ORDER_COLS := 22;
+           MAX_TRACKS := 11;
+           MAX_PATTERN_ROWS := 38;
+           INSCTRL_xshift := 45;
+           INSCTRL_yshift := 12;
+           INSEDIT_yshift := 12;
+           PATTORD_xshift := 0;
+           MaxCol := MAX_COLUMNS;
+           MaxLn := MAX_ROWS;
+           hard_maxcol := MAX_COLUMNS;
+           hard_maxln := 60;
+           work_MaxCol := MAX_COLUMNS;
+           work_MaxLn := 50;
+           scr_font_width := 8;
+           scr_font_height := 16;
+         end;
+      // 90x47
+      4: begin
+           SCREEN_RES_X := 800;
+           SCREEN_RES_Y := 600;
+           MAX_COLUMNS := 90;
+           MAX_ROWS := 38;
+           MAX_ORDER_COLS := 9;
+           MAX_TRACKS := 5;
+           MAX_PATTERN_ROWS := 16;
+           INSCTRL_xshift := 0;
+           INSCTRL_yshift := 4;
+           INSEDIT_yshift := 12;
+           PATTORD_xshift := 0;
+           MaxCol := MAX_COLUMNS;
+           MaxLn := MAX_ROWS;
+           hard_maxcol := MAX_COLUMNS;
+           hard_maxln := 38;
+           work_MaxCol := MAX_COLUMNS;
+           work_MaxLn := 38;
+           scr_font_width := 8;
+           scr_font_height := 16;
+           GOTOXY_xshift := ((SCREEN_RES_X DIV scr_font_width)-MAX_COLUMNS) DIV 2;
+         end;
+      // 120x47
+      5: begin
+           SCREEN_RES_X := 1024;
+           SCREEN_RES_Y := 768;
+           MAX_COLUMNS := 120;
+           MAX_ROWS := 48;
+           MAX_ORDER_COLS := 13;
+           MAX_TRACKS := 7;
+           MAX_PATTERN_ROWS := 26;
+           INSCTRL_xshift := 15;
+           INSCTRL_yshift := 7;
+           INSEDIT_yshift := 12;
+           PATTORD_xshift := 1;
+           MaxCol := MAX_COLUMNS;
+           MaxLn := MAX_ROWS;
+           hard_maxcol := MAX_COLUMNS;
+           hard_maxln := 48;
+           work_MaxCol := MAX_COLUMNS;
+           work_MaxLn := 48;
+           scr_font_width := 8;
+           scr_font_height := 16;
+           GOTOXY_xshift := ((SCREEN_RES_X DIV scr_font_width)-MAX_COLUMNS) DIV 2;
+         end;
+{$IFDEF GO32V2}
+      // compatibility text-mode
+      3: Case comp_text_mode of
+           0,
+           1: begin
+                SCREEN_RES_X := 720;
+                SCREEN_RES_Y := 480;
+                MAX_COLUMNS := 90;
+                MAX_ROWS := 40;
+                MAX_ORDER_COLS := 9;
+                MAX_TRACKS := 5;
+                MAX_PATTERN_ROWS := 18;
+                INSCTRL_xshift := 0;
+                INSCTRL_yshift := 0;
+                PATTORD_xshift := 0;
+                INSEDIT_yshift := 0;
+                MaxCol := MAX_COLUMNS;
+                MaxLn := MAX_ROWS;
+                hard_maxcol := MAX_COLUMNS;
+                hard_maxln := 30;
+                work_MaxCol := MAX_COLUMNS;
+                work_MaxLn := 30;
+                scr_font_width := 9;
+                scr_font_height := 16;
+              end;
+         end;
+    end
+  else
+    // VESA-emulated text-mode
+    Case get_VESA_emulated_mode_idx of
+      // 90x30 (default mode)
+      0: begin
+           SCREEN_RES_X := 800;
+           SCREEN_RES_Y := 600;
+           MAX_COLUMNS := 90;
+           MAX_ROWS := 40;
+           MAX_ORDER_COLS := 9;
+           MAX_TRACKS := 5;
+           MAX_PATTERN_ROWS := 18;
+           INSCTRL_xshift := 0;
+           INSCTRL_yshift := 0;
+           INSEDIT_yshift := 0;
+           PATTORD_xshift := 0;
+           MaxCol := MAX_COLUMNS;
+           MaxLn := MAX_ROWS;
+           hard_maxcol := MAX_COLUMNS;
+           hard_maxln := 30;
+           work_MaxCol := MAX_COLUMNS;
+           work_MaxLn := 30;
+           scr_font_width := 8;
+           scr_font_height := 16;
+         end;
+      // 90x47
+      1: begin
+           SCREEN_RES_X := 800;
+           SCREEN_RES_Y := 600;
+           MAX_COLUMNS := 90;
+           MAX_ROWS := 46;
+           MAX_ORDER_COLS := 9;
+           MAX_TRACKS := 5;
+           MAX_PATTERN_ROWS := 24;
+           INSCTRL_xshift := 0;
+           INSCTRL_yshift := 4;
+           INSEDIT_yshift := 0;
+           PATTORD_xshift := 0;
+           MaxCol := MAX_COLUMNS;
+           MaxLn := MAX_ROWS;
+           hard_maxcol := MAX_COLUMNS;
+           hard_maxln := 36;
+           work_MaxCol := MAX_COLUMNS;
+           work_MaxLn := 36;
+           scr_font_width := 8;
+           scr_font_height := 16;
+         end;
+      // 120x47
+      2: begin
+           SCREEN_RES_X := 1024;
+           SCREEN_RES_Y := 768;
+           MAX_COLUMNS := 120;
+           MAX_ROWS := 46;
+           MAX_ORDER_COLS := 13;
+           MAX_TRACKS := 7;
+           MAX_PATTERN_ROWS := 24;
+           INSCTRL_xshift := 15;
+           INSCTRL_yshift := 7;
+           INSEDIT_yshift := 12;
+           PATTORD_xshift := 1;
+           MaxCol := MAX_COLUMNS;
+           MaxLn := MAX_ROWS;
+           hard_maxcol := MAX_COLUMNS;
+           hard_maxln := 47;
+           work_MaxCol := MAX_COLUMNS;
+           work_MaxLn := 36;
+           scr_font_width := 8;
+           scr_font_height := 16;
+         end;
+    end;
+{$ELSE}
+    end;
+{$ENDIF}
 
-  SCREEN_MEM_SIZE := MaxCol*MaxLn*2;
+  FillWord(screen_ptr^,MAX_SCREEN_MEM_SIZE DIV 2,$0700);
+  SCREEN_MEM_SIZE := (SCREEN_RES_X DIV scr_font_width)*MAX_ROWS*2;
   move_to_screen_routine := move2screen;
 
   If (command_typing = 0) then _pattedit_lastpos := 4*MAX_TRACKS

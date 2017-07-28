@@ -1,8 +1,12 @@
 unit AdT2opl3;
-{$IFNDEF __TMT__}
+{$S-,Q-,R-,V-,B-,X+}
 {$PACKRECORDS 1}
-{$ENDIF}
 interface
+
+{$IFDEF GO32V2}
+const
+  ___OPL3OUT_UNIT_DATA_START___: Dword = 0;
+{$ENDIF}
 
 procedure opl2out(reg,data: Word);
 procedure opl3out_proc(reg,data: Word);
@@ -14,18 +18,18 @@ type
 const
   opl3out: tOPL3OUT_proc = opl3out_proc;
 
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
 
 const
   opl3port: Word = 0;
   opl_latency: Byte = 0;
 
-function iAdLibGold: Boolean;
+function detect_OPL3: Boolean;
 
 {$ELSE}
 
 const
-  renew_wav_files_flag: Boolean = FALSE;
+  renew_wav_files_flag: Boolean = TRUE;
   opl3_channel_recording_mode: Boolean = FALSE;
   opl3_record_channel: array[1..20] of Boolean = (
     FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,
@@ -33,9 +37,9 @@ const
 
 procedure flush_WAV_data;
 procedure opl3_init;
-procedure opl3_deinit;
-procedure snd_Init;
-procedure snd_Deinit;
+procedure opl3_done;
+procedure snd_init;
+procedure snd_done;
 procedure snd_SetTimer(value: Longint);
 procedure update_recorded_channels;
 
@@ -51,15 +55,35 @@ var
 
 {$ENDIF}
 
+{$IFDEF GO32V2}
+
+const
+  ___OPL3OUT_UNIT_DATA_END___: Dword = 0;
+
+{$ENDIF}
+
 implementation
 
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
 
 uses
+  GO32,
+  AdT2sys,
   TxtScrIO;
+
+{$IFDEF GO32V2}
+procedure  ___OPL3OUT_IRQ_CODE_START___; begin end;
+{$ENDIF}
+
+var
+  _opl_regs_cache: array[WORD] of Word;
 
 procedure opl2out(reg,data: Word);
 begin
+  If (_opl_regs_cache[reg] <> data) then
+    _opl_regs_cache[reg] := data
+  else EXIT;
+
   asm
         mov     ax,reg
         mov     dx,word ptr [opl3port]
@@ -82,6 +106,10 @@ end;
 
 procedure opl3out_proc(reg,data: Word);
 begin
+  If (_opl_regs_cache[reg] <> data) then
+    _opl_regs_cache[reg] := data
+  else EXIT;
+
   asm
         mov     ax,reg
         mov     dx,word ptr [opl3port]
@@ -101,6 +129,10 @@ end;
 
 procedure opl3exp(data: Word);
 begin
+  if (_opl_regs_cache[(data AND $ff) OR $100] <> data SHR 8) then
+    _opl_regs_cache[(data AND $ff) OR $100] := data SHR 8
+  else EXIT;
+
   asm
         mov     ax,data
         mov     dx,word ptr [opl3port]
@@ -118,13 +150,24 @@ begin
   end;
 end;
 
-function iAdLibGold: Boolean;
+{$IFDEF GO32V2}
+procedure  ___OPL3OUT_IRQ_CODE_END___; begin end;
+{$ENDIF}
+
+function detect_OPL3: Boolean;
+
+var
+  result: Boolean;
+
 begin
+  _last_debug_str_ := _debug_str_;
+  _debug_str_ := 'ADT2OPL3.PAS:detect_OPL3';
+
   asm
-        push    04h
-        push    80h
-        push    04h
-        push    60h
+        push    dword 04h
+        push    dword 80h
+        push    dword 04h
+        push    dword 60h
         call    opl2out
         call    WaitRetrace
         call    opl2out
@@ -133,10 +176,10 @@ begin
         in      al,dx
         and     al,0e0h
         mov     bl,al
-        push    04h
-        push    21h
-        push    02h
-        push    0ffh
+        push    dword 04h
+        push    dword 21h
+        push    dword 02h
+        push    dword 0ffh
         call    opl2out
         call    WaitRetrace
         call    opl2out
@@ -147,10 +190,10 @@ begin
         mov     bh,al
         cmp     bx,0c000h
         jnz     @@1
-        push    04h
-        push    80h
-        push    04h
-        push    60h
+        push    dword 04h
+        push    dword 80h
+        push    dword 04h
+        push    dword 60h
         call    opl2out
         call    WaitRetrace
         call    opl2out
@@ -160,11 +203,13 @@ begin
         and     al,6
         or      al,al
         jnz     @@1
-        mov     @RESULT,TRUE
+        mov     result,TRUE
         jmp     @@2
-@@1:    mov     @RESULT,FALSE
-@@2:
+  @@1:  mov     result,FALSE
+  @@2:
   end;
+
+  detect_OPL3 := result;
 end;
 
 {$ELSE}
@@ -172,78 +217,16 @@ end;
 uses
   MATH,SysUtils,
   AdT2unit,AdT2sys,TxtScrIO,StringIO,
-  SDL_Types,SDL_Audio;
+  SDL_Types,SDL_Audio,OPL3EMU;
 
 const
-  OPL3_SAMPLE_BITS = 16;
-  OPL3_INTERNAL_FREQ = 14400000;
-
-const
-  YMF262_sample_buffer_ptr: Pointer = NIL;
-  YMF262_sample_buffer_chan_ptr: array[1..18] of Pointer = (
+  opl3_sample_buffer_ptr: Pointer = NIL;
+  opl3_sample_buffer_chan_ptr: array[1..18] of Pointer = (
     NIL,NIL,NIL,NIL,NIL,NIL,NIL,NIL,NIL,NIL,NIL,NIL,NIL,NIL,NIL,NIL,NIL,NIL);
 
 var
-  ymf262: Longint;
   sample_frame_size: Longint;
   sdl_audio_spec: SDL_AudioSpec;
-
-type
-  pINT16 = ^Smallint;
-
-{$IFDEF WINDOWS}
-
-{ ymf262.c needs some functions from msvcrt.dll which we need to emulate }
-{_CRTIMP double __cdecl pow (double, double);}
-function my_pow(a,b: Real): Real; cdecl; alias: '_pow';
-begin
-  my_pow := POWER(a,b);
-end;
-
-{_CRTIMP double __cdecl floor (double);}
-function my_floor(a: Real): Real; cdecl; alias: '_floor';
-begin
-  my_floor := FLOOR(a);
-end;
-
-{_CRTIMP double __cdecl sin (double);}
-function my_sin(a: Real): Real; cdecl; alias: '_sin';
-begin
-  my_sin := SIN(a);
-end;
-
-{_CRTIMP double __cdecl log (double);}
-function my_log(a: Real): Real; cdecl; alias: '_log';
-begin
-  my_log := LN(a);
-end;
-
-{_CRTIMP void* __cdecl __MINGW_NOTHROW malloc (size_t) __MINGW_ATTRIB_MALLOC;}
-function my_malloc(size: Longint): Pointer; cdecl; alias: '_malloc';
-begin
-  my_malloc := GetMem(size);
-end;
-
-{_CRTIMP void __cdecl __MINGW_NOTHROW free (void*);}
-procedure my_free(p: Pointer); cdecl; alias: '_free';
-begin
-  FreeMem(p);
-end;
-
-{_CRTIMP void __cdecl __MINGW_NOTHROW free (void*);}
-procedure my_memset(var s; c: Char; len: Longint); cdecl; alias: '_memset';
-begin
-  FillChar(s,len,c);
-end;
-
-{$ENDIF}
-
-{$L ymf262.o}
-function  YMF262Init(num: Longint; clock: Longint; rate: Longint): Longint; cdecl; external;
-procedure YMF262Shutdown; cdecl; external;
-procedure YMF262ResetChip(which: Longint); cdecl; external;
-function  YMF262Write(which: Longint; addr: Longint; value: Longint): Longint; cdecl ;external;
-procedure YMF262UpdateOne(which: Longint; buffer: pINT16; buffers_chan: array of pINT16; length: Longint); cdecl; external;
 
 procedure flush_WAV_data;
 
@@ -272,8 +255,8 @@ const
                              wav_size:     16;
                              wav_type:     1;
                              num_channels: 2;
-                             samples_sec:  44100;
-                             bytes_sec:    2*44100*16 DIV 8;
+                             samples_sec:  49716;
+                             bytes_sec:    2*49716*16 DIV 8;
                              block_align:  2*16 DIV 8;
                              bits_sample:  16;
                              data_desc:    'data';
@@ -313,7 +296,7 @@ begin
     begin
       filename_suffix := '';
       If (idx <> 0) then
-        If NOT (opl3_record_channel[idx]) or (is_4op_chan(idx) and NOT (idx in [1,3,5,10,12,14])) then CONTINUE
+        If NOT (opl3_record_channel[idx]) or (is_4op_chan(idx) and NOT (idx in _4op_tracks_hi)) then CONTINUE
         else If NOT is_4op_chan(idx) then
                If percussion_mode then
                  Case idx of
@@ -333,11 +316,15 @@ begin
 
       // update WAV header
       {$i-}
-      If renew_wav_files_flag then RewriteF(wav_file)
+      If renew_wav_files_flag then
+        begin
+          RewriteF(wav_file);
+          wav_header.file_size := 0;
+          wav_header.data_size := 0;
+        end
       else ResetF(wav_file);
       {$i+}
-      If renew_wav_files_flag or
-         (NOT renew_wav_files_flag and (IOresult <> 0)) then
+      If renew_wav_files_flag or (IOresult <> 0) then
         begin
           {$i-}
           RewriteF(wav_file);
@@ -353,8 +340,8 @@ begin
             end;
           wav_header.samples_sec := sdl_sample_rate;
           wav_header.bytes_sec := 2*sdl_sample_rate*16 DIV 8;
-          wav_header.file_size := wav_header.file_size+bytes_to_write;
-          wav_header.data_size := wav_header.data_size+bytes_to_write;
+          wav_header.file_size := bytes_to_write;
+          wav_header.data_size := bytes_to_write;
           {$i-}
           BlockWriteF(wav_file,wav_header,SizeOf(wav_header),temp);
           {$i+}
@@ -440,8 +427,7 @@ begin
         CloseF(wav_file);
     end;
 
-  If opl3_channel_recording_mode then
-    renew_wav_files_flag := FALSE;
+  renew_wav_files_flag := FALSE;
 end;
 
 procedure opl2out(reg,data: Word);
@@ -451,33 +437,21 @@ begin
 end;
 
 procedure opl3out_proc(reg,data: Word);
-
-var
-  op: Longint;
-
 begin
-  op := 0;
-  If (reg > 255) then
-    begin
-      op := 2;
-      reg := reg AND $0ff;
-    end;
-  YMF262Write(ymf262,op,reg);
-  YMF262Write(ymf262,op+1,data);
+  OPL3EMU_WriteReg(reg,data);
 end;
 
 procedure opl3exp(data: Word);
 begin
-  YMF262Write(ymf262,2,data AND $0ff);
-  YMF262Write(ymf262,3,data SHR 8);
+  OPL3EMU_WriteReg((data AND $ff) OR $100,data SHR 8);
 end;
 
 procedure opl3_init;
 begin
-  YMF262ResetChip(ymf262);
+  OPL3EMU_init;
 end;
 
-procedure opl3_deinit;
+procedure opl3_done;
 begin
   SDL_PauseAudio(1);
 end;
@@ -486,7 +460,7 @@ end;
 procedure snd_SetTimer(value: Longint);
 begin
   If (value < 18) then value := 18;
-  sample_frame_size := sdl_sample_rate DIV value;
+  sample_frame_size := ROUND(sdl_sample_rate/value*(1+sdl_timer_slowdown/100));
 end;
 
 function get_num_files: Byte;
@@ -529,7 +503,7 @@ var
   counter: Longint;
   idx: Byte;
   IRQ_freq_val: Longint;
-  buffer_ptr_table: array[1..18] of pINT16;
+  buffer_ptr_table: array[1..18] of pDword;
   buf_size: Longint;
 
 begin
@@ -564,14 +538,18 @@ begin
 
       // update partial channel sample buffer pointers
       For idx := 1 to 18 do
-        buffer_ptr_table[idx] := YMF262_sample_buffer_chan_ptr[idx]+counter*4;
+        buffer_ptr_table[idx] := opl3_sample_buffer_chan_ptr[idx]+counter*4;
       // update one step
-      ymf262updateone(ymf262,YMF262_sample_buffer_ptr+counter*4,buffer_ptr_table,1);
+      OPL3EMU_PollProc(opl3_sample_buffer_ptr+counter*4,buffer_ptr_table);
     end;
 
   // update SDL Audio sample buffer
-  Move(YMF262_sample_buffer_ptr^,stream^,len);
-  If (play_status = isStopped) then EXIT;
+  Move(opl3_sample_buffer_ptr^,stream^,len);
+  If (play_status = isStopped) then
+    begin
+      wav_buffer_len := 0;
+      EXIT;
+    end;
 
   // calculate cache buffer size
   If opl3_channel_recording_mode then
@@ -583,10 +561,10 @@ begin
     If (wav_buffer_len+len <= buf_size) then
       begin
         // update main sample buffer
-        Move(YMF262_sample_buffer_ptr^,wav_buffer[0][wav_buffer_len],len);
+        Move(opl3_sample_buffer_ptr^,wav_buffer[0][wav_buffer_len],len);
         // update partial channel sample buffers
         For idx := 1 to 18 do
-          Move(YMF262_sample_buffer_chan_ptr[idx]^,wav_buffer[idx][wav_buffer_len],len);
+          Move(opl3_sample_buffer_chan_ptr[idx]^,wav_buffer[idx][wav_buffer_len],len);
         Inc(wav_buffer_len,len);
       end
     else
@@ -594,25 +572,24 @@ begin
         // sample buffers full -> flush to disk!
         flush_WAV_data;
         // update main sample buffer
-        Move(YMF262_sample_buffer_ptr^,wav_buffer[0][wav_buffer_len],len);
+        Move(opl3_sample_buffer_ptr^,wav_buffer[0][wav_buffer_len],len);
         // update partial channel sample buffers
         For idx := 1 to 18 do
-          Move(YMF262_sample_buffer_chan_ptr[idx]^,wav_buffer[idx][wav_buffer_len],len);
+          Move(opl3_sample_buffer_chan_ptr[idx]^,wav_buffer[idx][wav_buffer_len],len);
         Inc(wav_buffer_len,len);
       end;
 end;
 
-procedure snd_Init;
+procedure snd_init;
 
 var
   idx: Byte;
 
 begin
-  GetMem(YMF262_sample_buffer_ptr,sdl_sample_buffer*4);
-  For idx := 1 to 18 do GetMem(YMF262_sample_buffer_chan_ptr[idx],sdl_sample_buffer*4);
-  sample_frame_size := sdl_sample_rate DIV 50;
+  GetMem(opl3_sample_buffer_ptr,sdl_sample_buffer*4);
+  For idx := 1 to 18 do GetMem(opl3_sample_buffer_chan_ptr[idx],sdl_sample_buffer*4);
+  sample_frame_size := ROUND(sdl_sample_rate/50*(1+sdl_timer_slowdown/100));;
 
-  ymf262 := YMF262Init(1,OPL3_INTERNAL_FREQ,sdl_sample_rate);
   opl3_init;
 
   sdl_audio_spec.freq := sdl_sample_rate;
@@ -637,19 +614,39 @@ begin
   SDL_PauseAudio(0);
 end;
 
-procedure snd_Deinit;
+procedure snd_done;
 
 var
   idx: Byte;
 
 begin
-  YMF262Shutdown;
   SDL_PauseAudio(1);
   SDL_CloseAudio;
-  FreeMem(YMF262_sample_buffer_ptr);
-  For idx := 1 to 18 do FreeMem(YMF262_sample_buffer_chan_ptr[idx]);
-  YMF262_sample_buffer_ptr := NIL;
+  FreeMem(opl3_sample_buffer_ptr);
+  For idx := 1 to 18 do FreeMem(opl3_sample_buffer_chan_ptr[idx]);
+  opl3_sample_buffer_ptr := NIL;
 end;
+
+{$ENDIF}
+
+{$IFDEF GO32V2}
+
+var
+  old_exit_proc: procedure;
+
+procedure new_exit_proc;
+begin
+  Lock_Data(___OPL3OUT_UNIT_DATA_START___,DWORD(Addr(___OPL3OUT_UNIT_DATA_END___))-DWORD(Addr(___OPL3OUT_UNIT_DATA_START___)));
+  Lock_Code(@___OPL3OUT_IRQ_CODE_START___,DWORD(@___OPL3OUT_IRQ_CODE_END___)-DWORD(@___OPL3OUT_IRQ_CODE_START___));
+  ExitProc := @old_exit_proc;
+end;
+
+begin
+  FillWord(_opl_regs_cache,SizeOf(_opl_regs_cache) DIV SizeOf(WORD),NOT 0);
+  Lock_Data(___OPL3OUT_UNIT_DATA_START___,DWORD(Addr(___OPL3OUT_UNIT_DATA_END___))-DWORD(Addr(___OPL3OUT_UNIT_DATA_START___)));
+  Lock_Code(@___OPL3OUT_IRQ_CODE_START___,DWORD(@___OPL3OUT_IRQ_CODE_END___)-DWORD(@___OPL3OUT_IRQ_CODE_START___));
+  @old_exit_proc := ExitProc;
+  ExitProc := @new_exit_proc;
 
 {$ENDIF}
 

@@ -1,7 +1,6 @@
 unit AdT2sys;
-{$IFNDEF __TMT__}
+{$S-,Q-,R-,V-,B-,X+}
 {$PACKRECORDS 1}
-{$ENDIF}
 interface
 
 const
@@ -10,17 +9,20 @@ const
   virtual_cur_pos: Word = 0;
   slide_ticks: Longint = 0;
   reset_slide_ticks: Boolean = FALSE;
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   gfx_ticks: Longint = 0;
   reset_gfx_ticks: Boolean = FALSE;
-  vchg_ticks: Real = 0;
   scroll_ticks: Real = 0;
+  mouse_active: Boolean = FALSE;
 {$ENDIF}
   blink_ticks: Longint = 0;
   blink_flag: Boolean = FALSE;
   cursor_sync: Boolean = FALSE;
-{$IFNDEF __TMT__}
-  _emulate_screen_without_delay: Boolean = FALSE;
+{$IFDEF GO32V2}
+  _draw_screen_without_vsync: Boolean = FALSE;
+  _draw_screen_without_delay: Boolean = FALSE;
+{$ELSE}
+  _draw_screen_without_delay: Boolean = FALSE;
   _update_sdl_screen: Boolean = FALSE;
   _name_scrl_shift_ctr: Shortint = 1;
   _name_scrl_shift: Byte = 0;
@@ -30,8 +32,24 @@ const
   _cursor_blink_pending_frames: Longint = 0;
   _generic_blink_event_flag: Boolean = FALSE;
   _realtime_gfx_no_update: Boolean = FALSE;
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _screen_refresh_pending_frames: Longint = 0;
+  _custom_svga_cfg: array[1..31] of Record
+                                      flag: Boolean;
+                                      value: Longint;
+                                    end
+    = ((flag: FALSE; value: -1),(flag: FALSE; value: -1),(flag: FALSE; value: -1),
+       (flag: FALSE; value: -1),(flag: FALSE; value: -1),(flag: FALSE; value: -1),
+       (flag: FALSE; value: -1),(flag: FALSE; value: -1),(flag: FALSE; value: -1),
+       (flag: FALSE; value: -1),(flag: FALSE; value: -1),(flag: FALSE; value: -1),
+       (flag: FALSE; value: -1),(flag: FALSE; value: -1),(flag: FALSE; value: -1),
+       (flag: FALSE; value: -1),(flag: FALSE; value: -1),(flag: FALSE; value: -1),
+       (flag: FALSE; value: -1),(flag: FALSE; value: -1),(flag: FALSE; value: -1),
+       (flag: FALSE; value: -1),(flag: FALSE; value: -1),(flag: FALSE; value: -1),
+       (flag: FALSE; value: -1),(flag: FALSE; value: -1),(flag: FALSE; value: -1),
+       (flag: FALSE; value: -1),(flag: FALSE; value: -1),(flag: FALSE; value: -1),
+       (flag: FALSE; value: -1));
+
 {$ENDIF}
 
 const
@@ -41,20 +59,16 @@ const
 
 const
   _force_program_quit: Boolean = FALSE;
-  _update_tracepr_pending_flag: Boolean = FALSE;
-  _update_pattern_pending_flag: Boolean = FALSE;
-  _update_pattord_pending_flag: Boolean = FALSE;
-  _update_statsln_pending_flag: Boolean = FALSE;
   _traceprc_last_order: Byte = 0;
   _traceprc_last_pattern: Byte = 0;
   _traceprc_last_line: Byte = 0;
   _pattedit_lastpos: Byte = 0;
 
 procedure sys_init;
-procedure sys_deinit;
-procedure emulate_screen;
+procedure sys_done;
+procedure draw_screen;
 
-{$IFNDEF __TMT__}
+{$IFNDEF GO32V2}
 
 const
   _FrameBuffer: Pointer = NIL;
@@ -64,6 +78,11 @@ procedure vid_Deinit;
 procedure vid_SetVideoMode(do_delay: Boolean);
 procedure vid_SetRGBPalette(var palette);
 procedure vid_FadeOut;
+
+{$ELSE}
+
+var
+  _FrameBuffer_mirror: array[0..PRED(1024*768)] of Byte;
 
 {$ENDIF}
 
@@ -83,8 +102,8 @@ procedure CloseF(var f: File);
 implementation
 
 uses
-{$IFDEF __TMT__}
-  DOS,LFB256,
+{$IFDEF GO32V2}
+  DOS,GO32,AdT2vesa,
 {$ELSE}
   DOS,SDL,SDL_Video,SDL_Timer,SDL__rwops,
   AdT2opl3,
@@ -92,7 +111,7 @@ uses
   AdT2unit,AdT2text,AdT2keyb,AdT2data,
   TxtScrIO,StringIO,ParserIO;
 
-{$IFNDEF __TMT__}
+{$IFNDEF GO32V2}
 var
   screen: PSDL_Surface;
   rgb_color_alt: array[0..15] of tRGB;
@@ -100,22 +119,22 @@ var
 
 procedure sys_init;
 begin
-{$IFNDEF __TMT__}
+{$IFNDEF GO32V2}
   vid_Init; // SDL video
-  AdT2opl3.snd_Init; // SDL sound + opl3 emulation
+  AdT2opl3.snd_init; // SDL sound + opl3 emulation
 {$ENDIF}
 end;
 
-procedure sys_deinit;
+procedure sys_done;
 begin
-{$IFNDEF __TMT__}
+{$IFNDEF GO32V2}
   vid_Deinit;
 {$ENDIF}
 end;
 
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
 
-procedure emulate_screen_800x600_1;
+procedure draw_VESA_screen_800x600_1;
 
 const
   H_RES = 800;
@@ -148,7 +167,7 @@ begin
         mov     _cursor_blink_pending_frames,0
         xor     byte ptr [cursor_sync],1
 @@1:    lea     esi,[font8x16]
-        mov     edi,dword ptr [_FrameBuffer]
+        lea     edi,[_FrameBuffer_mirror]
         mov     base_ofs,edi
         add     edi,(H_RES-H_CHR*8)/2+(V_RES-V_CHR*16)/2*H_RES
         mov     ebx,dword ptr [screen_ptr]
@@ -235,7 +254,7 @@ begin
   end;
 end;
 
-procedure emulate_screen_800x600_2;
+procedure draw_VESA_screen_800x600_2;
 
 const
   H_RES = 800;
@@ -265,7 +284,7 @@ begin
         mov     _cursor_blink_pending_frames,0
         xor     byte ptr [cursor_sync],1
 @@1:    lea     esi,[font8x16]
-        mov     edi,dword ptr [_FrameBuffer]
+        lea     edi,[_FrameBuffer_mirror]
         mov     base_ofs,edi
         add     edi,(H_RES-H_CHR*8)/2+(V_RES-V_CHR*16)/2*H_RES
         mov     ebx,dword ptr [screen_ptr]
@@ -352,7 +371,7 @@ begin
   end;
 end;
 
-procedure emulate_screen_1024x768;
+procedure draw_VESA_screen_1024x768;
 
 const
   H_RES = 1024;
@@ -382,7 +401,7 @@ begin
         mov     _cursor_blink_pending_frames,0
         xor     byte ptr [cursor_sync],1
 @@1:    lea     esi,[font8x16]
-        mov     edi,dword ptr [_FrameBuffer]
+        lea     edi,[_FrameBuffer_mirror]
         mov     base_ofs,edi
         add     edi,(H_RES-H_CHR*8)/2+(V_RES-V_CHR*16)/2*H_RES
         mov     ebx,dword ptr [screen_ptr]
@@ -459,24 +478,101 @@ begin
   end;
 end;
 
-procedure emulate_screen;
+procedure dump_VESA_buffer(buffer_size: Longint);
+
+var
+  dumped_data_size,bank_data_size: Longint;
+  current_bank: Byte;
+
 begin
-  If (program_screen_mode < 3) or
-     ((program_screen_mode = 3) and (comp_text_mode < 2)) then
-    EXIT;
-  If NOT (_screen_refresh_pending_frames > fps_down_factor) then
-    EXIT
-  else _screen_refresh_pending_frames := 0;
-  Case program_screen_mode of
-    3: emulate_screen_800x600_1;
-    4: emulate_screen_800x600_2;
-    5: emulate_screen_1024x768;
+  If NOT _draw_screen_without_vsync then
+    WaitRetrace;
+  dumped_data_size := 0;
+  current_bank := 0;
+  While (dumped_data_size < buffer_size) do
+    begin
+      If (dumped_data_size+65536 <= buffer_size) then
+        bank_data_size := 65536
+      else bank_data_size := buffer_size-dumped_data_size;
+      VESA_SwitchBank(current_bank);
+      dosmemput($0a000,0,_FrameBuffer_mirror[dumped_data_size],bank_data_size);
+      Inc(dumped_data_size,bank_data_size);
+      Inc(current_bank);
+    end;
+end;
+
+procedure shift_text_screen;
+
+var
+  xsize: Byte;
+  xshift: Byte;
+
+begin
+  xsize := SCREEN_RES_X DIV scr_font_width;
+  xshift := (xsize-MAX_COLUMNS) DIV 2;
+  FillChar(ptr_temp_screen2^,SCREEN_MEM_SIZE,0);
+  asm
+        mov     esi,dword ptr [screen_ptr]
+        mov     edi,dword ptr [ptr_temp_screen2]
+        cld
+        movzx   ecx,MAX_ROWS
+        movzx   ebx,xshift
+        shl     ebx,1
+        add     edi,ebx
+@@1:    xchg    ecx,edx
+        movzx   ecx,xsize
+        rep     movsw
+        xchg    ecx,edx
+        loop    @@1
   end;
+end;
+
+procedure draw_screen;
+begin
+  If _draw_screen_without_delay then
+    _draw_screen_without_delay := FALSE
+  else If do_synchronize and NOT (_screen_refresh_pending_frames > fps_down_factor) then
+        EXIT
+      else _screen_refresh_pending_frames := 0;
+  If Compare(screen_ptr,ptr_screen_mirror,(SCREEN_RES_X DIV scr_font_width)*MAX_ROWS*2) then
+    EXIT
+  else begin
+         ScreenMemCopy(screen_ptr,ptr_screen_mirror);
+         If NOT is_VESA_emulated_mode then
+           begin
+             If NOT _draw_screen_without_vsync then
+               WaitRetrace;
+             If NOT (program_screen_mode in [4,5]) then
+               dosmemput(v_seg,v_ofs,screen_ptr^,MAX_COLUMNS*MAX_ROWS*2)
+             else begin
+                    shift_text_screen;
+                    dosmemput(v_seg,v_ofs,ptr_temp_screen2^,(SCREEN_RES_X DIV scr_font_width)*MAX_ROWS*2);
+                  end;
+           end;
+       end;
+  _draw_screen_without_vsync := FALSE;
+  If is_VESA_emulated_mode then
+    Case get_VESA_emulated_mode_idx of
+      0: begin
+           draw_VESA_screen_800x600_1;
+           dump_VESA_buffer(800*600);
+         end;
+
+      1: begin
+           draw_VESA_screen_800x600_2;
+           dump_VESA_buffer(800*600);
+         end;
+
+      2: begin
+           draw_VESA_screen_1024x768;
+           dump_VESA_buffer(1024*768);
+         end;
+    end;
 end;
 
 {$ELSE}
 
-procedure emulate_screen_720x480;
+procedure draw_SDL_screen_720x480;
 
 var
    bit_pos,bit_mask: Byte;
@@ -576,7 +672,7 @@ begin
   end;
 end;
 
-procedure emulate_screen_960x800;
+procedure draw_SDL_screen_960x800;
 
 var
    bit_pos,bit_mask: Byte;
@@ -660,7 +756,7 @@ begin
   end;
 end;
 
-procedure emulate_screen_1440x960;
+procedure draw_SDL_screen_1440x960;
 
 var
    bit_pos,bit_mask: Byte;
@@ -744,17 +840,17 @@ begin
   end;
 end;
 
-procedure emulate_screen_proc;
+procedure draw_screen_proc;
 begin
   _update_sdl_screen := FALSE;
-  If Compare(screen_ptr,ptr_screen_mirror,MAX_COLUMNS*MAX_ROWS*2) then EXIT
+  If Compare(screen_ptr,ptr_screen_mirror,(SCREEN_RES_X DIV scr_font_width)*MAX_ROWS*2) then EXIT
   else ScreenMemCopy(screen_ptr,ptr_screen_mirror);
   _cursor_blink_factor := ROUND(13/100*sdl_frame_rate);
   _update_sdl_screen := TRUE;
   Case program_screen_mode of
-    0: emulate_screen_720x480;
-    1: emulate_screen_960x800;
-    2: emulate_screen_1440x960;
+    0: draw_SDL_screen_720x480;
+    1: draw_SDL_screen_960x800;
+    2: draw_SDL_screen_1440x960;
   end;
 end;
 
@@ -774,7 +870,7 @@ begin
   SDL_SetPalette(screen,SDL_PHYSPAL,SDL_ColorArray(palette),0,16);
 end;
 
-procedure emulate_screen;
+procedure draw_screen;
 
 const
    frame_start: Longint = 0;
@@ -783,10 +879,10 @@ const
 
 begin
   realtime_gfx_poll_proc;
-  emulate_screen_proc;
+  draw_screen_proc;
   If _update_sdl_screen then SDL_Flip(screen);
 
-  If _emulate_screen_without_delay then _emulate_screen_without_delay := FALSE
+  If _draw_screen_without_delay then _draw_screen_without_delay := FALSE
   else begin // keep framerate
          actual_frame_end := SDL_GetTicks;
          frame_end := frame_start+(1000 DIV sdl_frame_rate);

@@ -12,33 +12,31 @@
     procedure sgi_file_loader_alt(fname: String);
     procedure import_instrument_from_data_record;
     procedure import_sbi_instrument_alt(var data);
-    procedure test_instrument_alt(chan: Byte; fkey: Word; loadMacros: Boolean; bankSelector: Boolean; loadArpVib: Boolean);
+    procedure test_instrument_alt(chan: Byte; fkey: Word; loadMacros: Boolean; bankSelector: Boolean; loadArpVib: Boolean;
+                                  test_ins1,test_ins2: Byte);
     procedure test_instrument_alt2(chan: Byte; fkey: Word);
     procedure fselect_external_proc;
 }
 
-type
-  tByteSet = Set of Byte;
-
 procedure import_standard_instrument_alt(var data);
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADINS.INC:import_standard_instrument_alt';
 {$ENDIF}
   With temp_instrument do
     begin
-      fm_data.AM_VIB_EG_modulator := tDUMMY_BUFF(data)[0];
-      fm_data.AM_VIB_EG_carrier   := tDUMMY_BUFF(data)[1];
-      fm_data.KSL_VOLUM_modulator := tDUMMY_BUFF(data)[2];
-      fm_data.KSL_VOLUM_carrier   := tDUMMY_BUFF(data)[3];
-      fm_data.ATTCK_DEC_modulator := tDUMMY_BUFF(data)[4];
-      fm_data.ATTCK_DEC_carrier   := tDUMMY_BUFF(data)[5];
-      fm_data.SUSTN_REL_modulator := tDUMMY_BUFF(data)[6];
-      fm_data.SUSTN_REL_carrier   := tDUMMY_BUFF(data)[7];
-      fm_data.WAVEFORM_modulator  := tDUMMY_BUFF(data)[8]  AND 3;
-      fm_data.WAVEFORM_carrier    := tDUMMY_BUFF(data)[9]  AND 3;
-      fm_data.FEEDBACK_FM         := tDUMMY_BUFF(data)[10] AND $0f;
+      fm_data.AM_VIB_EG_modulator := pBYTE(@data)[0];
+      fm_data.AM_VIB_EG_carrier   := pBYTE(@data)[1];
+      fm_data.KSL_VOLUM_modulator := pBYTE(@data)[2];
+      fm_data.KSL_VOLUM_carrier   := pBYTE(@data)[3];
+      fm_data.ATTCK_DEC_modulator := pBYTE(@data)[4];
+      fm_data.ATTCK_DEC_carrier   := pBYTE(@data)[5];
+      fm_data.SUSTN_REL_modulator := pBYTE(@data)[6];
+      fm_data.SUSTN_REL_carrier   := pBYTE(@data)[7];
+      fm_data.WAVEFORM_modulator  := pBYTE(@data)[8]  AND 3;
+      fm_data.WAVEFORM_carrier    := pBYTE(@data)[9]  AND 3;
+      fm_data.FEEDBACK_FM         := pBYTE(@data)[10] AND $0f;
     end;
 
   temp_instrument.panning := 0;
@@ -47,23 +45,23 @@ end;
 
 procedure import_fin_instrument_alt(var data);
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADINS.INC:import_fin_instrument_alt';
 {$ENDIF}
   With temp_instrument do
     begin
-      fm_data.AM_VIB_EG_modulator := tDUMMY_BUFF(data)[0];
-      fm_data.AM_VIB_EG_carrier   := tDUMMY_BUFF(data)[1];
-      fm_data.KSL_VOLUM_modulator := tDUMMY_BUFF(data)[2];
-      fm_data.KSL_VOLUM_carrier   := tDUMMY_BUFF(data)[3];
-      fm_data.ATTCK_DEC_modulator := tDUMMY_BUFF(data)[4];
-      fm_data.ATTCK_DEC_carrier   := tDUMMY_BUFF(data)[5];
-      fm_data.SUSTN_REL_modulator := tDUMMY_BUFF(data)[6];
-      fm_data.SUSTN_REL_carrier   := tDUMMY_BUFF(data)[7];
-      fm_data.WAVEFORM_modulator  := tDUMMY_BUFF(data)[8]  AND 7;
-      fm_data.WAVEFORM_carrier    := tDUMMY_BUFF(data)[9]  AND 7;
-      fm_data.FEEDBACK_FM         := tDUMMY_BUFF(data)[10] AND $0f;
+      fm_data.AM_VIB_EG_modulator := pBYTE(@data)[0];
+      fm_data.AM_VIB_EG_carrier   := pBYTE(@data)[1];
+      fm_data.KSL_VOLUM_modulator := pBYTE(@data)[2];
+      fm_data.KSL_VOLUM_carrier   := pBYTE(@data)[3];
+      fm_data.ATTCK_DEC_modulator := pBYTE(@data)[4];
+      fm_data.ATTCK_DEC_carrier   := pBYTE(@data)[5];
+      fm_data.SUSTN_REL_modulator := pBYTE(@data)[6];
+      fm_data.SUSTN_REL_carrier   := pBYTE(@data)[7];
+      fm_data.WAVEFORM_modulator  := pBYTE(@data)[8]  AND 7;
+      fm_data.WAVEFORM_carrier    := pBYTE(@data)[9]  AND 7;
+      fm_data.FEEDBACK_FM         := pBYTE(@data)[10] AND $0f;
     end;
 
   temp_instrument.panning := 0;
@@ -72,48 +70,48 @@ end;
 
 procedure import_hsc_instrument_alt(var data);
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADINS.INC:import_hsc_instrument_alt';
 {$ENDIF}
   With temp_instrument do
     begin
-      fm_data.AM_VIB_EG_carrier   := tDUMMY_BUFF(data)[0];
-      fm_data.AM_VIB_EG_modulator := tDUMMY_BUFF(data)[1];
-      fm_data.KSL_VOLUM_carrier   := tDUMMY_BUFF(data)[2];
-      fm_data.KSL_VOLUM_modulator := tDUMMY_BUFF(data)[3];
-      fm_data.ATTCK_DEC_carrier   := tDUMMY_BUFF(data)[4];
-      fm_data.ATTCK_DEC_modulator := tDUMMY_BUFF(data)[5];
-      fm_data.SUSTN_REL_carrier   := tDUMMY_BUFF(data)[6];
-      fm_data.SUSTN_REL_modulator := tDUMMY_BUFF(data)[7];
-      fm_data.FEEDBACK_FM         := tDUMMY_BUFF(data)[8]  AND $0f;
-      fm_data.WAVEFORM_carrier    := tDUMMY_BUFF(data)[9]  AND 3;
-      fm_data.WAVEFORM_modulator  := tDUMMY_BUFF(data)[10] AND 3;
+      fm_data.AM_VIB_EG_carrier   := pBYTE(@data)[0];
+      fm_data.AM_VIB_EG_modulator := pBYTE(@data)[1];
+      fm_data.KSL_VOLUM_carrier   := pBYTE(@data)[2];
+      fm_data.KSL_VOLUM_modulator := pBYTE(@data)[3];
+      fm_data.ATTCK_DEC_carrier   := pBYTE(@data)[4];
+      fm_data.ATTCK_DEC_modulator := pBYTE(@data)[5];
+      fm_data.SUSTN_REL_carrier   := pBYTE(@data)[6];
+      fm_data.SUSTN_REL_modulator := pBYTE(@data)[7];
+      fm_data.FEEDBACK_FM         := pBYTE(@data)[8]  AND $0f;
+      fm_data.WAVEFORM_carrier    := pBYTE(@data)[9]  AND 3;
+      fm_data.WAVEFORM_modulator  := pBYTE(@data)[10] AND 3;
     end;
 
   temp_instrument.panning := 0;
-  temp_instrument.fine_tune := tDUMMY_BUFF(data)[11] SHR 4;
+  temp_instrument.fine_tune := pBYTE(@data)[11] SHR 4;
 end;
 
 procedure import_sat_instrument_alt(var data);
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADINS.INC:import_sat_instrument_alt';
 {$ENDIF}
   With temp_instrument do
     begin
-      fm_data.FEEDBACK_FM         := tDUMMY_BUFF(data)[0] AND $0f;
-      fm_data.AM_VIB_EG_modulator := tDUMMY_BUFF(data)[1];
-      fm_data.AM_VIB_EG_carrier   := tDUMMY_BUFF(data)[2];
-      fm_data.ATTCK_DEC_modulator := tDUMMY_BUFF(data)[3];
-      fm_data.ATTCK_DEC_carrier   := tDUMMY_BUFF(data)[4];
-      fm_data.SUSTN_REL_modulator := tDUMMY_BUFF(data)[5];
-      fm_data.SUSTN_REL_carrier   := tDUMMY_BUFF(data)[6];
-      fm_data.WAVEFORM_modulator  := tDUMMY_BUFF(data)[7] AND 3;
-      fm_data.WAVEFORM_carrier    := tDUMMY_BUFF(data)[8] AND 3;
-      fm_data.KSL_VOLUM_modulator := tDUMMY_BUFF(data)[9];
-      fm_data.KSL_VOLUM_carrier   := tDUMMY_BUFF(data)[10];
+      fm_data.FEEDBACK_FM         := pBYTE(@data)[0] AND $0f;
+      fm_data.AM_VIB_EG_modulator := pBYTE(@data)[1];
+      fm_data.AM_VIB_EG_carrier   := pBYTE(@data)[2];
+      fm_data.ATTCK_DEC_modulator := pBYTE(@data)[3];
+      fm_data.ATTCK_DEC_carrier   := pBYTE(@data)[4];
+      fm_data.SUSTN_REL_modulator := pBYTE(@data)[5];
+      fm_data.SUSTN_REL_carrier   := pBYTE(@data)[6];
+      fm_data.WAVEFORM_modulator  := pBYTE(@data)[7] AND 3;
+      fm_data.WAVEFORM_carrier    := pBYTE(@data)[8] AND 3;
+      fm_data.KSL_VOLUM_modulator := pBYTE(@data)[9];
+      fm_data.KSL_VOLUM_carrier   := pBYTE(@data)[10];
     end;
 
   temp_instrument.panning := 0;
@@ -143,11 +141,11 @@ var
   f: File;
   header: tOLD_HEADER;
   header2: tHEADER;
-  temp: Longint;
+  temp,temp2: Longint;
   crc: Word;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADINS.INC:a2i_file_loader_alt';
 {$ENDIF}
@@ -169,7 +167,7 @@ begin
       EXIT;
     end;
 
-  If NOT (header.ffver in [1..9]) then
+  If NOT (header.ffver in [1..FFVER_A2I]) then
     begin
       CloseF(f);
       EXIT;
@@ -265,6 +263,47 @@ begin
       Move(buf3,temp_instrument,SizeOf(temp_instrument));
     end;
 
+  If (header.ffver = FFVER_A2I) then
+    begin
+      ResetF(f);
+      BlockReadF(f,header2,SizeOf(header2),temp);
+      If NOT ((temp = SizeOf(header2)) and (header2.ident = id)) then
+        begin
+          CloseF(f);
+          EXIT;
+        end;
+
+      BlockReadF(f,buf2,header2.b0len,temp);
+      If NOT (temp = header2.b0len) then
+        begin
+          CloseF(f);
+          EXIT;
+        end;
+
+      crc := WORD_NULL;
+      crc := Update16(header2.b0len,1,crc);
+      crc := Update16(buf2,header2.b0len,crc);
+
+      If (crc <> header2.crc16) then
+        begin
+          CloseF(f);
+          EXIT;
+        end;
+
+      progress_num_steps := 0;
+      temp := 0;
+      temp2 := LZH_decompress(buf2,buf3,header2.b0len);
+      Move(buf3[temp],temp_instrument,SizeOf(temp_instrument));
+      Inc(temp,SizeOf(temp_instrument)); // instrument data
+      Inc(temp,SUCC(buf3[temp])); // instrument name
+      If (temp < temp2) then // more data present => 4op instrument
+        begin
+          Move(temp_instrument,temp_instrument2,SizeOf(temp_instrument2));
+          Move(buf3[temp],temp_instrument,SizeOf(temp_instrument));
+          Inc(temp,SizeOf(temp_instrument));
+        end;
+    end;
+
   CloseF(f);
   load_flag_alt := 1;
 end;
@@ -284,10 +323,10 @@ const
 var
   f: File;
   header: tHEADER;
-  crc,temp: Longint;
+  crc,temp,temp2: Longint;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADINS.INC:a2f_file_loader_alt';
 {$ENDIF}
@@ -311,7 +350,7 @@ begin
       EXIT;
     end;
 
-  If NOT (header.ffver in [1]) then
+  If NOT (header.ffver in [1..FFVER_A2F]) then
     begin
       CloseF(f);
       EXIT;
@@ -350,6 +389,53 @@ begin
            SizeOf(temp_instrument_dis_fmreg_col));
     end;
 
+  If (header.ffver = FFVER_A2F) then
+    begin
+      BlockReadF(f,buf2,header.b0len,temp);
+      If NOT (temp = header.b0len) then
+        begin
+          CloseF(f);
+          EXIT;
+        end;
+
+      crc := DWORD_NULL;
+      crc := Update32(header.b0len,1,crc);
+      crc := Update32(buf2,header.b0len,crc);
+
+      If (crc <> header.crc32) then
+        begin
+          CloseF(f);
+          EXIT;
+        end;
+
+      progress_num_steps := 0;
+      temp := 0;
+      temp2 := LZH_decompress(buf2,buf3,header.b0len);
+      Move(buf3[temp],temp_instrument,SizeOf(temp_instrument));
+      Inc(temp,SizeOf(temp_instrument)); // instrument data
+      Inc(temp,SUCC(buf3[temp])); // instrument name
+      Move(buf3[temp],temp_instrument_macro,
+           SizeOf(temp_instrument_macro));
+      Inc(temp,SizeOf(temp_instrument_macro)); // instrument macro
+      Move(buf3[temp],temp_instrument_dis_fmreg_col,
+           SizeOf(temp_instrument_dis_fmreg_col));
+      Inc(temp,SizeOf(temp_instrument_dis_fmreg_col)); // disabled FM-macro columns
+      If (temp < temp2) then // more data present => 4op instrument
+        begin
+          Move(temp_instrument,temp_instrument2,SizeOf(temp_instrument2));
+          Move(temp_instrument_macro,temp_instrument_macro2,SizeOf(temp_instrument_macro2));
+          Move(temp_instrument_dis_fmreg_col,temp_instrument_dis_fmreg_col2,SizeOf(temp_instrument_dis_fmreg_col2));
+          Move(buf3[temp],temp_instrument,SizeOf(temp_instrument));
+          Inc(temp,SizeOf(temp_instrument));
+          Inc(temp,SUCC(buf3[temp]));
+          Move(buf3[temp],temp_instrument_macro,
+               SizeOf(temp_instrument_macro));
+          Inc(temp,SizeOf(temp_instrument_macro));
+          Move(buf3[temp],temp_instrument_dis_fmreg_col,
+               SizeOf(temp_instrument_dis_fmreg_col));
+        end;
+    end;
+
   CloseF(f);
   load_flag_alt := 1;
 end;
@@ -376,7 +462,7 @@ const
                  SizeOf(buffer.idata)+
                  SizeOf(buffer.resrv);
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADINS.INC:cif_file_loader_alt';
 {$ENDIF}
@@ -419,7 +505,7 @@ var
   temp: Longint;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADINS.INC:fin_file_loader_alt';
 {$ENDIF}
@@ -465,7 +551,7 @@ var
   result: Boolean;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADINS.INC:ins_file_loader_alt:correct_ins';
 {$ENDIF}
@@ -480,7 +566,7 @@ begin
 end;
 
 begin { ins_file_loader_alt }
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADINS.INC:ins_file_loader_alt';
 {$ENDIF}
@@ -545,7 +631,7 @@ var
   temp: Longint;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADINS.INC:sbi_file_loader_alt';
 {$ENDIF}
@@ -610,44 +696,44 @@ var
 
 procedure import_sgi_instrument(inst: Byte; var data);
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADINS.INC:sgi_file_loader_alt:import_sgi_instrument';
 {$ENDIF}
   FillChar(temp_instrument,SizeOf(temp_instrument),0);
   With temp_instrument do
     begin
-      fm_data.ATTCK_DEC_modulator := (tDUMMY_BUFF(data)[1]  AND $0f)+
-                                     (tDUMMY_BUFF(data)[0]  AND $0f) SHL 4;
-      fm_data.SUSTN_REL_modulator := (tDUMMY_BUFF(data)[3]  AND $0f)+
-                                     (tDUMMY_BUFF(data)[2]  AND $0f) SHL 4;
-      fm_data.WAVEFORM_modulator  := (tDUMMY_BUFF(data)[4]  AND 3);
-      fm_data.KSL_VOLUM_modulator := (tDUMMY_BUFF(data)[7]  AND $3f)+
-                                     (tDUMMY_BUFF(data)[6]  AND 3) SHL 6;
-      fm_data.AM_VIB_EG_modulator := (tDUMMY_BUFF(data)[5]  AND $0f)+
-                                     (tDUMMY_BUFF(data)[8]  AND 1) SHL 4+
-                                     (tDUMMY_BUFF(data)[11] AND 1) SHL 5+
-                                     (tDUMMY_BUFF(data)[10] AND 1) SHL 6+
-                                     (tDUMMY_BUFF(data)[9]  AND 1) SHL 7;
-      fm_data.ATTCK_DEC_carrier   := (tDUMMY_BUFF(data)[13] AND $0f)+
-                                     (tDUMMY_BUFF(data)[12] AND $0f) SHL 4;
-      fm_data.SUSTN_REL_carrier   := (tDUMMY_BUFF(data)[15] AND $0f)+
-                                     (tDUMMY_BUFF(data)[14] AND $0f) SHL 4;
-      fm_data.WAVEFORM_carrier    := (tDUMMY_BUFF(data)[16] AND 3);
-      fm_data.KSL_VOLUM_carrier   := (tDUMMY_BUFF(data)[19] AND $3f)+
-                                     (tDUMMY_BUFF(data)[18] AND 3) SHL 6;
-      fm_data.AM_VIB_EG_carrier   := (tDUMMY_BUFF(data)[17] AND $0f)+
-                                     (tDUMMY_BUFF(data)[20] AND 1) SHL 4+
-                                     (tDUMMY_BUFF(data)[23] AND 1) SHL 5+
-                                     (tDUMMY_BUFF(data)[22] AND 1) SHL 6+
-                                     (tDUMMY_BUFF(data)[21] AND 1) SHL 7;
-      fm_data.FEEDBACK_FM         := (tDUMMY_BUFF(data)[25] AND 1)+
-                                     (tDUMMY_BUFF(data)[24] AND 7) SHL 1;
+      fm_data.ATTCK_DEC_modulator := (pBYTE(@data)[1]  AND $0f)+
+                                     (pBYTE(@data)[0]  AND $0f) SHL 4;
+      fm_data.SUSTN_REL_modulator := (pBYTE(@data)[3]  AND $0f)+
+                                     (pBYTE(@data)[2]  AND $0f) SHL 4;
+      fm_data.WAVEFORM_modulator  := (pBYTE(@data)[4]  AND 3);
+      fm_data.KSL_VOLUM_modulator := (pBYTE(@data)[7]  AND $3f)+
+                                     (pBYTE(@data)[6]  AND 3) SHL 6;
+      fm_data.AM_VIB_EG_modulator := (pBYTE(@data)[5]  AND $0f)+
+                                     (pBYTE(@data)[8]  AND 1) SHL 4+
+                                     (pBYTE(@data)[11] AND 1) SHL 5+
+                                     (pBYTE(@data)[10] AND 1) SHL 6+
+                                     (pBYTE(@data)[9]  AND 1) SHL 7;
+      fm_data.ATTCK_DEC_carrier   := (pBYTE(@data)[13] AND $0f)+
+                                     (pBYTE(@data)[12] AND $0f) SHL 4;
+      fm_data.SUSTN_REL_carrier   := (pBYTE(@data)[15] AND $0f)+
+                                     (pBYTE(@data)[14] AND $0f) SHL 4;
+      fm_data.WAVEFORM_carrier    := (pBYTE(@data)[16] AND 3);
+      fm_data.KSL_VOLUM_carrier   := (pBYTE(@data)[19] AND $3f)+
+                                     (pBYTE(@data)[18] AND 3) SHL 6;
+      fm_data.AM_VIB_EG_carrier   := (pBYTE(@data)[17] AND $0f)+
+                                     (pBYTE(@data)[20] AND 1) SHL 4+
+                                     (pBYTE(@data)[23] AND 1) SHL 5+
+                                     (pBYTE(@data)[22] AND 1) SHL 6+
+                                     (pBYTE(@data)[21] AND 1) SHL 7;
+      fm_data.FEEDBACK_FM         := (pBYTE(@data)[25] AND 1)+
+                                     (pBYTE(@data)[24] AND 7) SHL 1;
     end;
 end;
 
 begin { sgi_file_loader_alt }
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADINS.INC:sgi_file_loader_alt';
 {$ENDIF}
@@ -676,24 +762,24 @@ end;
 
 procedure import_sbi_instrument_alt(var data);
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADINS.INC:import_sbi_instrument_alt';
 {$ENDIF}
   FillChar(temp_instrument,SizeOf(temp_instrument),0);
   With temp_instrument do
     begin
-      fm_data.AM_VIB_EG_modulator := tDUMMY_BUFF(data)[0];
-      fm_data.AM_VIB_EG_carrier   := tDUMMY_BUFF(data)[1];
-      fm_data.KSL_VOLUM_modulator := tDUMMY_BUFF(data)[2];
-      fm_data.KSL_VOLUM_carrier   := tDUMMY_BUFF(data)[3];
-      fm_data.ATTCK_DEC_modulator := tDUMMY_BUFF(data)[4];
-      fm_data.ATTCK_DEC_carrier   := tDUMMY_BUFF(data)[5];
-      fm_data.SUSTN_REL_modulator := tDUMMY_BUFF(data)[6];
-      fm_data.SUSTN_REL_carrier   := tDUMMY_BUFF(data)[7];
-      fm_data.WAVEFORM_modulator  := tDUMMY_BUFF(data)[8]  AND 3;
-      fm_data.WAVEFORM_carrier    := tDUMMY_BUFF(data)[9]  AND 3;
-      fm_data.FEEDBACK_FM         := tDUMMY_BUFF(data)[10] AND $0f;
+      fm_data.AM_VIB_EG_modulator := pBYTE(@data)[0];
+      fm_data.AM_VIB_EG_carrier   := pBYTE(@data)[1];
+      fm_data.KSL_VOLUM_modulator := pBYTE(@data)[2];
+      fm_data.KSL_VOLUM_carrier   := pBYTE(@data)[3];
+      fm_data.ATTCK_DEC_modulator := pBYTE(@data)[4];
+      fm_data.ATTCK_DEC_carrier   := pBYTE(@data)[5];
+      fm_data.SUSTN_REL_modulator := pBYTE(@data)[6];
+      fm_data.SUSTN_REL_carrier   := pBYTE(@data)[7];
+      fm_data.WAVEFORM_modulator  := pBYTE(@data)[8]  AND 3;
+      fm_data.WAVEFORM_carrier    := pBYTE(@data)[9]  AND 3;
+      fm_data.FEEDBACK_FM         := pBYTE(@data)[10] AND $0f;
     end;
 
   temp_instrument.panning := 0;
@@ -703,7 +789,7 @@ end;
 procedure ibk_file_loader_alt(instr: Word);
 
 const
-  id = 'IBK'+#$1a;
+  id = 'IBK'+#26;
 
 var
   f: File;
@@ -715,7 +801,7 @@ var
                    end;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADINS.INC:ibk_file_loader_alt';
 {$ENDIF}
@@ -754,21 +840,20 @@ end;
 
 var
   ins__fmreg_table_backup: tREGISTER_TABLE;
+  ins__fmreg_table_backup2: tREGISTER_TABLE;
   ins__dis_fmreg_col_backup: tDIS_FMREG_COL;
+  ins__dis_fmreg_col_backup2: tDIS_FMREG_COL;
   arp_vib_macro_table_backup: tARP_VIB_MACRO_TABLE;
-  chan_handle: array[1..18] of Byte;
+  chan_handle: array[1..20] of Byte;
 
-procedure test_instrument_alt(chan: Byte; fkey: Word; loadMacros: Boolean; bankSelector: Boolean; loadArpVib: Boolean);
-
-const
-  _perc_sim_chan: array[19..20] of Byte = (18,17);
+procedure test_instrument_alt(chan: Byte; fkey: Word; loadMacros: Boolean; bankSelector: Boolean; loadArpVib: Boolean;
+                              test_ins1,test_ins2: Byte);
 
 var
   temp,temp2,temp3,temp5: Byte;
   valid_key,temp4: Boolean;
   temps: String;
   channels: Byte;
-  bank_instrument: Byte;
 
 function output_note(chan,board_pos: Byte): Boolean;
 
@@ -777,7 +862,7 @@ var
   freq: Word;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADINS.INC:test_instrument_alt:output_note';
 {$ENDIF}
@@ -789,30 +874,38 @@ begin
     end;
 
   chan_handle[chan] := board_scancodes[board_pos];
+  If (test_ins2 <> 0) then chan := _4op_main_chan[chan];
   load_instrument(temp_instrument,chan);
 
   If percussion_mode and
      (temp_instrument.perc_voice in [4,5]) then
     load_instrument(temp_instrument,_perc_sim_chan[chan]);
 
-  freq := nFreq(note-1)+$2000+
-          SHORTINT(tDUMMY_BUFF(Addr(temp_instrument)^)[12]);
-
-  event_table[chan].note := note;
-  opl3out($0b0+_chan_n[chan],0);
-  opl3out($0a0+_chan_n[chan],LO(freq));
-  opl3out($0b0+_chan_n[chan],HI(freq));
+  If (test_ins2 <> 0) then
+    load_instrument(temp_instrument2,PRED(chan));
 
   macro_speedup := songdata.macro_speedup;
   If (play_status = isStopped) then update_timer(songdata.tempo);
 
+  freq := nFreq(note-1)+$2000+
+          SHORTINT(pBYTE(@Addr(temp_instrument)^)[12]);
+  event_table[chan].note := note;
   freq_table[chan] := freq;
   freqtable2[chan] := freq;
-  init_macro_table(chan,note,current_inst,freq);
+  key_on(chan);
+  change_freq(chan,freq);
+
+  If (test_ins2 = 0) then init_macro_table(chan,note,test_ins1,freq)
+  else begin
+         init_macro_table(chan,note,test_ins1,freq);
+         freq_table[PRED(chan)] := freq;
+         freqtable2[PRED(chan)] := freq;
+         init_macro_table(PRED(chan),note,test_ins2,freq);
+       end;
 end;
 
 begin { test_instrument_alt }
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADINS.INC:test_instrument_alt';
 {$ENDIF}
@@ -820,7 +913,13 @@ begin { test_instrument_alt }
   For temp := 1 to 29 do
     If NOT shift_pressed then
       If (board_scancodes[temp] = HI(fkey)) then
-        begin valid_key := TRUE; BREAK; end;
+        begin
+          valid_key := TRUE;
+          BREAK;
+        end;
+
+  If scankey(SC_F7) then
+    For temp := 1 to 20 do reset_chan_data(temp);
 
   If NOT valid_key or
      NOT (temp+12*(current_octave-1)-1 in [0..12*8+1]) then EXIT;
@@ -828,63 +927,114 @@ begin { test_instrument_alt }
   If NOT percussion_mode then channels := 18
   else channels := 15;
 
+  FillChar(temp_instrument,SizeOf(temp_instrument),0);
+  FillChar(temp_instrument2,SizeOf(temp_instrument2),0);
   temp2 := temp;
+
   If bankSelector or loadArpVib then
     If NOT loadArpVib then
       begin
-        bank_instrument := Str2num(Copy(mn_environment.curr_item,7,2),16);
-        If NOT (bank_instrument in [1..255]) then EXIT;
         temps := '';
         load_flag_alt := BYTE_NULL;
-        Move(temp_songdata.instr_data[bank_instrument],
-             temp_instrument,
-             SizeOf(temp_instrument));
-        Move(temp_songdata.instr_macros[bank_instrument],
-             temp_instrument_macro,
-             SizeOf(temp_instrument_macro));
-        Move(temp_songdata.dis_fmreg_col[bank_instrument],
-             temp_instrument_dis_fmreg_col,
-             SizeOf(temp_instrument_dis_fmreg_col));
+        If (test_ins2 = 0) then
+          begin
+            Move(temp_songdata.instr_data[test_ins1],
+                 temp_instrument,
+                 SizeOf(temp_instrument));
+            Move(temp_songdata.instr_macros[test_ins1],
+                 temp_instrument_macro,
+                 SizeOf(temp_instrument_macro));
+            Move(temp_songdata.dis_fmreg_col[test_ins1],
+                 temp_instrument_dis_fmreg_col,
+                 SizeOf(temp_instrument_dis_fmreg_col));
+          end
+        else begin
+               Move(temp_songdata.instr_data[test_ins1],
+                    temp_instrument,
+                    SizeOf(temp_instrument));
+               Move(temp_songdata.instr_macros[test_ins1],
+                    temp_instrument_macro,
+                    SizeOf(temp_instrument_macro));
+               Move(temp_songdata.dis_fmreg_col[test_ins1],
+                    temp_instrument_dis_fmreg_col,
+                    SizeOf(temp_instrument_dis_fmreg_col));
+               Move(temp_songdata.instr_data[test_ins2],
+                    temp_instrument2,
+                    SizeOf(temp_instrument2));
+               Move(temp_songdata.instr_macros[test_ins2],
+                    temp_instrument_macro2,
+                    SizeOf(temp_instrument_macro2));
+               Move(temp_songdata.dis_fmreg_col[test_ins2],
+                    temp_instrument_dis_fmreg_col2,
+                    SizeOf(temp_instrument_dis_fmreg_col2));
+             end;
       end
     else
       begin
         load_flag_alt := BYTE_NULL;
-        Move(songdata.instr_data[current_inst],
-             temp_instrument,
-             SizeOf(temp_instrument));
-        Move(songdata.instr_macros[current_inst],
-             temp_instrument_macro,
-             SizeOf(temp_instrument_macro));
-        Move(songdata.dis_fmreg_col[current_inst],
-             temp_instrument_dis_fmreg_col,
-             SizeOf(temp_instrument_dis_fmreg_col));
+        If (test_ins2 = 0) then
+          begin
+            Move(songdata.instr_data[test_ins1],
+                 temp_instrument,
+                 SizeOf(temp_instrument));
+            Move(songdata.instr_macros[test_ins1],
+                 temp_instrument_macro,
+                 SizeOf(temp_instrument_macro));
+            Move(songdata.dis_fmreg_col[test_ins1],
+                 temp_instrument_dis_fmreg_col,
+                 SizeOf(temp_instrument_dis_fmreg_col));
+          end
+        else begin
+               Move(songdata.instr_data[test_ins1],
+                    temp_instrument,
+                    SizeOf(temp_instrument));
+               Move(songdata.instr_macros[test_ins1],
+                    temp_instrument_macro,
+                    SizeOf(temp_instrument_macro));
+               Move(songdata.dis_fmreg_col[test_ins1],
+                    temp_instrument_dis_fmreg_col,
+                    SizeOf(temp_instrument_dis_fmreg_col));
+               Move(songdata.instr_data[test_ins2],
+                    temp_instrument2,
+                    SizeOf(temp_instrument2));
+               Move(songdata.instr_macros[test_ins2],
+                    temp_instrument_macro2,
+                    SizeOf(temp_instrument_macro2));
+               Move(songdata.dis_fmreg_col[test_ins2],
+                    temp_instrument_dis_fmreg_col2,
+                    SizeOf(temp_instrument_dis_fmreg_col2));
+             end;
       end
   else
     begin
       temps := mn_environment.curr_item;
       load_flag_alt := BYTE_NULL;
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
       keyboard_toggle_sleep;
 {$ENDIF}
-      If (ExtOnly(temps) = 'a2i') then
+      If (Lower(ExtOnly(temps)) = 'a2i') then
         a2i_file_loader_alt(temps)
-      else If (ExtOnly(temps) = 'a2f') then
+      else If (Lower(ExtOnly(temps)) = 'a2f') then
              a2f_file_loader_alt(temps)
-           else If (ExtOnly(temps) = 'cif') then
+           else If (Lower(ExtOnly(temps)) = 'cif') then
                   cif_file_loader_alt(temps)
-                else If (ExtOnly(temps) = 'fin') then
+                else If (Lower(ExtOnly(temps)) = 'fin') then
                        fin_file_loader_alt(temps)
-                     else If (ExtOnly(temps) = 'ins') then
+                     else If (Lower(ExtOnly(temps)) = 'ins') then
                             ins_file_loader_alt(temps)
-                           else If (ExtOnly(temps) = 'sbi') then
+                           else If (Lower(ExtOnly(temps)) = 'sbi') then
                                   sbi_file_loader_alt(temps)
-                                 else If (ExtOnly(temps) = 'sgi') then
+                                 else If (Lower(ExtOnly(temps)) = 'sgi') then
                                         sgi_file_loader_alt(temps);
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
       keyboard_toggle_sleep;
 {$ENDIF}
       If (load_flag_alt = BYTE_NULL) then EXIT;
     end;
+
+  If (test_ins2 <> 0) and Empty(temp_instrument2,SizeOf(temp_instrument2)) and
+                          Empty(temp_instrument_macro2,SizeOf(temp_instrument_macro2)) then
+    test_ins2 := 0;
 
   Move(songdata.macro_table,
        arp_vib_macro_table_backup,
@@ -908,9 +1058,18 @@ begin { test_instrument_alt }
                SizeOf(songdata.macro_table[arpvib_vibrato_table]));
         end
       else temp_instrument_macro.vibrato_table := 0;
-      Move(temp_instrument_macro,
-           songdata.instr_macros[current_inst],
-           SizeOf(songdata.instr_macros[current_inst]));
+      If (test_ins2 = 0) then
+        Move(temp_instrument_macro,
+             songdata.instr_macros[test_ins1],
+             SizeOf(songdata.instr_macros[test_ins1]))
+      else begin
+             Move(temp_instrument_macro,
+                  songdata.instr_macros[test_ins1],
+                  SizeOf(songdata.instr_macros[test_ins1]));
+             Move(temp_instrument_macro2,
+                  songdata.instr_macros[test_ins2],
+                  SizeOf(songdata.instr_macros[test_ins2]));
+           end;
     end
   else If bankSelector and loadMacros then
          begin
@@ -924,7 +1083,13 @@ begin { test_instrument_alt }
                   SizeOf(songdata.macro_table[temp_instrument_macro.vibrato_table]));
          end;
 
-  If Empty(temp_instrument,SizeOf(temp_instrument)) then EXIT;
+  If (Empty(temp_instrument,SizeOf(temp_instrument)) and
+      Empty(temp_instrument_macro,SizeOf(temp_instrument_macro))) or
+     ((test_ins2 <> 0) and Empty(temp_instrument2,SizeOf(temp_instrument2)) and
+                           Empty(temp_instrument_macro2,SizeOf(temp_instrument_macro2))) then
+    EXIT;
+
+  ins_trailing_flag := TRUE;
   status_backup.replay_forbidden := replay_forbidden;
   status_backup.play_status := play_status;
   replay_forbidden := TRUE;
@@ -933,25 +1098,70 @@ begin { test_instrument_alt }
   really_no_status_refresh := TRUE;
   reset_player;
 
-  If (ExtOnly(temps) = 'a2f') or loadMacros or loadArpVib then
-    begin
-      Move(songdata.instr_macros[current_inst],
-           ins__fmreg_table_backup,
-           SizeOf(ins__fmreg_table_backup));
-      Move(songdata.dis_fmreg_col[current_inst],
-           ins__dis_fmreg_col_backup,
-           SizeOf(ins__dis_fmreg_col_backup));
-      Move(temp_instrument_macro,
-           songdata.instr_macros[current_inst],
-           SizeOf(songdata.instr_macros[current_inst]));
-      Move(temp_instrument_dis_fmreg_col,
-           songdata.dis_fmreg_col[current_inst],
-           SizeOf(songdata.dis_fmreg_col[current_inst]));
-    end
+  If (Lower(ExtOnly(temps)) = 'a2f') or loadMacros or loadArpVib then
+    If (test_ins2 = 0) then
+      begin
+        Move(songdata.instr_macros[test_ins1],
+             ins__fmreg_table_backup,
+             SizeOf(ins__fmreg_table_backup));
+        Move(songdata.dis_fmreg_col[test_ins1],
+             ins__dis_fmreg_col_backup,
+             SizeOf(ins__dis_fmreg_col_backup));
+        Move(temp_instrument_macro,
+             songdata.instr_macros[test_ins1],
+             SizeOf(songdata.instr_macros[test_ins1]));
+        Move(temp_instrument_dis_fmreg_col,
+             songdata.dis_fmreg_col[test_ins1],
+             SizeOf(songdata.dis_fmreg_col[test_ins1]));
+      end
+    else begin
+           Move(songdata.instr_macros[test_ins1],
+                ins__fmreg_table_backup,
+                SizeOf(ins__fmreg_table_backup));
+           Move(songdata.dis_fmreg_col[test_ins1],
+                ins__dis_fmreg_col_backup,
+                SizeOf(ins__dis_fmreg_col_backup));
+           Move(temp_instrument_macro,
+                songdata.instr_macros[test_ins1],
+                SizeOf(songdata.instr_macros[test_ins1]));
+           Move(temp_instrument_dis_fmreg_col,
+                songdata.dis_fmreg_col[test_ins1],
+                SizeOf(songdata.dis_fmreg_col[test_ins1]));
+           Move(songdata.instr_macros[test_ins2],
+                ins__fmreg_table_backup2,
+                SizeOf(ins__fmreg_table_backup));
+           Move(songdata.dis_fmreg_col[test_ins2],
+                ins__dis_fmreg_col_backup2,
+                SizeOf(ins__dis_fmreg_col_backup));
+           Move(temp_instrument_macro2,
+                songdata.instr_macros[test_ins2],
+                SizeOf(songdata.instr_macros[test_ins2]));
+           Move(temp_instrument_dis_fmreg_col2,
+                songdata.dis_fmreg_col[test_ins2],
+                SizeOf(songdata.dis_fmreg_col[test_ins2]));
+         end
   else
     begin
-      FillChar(songdata.instr_macros[current_inst],SizeOf(songdata.instr_macros[current_inst]),0);
-      FillChar(songdata.dis_fmreg_col[current_inst],SizeOf(songdata.dis_fmreg_col[current_inst]),0);
+      Move(songdata.instr_macros[test_ins1],
+           ins__fmreg_table_backup,
+           SizeOf(ins__fmreg_table_backup));
+      Move(songdata.dis_fmreg_col[test_ins1],
+           ins__dis_fmreg_col_backup,
+           SizeOf(ins__dis_fmreg_col_backup));
+      FillChar(songdata.instr_macros[test_ins1],SizeOf(songdata.instr_macros[test_ins1]),0);
+      FillChar(songdata.dis_fmreg_col[test_ins1],SizeOf(songdata.dis_fmreg_col[test_ins1]),0);
+
+          If (test_ins2 <> 0) then
+        begin
+          Move(songdata.instr_macros[test_ins2],
+               ins__fmreg_table_backup2,
+               SizeOf(ins__fmreg_table_backup));
+          Move(songdata.dis_fmreg_col[test_ins2],
+               ins__dis_fmreg_col_backup2,
+               SizeOf(ins__dis_fmreg_col_backup));
+          FillChar(songdata.instr_macros[test_ins2],SizeOf(songdata.instr_macros[test_ins2]),0);
+          FillChar(songdata.dis_fmreg_col[test_ins2],SizeOf(songdata.dis_fmreg_col[test_ins2]),0);
+        end;
     end;
 
   Move(channel_flag,channel_flag_backup,SizeOf(channel_flag_backup));
@@ -972,11 +1182,16 @@ begin { test_instrument_alt }
   If NOT percussion_mode and
      NOT (songdata.flag_4op <> 0) then channels := 18
   else If NOT (songdata.flag_4op <> 0) then channels := 15
-       else begin
-              songdata.flag_4op := 0;
-              If NOT percussion_mode then channels := 18
-              else channels := 15;
-            end;
+       else If (test_ins2 <> 0) then
+              begin
+                songdata.flag_4op := $3f;
+                channels := 6;
+              end
+            else begin
+                   songdata.flag_4op := 0;
+                   If NOT percussion_mode then channels := 18
+                   else channels := 15;
+                 end;
 
   reset_player;
   FillChar(chan_handle,SizeOf(chan_handle),0);
@@ -1000,71 +1215,90 @@ begin { test_instrument_alt }
       output_note(temp_instrument.perc_voice+15,temp2);
       While scankey(board_scancodes[temp2]) do
         begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
           realtime_gfx_poll_proc;
 {$ELSE}
-          _emulate_screen_without_delay := TRUE;
+          _draw_screen_without_delay := TRUE;
           keyboard_poll_input;
 {$ENDIF}
           keyboard_reset_buffer;
-          emulate_screen;
+          draw_screen;
         end;
     end
   else Repeat
          valid_key := FALSE;
-
          For temp := 1 to 29 do
            begin
              temp2 := board_scancodes[temp];
-             temp3 := get_chanpos(chan_handle,channels,temp2);
              temp4 := scankey(temp2);
-             temp5 := get_chanpos(chan_handle,channels,0);
+
+             If NOT ((songdata.flag_4op <> 0) and (test_ins2 <> 0)) then
+               begin
+                 temp3 := get_chanpos(chan_handle,channels,temp2);
+                 temp5 := get_chanpos(chan_handle,channels,0);
+               end
+             else begin
+                    temp3 := get_chanpos2(chan_handle,channels,temp2);
+                    temp5 := get_chanpos2(chan_handle,channels,0);
+                  end;
 
              If temp4 then valid_key := TRUE;
              If temp4 and (temp3 = 0) and (temp5 <> 0) then
                output_note(temp5,temp);
 
              If NOT temp4 and (temp3 <> 0) then
-               If NOT ctrl_pressed then
-                 begin
-                   reset_chan_data(temp3);
-                   chan_handle[temp3] := 0;
-                 end
-               else begin
-                      key_off(temp3);
-                      If alt_pressed then keyoff_loop[temp3] := TRUE;
-                    end;
+               begin
+                 chan_handle[temp3] := 0;
+                 key_off(temp3);
+                 If alt_pressed then keyoff_loop[temp3] := TRUE;
+               end;
            end;
-{$IFDEF __TMT__}
+
+{$IFDEF GO32V2}
          realtime_gfx_poll_proc;
 {$ELSE}
-         _emulate_screen_without_delay := TRUE;
+         _draw_screen_without_delay := TRUE;
          keyboard_poll_input;
 {$ENDIF}
          keyboard_reset_buffer;
-         emulate_screen;
+         draw_screen;
        until NOT valid_key;
 
   While ctrl_pressed do
     begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
       realtime_gfx_poll_proc;
 {$ELSE}
-      _emulate_screen_without_delay := TRUE;
+      _draw_screen_without_delay := TRUE;
       keyboard_poll_input;
 {$ENDIF}
       keyboard_reset_buffer;
-      emulate_screen;
+      draw_screen;
     end;
 
-  If (ExtOnly(temps) = 'a2f') or loadMacros then
+  For temp := 1 to 20 do key_off(temp);
+
+  Move(ins__fmreg_table_backup,
+       songdata.instr_macros[test_ins1],
+       SizeOf(songdata.instr_macros[test_ins1]));
+  Move(ins__dis_fmreg_col_backup,
+       songdata.dis_fmreg_col[test_ins1],
+       SizeOf(songdata.dis_fmreg_col[test_ins1]));
+
+  If (test_ins2 <> 0) then
     begin
       Move(ins__fmreg_table_backup,
-           songdata.instr_macros[current_inst],
-           SizeOf(songdata.instr_macros[current_inst]));
+           songdata.instr_macros[test_ins1],
+           SizeOf(songdata.instr_macros[test_ins1]));
       Move(ins__dis_fmreg_col_backup,
-           songdata.dis_fmreg_col[current_inst],
-           SizeOf(songdata.dis_fmreg_col[current_inst]));
+           songdata.dis_fmreg_col[test_ins1],
+           SizeOf(songdata.dis_fmreg_col[test_ins1]));
+      Move(ins__fmreg_table_backup2,
+           songdata.instr_macros[test_ins2],
+           SizeOf(songdata.instr_macros[test_ins2]));
+      Move(ins__dis_fmreg_col_backup2,
+           songdata.dis_fmreg_col[test_ins2],
+           SizeOf(songdata.dis_fmreg_col[test_ins2]));
     end;
 
   Move(arp_vib_macro_table_backup,
@@ -1077,7 +1311,7 @@ begin { test_instrument_alt }
   Move(panning_table_backup,panning_table,SizeOf(panning_table));
   songdata.common_flag := common_flag_backup;
   volume_scaling := volume_scaling_backup;
-  reset_player;
+  If (status_backup.play_status = isPlaying) then reset_player;
 
   Move(channel_flag_backup,channel_flag,SizeOf(channel_flag));
   Move(event_table_backup,event_table,SizeOf(event_table));
@@ -1092,12 +1326,11 @@ begin { test_instrument_alt }
   FillChar(macro_table,SizeOf(macro_table),0);
   replay_forbidden := status_backup.replay_forbidden;
   play_status := status_backup.play_status;
+  ins_trailing_flag := FALSE;
+  keyboard_reset_buffer;
 end;
 
 procedure test_instrument_alt2(chan: Byte; fkey: Word);
-
-const
-  _perc_sim_chan: array[19..20] of Byte = (18,17);
 
 var
   temp,temp2,temp3,temp5: Byte;
@@ -1112,7 +1345,7 @@ var
   freq: Word;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADINS.INC:test_instrument_alt2:output_note';
 {$ENDIF}
@@ -1131,12 +1364,12 @@ begin
     load_instrument(temp_instrument,_perc_sim_chan[chan]);
 
   freq := nFreq(note-1)+$2000+
-          SHORTINT(tDUMMY_BUFF(Addr(temp_instrument)^)[12]);
-
+          SHORTINT(pBYTE(@Addr(temp_instrument)^)[12]);
   event_table[chan].note := note;
-  opl3out($0b0+_chan_n[chan],0);
-  opl3out($0a0+_chan_n[chan],LO(freq));
-  opl3out($0b0+_chan_n[chan],HI(freq));
+  freq_table[chan] := freq;
+  freqtable2[chan] := freq;
+  key_on(chan);
+  change_freq(chan,freq);
 
   macro_speedup := songdata.macro_speedup;
   If (play_status = isStopped) then update_timer(songdata.tempo);
@@ -1147,7 +1380,7 @@ begin
 end;
 
 begin { test_instrument_alt2 }
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADINS.INC:test_instrument_alt2';
 {$ENDIF}
@@ -1155,7 +1388,13 @@ begin { test_instrument_alt2 }
   For temp := 1 to 29 do
     If NOT shift_pressed then
       If (board_scancodes[temp] = HI(fkey)) then
-        begin valid_key := TRUE; BREAK; end;
+        begin
+          valid_key := TRUE;
+          BREAK;
+        end;
+
+  If scankey(SC_F7) then
+    For temp := 1 to 20 do reset_chan_data(temp);
 
   If NOT valid_key or
      NOT (temp+12*(current_octave-1)-1 in [0..12*8+1]) then EXIT;
@@ -1168,21 +1407,22 @@ begin { test_instrument_alt2 }
   load_flag_alt := BYTE_NULL;
 
   If Empty(temp_instrument,SizeOf(temp_instrument)) then EXIT;
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   keyboard_toggle_sleep;
 {$ENDIF}
-  If (ExtOnly(temps) = 'bnk') then
+  If (Lower(ExtOnly(temps)) = 'bnk') then
     bnk_file_loader_alt(Str2num(BaseNameOnly(mn_environment.curr_item),10))
-  else If (ExtOnly(temps) = 'fib') then
+  else If (Lower(ExtOnly(temps)) = 'fib') then
          fib_file_loader_alt(Str2num(BaseNameOnly(mn_environment.curr_item),10))
-       else If (ExtOnly(temps) = 'ibk') then
+       else If (Lower(ExtOnly(temps)) = 'ibk') then
               ibk_file_loader_alt(Str2num(BaseNameOnly(mn_environment.curr_item),10));
 
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   keyboard_toggle_sleep;
 {$ENDIF}
   If (load_flag_alt = BYTE_NULL) then EXIT;
 
+  ins_trailing_flag := TRUE;
   status_backup.replay_forbidden := replay_forbidden;
   status_backup.play_status := play_status;
   replay_forbidden := TRUE;
@@ -1237,14 +1477,14 @@ begin { test_instrument_alt2 }
       output_note(temp_instrument.perc_voice+15,temp2);
       While scankey(board_scancodes[temp2]) do
         begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
           realtime_gfx_poll_proc;
 {$ELSE}
-          _emulate_screen_without_delay := TRUE;
+          _draw_screen_without_delay := TRUE;
           keyboard_poll_input;
 {$ENDIF}
           keyboard_reset_buffer;
-          emulate_screen;
+          draw_screen;
         end;
     end
   else Repeat
@@ -1262,45 +1502,42 @@ begin { test_instrument_alt2 }
                output_note(temp5,temp);
 
              If NOT temp4 and (temp3 <> 0) then
-               If NOT ctrl_pressed then
-                 begin
-                   reset_chan_data(temp3);
-                   chan_handle[temp3] := 0;
-                 end
-               else begin
-                      key_off(temp3);
-                      If alt_pressed then keyoff_loop[temp3] := TRUE;
-                    end;
+               begin
+                 chan_handle[temp3] := 0;
+                 key_off(temp3);
+                 If alt_pressed then keyoff_loop[temp3] := TRUE;
+               end;
            end;
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
          realtime_gfx_poll_proc;
 {$ELSE}
-         _emulate_screen_without_delay := TRUE;
+         _draw_screen_without_delay := TRUE;
          keyboard_poll_input;
 {$ENDIF}
          keyboard_reset_buffer;
-         emulate_screen;
+         draw_screen;
        until NOT valid_key;
 
   While ctrl_pressed do
     begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
       realtime_gfx_poll_proc;
 {$ELSE}
-      _emulate_screen_without_delay := TRUE;
+      _draw_screen_without_delay := TRUE;
       keyboard_poll_input;
 {$ENDIF}
       keyboard_reset_buffer;
-      emulate_screen;
+      draw_screen;
     end;
 
+  For temp := 1 to 20 do key_off(temp);
   songdata.flag_4op := flag_4op_backup;
   Move(fmpar_table_backup,fmpar_table,SizeOf(fmpar_table));
   Move(volume_table_backup,volume_table,SizeOf(volume_table));
   Move(panning_table_backup,panning_table,SizeOf(panning_table));
   songdata.common_flag := common_flag_backup;
   volume_scaling := volume_scaling_backup;
-  reset_player;
+  If (status_backup.play_status = isPlaying) then reset_player;
 
   Move(channel_flag_backup,channel_flag,SizeOf(channel_flag));
   Move(event_table_backup,event_table,SizeOf(event_table));
@@ -1315,16 +1552,36 @@ begin { test_instrument_alt2 }
   FillChar(macro_table,SizeOf(macro_table),0);
   replay_forbidden := status_backup.replay_forbidden;
   play_status := status_backup.play_status;
+  ins_trailing_flag := FALSE;
+  keyboard_reset_buffer;
 end;
 
 procedure fselect_external_proc;
+
+var
+  test_ins1: Byte;
+  test_ins2: Byte;
+
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADINS.INC:fselect_external_proc';
 {$ENDIF}
+  If (songdata.flag_4op <> 0) then
+    begin
+      If (current_inst < 255) then
+        test_ins1 := current_inst
+      else test_ins1 := PRED(current_inst);
+      test_ins2 := SUCC(test_ins1);
+    end
+  else
+    begin
+      test_ins1 := current_inst;
+      test_ins2 := 0;
+    end;
   If NOT shift_pressed and NOT alt_pressed and NOT ctrl_pressed then
     test_instrument_alt(count_channel(pattern_hpos),
                         mn_environment.keystroke,
-                        FALSE,FALSE,FALSE);
+                        FALSE,FALSE,FALSE,
+                        test_ins1,test_ins2);
 end;

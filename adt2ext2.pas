@@ -1,7 +1,6 @@
 unit AdT2ext2;
-{$IFNDEF __TMT__}
+{$S-,Q-,R-,V-,B-,X+}
 {$PACKRECORDS 1}
-{$ENDIF}
 interface
 
 const
@@ -14,9 +13,7 @@ const
   old_block_patt_hpos: Byte = 1;
   old_block_patt_page: Byte = 0;
 
-{$IFNDEF __TMT__}
 procedure process_global_keys;
-{$ENDIF}
 
 procedure PROGRAM_SCREEN_init;
 function  INSTRUMENT_CONTROL_alt(instr: Byte; title: String): Byte;
@@ -39,12 +36,18 @@ function  PATTERN_trace: Word;
 procedure PATTERN_edit(var pattern,page,hpos: Byte);
 
 procedure process_config_file;
-procedure reset_4op_to_test(_4op_type,ins2: Byte);
 
+function  _1st_marked: Byte;
+function  _2nd_marked: Byte;
 function  marked_instruments: Byte;
-function _1st_marked: Byte;
-function _2nd_marked: Byte;
-function _4op_to_test: Word;
+procedure reset_marked_instruments;
+function  get_4op_to_test: Word;
+function  check_4op_to_test: Word;
+function  check_4op_instrument(ins: Byte): Word;
+function  check_4op_flag(ins: Byte): Boolean;
+procedure reset_4op_flag(ins: Byte);
+procedure set_4op_flag(ins: Byte);
+procedure update_4op_flag_marks;
 
 implementation
 
@@ -52,19 +55,27 @@ uses
 {$IFNDEF UNIX}
   CRT,
 {$ENDIF}
-{$IFNDEF __TMT__}
+{$IFDEF GO32V2}
+  GO32,
+{$ELSE}
   SDL_Timer,
 {$ENDIF}
-  AdT2opl3,AdT2unit,AdT2sys,AdT2extn,AdT2ext4,AdT2ext5,AdT2text,AdT2apak,AdT2keyb,
+  AdT2opl3,AdT2unit,AdT2sys,AdT2extn,AdT2ext4,AdT2ext5,AdT2text,AdT2pack,AdT2keyb,
   TxtScrIO,StringIO,DialogIO,ParserIO;
+
+var
+  old_pattern_patt,old_pattern_page,
+  old_pattern_hpos,
+  old_block_xstart,old_block_ystart: Byte;
+  old_marking: Boolean;
 
 {$i instedit.inc}
 {$i ipattord.inc}
 {$i ipattern.inc}
 
-{$IFNDEF __TMT__}
-
 procedure FADE_OUT_RECORDING;
+
+{$IFNDEF GO32V2}
 
 const
    frame_start: Longint = 0;
@@ -74,21 +85,6 @@ const
 var
   xstart,ystart: Byte;
   temp,temp2: Byte;
-
-procedure show_progress(value: Longint);
-begin
-  progress_new_value := Round(progress_step*value);
-  If (progress_new_value <> progress_old_value) then
-    begin
-      progress_old_value := progress_new_value;
-      ShowCStr(screen_ptr,
-               progress_xstart,progress_ystart,
-               '~'+ExpStrL('',progress_new_value,'Û')+'~'+
-               ExpStrL('',40-progress_new_value,'Û'),
-               dialog_background+dialog_prog_bar1,
-               dialog_background+dialog_prog_bar2);
-    end;
-end;
 
 label _jmp1,_end;
 
@@ -101,12 +97,14 @@ begin
     end;
 
   ScreenMemCopy(screen_ptr,ptr_screen_backup);
+  centered_frame_vdest := screen_ptr;
   HideCursor;
 
-  dl_environment.context := ' ESC Ä STOP ';
+  dl_environment.context := ' ESC '#196#16' STOP ';
   centered_frame(xstart,ystart,43,3,' WAV RECORDER ',
                  dialog_background+dialog_border,
-                 dialog_background+dialog_title,double);
+                 dialog_background+dialog_title,
+                 frame_double);
   ShowStr(screen_ptr,xstart+43-Length(dl_environment.context),ystart+3,
           dl_environment.context,
           dialog_background+dialog_border);
@@ -119,17 +117,16 @@ begin
 
   progress_xstart := xstart+2;
   progress_ystart := ystart+2;
+  progress_num_steps := 1;
+  progress_step := 1;
+  progress_value:= 63;
   progress_old_value := BYTE_NULL;
-  progress_step := 40/63;
 
   For temp := 63 downto 0 do
     begin
       If scankey(1) then GOTO _jmp1;
       fade_out_volume := temp;
       set_global_volume;
-      ShowStr(screen_ptr,xstart+30,ystart+1,
-              Num2Str(Round(100/63*temp),10)+'%  ',
-              dialog_background+dialog_hi_text);
       show_progress(temp);
       For temp2 := 1 to 10 do
         begin
@@ -140,14 +137,14 @@ begin
           If (actual_frame_end+fade_delay_tab[temp] > frame_end) then
             begin
               frame_end := actual_frame_end;
-              _emulate_screen_without_delay := TRUE;
-              emulate_screen;
+              _draw_screen_without_delay := TRUE;
+              draw_screen;
             end;
           SDL_Delay(frame_end-actual_frame_end);
           frame_start := SDL_GetTicks;
         end;
-      _emulate_screen_without_delay := TRUE;
-      emulate_screen;
+      _draw_screen_without_delay := TRUE;
+      draw_screen;
     end;
 
  _jmp1:
@@ -166,13 +163,10 @@ begin
       If scankey(1) then GOTO _end;
       fade_out_volume := temp;
       set_global_volume;
-      ShowStr(screen_ptr,xstart+30,ystart+1,
-              Num2Str(Round(100/63*temp),10)+'%  ',
-              dialog_background+dialog_hi_text);
       show_progress(temp);
       If scankey(1) then GOTO _end;
-      _emulate_screen_without_delay := TRUE;
-      emulate_screen;
+      _draw_screen_without_delay := TRUE;
+      draw_screen;
       keyboard_reset_buffer;
       actual_frame_end := SDL_GetTicks;
       frame_end := frame_start+5;
@@ -195,34 +189,28 @@ _end:
   move_to_screen_area[3] := xstart+43+2+1;
   move_to_screen_area[4] := ystart+3+1;
   move2screen;
+
+{$ELSE}
+
+begin
+
+{$ENDIF}
+
 end;
 
 procedure FADE_IN_RECORDING;
 
+{$IFNDEF GO32V2}
+
 const
-   frame_start: Longint = 0;
-   frame_end: Longint = 0;
-   actual_frame_end: Longint = 0;
+  frame_start: Longint = 0;
+  frame_end: Longint = 0;
+  actual_frame_end: Longint = 0;
 
 var
   xstart,ystart: Byte;
   temp,temp2: Byte;
   smooth_fadeOut: Boolean;
-
-procedure show_progress(value: Longint);
-begin
-  progress_new_value := Round(progress_step*value);
-  If (progress_new_value <> progress_old_value) then
-    begin
-      progress_old_value := progress_new_value;
-      ShowCStr(screen_ptr,
-               progress_xstart,progress_ystart,
-               '~'+ExpStrL('',progress_new_value,'Û')+'~'+
-               ExpStrL('',40-progress_new_value,'Û'),
-               dialog_background+dialog_prog_bar1,
-               dialog_background+dialog_prog_bar2);
-    end;
-end;
 
 label _end;
 
@@ -232,12 +220,14 @@ begin
   else smooth_fadeOut := TRUE;
 
   ScreenMemCopy(screen_ptr,ptr_screen_backup);
+  centered_frame_vdest := screen_ptr;
   HideCursor;
 
-  dl_environment.context := ' ESC Ä STOP ';
+  dl_environment.context := ' ESC '#196#16' STOP ';
   centered_frame(xstart,ystart,43,3,' WAV RECORDER ',
                  dialog_background+dialog_border,
-                 dialog_background+dialog_title,double);
+                 dialog_background+dialog_title,
+                 frame_double);
   ShowStr(screen_ptr,xstart+43-Length(dl_environment.context),ystart+3,
           dl_environment.context,
           dialog_background+dialog_border);
@@ -245,8 +235,10 @@ begin
 
   progress_xstart := xstart+2;
   progress_ystart := ystart+2;
+  progress_num_steps := 1;
+  progress_step := 1;
+  progress_value:= 63;
   progress_old_value := BYTE_NULL;
-  progress_step := 40/63;
 
   If smooth_fadeOut then
     begin
@@ -260,12 +252,9 @@ begin
           If scankey(1) then GOTO _end;
           fade_out_volume := temp;
           set_global_volume;
-          ShowStr(screen_ptr,xstart+30,ystart+1,
-                  Num2Str(Round(100/63*temp),10)+'%  ',
-                  dialog_background+dialog_hi_text);
           show_progress(temp);
-          _emulate_screen_without_delay := TRUE;
-          emulate_screen;
+          _draw_screen_without_delay := TRUE;
+          draw_screen;
           keyboard_reset_buffer;
           actual_frame_end := SDL_GetTicks;
           frame_end := frame_start+5;
@@ -302,12 +291,9 @@ begin
       If scankey(1) then GOTO _end;
       fade_out_volume := temp;
       set_global_volume;
-      ShowStr(screen_ptr,xstart+30,ystart+1,
-              Num2Str(Round(100/63*temp),10)+'%  ',
-              dialog_background+dialog_hi_text);
       show_progress(temp);
-      _emulate_screen_without_delay := TRUE;
-      emulate_screen;
+      _draw_screen_without_delay := TRUE;
+      draw_screen;
 
       For temp2 := 1 to 10 do
         begin
@@ -318,14 +304,14 @@ begin
           If (actual_frame_end+fade_delay_tab[temp] > frame_end) then
             begin
               frame_end := actual_frame_end;
-              _emulate_screen_without_delay := TRUE;
-              emulate_screen;
+              _draw_screen_without_delay := TRUE;
+              draw_screen;
             end;
           SDL_Delay(frame_end-actual_frame_end);
           frame_start := SDL_GetTicks;
         end;
-      _emulate_screen_without_delay := TRUE;
-      emulate_screen;
+      _draw_screen_without_delay := TRUE;
+      draw_screen;
     end;
 
 _end:
@@ -340,17 +326,24 @@ _end:
   move_to_screen_area[3] := xstart+43+2+1;
   move_to_screen_area[4] := ystart+3+1;
   move2screen;
+
+{$ELSE}
+
+begin
+
+{$ENDIF}
+
 end;
 
 procedure process_global_keys;
 
 var
-  temp,
-  old_octave: Byte;
+  temp,temp2: Byte;
+  start_row,end_row: Byte;
+  chunk: tCHUNK;
 
 begin
-  old_octave := current_octave;
-  If (scankey(SC_LCTRL) or scankey(SC_RCTRL)) then
+  If NOT ins_trailing_flag and ctrl_pressed then
     If scankey(SC_1) then current_octave := 1
     else If scankey(SC_2) then current_octave := 2
          else If scankey(SC_3) then current_octave := 3
@@ -360,18 +353,8 @@ begin
                              else If scankey(SC_7) then current_octave := 7
                                   else If scankey(SC_8) then current_octave := 8;
 
-  If (current_octave <> old_octave) then
-    begin
-      For temp := 1 to 8 do
-        If (temp <> current_octave) then
-          show_str(30+temp,MAX_PATTERN_ROWS+12,CHR(48+temp),
-                   main_background+main_stat_line)
-        else show_str(30+temp,MAX_PATTERN_ROWS+12,CHR(48+temp),
-                      main_background+main_hi_stat_line);
-    end;
-
   If alt_pressed and NOT ctrl_pressed then
-    If scankey(SC_PLUS) or scankey(SC_UP) then
+    If scankey(SC_PLUS) or (shift_pressed and scankey(SC_UP)) then
       begin
         If (overall_volume < 63) then
           begin
@@ -379,7 +362,7 @@ begin
             set_global_volume;
           end;
       end
-    else If scankey(SC_MINUS2) or scankey(SC_DOWN) then
+    else If scankey(SC_MINUS2) or (shift_pressed and scankey(SC_DOWN)) then
            begin
              If (overall_volume > 0) then
                begin
@@ -388,11 +371,13 @@ begin
                end;
            end;
 
+{$IFNDEF GO32V2}
+
   If scankey(SC_F11) and
      ((alt_pressed and NOT ctrl_pressed) or
       (ctrl_pressed and NOT alt_pressed)) then
     begin
-      If ctrl_pressed and
+      If ctrl_pressed and NOT opl3_flushmode and
          ((sdl_opl3_emulator = 0) or (play_status = isStopped)) then
         begin
           opl3_channel_recording_mode := TRUE;
@@ -417,9 +402,33 @@ begin
       else FADE_OUT_RECORDING;
       keyboard_reset_buffer;
     end;
-end;
 
 {$ENDIF}
+
+  If track_notes and scankey(SC_BACKSPACE) then
+    begin
+      If NOT ctrl_pressed then
+        begin
+          start_row := pattern_page;
+          end_row := pattern_page;
+        end
+      else begin
+             start_row := 0;
+             end_row := songdata.patt_len;
+           end;
+      For temp2 := start_row to end_row do
+        For temp := 1 to nm_track_chan do
+          If channel_flag[track_chan_start+temp-1] then
+            begin
+              chunk := pattdata^[pattern_patt DIV 8][pattern_patt MOD 8]
+                                [track_chan_start+temp-1][temp2];
+              chunk.note := 0;
+              chunk.instr_def := 0;
+              pattdata^[pattern_patt DIV 8][pattern_patt MOD 8]
+                       [track_chan_start+temp-1][temp2] := chunk;
+            end;
+    end;
+end;
 
 procedure PROGRAM_SCREEN_init;
 
@@ -427,23 +436,27 @@ var
   temp: Byte;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2EXT2.PAS:PROGRAM_SCREEN_init';
 {$ENDIF}
   fr_setting.shadow_enabled := FALSE;
   Frame(screen_ptr,01,MAX_PATTERN_ROWS+12,MAX_COLUMNS,MAX_PATTERN_ROWS+22,
         main_background+main_border,'',
-        main_background+main_title,double);
+        main_background+main_title,
+        frame_double);
   Frame(screen_ptr,01,01,MAX_COLUMNS,MAX_PATTERN_ROWS+12,
         main_background+main_border,'- '+_ADT2_TITLE_STRING_+' -',
-        main_background+main_border,single);
+        main_background+main_border,
+        frame_single);
   Frame(screen_ptr,02,02,24,07,
         status_background+status_border,' STATUS ',
-        status_background+status_border,double);
+        status_background+status_border,
+        frame_double);
   Frame(screen_ptr,25,02,25+MAX_ORDER_COLS*7-1+PATTORD_xshift*2,07,
         order_background+order_border,' PATTERN ORDER (  ) ',
-        order_background+order_border,double);
+        order_background+order_border,
+        frame_double);
 
   fr_setting.shadow_enabled := TRUE;
   area_x1 := 0;
@@ -451,27 +464,45 @@ begin
   area_x2 := 0;
   area_y2 := 0;
 
-  ShowVStr(screen_ptr,02,MAX_PATTERN_ROWS+13,ExpStrL('',9,' '),analyzer_bckg+analyzer);
-  ShowVStr(screen_ptr,03,MAX_PATTERN_ROWS+13,'MAX   MiN',analyzer_bckg+analyzer);
+  ShowVStr(screen_ptr,02,MAX_PATTERN_ROWS+13,ExpStrL('',9,' '),
+           analyzer_bckg+analyzer);
+  ShowVStr(screen_ptr,03,MAX_PATTERN_ROWS+13,'MAX   MiN',
+           analyzer_bckg+analyzer);
 
   For temp := 05 to MAX_COLUMNS-6 do
-    ShowVStr(screen_ptr,temp,MAX_PATTERN_ROWS+13,'òàààààààó',analyzer_bckg+analyzer);
+    ShowVStr(screen_ptr,temp,MAX_PATTERN_ROWS+13,
+             #242#224#224#224#224#224#224#224#243,
+             analyzer_bckg+analyzer);
 
-  ShowVStr(screen_ptr,04,MAX_PATTERN_ROWS+13,ExpStrL('',9,' '),analyzer_bckg+analyzer);
-  ShowVStr(screen_ptr,MAX_COLUMNS-5,MAX_PATTERN_ROWS+13,ExpStrL('',9,' '),analyzer_bckg+analyzer);
-  ShowVStr(screen_ptr,MAX_COLUMNS-4,MAX_PATTERN_ROWS+13,ExpStrL('',9,' '),analyzer_bckg+analyzer);
-  ShowVStr(screen_ptr,MAX_COLUMNS-3,MAX_PATTERN_ROWS+13,ExpStrL('',9,' '),analyzer_bckg+analyzer);
-  ShowVStr(screen_ptr,MAX_COLUMNS-2,MAX_PATTERN_ROWS+13,ExpStrL('',9,' '),analyzer_bckg+analyzer);
-  ShowVStr(screen_ptr,MAX_COLUMNS-1,MAX_PATTERN_ROWS+13,ExpStrL('',9,' '),analyzer_bckg+analyzer);
+  ShowVStr(screen_ptr,04,MAX_PATTERN_ROWS+13,ExpStrL('',9,' '),
+           analyzer_bckg+analyzer);
+  ShowVStr(screen_ptr,MAX_COLUMNS-5,MAX_PATTERN_ROWS+13,ExpStrL('',9,' '),
+           analyzer_bckg+analyzer);
+  ShowVStr(screen_ptr,MAX_COLUMNS-4,MAX_PATTERN_ROWS+13,ExpStrL('',9,' '),
+           analyzer_bckg+analyzer);
+  ShowVStr(screen_ptr,MAX_COLUMNS-3,MAX_PATTERN_ROWS+13,ExpStrL('',9,' '),
+           analyzer_bckg+analyzer);
+  ShowVStr(screen_ptr,MAX_COLUMNS-2,MAX_PATTERN_ROWS+13,ExpStrL('',9,' '),
+           analyzer_bckg+analyzer);
+  ShowVStr(screen_ptr,MAX_COLUMNS-1,MAX_PATTERN_ROWS+13,ExpStrL('',9,' '),
+           analyzer_bckg+analyzer);
 
-  ShowStr(screen_ptr,MAX_COLUMNS-4,MAX_PATTERN_ROWS+13,'dB', analyzer_bckg+analyzer);
-  ShowStr(screen_ptr,MAX_COLUMNS-4,MAX_PATTERN_ROWS+14,'à47',analyzer_bckg+analyzer);
-  ShowStr(screen_ptr,MAX_COLUMNS-4,MAX_PATTERN_ROWS+15,'à',  analyzer_bckg+analyzer);
-  ShowStr(screen_ptr,MAX_COLUMNS-4,MAX_PATTERN_ROWS+16,'à23',analyzer_bckg+analyzer);
-  ShowStr(screen_ptr,MAX_COLUMNS-4,MAX_PATTERN_ROWS+17,'à',  analyzer_bckg+analyzer);
-  ShowStr(screen_ptr,MAX_COLUMNS-4,MAX_PATTERN_ROWS+18,'à12',analyzer_bckg+analyzer);
-  ShowStr(screen_ptr,MAX_COLUMNS-4,MAX_PATTERN_ROWS+19,'à4', analyzer_bckg+analyzer);
-  ShowStr(screen_ptr,MAX_COLUMNS-4,MAX_PATTERN_ROWS+20,'à2', analyzer_bckg+analyzer);
+  ShowStr(screen_ptr,MAX_COLUMNS-4,MAX_PATTERN_ROWS+13,'dB',
+          analyzer_bckg+analyzer);
+  ShowStr(screen_ptr,MAX_COLUMNS-4,MAX_PATTERN_ROWS+14,#224'47',
+          analyzer_bckg+analyzer);
+  ShowStr(screen_ptr,MAX_COLUMNS-4,MAX_PATTERN_ROWS+15,#224,
+          analyzer_bckg+analyzer);
+  ShowStr(screen_ptr,MAX_COLUMNS-4,MAX_PATTERN_ROWS+16,#224'23',
+          analyzer_bckg+analyzer);
+  ShowStr(screen_ptr,MAX_COLUMNS-4,MAX_PATTERN_ROWS+17,#224,
+          analyzer_bckg+analyzer);
+  ShowStr(screen_ptr,MAX_COLUMNS-4,MAX_PATTERN_ROWS+18,#224'12',
+          analyzer_bckg+analyzer);
+  ShowStr(screen_ptr,MAX_COLUMNS-4,MAX_PATTERN_ROWS+19,#224'4',
+          analyzer_bckg+analyzer);
+  ShowStr(screen_ptr,MAX_COLUMNS-4,MAX_PATTERN_ROWS+20,#224'2',
+          analyzer_bckg+analyzer);
 
   ShowCStr(screen_ptr,03,03,'~ORDER/PATTERN ~  /',
            status_background+status_dynamic_txt,
@@ -483,14 +514,19 @@ begin
            status_background+status_dynamic_txt,
            status_background+status_static_txt);
 
-  ShowStr(screen_ptr,02,08,patt_win[1],pattern_bckg+pattern_border);
-  ShowStr(screen_ptr,02,09,patt_win[2],pattern_bckg+pattern_border);
-  ShowStr(screen_ptr,02,10,patt_win[3],pattern_bckg+pattern_border);
+  ShowStr(screen_ptr,02,08,patt_win[1],
+          pattern_bckg+pattern_border);
+  ShowStr(screen_ptr,02,09,patt_win[2],
+          pattern_bckg+pattern_border);
+  ShowStr(screen_ptr,02,10,patt_win[3],
+          pattern_bckg+pattern_border);
 
   For temp := 11 to 11+MAX_PATTERN_ROWS-1 do
-    ShowStr(screen_ptr,02,temp,patt_win[4],pattern_bckg+pattern_border);
+    ShowStr(screen_ptr,02,temp,patt_win[4],
+            pattern_bckg+pattern_border);
 
-  ShowStr(screen_ptr,02,11+MAX_PATTERN_ROWS,patt_win[5],pattern_bckg+pattern_border);
+  ShowStr(screen_ptr,02,11+MAX_PATTERN_ROWS,patt_win[5],
+          pattern_bckg+pattern_border);
 end;
 
 procedure process_config_file;
@@ -506,13 +542,13 @@ var
   result: Longint;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2EXT2.PAS:check_number';
 {$ENDIF}
   result := default;
 
-  temp2 := 1000000000; // 10**9
+  temp2 := 1000000000;
   For idx := 10 downto 1 do
     begin
       If (limit2 >= temp2) then
@@ -531,6 +567,43 @@ begin
     end;
 
   check_number := result;
+end;
+
+function validate_number(var num: Longint; str: String; base: Byte; limit1,limit2: Longint): Boolean;
+
+var
+  idx,temp: Byte;
+  temp2: Longint;
+  result: Boolean;
+
+begin
+{$IFDEF GO32V2}
+  _last_debug_str_ := _debug_str_;
+  _debug_str_ := 'ADT2EXT2.PAS:validate_number';
+{$ENDIF}
+  result := FALSE;
+
+  temp2 := 1000000000;
+  For idx := 10 downto 1 do
+    begin
+      If (limit2 >= temp2) then
+        begin
+          temp := idx;
+          BREAK;
+        end;
+      temp2 := temp2 DIV 10;
+    end;
+
+  If SameName(str+'='+ExpStrL('',temp,'?'),data) and (Length(data) < Length(str)+temp+2) then
+    begin
+      num := Str2num(Copy(data,Length(str)+2,temp),base);
+      If (num >= limit1) and (num <= limit2) then
+        result := TRUE;
+    end
+  else
+    result := TRUE;
+
+  validate_number := result;
 end;
 
 type
@@ -556,7 +629,7 @@ var
   result: Boolean;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2EXT2.PAS:process_config_file:check_boolean';
 {$ENDIF}
@@ -576,7 +649,7 @@ var
   result: tRGB;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2EXT2.PAS:process_config_file:check_rgb';
 {$ENDIF}
@@ -589,7 +662,7 @@ begin
       If (result.r <= 63) and (result.g <= 63) and (result.b <= 63) then
         begin
           default := result;
-{$IFNDEF __TMT__}
+{$IFNDEF GO32V2}
           default.r := default.r SHL 2;
           default.g := default.g SHL 2;
           default.b := default.b SHL 2;
@@ -602,11 +675,13 @@ procedure check_option_data;
 
 var
   temp: Byte;
+{$IFNDEF GO32V2}
   temp_str: String;
+{$ENDIF}
 
 begin
 
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
 
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2EXT2.PAS:check_option_data';
@@ -620,17 +695,127 @@ begin
   typematic_delay:=
     check_number('typematic_delay',10,0,3,typematic_delay);
 
+  mouse_hspeed :=
+    check_number('mouse_hspeed',10,0,65535,mouse_hspeed);
+
+  mouse_vspeed :=
+    check_number('mouse_vspeed',10,0,65535,mouse_vspeed);
+
+  mouse_threshold :=
+    check_number('mouse_threshold',10,0,65535,mouse_threshold);
+
   screen_mode :=
     check_number('screen_mode',10,0,5,screen_mode);
 
   comp_text_mode :=
-    check_number('comp_text_mode',10,0,2,comp_text_mode);
+    check_number('comp_text_mode',10,0,4,comp_text_mode);
 
   opl_latency :=
     check_number('opl_latency',10,0,1,opl_latency);
 
   fps_down_factor :=
     check_number('fps_down_factor',10,0,10,fps_down_factor);
+
+  mouse_disabled :=
+    check_boolean('mouse_disabled',mouse_disabled);
+
+  // validate custom SVGA text-mode configuration
+
+  custom_svga_mode :=
+    check_boolean('custom_svga_mode',custom_svga_mode);
+
+  _custom_svga_cfg[1].flag :=
+    validate_number(_custom_svga_cfg[1].value,'svga_txt_columns',10,80,180);
+
+  _custom_svga_cfg[2].flag :=
+    validate_number(_custom_svga_cfg[2].value,'svga_txt_rows',10,25,60);
+
+  _custom_svga_cfg[3].flag :=
+    validate_number(_custom_svga_cfg[3].value,'crtc_misc_out',16,0,255);
+
+  _custom_svga_cfg[4].flag :=
+    validate_number(_custom_svga_cfg[4].value,'crtc_h_total',16,0,255);
+
+  _custom_svga_cfg[5].flag :=
+    validate_number(_custom_svga_cfg[5].value,'crtc_h_disp_en_end',16,0,255);
+
+  _custom_svga_cfg[6].flag :=
+    validate_number(_custom_svga_cfg[6].value,'crtc_h_blank_start',16,0,255);
+
+  _custom_svga_cfg[7].flag :=
+    validate_number(_custom_svga_cfg[7].value,'crtc_h_blank_end',16,0,255);
+
+  _custom_svga_cfg[8].flag :=
+    validate_number(_custom_svga_cfg[8].value,'crtc_h_ret_start',16,0,255);
+
+  _custom_svga_cfg[9].flag :=
+    validate_number(_custom_svga_cfg[9].value,'crtc_h_ret_end',16,0,255);
+
+  _custom_svga_cfg[10].flag :=
+    validate_number(_custom_svga_cfg[10].value,'crtc_v_total',16,0,255);
+
+  _custom_svga_cfg[11].flag :=
+    validate_number(_custom_svga_cfg[11].value,'crtc_overflow_reg',16,0,255);
+
+  _custom_svga_cfg[12].flag :=
+    validate_number(_custom_svga_cfg[12].value,'crtc_preset_r_scan',16,0,255);
+
+  _custom_svga_cfg[13].flag :=
+    validate_number(_custom_svga_cfg[13].value,'crtc_max_scan_h',16,0,255);
+
+  _custom_svga_cfg[14].flag :=
+    validate_number(_custom_svga_cfg[14].value,'crtc_v_ret_start',16,0,255);
+
+  _custom_svga_cfg[15].flag :=
+    validate_number(_custom_svga_cfg[15].value,'crtc_v_ret_end',16,0,255);
+
+  _custom_svga_cfg[16].flag :=
+    validate_number(_custom_svga_cfg[16].value,'crtc_v_disp_en_end',16,0,255);
+
+  _custom_svga_cfg[17].flag :=
+    validate_number(_custom_svga_cfg[17].value,'crtc_offs_width',16,0,255);
+
+  _custom_svga_cfg[18].flag :=
+    validate_number(_custom_svga_cfg[18].value,'crtc_underline_loc',16,0,255);
+
+  _custom_svga_cfg[19].flag :=
+    validate_number(_custom_svga_cfg[19].value,'crtc_v_blank_start',16,0,255);
+
+  _custom_svga_cfg[20].flag :=
+    validate_number(_custom_svga_cfg[20].value,'crtc_v_blank_end',16,0,255);
+
+  _custom_svga_cfg[21].flag :=
+    validate_number(_custom_svga_cfg[21].value,'crtc_mode_ctrl',16,0,255);
+
+  _custom_svga_cfg[22].flag :=
+    validate_number(_custom_svga_cfg[22].value,'crtc_clock_m_reg',16,0,255);
+
+  _custom_svga_cfg[23].flag :=
+    validate_number(_custom_svga_cfg[23].value,'crtc_char_gen_sel',16,0,255);
+
+  _custom_svga_cfg[24].flag :=
+    validate_number(_custom_svga_cfg[24].value,'crtc_memory_m_reg',16,0,255);
+
+  _custom_svga_cfg[25].flag :=
+    validate_number(_custom_svga_cfg[25].value,'crtc_mode_reg',16,0,255);
+
+  _custom_svga_cfg[26].flag :=
+    validate_number(_custom_svga_cfg[26].value,'crtc_misc_reg',16,0,255);
+
+  _custom_svga_cfg[27].flag :=
+    validate_number(_custom_svga_cfg[27].value,'crtc_mode_control',16,0,255);
+
+  _custom_svga_cfg[28].flag :=
+    validate_number(_custom_svga_cfg[28].value,'crtc_screen_b_clr',16,0,255);
+
+  _custom_svga_cfg[29].flag :=
+    validate_number(_custom_svga_cfg[29].value,'crtc_colr_plane_en',16,0,255);
+
+  _custom_svga_cfg[30].flag :=
+    validate_number(_custom_svga_cfg[30].value,'crtc_h_panning',16,0,255);
+
+  _custom_svga_cfg[31].flag :=
+    validate_number(_custom_svga_cfg[31].value,'crtc_color_select',16,0,255);
 
 {$ELSE}
 
@@ -639,6 +824,9 @@ begin
 
   sdl_frame_rate :=
     check_number('sdl_frame_rate',10,50,200,sdl_frame_rate);
+
+  sdl_timer_slowdown :=
+    check_number('sdl_timer_slowdown',10,0,50,sdl_timer_slowdown);
 
   sdl_typematic_rate :=
     check_number('sdl_typematic_rate',10,1,100,sdl_typematic_rate);
@@ -709,6 +897,9 @@ begin
   cycle_pattern :=
     check_boolean('cycle_pattern',cycle_pattern);
 
+  keep_track_pos :=
+    check_boolean('keep_track_pos',keep_track_pos);
+
   remember_ins_pos :=
     check_boolean('remember_ins_pos',remember_ins_pos);
 
@@ -717,6 +908,12 @@ begin
 
   scroll_bars :=
     check_boolean('scroll_bars',scroll_bars);
+
+  fforward_factor :=
+    check_number('fforward_factor',10,1,5,fforward_factor);
+
+  rewind_factor :=
+    check_number('rewind_factor',10,1,5,rewind_factor);
 
   ssaver_time :=
     check_number('ssaver_time',10,0,1440,ssaver_time DIV 60)*60;
@@ -1312,8 +1509,8 @@ begin
   instrument_context :=
     check_number('instrument_context',10,0,15,instrument_context);
 
-  instrument_context :=
-    check_number('instrument_context',10,0,15,instrument_context);
+  instrument_con_dis :=
+    check_number('instrument_con_dis',10,0,15,instrument_con_dis);
 
   instrument_adsr :=
     check_number('instrument_adsr',10,0,15,instrument_adsr SHR 4) SHL 4;
@@ -1409,7 +1606,7 @@ var
   config_found_flag: Boolean;
 
 begin { process_config_file }
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2EXT2.PAS:process_config_file';
 {$ENDIF}

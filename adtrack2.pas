@@ -1,19 +1,17 @@
-program AdTrack2;
-{$IFNDEF __TMT__}
+program AdLib_Tracker_2;
+{$S-,Q-,R-,V-,B-,X+}
 {$PACKRECORDS 1}
 {$IFDEF WINDOWS}
 {$APPTYPE GUI}
 {$R adtrack2.res}
 {$ENDIF}
-{$PACKRECORDS 1}
-{$ENDIF}
 
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
 
 uses
-  CRT,LFB256,
-  AdT2opl3,AdT2unit,AdT2sys,AdT2extn,AdT2ext2,AdT2text,AdT2keyb,AdT2data,
-  TimerInt,TxtScrIO,StringIO,DialogIO,ParserIO,MenuLib1,MenuLib2;
+  CRT,GO32,
+  AdT2opl3,AdT2unit,AdT2sys,AdT2extn,AdT2ext2,AdT2text,AdT2keyb,AdT2data,AdT2vesa,
+  TxtScrIO,StringIO,DialogIO,ParserIO,MenuLib1,MenuLib2;
 
 const
   scan_addresses: array[1..7] of Word = ($388,$210,$220,$230,$240,$250,$260);
@@ -21,89 +19,104 @@ const
 var
   fade_buf,fade_buf2: tFADE_BUF;
   temp,index: Word;
+  mem_info: tMemInfo;
   free_mem: Longint;
   opl3detected: Boolean;
   dos_dir: String;
+  mouse_sx,mouse_sy,mouse_sd: Word;
 
 procedure LoadFont(var font_data);
+
+var
+  regs: tRealRegs;
+  dos_sel,dos_seg: Word;
+  dos_mem_adr: Dword;
+
 begin
-  asm
-        // set access to font memory
-        mov     dx,3c4h
-        mov     ax,0402h
-        out     dx,ax
-        mov     ax,0704h
-        out     dx,ax
-        mov     dx,3ceh
-        mov     ax,0005h
-        out     dx,ax
-        mov     ax,0406h
-        out     dx,ax
-        mov     ax,0204h
-        out     dx,ax
-        // load font
-        mov     edi,0a0000h
-        mov     esi,dword ptr [font_data]
-        mov     eax,256*16*2
-        mov     ebx,16*2
-        mov     edx,16
-        cld
-@@1:    mov     ecx,edx
-        rep     movsb
-        mov     ecx,ebx
-        sub     ecx,edx
-        add     edi,ecx
-        sub     eax,ebx
-        or      eax,eax
-        jnz     @@1
-        // set access to text memory
-        mov     dx,3c4h
-        mov     ax,0302h
-        out     dx,ax
-        mov     ax,0304h
-        out     dx,ax
-        mov     dx,3ceh
-        mov     ax,1005h
-        out     dx,ax
-        mov     ax,0e06h
-        out     dx,ax
-        mov     ax,0004h
-        out     dx,ax
-  end;
+  dos_mem_adr := global_dos_alloc(4096);
+  dos_sel := WORD(dos_mem_adr);
+  dos_seg := WORD(dos_mem_adr SHR 16);
+  dosmemput(dos_seg,0,font_data,4096);
+  FillChar(regs,SizeOf(regs),0);
+  regs.ax := $1100;
+  regs.bh := 16;
+  regs.bl := 0;
+  regs.es := dos_seg;
+  regs.ds := dos_seg;
+  regs.bp := 0;
+  regs.cx := 256;
+  regs.dx := 0;
+  RealIntr($10,regs);
+  global_dos_free(dos_sel);
+end;
+
+function mouse_driver_installed: Boolean;
+
+const
+  iret = $0cf;
+
+var
+  driver_ofs,driver_seg: Word;
+
+begin
+  driver_ofs := MEMW[0:$0cc];
+  driver_seg := MEMW[0:$0ce];
+  If (driver_seg <> 0) and (driver_ofs <> 0) and
+     (MEM[driver_seg:driver_ofs] <> iret) then mouse_driver_installed := TRUE
+  else mouse_driver_installed := FALSE;
 end;
 
 var
   old_exit_proc: procedure;
 
-procedure new_exit_proc; far;
+procedure new_exit_proc;
 begin
-  asm
-      mov   ax,03h
-      xor   bh,bh
-      int   10h
-      mov   MaxCol,80
-      mov   MaxLn,25
-  end;
+  ExitProc := @old_exit_proc;
 
-  WriteLn('ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ');
-  WriteLn('Û ABNORMAL PROGRAM TERMiNATiON Û');
-  WriteLn('ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß');
-  WriteLn('ERROR_ID #'+Num2str(ExitCode,10)+' at '+ExpStrL(Num2str(LONGINT(ErrorAddr),16),8,'0'));
-  WriteLn('STEP #1 -> ',_last_debug_str_);
-  WriteLn('STEP #2 -> ',_debug_str_);
-  WriteLn;
-  WriteLn('Please send this information with brief description what you were doing');
-  WriteLn('when you encountered this error to following email address:');
-  WriteLn;
-  WriteLn('subz3ro.altair@gmail.com');
-  WriteLn;
-  WriteLn('Thanks and sorry for your inconvenience! :-)');
-  WriteLn;
-  WriteLn;
+  If mouse_active then
+    asm
+        mov     ax,1ah
+        mov     bx,mouse_sx
+        mov     cx,mouse_sy
+        mov     dx,mouse_sd
+        int     33h
+    end;
 
-  FreeMem(pattdata,PATTERN_SIZE*max_patterns);
-  ErrorAddr := NIL;
-  HALT(ExitCode);
+  If (ExitCode <> 0) then
+    begin
+      asm  mov ax,03h; xor bh,bh; int 10h end;
+      WriteLn(prog_exception_title);
+      WriteLn('PROGRAM VERSION: ',at2ver,' from ',at2date,', ',at2link);
+      WriteLn('ERROR_ID #'+Num2str(ExitCode,10)+' at '+ExpStrL(Num2str(LONGINT(ErrorAddr),16),8,'0'));
+      WriteLn('STEP #1 -> ',_last_debug_str_);
+      WriteLn('STEP #2 -> ',_debug_str_);
+      WriteLn;
+      WriteLn('Please send this information with brief description what you were doing');
+      WriteLn('when you encountered this error to following email address:');
+      WriteLn;
+      WriteLn('subz3ro.altair@gmail.com');
+      WriteLn;
+      WriteLn('Thanks and sorry for your inconvenience! :-)');
+      WriteLn;
+      WriteLn;
+
+      reset_player;
+      sys_done;
+      If (pattdata <> NIL) then
+        FreeMem(pattdata,PATTERN_SIZE*max_patterns);
+      ErrorAddr := NIL;
+      HALT(ExitCode);
+    end;
+end;
+
+procedure halt_startup(exitcode: Byte);
+begin
+  sys_done;
+  If (pattdata <> NIL) then
+    FreeMem(pattdata,PATTERN_SIZE*max_patterns);
+  ExitProc := @old_exit_proc;
+  If (dos_dir <> '') then ChDir(dos_dir);
+  HALT(exitcode);
 end;
 
 {$ELSE}
@@ -111,7 +124,7 @@ end;
 uses
   SDL_Timer,
   AdT2sys,AdT2keyb,AdT2opl3,AdT2unit,AdT2extn,AdT2ext2,AdT2ext3,AdT2text,AdT2data,
-  TimerInt,StringIO,DialogIO,ParserIO,TxtScrIO,MenuLib1,MenuLib2;
+  StringIO,DialogIO,ParserIO,TxtScrIO,MenuLib1,MenuLib2;
 
 var
   temp: Longint;
@@ -119,7 +132,7 @@ var
 {$ENDIF}
 
 begin { MAIN }
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
 
   @old_exit_proc := ExitProc;
   ExitProc := @new_exit_proc;
@@ -154,17 +167,18 @@ begin { MAIN }
   If (dos_memavail*16 DIV 1024 < 120) then
     begin
       WriteLn('ERROR(1) - Insufficient DOS memory!');
-      HALT(1);
+      halt_startup(1);
     end;
 
   If _debug_ then WriteLn('--- detecting available linear frame buffer');
-  If _debug_ then WriteLn('--- ## ',MemAvail/1024/1000:0:2,'MB lfb found');
+  Get_MemInfo(mem_info);
+  free_mem := mem_info.available_memory;
 
-  free_mem := MemAvail;
+  If _debug_ then WriteLn('--- ## ',free_mem/1024/1000:0:2,'MB lfb found');
   If NOT (free_mem DIV 1024 > 5*1024) then
     begin
       WriteLn('ERROR(1) - Insufficient memory!');
-      HALT(1);
+      halt_startup(1);
     end;
 
   temp := 128;
@@ -177,7 +191,7 @@ begin { MAIN }
     else If (temp-16 >= 16) then Dec(temp,16)
          else begin
                 WriteLn('ERROR(1) - Insufficient memory!');
-                HALT(1);
+                halt_startup(1);
               end;
   until FALSE;
 
@@ -188,7 +202,7 @@ begin { MAIN }
   If NOT iVGA then
     begin
       WriteLn('ERROR(2) - Insufficient video equipment!');
-      HALT(2);
+      halt_startup(2);
     end;
 
   If (max_patterns <> $80) then
@@ -196,8 +210,16 @@ begin { MAIN }
 
   { read and process adtrack2.ini file }
   If _debug_ then WriteLn('--- updating user configuration');
-
   process_config_file;
+
+  { detect mouse }
+  If _debug_ then WriteLn('--- detecting mouse');
+  If NOT mouse_disabled then
+    mouse_active := mouse_driver_installed;
+
+  If NOT mouse_disabled and NOT mouse_active then
+    If is_scrollable_screen_mode then
+      WriteLn('WARNING: Mouse driver not installed!');
 
 {$ELSE}
 
@@ -219,7 +241,7 @@ begin { MAIN }
 
 {$ENDIF}
 
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
 
   { detect opl3 }
   If _debug_ then WriteLn('--- processing opl3 detection');
@@ -239,16 +261,17 @@ begin { MAIN }
            Write('Autodetecting OPL3 interface at ',
                  Num2str(opl3port,16),'h ... ');
 
-           If NOT iAdLibGold then
+           If NOT detect_OPL3 then
              begin
-               If (index < 8) then Write(#13) else
+               If (index < 8) then Write(#13)
+               else
                  begin
                    WriteLn('not responding!');
                    WriteLn;
                    WriteLn('Force base address in configuration file (section TROUBLESHOOTiNG)');
-                   WriteLn('or directly from command-line using "/aXXXX" option;');
+                   WriteLn('or directly from command-line using "/cfg:adlib_port=XXXX" option;');
                    WriteLn('XXXX range is 1-FFFFh');
-                   HALT(4);
+                   halt_startup(3);
                 end;
              end
            else
@@ -257,14 +280,14 @@ begin { MAIN }
                WriteLn('ok');
                BREAK;
              end;
-         until opl3detected or (index > 8);
+         until opl3detected or (index > 7);
        end;
 
 {$ENDIF}
 
   { intialize player routine }
   If _debug_ then WriteLn('--- initializing player routine');
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   If (opl_latency <> 0) then opl3out := opl2out;
 {$ENDIF}
   init_player;
@@ -284,6 +307,7 @@ begin { MAIN }
   songdata_source := '';
   instdata_source := '';
   songdata_title  := 'noname.';
+  bank_position_list_size := 0;
 
   FillChar(channel_flag,SizeOf(channel_flag),BYTE(TRUE));
   play_status := isStopped;
@@ -297,50 +321,103 @@ begin { MAIN }
 
   If _debug_ then WriteLn('--- executing program core');
 
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
 
   WriteLn('Available memory: ',free_mem DIV 1024,'k (DOS: ',dos_memavail*16 DIV 1024,'k)');
-  Delay(3000);
+  For temp := 1 to 50 do WaitRetrace;
+
   fade_speed := 16;
   fade_buf.action := first;
   VgaFade(fade_buf,fadeOut,delayed);
 
+  For temp := 1 to 31 do
+    If NOT _custom_svga_cfg[temp].flag or
+       (_custom_svga_cfg[temp].value = -1) then
+      begin
+        custom_svga_mode := FALSE;
+        BREAK;
+      end;
+
   { initializing interface (phase:1) }
-  Case program_screen_mode of
-    0,1,
-    2: SetCustomVideoMode(36);       // 90x30
-    3: Case comp_text_mode of
-         0: SetCustomVideoMode(34);  // 80x30
-         1: SetCustomVideoMode(25);  // 80x25
 
-         2: begin
-              _VBE2_Init;
-              _SetMode(_800x600);
-              For temp := 0 to 15 do
-               _SetRGB(temp,rgb_color[temp].r,
-                            rgb_color[temp].g,
-                            rgb_color[temp].b);
-            end;
-       end;
+  If NOT is_VESA_emulated_mode then
+    Case program_screen_mode of
+      0: SetCustomVideoMode(36);       // 90x30
 
-    4: begin
-         _VBE2_Init;
-         _SetMode(_800x600);
-         For temp := 0 to 15 do
-          _SetRGB(temp,rgb_color[temp].r,
-                       rgb_color[temp].g,
-                       rgb_color[temp].b);
-       end;
+      1: If NOT custom_svga_mode then
+           set_svga_txtmode_100x38     // 100x38
+         else
+           begin
+             svga_txtmode_cols := _custom_svga_cfg[1].value;
+             svga_txtmode_rows := _custom_svga_cfg[2].value;
+             For temp := 1 to 29 do
+               svga_txtmode_regs[temp].val := _custom_svga_cfg[2+temp].value;
+             set_custom_svga_txtmode;
+           end;
 
-    5: begin
-         _VBE2_Init;
-         _SetMode(_1024x768);
-         For temp := 0 to 15 do
-          _SetRGB(temp,rgb_color[temp].r,
-                       rgb_color[temp].g,
-                       rgb_color[temp].b);
-       end;
-  end;
+      2: If NOT custom_svga_mode then
+           set_svga_txtmode_128x48     // 100x48
+         else
+           begin
+             svga_txtmode_cols := _custom_svga_cfg[1].value;
+             svga_txtmode_rows := _custom_svga_cfg[2].value;
+             For temp := 1 to 29 do
+               svga_txtmode_regs[temp].val := _custom_svga_cfg[2+temp].value;
+             set_custom_svga_txtmode;
+           end;
+
+      3: Case comp_text_mode of
+           0: SetCustomVideoMode(34);  // 80x30
+           1: SetCustomVideoMode(25);  // 80x25
+         end;
+
+      4: set_svga_txtmode_100x38;      // 100x38
+      5: set_svga_txtmode_128x48;      // 100x48
+    end
+  else
+    Case get_VESA_emulated_mode_idx of
+      0: begin
+           VESA_Init;
+           VESA_SetMode(VESA_800x600);
+           VESA_SegLFB := Allocate_LDT_Descriptors(1);
+           Set_Segment_Base_Address(VESA_SegLFB,
+                                    Get_Linear_Addr(DWORD(VESA_FrameBuffer),
+                                    VESA_VideoMemory*64*1024));
+           Set_Segment_Limit(VESA_SegLFB,VESA_VideoMemory*64*1024-1);
+           For temp := 0 to 15 do
+             SetRGBitem(temp,rgb_color[temp].r,
+                             rgb_color[temp].g,
+                             rgb_color[temp].b);
+         end;
+
+      1: begin
+           VESA_Init;
+           VESA_SetMode(VESA_800x600);
+           VESA_SegLFB := Allocate_LDT_Descriptors(1);
+           Set_Segment_Base_Address(VESA_SegLFB,
+                                    Get_Linear_Addr(DWORD(VESA_FrameBuffer),
+                                    VESA_VideoMemory*64*1024));
+           Set_Segment_Limit(VESA_SegLFB,VESA_VideoMemory*64*1024-1);
+           For temp := 0 to 15 do
+             SetRGBitem(temp,rgb_color[temp].r,
+                             rgb_color[temp].g,
+                             rgb_color[temp].b);
+         end;
+
+      2: begin
+           VESA_Init;
+           VESA_SetMode(VESA_1024x768);
+           VESA_SegLFB := Allocate_LDT_Descriptors(1);
+           Set_Segment_Base_Address(VESA_SegLFB,
+                                    Get_Linear_Addr(DWORD(VESA_FrameBuffer),
+                                    VESA_VideoMemory*64*1024));
+           Set_Segment_Limit(VESA_SegLFB,VESA_VideoMemory*64*1024-1);
+           For temp := 0 to 15 do
+             SetRGBitem(temp,rgb_color[temp].r,
+                             rgb_color[temp].g,
+                             rgb_color[temp].b);
+         end;
+    end;
 
   For temp := 0 to 15 do
     Case temp of
@@ -350,47 +427,50 @@ begin { MAIN }
      8..15: SetRGBitem(temp+48,rgb_color[temp].r,rgb_color[temp].g,rgb_color[temp].b);
     end;
 
-  If (program_screen_mode > 3) or
-     ((program_screen_mode = 3) and NOT (comp_text_mode < 2)) then
+  If is_VESA_emulated_mode then
     begin
-      _GetPalette(fade_buf);
+      VESA_GetPalette(fade_buf);
       FillChar(fade_buf2,SizeOf(fade_buf2),0);
-      _InitStepFade(fade_buf,fade_buf2,1);
-      _StepFade;
+      VESA_InitStepFade(fade_buf,fade_buf2,1);
+      VESA_StepFade;
     end;
 
   { initializing interface (phase:2) }
-  If (program_screen_mode < 3) or
-     ((program_screen_mode = 3) and (comp_text_mode < 2)) then
+  If NOT is_VESA_emulated_mode then
     begin
       HideCursor;
       LoadFont(font8x16);
       TXTSCRIO.initialize;
       hard_maxcol := MaxCol;
       hard_maxln := MaxLn;
-      SetSize(MAX_COLUMNS,MAX_ROWS);
+      If NOT (program_screen_mode in [4,5]) then
+        SetSize(MAX_COLUMNS,MAX_ROWS)
+      else SetSize(SCREEN_RES_X DIV scr_font_width,MAX_ROWS);
       TXTSCRIO.initialize;
+      do_synchronize := FALSE;
     end
   else
     begin
       v_seg := 0;
       v_ofs := Ofs(screen_emulator);
-      screen_ptr := ptr_screen_emulator
+      screen_ptr := ptr_screen_emulator;
+      mn_environment.v_dest := screen_ptr;
+      TxtScrIO_Init;
     end;
-
-  CleanScreen(screen_ptr);
-  mn_environment.v_dest := screen_ptr;
-  centered_frame_vdest := screen_ptr;
 
   { initializing interface (phase:3) }
   work_MaxCol := MAX_COLUMNS;
-  If (program_screen_mode in [0,3]) then work_MaxLn := 30
+  If (program_screen_mode in [4,5]) or
+     ((program_screen_mode = 3) and (comp_text_mode = 4)) then
+    work_MaxLn := MAX_ROWS
   else work_MaxLn := MAX_ROWS-10;
-  If (program_screen_mode < 3) or
-     ((program_screen_mode = 3) and (comp_text_mode < 2)) then
+
+  If NOT is_VESA_emulated_mode then
     begin
-      SetTextDisp(0,MaxLn*scr_font_height);
-      For temp := 1 to 50 do WaitRetrace;
+      fade_buf.action := first;
+      fade_speed := 1;
+      VgaFade(fade_buf,fadeOut,fast);
+      fade_speed := 32;
     end;
 
   asm
@@ -404,13 +484,45 @@ begin { MAIN }
         int     10h
   end;
 
+  If mouse_active then
+    asm
+        xor     ax,ax
+        int     33h
+        mov     ax,1bh
+        int     33h
+        mov     mouse_sx,bx
+        mov     mouse_sy,cx
+        mov     mouse_sd,dx
+        mov     ax,04h
+        xor     cx,cx
+        xor     dx,dx
+        int     33h
+        mov     ax,1ah
+        mov     bx,mouse_hspeed
+        mov     cx,mouse_vspeed
+        mov     dx,mouse_threshold
+        int     33h
+        mov     ax,07h
+        mov     cx,0
+        mov     dx,SCREEN_RES_x
+        int     33h
+        mov     ax,08h
+        mov     cx,0
+        mov     dx,SCREEN_RES_y
+        int     33h
+    end;
+
 {$ELSE}
+
   vid_SetVideoMode(TRUE);
+
 {$ENDIF}
 
   { initializing interface (phase:4) }
   PROGRAM_SCREEN_init;
   POSITIONS_reset;
+  decay_bars_refresh;
+  status_refresh;
 
   If (command_typing <> 0) then GotoXY(08+pos4[pattern_hpos],11+PRED(MAX_PATTERN_ROWS DIV 2))
   else GotoXY(08+pos3[pattern_hpos],11+PRED(MAX_PATTERN_ROWS DIV 2));
@@ -423,26 +535,24 @@ begin { MAIN }
   keyboard_init;
   stop_playing;
 
-  do_synchronize := FALSE;
-
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
 
   { initializing interface (phase:5) }
-  If (program_screen_mode < 3) or
-     ((program_screen_mode = 3) and (comp_text_mode < 2)) then
-    For temp := MaxLn*scr_font_height downto 0 do
-      begin
-        keyboard_reset_buffer;
-        realtime_gfx_poll_proc;
-        If (temp MOD scr_font_height = 0) then WaitRetrace;
-        SetTextDisp(0,temp);
-      end
+  realtime_gfx_poll_proc;
+  _draw_screen_without_vsync := TRUE;
+  draw_screen;
+  WaitRetrace;
+  If NOT is_VESA_emulated_mode then
+    begin
+      For temp := 1 to 10 do WaitRetrace;
+      VgaFade(fade_buf,fadeIn,delayed);
+    end
   else
     begin
-      _InitStepFade(fade_buf2,fade_buf,20);
+      VESA_InitStepFade(fade_buf2,fade_buf,20);
       For temp := 1 to 20 do
         begin
-          _StepFade;
+          VESA_StepFade;
           If keypressed then keyboard_reset_buffer;
         end;
     end;
@@ -462,35 +572,17 @@ begin { MAIN }
   If NOT tracing then ThinCursor;
   do_synchronize := FALSE;
 
-{$IFDEF __TMT__ }
+{$IFDEF GO32V2}
 
-  If (program_screen_mode < 3) or
-     ((program_screen_mode = 3) and (comp_text_mode < 2)) then
-    begin
-      index := min(overall_volume DIV (MaxLn-scr_scroll_y DIV 16),1);
-      While (scr_scroll_y < MaxLn*scr_font_height) do
-        begin
-          keyboard_reset_buffer;
-          realtime_gfx_poll_proc;
-          Inc(scr_scroll_y);
-          If (play_status <> isStopped) then
-            begin
-              If (scr_scroll_y MOD scr_font_height = 0) then
-                begin
-                  If (overall_volume > 0) then Dec(overall_volume,index);
-                  set_global_volume;
-                end;
-            end;
-          If (scr_scroll_y MOD scr_font_height = 0) then WaitRetrace;
-          SetTextDisp(scr_scroll_x,scr_scroll_y);
-        end;
-    end
+  draw_screen;
+  If NOT is_VESA_emulated_mode then
+    fade_out_playback(TRUE)
   else
     begin
-      _InitStepFade(fade_buf,fade_buf2,20);
+      VESA_InitStepFade(fade_buf,fade_buf2,20);
       For temp := 1 to 20 do
         begin
-          _StepFade;
+          VESA_StepFade;
           If (overall_volume > 3) then Dec(overall_volume,3)
           else overall_volume := 0;
           set_global_volume;
@@ -499,7 +591,7 @@ begin { MAIN }
     end;
 
 {$ELSE}
-  fade_out_playback(TRUE); // fade playback together with screen
+  fade_out_playback(TRUE);
 {$ENDIF}
 
   stop_playing;
@@ -507,40 +599,26 @@ begin { MAIN }
   FillChar(volum_bar,SizeOf(volum_bar),0);
   done_timer_proc;
   keyboard_done;
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   opl3exp($0004);
   opl3exp($0005);
 {$ELSE}
-  opl3_deinit;
+  opl3_done;
 {$ENDIF}
 
   { terminating program (phase:2) }
   _realtime_gfx_no_update := TRUE;
 
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
 
-  If (program_screen_mode < 3) or
-     ((program_screen_mode = 3) and (comp_text_mode < 2)) then
-    asm
-        mov     ax,03h
-        xor     bh,bh
-        int     10h
-        mov     MaxCol,80
-        mov     MaxLn,25
-    end
-  else
-    _SetTextMode;
-
-  comp_text_mode := 0;
-  program_screen_mode := 3;
-  TXTSCRIO.initialize;
-
+  set_vga_txtmode_80x25;
   HideCursor;
   fade_buf.action := first;
   fade_speed := 1;
   VgaFade(fade_buf,fadeOut,fast);
   fade_speed := 32;
 
+  GOTOXY_xshift := 0;
   GotoXY(1,1);
   C3WriteLn(ascii_line_01,$08,$09,$01);
   C3WriteLn(ascii_line_02,$08,$09,$01);
@@ -565,26 +643,28 @@ begin { MAIN }
   C3WriteLn(ascii_line_21,$08,$09,$01);
   C3WriteLn(ascii_line_22,$08,$09,$01);
   C3WriteLn(ascii_line_23,$08,$09,$01);
+  Move(vga_font8x16,font8x16,SizeOf(font8x16));
+  dosmemput(v_seg,v_ofs,screen_ptr^,(SCREEN_RES_X DIV scr_font_width)*MAX_ROWS*2);
 
   For temp := 1 to 50 do WaitRetrace;
   VgaFade(fade_buf,fadeIn,delayed);
   ThinCursor;
 
+  For temp := 1 to 50 do WaitRetrace;
   { terminating program (phase:3) }
-  sys_deinit;
+  sys_done;
   FreeMem(pattdata,PATTERN_SIZE*max_patterns);
   ExitProc := @old_exit_proc;
   If (dos_dir <> '') then ChDir(dos_dir);
-  HALT(0);
 
 {$ELSE}
 
   program_screen_mode := 0;
   TxtScrIO_Init;
   vid_SetVideoMode(FALSE);
-  CleanScreen(screen_ptr);
   vid_SetRGBPalette(Addr(vga_rgb_color)^);
   temp := screen_scroll_offset DIV 16 + 3;
+  HideCursor;
 
   C3WriteLn(02+(MAX_COLUMNS-57) DIV 2,temp+01,ascii_line_01,$08,$09,$01);
   C3WriteLn(02+(MAX_COLUMNS-57) DIV 2,temp+02,ascii_line_02,$08,$09,$01);
@@ -611,12 +691,12 @@ begin { MAIN }
   C3WriteLn(02+(MAX_COLUMNS-57) DIV 2,temp+23,ascii_line_23,$08,$09,$01);
   C3WriteLn(02+(MAX_COLUMNS-57) DIV 2,temp+24,ascii_line_24,$08,$09,$01);
   Move(vga_font8x16,font8x16,SizeOf(font8x16));
-  emulate_screen;
+  draw_screen;
   SDL_Delay(3000);
 
   { terminating program (phase:3) }
-  sys_deinit;
-  snd_deinit;
+  sys_done;
+  snd_done;
   FreeMem(pattdata,PATTERN_SIZE*max_patterns);
 
 {$ENDIF}

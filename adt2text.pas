@@ -1,23 +1,29 @@
 unit AdT2text;
-{$IFNDEF __TMT__}
+{$S-,Q-,R-,V-,B-,X+}
 {$PACKRECORDS 1}
-{$ENDIF}
 interface
 
 const
-{__AT2VER__}at2ver  = '2.4.21';
-{__AT2DAT__}at2date = '05-11-2015';
-{__AT2LNK__}at2link = '12:24pm';
+{__AT2VER__}at2ver  = '2.3.56';
+{__AT2DAT__}at2date = '07-01-2017';
+{__AT2LNK__}at2link = '1:03pm';
 
 const
   _ADT2_TITLE_STRING_ = '/ดDLiB TR/ดCK3R ][';
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _PLATFORM_STR_ = 'DOS';
 {$ELSE}
   _PLATFORM_STR_ = 'SDL';
 {$ENDIF}
 
-{$IFDEF __TMT__}
+const
+{$IFDEF GO32V2}
+  HELP_LINES = 1129;
+{$ELSE}
+  HELP_LINES = 1157;
+{$ENDIF}
+
+{$IFDEF GO32V2}
 
 const
   ascii_line_01 = '           ฺ-ฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ--๙๚               ๚๙-ฟ';
@@ -38,10 +44,10 @@ const
   ascii_line_16 = '           ณ ~subz3ro/Altair~                 ~/ดDLiBณR/ดCK3R ณณ G3~  ๚';
   ascii_line_17 = '           ณ `additional ideas:`               ~ณ       ณ     ฤฤ~      ';
   ascii_line_18 = '           ณ ~Malfunction/Altair~                        ~'+at2ver+'~      ';
-  ascii_line_19 = '           ณ `special thanks:`                                      ๚';
-  ascii_line_20 = '           ณ ~Mikkel Hastrup~                                       ๚';
-  ascii_line_21 = '           ณ ~Maan M. Hamze~        HOMEPAGE   www.adlibtracker.net ณ';
-  ascii_line_22 = '           ณ ~Janwillem Jagersma~   EMAiL  subz3ro.alrair@gmail.com ณ';
+  ascii_line_19 = '           ณ ~Diode Millimpere~                                     ๚';
+  ascii_line_20 = '           ณ `special thanks:`                                      ๚';
+  ascii_line_21 = '           ณ ~encore~               HOMEPAGE   www.adlibtracker.net ณ';
+  ascii_line_22 = '           ณ ~Maan M. Hamze~        EMAiL  subz3ro.altair@gmail.com ณ';
   ascii_line_23 = '           ภ-ฤฤฤฤฤฤฤฤฤฤ--๙๚    ๚๙-ฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ-ู';
 
 procedure C3WriteLn(str: String; atr1,atr2,atr3: Byte);
@@ -67,33 +73,19 @@ const
   ascii_line_16 = 'ณ ~subz3ro/Altair~                 ~/ดDLiBณR/ดCK3R ณณ SDL~ ๚';
   ascii_line_17 = 'ณ `additional ideas:`               ~ณ       ณ     ฤฤ~      ';
   ascii_line_18 = 'ณ ~Malfunction/Altair~                        ~'+at2ver+'~      ';
-  ascii_line_19 = 'ณ `special thanks:`';
-  ascii_line_20 = 'ณ ~insane/Altair~                                        ๙';
-  ascii_line_21 = 'ณ ~Florian Jung~                                         ๚';
-  ascii_line_22 = 'ณ ~Dmitry Smagin~        HOMEPAGE   www.adlibtracker.net ณ';
-  ascii_line_23 = 'ณ ~Janwillem Jagersma~   EMAiL  subz3ro.alrair@gmail.com ณ';
+  ascii_line_19 = 'ณ ~Diode Milliampere~';
+  ascii_line_20 = 'ณ `special thanks:`                                      ๙';
+  ascii_line_21 = 'ณ ~Dmitry Smagin~                                        ๚';
+  ascii_line_22 = 'ณ ~Windfisch~            HOMEPAGE   www.adlibtracker.net ณ';
+  ascii_line_23 = 'ณ ~insane/Altair~        EMAiL  subz3ro.altair@gmail.com ณ';
   ascii_line_24 = 'ภ-ฤฤฤฤฤฤฤฤฤฤ--๙๚    ๚๙-ฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤ-ู';
 
 procedure C3WriteLn(posX,PosY: Byte; str: String; atr1,atr2,atr3: Byte);
 
 {$ENDIF}
 
-procedure HELP(topic: String);
-procedure ShowStartMessage;
-
-implementation
-
-uses
-  AdT2unit,AdT2sys,AdT2keyb,
-  TxtScrIO,StringIO,DialogIO,ParserIO;
-
 const
-{$IFDEF __TMT__}
-  LINES = 1072;
-{$ELSE}
-  LINES = 1099;
-{$ENDIF}
-  help_data: array[1..LINES] of String[128] = (
+  help_data: array[1..HELP_LINES] of String[128] = (
     '@topic:general',
     'อหอออออออออออออออออออออออหอ',
     ' บ `GENERAL KEY REFERENCE` บ',
@@ -128,7 +120,7 @@ const
     'ฺฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฟ',
     'ณ `WHEN iN NOTE RECORDER MODE`                                            ณ',
     'รฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤด',
-    'ณ ~^Left,^Right~     Select group of tracks for recording                 ณ',
+    'ณ ~[Ctrl] ,'#26'~       Select group of tracks for recording                 ณ',
     'ณ ~[Alt] Q~          Quick reset last selected group of tracks            ณ',
     'ณ ~Enter~            Start recording from current position ~(*)~            ณ',
     'ณ ~Space~            `Toggle` using custom instrument for all tracks ฟ      ณ@@spec_attr:01@@',
@@ -136,8 +128,9 @@ const
     'ณ ~MBoard keys~      Write notes to corresponding tracks           ๘ ~(*)~  ณ',
     'ณ ~F8,F9~            Toggle pattern repeat OFF/ON                  ู      ณ',
     'ณ ~Backspace~        Clear note/instrument sequence in tracks             ณ',
-    'ณ ~Up,Down~          Rewind/Fast-Forward while recording                  ณ',
-    'ณ ~[Shift] Up,Down~  Increase/Decrease row correction for writing notes   ณ',
+    'ณ ~^Backspace~       Clear complete note/instrument columns               ณ',
+    'ณ ~,~              Rewind/Fast-Forward while recording                  ณ',
+    'ณ ~[Shift] ,~      Increase/Decrease row correction for writing notes   ณ',
     'ณ ~[Shift] F6~       Continue in Debug mode from position at cursor       ณ',
     'ณ ~F7~               Stop recording and reset starting position;          ณ',
     'ณ                  current group of tracks can be modified              ณ',
@@ -159,23 +152,25 @@ const
     'ภฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤู',
     '',
     '~^Enter~                   Play next pattern according to order',
-    '~^Left  (Up)~              Rewind current pattern (with Trace)',
-    '~^Right (Down)~            Fast-Forward (with Trace)',
+    '~[Ctrl]  ()~             Rewind current pattern (with Trace)',
+    '~[Ctrl] '#26' ()~             Fast-Forward (with Trace)',
     '~[Ctrl][Alt] <hold down>~  Temporarily show Debug Info window',
+    '~^B~                       Toggle Message Board window',
     '~^D~                       Toggle Debug Info window',
     '~^Q~                       Toggle Instrument Macro Editor window',
-    '~^E~                       Toggle Arpeggio/Vibrato Macro Editor window',
+    '~^G~                       Toggle Arpeggio/Vibrato Macro Editor window',
     '~^M~                       Toggle Macro Browser window',
     '~^F~                       Toggle Song Variables window',
     '~^H~                       Toggle Replace window',
     '~^I~                       Toggle Instrument Control panel',
+    '~^E~                       Toggle Instrument Editor window',
     '~^O~                       Toggle Octave Control panel',
     '~^P~                       Toggle Pattern List window',
     '~^R~                       Toggle Remap Instrument window',
     '~^T~                       Toggle Transpose window',
     '~^X~                       Toggle Rearrange Tracks window',
     '~^1..^8~                   Quick-set octave',
-    '~[Alt] +,- (Up,Down)~      Adjust volume level of sound output',
+    '~[Alt]{Shift} +,- {,}~   Adjust volume level of sound output',
     '~[Alt] C~                  Copy object to clipboard (with selection)',
     '~[Alt] P~                  Paste object from clipboard',
     '~[Alt] M~                  Toggle marking lines ON/OFF',
@@ -189,17 +184,17 @@ const
     '~F12~                      Toggle `line feed` in Pattern Editor',
     '~[Shift] F12~              Toggle `jump to marked line` in Pattern Editor',
 
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
 
     '~[Ctrl][Tab] [...] (*)~    Scroll screen content (if necessary)',
     '',
-    '~(*) Up,Down,Left,Right,PgUp,PgDown,Home,End~',
+    '~(*) ,,,'#26',PgUp,PgDown,Home,End~',
 
 {$ELSE}
 
     '~[Ctrl][Tab] [...] (*)~    Scroll Volume Analyzer section (if necessary)',
     '',
-    '~(*) Up,Down,PgUp,PgDown~',
+    '~(*) ,,PgUp,PgDown~',
     '',
     '@topic:wav_recorder',
     'อหออออออออออออออออออออออออออออหอ',
@@ -234,7 +229,7 @@ const
     'อหอออออออออออออออออออออออออออออหอ',
     ' บ `PATTERN ORDER KEY REFERENCE` บ',
     'อสอออออออออออออออออออออออออออออสออออออออออออออออออออออออออออออออออออออออออ',
-    '~Up,Down,Left,Right~       Cursor navigation',
+    '~,,,'#26'~                  Cursor navigation',
     '~PgUp,PgDn~                Move up/down 32 patterns',
     '~Home,End~                 Move to the top/end of pattern order',
     '~Tab,[Shift] Tab~          Move to next/previous entry',
@@ -256,7 +251,7 @@ const
     'อหออออออออออออออออออออออออออออออหอ',
     ' บ `PATTERN EDiTOR KEY REFERENCE` บ',
     'อสออออออออออออออออออออออออออออออสอออออออออออออออออออออออออออออออออออออออออ',
-    '~Up,Down,Left,Right~       Cursor navigation',
+    '~,,,'#26'~                  Cursor navigation',
     '~PgUp,PgDn~                Move up/down 16 lines',
     '~Home,End~                 Move to the top/end of current pattern',
     '~Tab,[Shift] Tab~          Move to next/previous track',
@@ -274,7 +269,8 @@ const
     '~^K~                       Insert Key-Off',
     '~^C~                       Copy object at cursor to clipboard',
     '~^V~                       Paste object from clipboard',
-    '~[Ctrl][Tab] V~            Multiple paste object from clipboard',
+    '~[Alt][Shift] P~           Paste object from clipboard to more patterns',
+    '~^Z~                       Undo last operation (if possible)',
     '~{Ctrl} "[","]"~           Change current instrument',
     '~[Alt] F2~                 Save current pattern to file',
     '~^F2~                      Save module in tiny format',
@@ -288,7 +284,7 @@ const
     'ฺฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฟ',
     'ณ `BLOCK OPERATiONS iN PATTERN EDiTOR`                               ณ',
     'รฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤด',
-    'ณ Starting to mark a block: ~[Shift] Up,Down,Left,Right~             ณ',
+    'ณ Starting to mark a block: ~[Shift] ,,,'#26'~                        ณ',
     'ณ When at least one row in one track is marked, you can continue   ณ',
     'ณ marking also with ~PgUp,PgDn,Home,End~ (~Shift~ is still held down!) ณ',
     'ณ Quick mark: ~[Alt] Q~ (1x-2x-3x) track ฤ pattern ฤ discard       ณ',
@@ -302,7 +298,7 @@ const
     'ณ ~^X~  Cut block    (Combine both Copy and Delete operation)        ณ',
     'รฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤด',
     'ณ `(*) PASTE BLOCK OPERATiON VARiANTS`                               ณ',
-    'ณ                                ณ',
+    'ณ                                ณ',
     'ณ "Paste block" operation has three other functional variants      ณ',
     'ณ with different key shortcuts for activation:                     ณ',
     'ณ 1) ~[Alt] V~ toggles "Mix block" operation, when block data        ณ',
@@ -315,7 +311,7 @@ const
     'ณ    when block data from clipboard is applied vertically flipped. ณ',
     'ณ                                                                  ณ',
     'ณ `MANiPULATiON WiTH FX VOLUME iNFORMATiON`                          ณ',
-    'ณ                           ณ',
+    'ณ                           ณ',
     'ณ When there is block marked, which contains some effect           ณ',
     'ณ commands carrying volume information, you can increase/decrease  ณ',
     'ณ their values with ~+~/~-~ keys.                                      ณ',
@@ -333,7 +329,7 @@ const
     'อหอออออออออออออออออออออออออออออออออออหอ',
     ' บ `PATTERN LiST WiNDOW KEY REFERENCE` บ',
     'อสอออออออออออออออออออออออออออออออออออสออออออออออออออออออออออออออออออออออออ',
-    '~Up,Down~                  Cursor navigation',
+    '~,~                      Cursor navigation',
     '~PgUp,PgDn~                Move up/down 20 patterns',
     '~Home,End~                 Move to the top/end of pattern list',
     '~Space~                    Mark/Unmark pattern',
@@ -343,10 +339,12 @@ const
     '~[Alt] P (^V)~             Paste pattern from clipboard',
     '~[Shift] ^V~               Paste pattern data from clipboard',
     '~[Alt] V~                  Paste pattern name(s) from clipboard',
+    '~^N~                       Nuke current pattern',
+    '~[Shift] ^N~               Nuke all marked patterns',
     '~^W~                       Swap marked patterns',
     '~[Shift] ^W~               Swap marked patterns w/o names',
     '~[Shift] Insert~           Insert new pattern',
-    '~[Shift] Delete~           Delete pattern',
+    '~[Shift] Delete~           Delete current pattern',
     '~Enter~                    Rename pattern / Multiple paste',
     '~[Shift] F3~               Quick load recent pattern data',
     '~Esc~                      Return to Pattern Editor or Pattern Order',
@@ -355,7 +353,7 @@ const
     'อหออออออออออออออออออออออออออออออออออออออออหอ',
     ' บ `iNSTRUMENT CONTROL PANEL KEY REFERENCE` บ',
     'อสออออออออออออออออออออออออออออออออออออออออสอออออออออออออออออออออออออออออออ',
-    '~Up,Down~                  Cursor navigation',
+    '~,~                      Cursor navigation',
     '~PgUp,PgDn~                Move up/down 16 instruments',
     '~Home,End~                 Move to the top/end of instrument list',
     '~Space~                    Mark/Unmark instrument',
@@ -369,7 +367,8 @@ const
     '~[Shift] ^W~               Swap marked instruments w/o names',
     '~Tab~                      Toggle Instrument Editor window',
     '~[Shift] Tab~              Toggle Macro Editor window',
-    '~[Shift] M,B,S,T,C,H~      Toggle ~m~elodic and percussion (~B~D,~S~D,~T~T,T~C~,~H~H)',
+    '~[Shift] O~                Toggle operator mode  / ',
+    '~[Shift] M,B,S,T,C,H~      Toggle `m`elodic and percussion (`B`D,`S`D,`T`T,T`C`,`H`H)',
     '~[Shift] F2~               Save instrument w/ fm-register macro to file',
     '~[Alt] F2~                 Save instrument bank to file',
     '~^F2~                      Save instrument bank w/ all macros to file',
@@ -381,37 +380,46 @@ const
     'อหออออออออออออออออออออออออออออออออออออออออหอ',
     ' บ `iNSTRUMENT EDiTOR WiNDOW KEY REFERENCE` บ',
     'อสออออออออออออออออออออออออออออออออออออออออสอออออออออออออออออออออออออออออออ',
-    '~Up,Down,Left,Right,~',
-    '~Home,End~                 Cursor navigation',
+    '~,,,'#26',Home,End~         Cursor navigation',
+    '~[Alt] <section hotkey>~   Jump to section',
     '~Tab~                      Jump to next setting',
     '~[Shift] Tab~              Jump to previous setting',
     '~PgUp,PgDn (+,-)~          Adjust value',
     '~Space~                    Select item',
-    '~^Space~                   Toggle ADSR preview ON/OFF (if necessary)',
+    '~^Space~ `(opt.)`            Toggle ADSR preview ON/OFF',
     '~[Ctrl] "[","]"~           Change current instrument',
     '~[Ctrl][Shift] "[","]"~    Change macro speed',
-    '~Enter~                    Toggle carrier and modulator slot settings',
-    '~[Shift] M,B,S,T,C,H~      Toggle ~m~elodic and percussion (~B~D,~S~D,~T~T,T~C~,~H~H)',
+    '~[Alt]{Shift} 1..4,0~      Set operators for instrument preview ~(*)~',
+    '~Enter~                    Toggle carrier/modulator/ slot settings',
+    '~[Shift] O~                Toggle operator mode  / ',
+    '~[Shift] M,B,S,T,C,H~      Toggle `m`elodic and percussion (`B`D,`S`D,`T`T,T`C`,`H`H)',
     '~[Shift] F2~               Save instrument w/ fm-register macro to file',
+    '~[Shift] Enter~            Copy values from carrier/modulator slot',
     '~MBoard keys <hold down>~  Preview instrument',
     '~Esc~                      Return to Instrument Control panel',
+    '',
+    '~(*) [Alt] 1..4~           Set solo operator',
+    '    ~[Alt][Shift] 1..4~    Toggle operator ON/OFF',
+    '    ~[Alt] 0~              Reset',
     '',
     '@topic:macro_editor',
     'อหออออออออออออออออออออออออออออออออออออออออออออออหอ',
     ' บ `iNSTRUMENT MACRO EDiTOR WiNDOW KEY REFERENCE` บ',
     'อสออออออออออออออออออออออออออออออออออออออออออออออสอออออออออออออออออออออออออ',
-    '~Up,Down,Left,Right~',
-    '~Home,End~                 Cursor navigation',
+    '~,,,'#26',Home,End~         Cursor navigation',
     '~PgUp,PgDown~              Move up/down 16 lines',
     '~Tab (Enter)~              Jump to next field in order',
     '~[Shift] Tab~              Jump to previous field in order',
-    '~[Shift] Up,Down~          Synchronous navigation within tables',
+    '~[Shift] ,~              Synchronous navigation within tables',
     '~[Shift] Home,End~         Move to the start/end of current line in table',
-    '~^Left,^Right~             Switch between macro tables',
-    '~[Shift] ^Left,^Right~     Navigate to start/end of macro table',
+    '~[Ctrl] ,'#26'~               Switch between macro tables',
+    '~[Ctrl][Shift] ,'#26'~        Navigate to start/end of macro table',
     '~^PgUp,^PgDown~            Change current arpeggio/vibrato table',
     '~[Ctrl] "[","]"~           Change current instrument',
     '~[Ctrl][Shift] "[","]"~    Change macro speed',
+    '~[Alt]{Shift} 1..4,0~      Set operators for instrument preview ~(*)~',
+    '~[Alt] ^C~                 Copy values from carrier column',
+    '~[Alt] ^M~                 Copy values from modulator column',
     '~^C~                       Copy line in table (whole table respectively)',
     '~[Shift] ^C~               Copy column in table',
     '~^V~                       Paste object from clipboard',
@@ -426,10 +434,12 @@ const
     '~[Shift] ^PgUp,^PgDown~    Quick-adjust loop length',
     '~Insert~                   Insert new line in table',
     '~Delete~                   Delete line in table',
-    '~^N~                       Toggle note retrigger ON/OFF       ฟ',
-    '~[Alt] ^N~                 Reset flags on all rows            ๖',
-    '~^Backspace~               Toggle corresponding column ON/OFF ๖ FM-register',
-    '~[Alt] S~                  Set all OFF except current column  ๘ table',
+    '~^E~                       Toggle envelope restart ON/OFF     ฟ',
+    '~^N~                       Toggle note retrigger ON/OFF       ๖',
+    '~^Z~                       Toggle ZERO frequency ON/OFF       ๖',
+    '~[Alt] ^E,^N,^Z~           Reset all alike flags in table     ๖ FM-register',
+    '~^Backspace~               Toggle corresponding column ON/OFF ๘ table',
+    '~[Alt] S~                  Set all OFF except current column  ๖',
     '~[Alt] R~                  Reset flags on all columns         ๖',
     '~*~                        Reverse ON/OFF on all columns      ู',
     '~\~                        Toggle current item (switch types only)',
@@ -438,21 +448,25 @@ const
     '~^F2~                      Save instrument bank w/ all macros to file',
     '~Esc~                      Leave Instrument Macro Editor window',
     '',
+    '~(*) [Alt] 1..4~           Set solo operator',
+    '    ~[Alt][Shift] 1..4~    Toggle operator ON/OFF',
+    '    ~[Alt] 0~              Reset',
+    '',
     '@topic:macro_editor_(av)',
     'อหออออออออออออออออออออออออออออออออออออออออออออออออออออหอ',
     ' บ `APREGGiO/ViBRATO MACRO EDiTOR WiNDOW KEY REFERENCE` บ',
     'อสออออออออออออออออออออออออออออออออออออออออออออออออออออสอออออออออออออออออออ',
-    '~Up,Down,Left,Right~',
-    '~Home,End~                 Cursor navigation',
+    '~,,,'#26',Home,End~         Cursor navigation',
     '~PgUp,PgDown~              Move up/down 16 lines',
     '~Tab (Enter)~              Jump to next field in order',
     '~[Shift] Tab~              Jump to previous field in order',
-    '~[Shift] Up,Down~          Synchronous navigation within tables',
-    '~^Left,^Right~             Switch between macro tables',
-    '~[Shift] ^Left,^Right~     Navigate to start/end of macro table',
+    '~[Shift] ,~              Synchronous navigation within tables',
+    '~[Ctrl] ,'#26'~               Switch between macro tables',
+    '~[Ctrl][Shift] ,'#26'~        Navigate to start/end of macro table',
     '~^PgUp,^PgDown~            Change current arpeggio/vibrato table',
     '~[Ctrl] "[","]"~           Change current instrument',
     '~[Ctrl][Shift] "[","]"~    Change macro speed',
+    '~[Alt]{Shift} 1..4,0~      Set operators for instrument preview ~(*)~',
     '~^C~                       Copy line in table (whole table respectively)',
     '~[Shift] ^C~               Copy column in table',
     '~^V~                       Paste object from clipboard',
@@ -464,46 +478,49 @@ const
     '~[Shift] ^PgUp,^PgDown~    Quick-adjust loop length',
     '~Space~                    Toggle macro-preview mode',
     '~^Space~                   Toggle Key-Off loop within macro-preview mode',
+    '~[Shift] Esc~              Apply table indexes to current instrument',
     '~Esc~                      Leave Arpeggio/Vibrato Macro Editor window',
+    '',
+    '~(*) [Alt] 1..4~           Set solo operator',
+    '    ~[Alt][Shift] 1..4~    Toggle operator ON/OFF',
+    '    ~[Alt] 0~              Reset',
     '',
     '@topic:macro_browser',
     'อหออออออออออออออออออออออออออออออออออออออออหอ',
     ' บ `iNSTRUMENT MACRO BROWSER KEY REFERENCE` บ',
     'อสออออออออออออออออออออออออออออออออออออออออสอออออออออออออออออออออออออออออออ',
-    '~Up,Down,PgUp,PgDown~',
-    '~Home,End~                 Cursor navigation',
-    '~[Shift] Up,Down~          Move up/down in macro table',
-    '~[Shift] Left,Right~       Move left/right in macro table',
+    '~,,,'#26',Home,End~         Cursor navigation',
+    '~[Shift] ,~              Move up/down in macro table',
+    '~[Shift] ,'#26'~              Move left/right in macro table',
     '~[Shift] PgUp,PgDown~      Move page up/down in macro table',
     '~[Shift] Home,End~         Move to the start/end of macro table',
     '~[Ctrl] Home,End~          Move to the start/end of line in macro table',
     '~Enter~                    Load selected macro data',
-    '~^Enter~                   Load all macro data from bank (if available)',
-    '~[Ctrl] "[","]"~           Change current instrument (if possible)',
+    '~^Enter~ `(opt.)`            Load all macro data from bank',
     '~[Ctrl][Shift] "[","]"~    Change macro speed',
     '~MBoard keys <hold down>~  Preview instrument with selected macro data',
-    '~Tab~                      Switch to Arpeggio/Vibrato Macro Browser window',
+    '~Tab~ `(opt.)`               Switch to Arpeggio/Vibrato Macro Browser window',
     '~Esc~                      Leave Instrument Macro Browser window',
     '',
     '@topic:macro_browser_av',
     'อหออออออออออออออออออออออออออออออออออออออออออออออหอ',
     ' บ `ARPEGGiO/ViBRATO MACRO BROWSER KEY REFERENCE` บ',
     'อสออออออออออออออออออออออออออออออออออออออออออออออสอออออออออออออออออออออออออ',
-    '~Up,Down,PgUp,PgDown~',
+    '~,,PgUp,PgDown,~',
     '~Home,End~                 Cursor navigation',
-    '~[Shift] Left,Right~       Move left/right in arpeggio table      ฟ',
+    '~[Shift] ,'#26'~              Move left/right in arpeggio table      ฟ',
     '~[Shift] PgUp,PgDown~      Move page left/right in arpeggio table ๖',
-    '~^Left,^Right~             Move left/right in vibrato table       ๖ refer to',
+    '~[Ctrl] ,'#26'~               Move left/right in vibrato table       ๖ refer to',
     '~^PgUp,^PgDown~            Move page left/right in vibrato table  ๘ ~(*)~',
     '~[Shift]{Alt} Space~       Toggle arpeggio table selection ~(**)~   ๖',
     '~[Ctrl] {Alt} Space~       Toggle vibrato table selection  ~(**)~   ู',
     '~[Shift] Home,End~         Navigate to start/end of arpeggio table',
     '~^Home,^End~               Navigate to start/end of vibrato table',
-    '~[Ctrl] "[","]"~           Change current instrument (if possible)',
+    '~[Ctrl] "[","]"~           Change current instrument',
     '~[Ctrl][Shift] "[","]"~    Change macro speed',
     '~MBoard keys <hold down>~  Preview instrument with selected macro data',
     '~Enter~                    Load selected macro data',
-    '~^Enter~                   Load all macro data from bank (if available)',
+    '~^Enter~ `(opt.)`            Load all macro data from bank',
     '~Esc~                      Leave Arpeggio/Vibrato Macro Browser window',
     '',
     '~(*)~  Key combination with ~Ctrl+Shift~ applies action to both tables',
@@ -513,7 +530,7 @@ const
     'อหอออออออออออออออออออออออออออออออออหอ',
     ' บ `DEBUG iNFO WiNDOW KEY REFERENCE` บ',
     'อสอออออออออออออออออออออออออออออออออสออออออออออออออออออออออออออออออออออออออ',
-    '~Up,Down,PgUp,PgDown~',
+    '~,,PgUp,PgDown,~',
     '~Home,End~                 Change current track',
     '~Tab~                      Toggle details',
     '~Backspace~                Toggle pattern repeat',
@@ -522,8 +539,7 @@ const
     '~[Ctrl] Home,End~          Skip to previous/next pattern',
     '~+,-~                      Same as above; play pattern from start',
     '~^Enter~                   Play next pattern according to order',
-    '~^Left~                    Rewind current pattern',
-    '~^Right~                   Fast-Forward',
+    '~[Ctrl] ,'#26'~               Rewind/Fast-Forward current pattern',
     '~[Alt] 1..9,0~             Toggle track channel ON/OFF (~Shift~ toggles 1`X`)',
     '~[Alt] S~                  Set all OFF except current track (solo)',
     '~[Alt] R~                  Reset flags on all tracks',
@@ -534,8 +550,7 @@ const
     'อหอออออออออออออออออออออออออออออออออออออออหอ',
     ' บ `REMAP iNSTRUMENT WiNDOW KEY REFERENCE` บ',
     'อสอออออออออออออออออออออออออออออออออออออออสออออออออออออออออออออออออออออออออ',
-    '~Up,Down,Left,Right,~',
-    '~Home,End~                 Cursor navigation',
+    '~,,,'#26',Home,End~         Cursor navigation',
     '~PgUp,PgDown~              Move up/down 16 instruments',
     '~Tab~                      Jump to next selection',
     '~[Shift] Tab~              Jump to previous selection',
@@ -547,8 +562,7 @@ const
     'อหอออออออออออออออออออออออออออออออออออออออหอ',
     ' บ `REARRANGE TRACKS WiNDOW KEY REFERENCE` บ',
     'อสอออออออออออออออออออออออออออออออออออออออสออออออออออออออออออออออออออออออออ',
-    '~Up,Down,Left,Right,~',
-    '~Home,End~                 Cursor navigation',
+    '~,,,'#26',Home,End~         Cursor navigation',
     '~Tab~                      Jump to next selection',
     '~[Shift] Tab~              Jump to previous selection',
     '~^PgUp,^PgDown~            Shift track at cursor up/down in the track list',
@@ -560,8 +574,7 @@ const
     'อหออออออออออออออออออออออออออออออหอ',
     ' บ `REPLACE WiNDOW KEY REFERENCE` บ',
     'อสออออออออออออออออออออออออออออออสอออออออออออออออออออออออออออออออออออออออออ',
-    '~Up,Down,Left,Right,~',
-    '~Home,End~                 Cursor navigation',
+    '~,,,'#26',Home,End~         Cursor navigation',
     '~Tab~                      Jump to next selection',
     '~[Shift] Tab~              Jump to previous selection',
     '~^K~                       Insert Key-Off in note column',
@@ -577,7 +590,7 @@ const
     'อหอออออออออออออออออออออออออออออออออออออหอ',
     ' บ `SONG VARiABLES WiNDOW KEY REFERENCE` บ',
     'อสอออออออออออออออออออออออออออออออออออออสออออออออออออออออออออออออออออออออออ',
-    '~Up,Down,Left,Right~       Cursor navigation',
+    '~,,,'#26'~                  Cursor navigation',
     '~Tab (Enter)~              Jump to next variable field',
     '~[Shift] Tab~              Jump to previous variable field',
     '~Space~                    Select item',
@@ -587,8 +600,8 @@ const
     'อหออออออออออออออออออออออออออออหอ',
     ' บ `FiLE BROWSER KEY REFERENCE` บ',
     'อสออออออออออออออออออออออออออออสอออออออออออออออออออออออออออออออออออออออออออ',
-    '~Up,Down,Left,Right,~',
-    '~Home,End~                 Cursor navigation',
+    '~,,,'#26'~',
+        '~PgUp,PgDown,Home,End~     Cursor navigation',
 {$IFDEF UNIX}
     '~/~                        Navigate to root directory',
 {$ELSE}
@@ -600,16 +613,34 @@ const
     '~Enter~                    Choose file under cursor / read instrument bank',
     '~Esc~                      Leave without choosing file',
     '',
+    '@topic:message_board',
+    'อหออออออออออออออออออออออออออออออออออออหอ',
+    ' บ `MESSAGE BOARD WiNDOW KEY REFERENCE` บ',
+    'อสออออออออออออออออออออออออออออออออออออสอออออออออออออออออออออออออออออออออออ',
+    '~,,,'#26',^PgUp,^PgDown,~',
+    '~Home,End,^Home,^End~      Cursor navigation',
+    '~PgUp,PgDown~              Move backwards/forwards over text',
+    '~[Ctrl] ,'#26'~               Move word left/right',
+    '~Backspace,Delete~         Delete character left/right',
+    '~^Backspace,^T~            Delete word left/right',
+    '~^K~                       Delete characters to end',
+    '~^Y~                       Delete current line',
+    '~Tab~                      Indent current line',
+    '~^Space~                   Insert row for text at cursor',
+    '~[Shift] ^Backspace~       Delete row for text at cursor',
+    '~Insert~                   Toggle input and overwrite mode',
+    '~Enter~                    Wrap line of text',
+    '~Esc~                      Return to Pattern Editor or Pattern Order',
+    '',
     '@topic:input_field',
     'อหอออออออออออออออออออออออออออหอ',
     ' บ `iNPUT FiELD KEY REFERENCE` บ',
     'อสอออออออออออออออออออออออออออสออออออออออออออออออออออออออออออออออออออออออออ',
-    '',
-    '~Left,Right~               Move left/right',
-    '~Home,End~                 Move to the begin/end',
-    '~^Left,^Right~             Move word left/right',
+    '~,'#26',Home,End~             Cursor navigation',
+    '~[Ctrl] ,'#26'~               Move word left/right',
     '~Backspace,Delete~         Delete character left/right',
     '~^Backspace,^T~            Delete word left/right',
+    '~^K~                       Delete characters to end',
     '~^Y~                       Delete string',
     '~Insert~                   Toggle input and overwrite mode',
     '',
@@ -686,8 +717,8 @@ const
     '    ฤลฤฤฤฤฤฤฤฤฤฤฤยฤฤฤฤฤฤฤฤฤฤฤยฤฤฤฤฤฤฤฤฤฤฤยฤฤฤฤฤฤฤฤฤฤฤยฤฤฤ',
     '     ณ             \        /              \        /',
     '     ณ               \    /                  \    /',
-    '     ณ                                       ',
-    '     ณ          /2                    3/2         2',
+    '     ณ                                       ',
+    '     ณ          1/2          1          3/2          2  pi',
     '',
     '',
     '`[1] HALF-SiNE`',
@@ -699,7 +730,7 @@ const
     '     ณ /        \              /        \',
     '    ฤลฤฤฤฤฤฤฤฤฤฤฤยฤฤฤฤฤฤฤฤฤฤฤยฤฤฤฤฤฤฤฤฤฤฤยฤฤฤฤฤฤฤฤฤฤฤยฤฤฤ',
     '     ณ',
-    '     ณ          /2                    3/2         2',
+    '     ณ          1/2          1          3/2          2  pi',
     '     ณ',
     '     ณ',
     '',
@@ -713,7 +744,7 @@ const
     '     ณ /        \ /        \   /        \ /        \',
     '    ฤลฤฤฤฤฤฤฤฤฤฤฤยฤฤฤฤฤฤฤฤฤฤฤยฤฤฤฤฤฤฤฤฤฤฤยฤฤฤฤฤฤฤฤฤฤฤยฤฤฤ',
     '     ณ',
-    '     ณ          /2                     3/2        2',
+    '     ณ          1/2          1          3/2          2  pi',
     '     ณ',
     '     ณ',
     '',
@@ -727,7 +758,7 @@ const
     '     ณ/    |      /    |      /    |      /    |',
     '    ฤลฤฤฤฤฤยฤฤฤฤฤยฤฤฤฤฤยฤฤฤฤฤยฤฤฤฤฤยฤฤฤฤฤยฤฤฤฤฤยฤฤฤฤฤยฤฤฤ',
     '     ณ',
-    '     ณ    /4   /2   3/4       5/4  3/2  7/4   2',
+    '     ณ    1/4    1/2   3/4   1    5/4   3/2   7/4    2  pi',
     '     ณ',
     '     ณ',
     '',
@@ -737,13 +768,13 @@ const
     '     ',
     '     ณ',
     '     ณ',
-    '     ณ /\                     /\',
+    '     ณ /\                     /\',
     '     ณ/   \                   /   \',
     '    ฤลฤฤฤฤฤยฤฤฤฤฤยฤฤฤฤฤยฤฤฤฤฤยฤฤฤฤฤยฤฤฤฤฤยฤฤฤฤฤยฤฤฤฤฤยฤฤฤ',
     '     ณ      \   /                   \   /',
     '     ณ       \_/                     \_/',
     '     ณ',
-    '     ณ    /4   /2   3/4       5/4  3/2  7/4   2',
+    '     ณ    1/4   1/2   3/4    1    5/4   3/2   7/4    2  pi',
     '',
     '',
     '`[5] ABS-SiNE, EVEN PERiODS ONLY (EPO)`',
@@ -751,11 +782,11 @@ const
     '     ',
     '     ณ',
     '     ณ',
-    '     ณ /\   /\               /\   /\',
+    '     ณ /\   /\               /\   /\',
     '     ณ/   \ /   \             /   \ /   \',
     '    ฤลฤฤฤฤฤยฤฤฤฤฤยฤฤฤฤฤยฤฤฤฤฤยฤฤฤฤฤยฤฤฤฤฤยฤฤฤฤฤยฤฤฤฤฤยฤฤฤ',
     '     ณ',
-    '     ณ    /4   /2   3/4       5/4  3/2  7/4   2',
+    '     ณ    1/4   1/2   3/4    1    5/4   3/2   7/4    2  pi',
     '     ณ',
     '     ณ',
     '',
@@ -766,26 +797,26 @@ const
     '     ณ',
     '     ณ',
     '     ร-----------ฟ           ฺ-----------ฟ',
-    '     |           |           |           |',
+    '     ๑           ๑           ๑           ๑',
     '    ฤลฤฤฤฤฤฤฤฤฤฤฤลฤฤฤฤฤฤฤฤฤฤฤลฤฤฤฤฤฤฤฤฤฤฤลฤฤฤฤฤฤฤฤฤฤฤยฤฤฤ',
-    '     ณ           |           |           |           |',
+    '     ณ           ๑           ๑           ๑           ๑',
     '     ณ           ภ-----------ู           ภ-----------ู',
     '     ณ',
-    '     ณ          /2                    3/2         2',
+    '     ณ          1/2          1          3/2          2  pi',
     '',
     '',
     '`[7] DERiVED SQUARE`',
     '',
     '     ',
     '     ณ',
-    '     |\                      |\',
-    '     | __                  | __',
-    '     |     ฤฤ__            |     ฤฤ__',
+    '     ณ',
+    '     ๑\__                    ๑\__',
+    '     ๑   ฤฤฤ__            ๑   ฤฤ__',
     '    ฤลฤฤฤฤฤฤฤฤฤฤฤลฤฤฤฤฤฤฤฤฤฤฤลฤฤฤฤฤฤฤฤฤฤฤลฤฤฤฤฤฤฤฤฤฤฤยฤฤฤ',
-    '     ณ            ฤฤ__     |            ฤฤ__     |',
-    '     ณ                  __ |                  __ |',
-    '     ณ                      \|                      \|',
-    '     ณ          /2                    3/2         2',
+    '     ณ            ฤฤฤ___   ๑            ฤฤ____   ๑',
+    '     ณ                    \๑                    \๑',
+    '     ณ',
+    '     ณ          1/2          1          3/2          2  pi',
     '',
     '',
     '~Key scaling level (KSL)~',
@@ -815,7 +846,7 @@ const
     'ฺฤฤฤฤฤฤฤฤฤฤฤฤาฤฤฤฤฤยฤฤฤฤฤยฤฤฤฤฤยฤฤฤฤฤยฤฤฤฤฤยฤฤฤฤฤยฤฤฤฤฤยฤฤฤฤฤฟ',
     'ณ `FEEDBACK`   บ `[0]` ณ `[1]` ณ `[2]` ณ `[3]` ณ `[4]` ณ `[5]` ณ `[6]` ณ `[7]` ณ',
     'รฤฤฤฤฤฤฤฤฤฤฤฤืฤฤฤฤฤลฤฤฤฤฤลฤฤฤฤฤลฤฤฤฤฤลฤฤฤฤฤลฤฤฤฤฤลฤฤฤฤฤลฤฤฤฤฤด',
-    'ณ `MODULATiON` บ  0  ณ/16 ณ /8 ณ /4 ณ /2 ณ    ณ 2  ณ 4  ณ',
+    'ณ `MODULATiON` บ  0  ณ1/16 ณ 1/8 ณ 1/4 ณ 1/2 ณ  1  ณ  2  ณ  4  ณ',
     'ภฤฤฤฤฤฤฤฤฤฤฤฤะฤฤฤฤฤมฤฤฤฤฤมฤฤฤฤฤมฤฤฤฤฤมฤฤฤฤฤมฤฤฤฤฤมฤฤฤฤฤมฤฤฤฤฤู',
     '',
     'The parameter corresponds either with carrier and modulator, therefore',
@@ -858,6 +889,13 @@ const
     'because the combination of two instrument connections specifies',
     'the connection of the 4-op instrument as shown below:',
     '',
+    'ฺฤฤฤฤฤฤฤฤฤฤฤฤาฤฤฤฤยฤฤฤฤยฤฤฤฤยฤฤฤฤฟ',
+    'ณ `SLOT`       บ M1 ณ C1 ณ M2 ณ C2 ณ',
+    'รฤฤฤฤฤฤฤฤฤฤฤฤืฤฤฤฤลฤฤฤฤลฤฤฤฤลฤฤฤฤด',
+    'ณ `OPERATOR`   บ 1  ณ 2  ณ 3  ณ 4  ณ',
+    'ภฤฤฤฤฤฤฤฤฤฤฤฤะฤฤฤฤมฤฤฤฤมฤฤฤฤมฤฤฤฤู',
+    '',
+    '',
     '`[FM/FM]`',
     '',
     '        ฺฤฤฤฤฤฤฤฤฤฤฤฤฟ',
@@ -869,7 +907,7 @@ const
     '',
     '                          P2             P3             P4',
     '',
-    '`[FM/AM]`',
+    '`[FM/AM]` ~(*)~',
     '',
     '        ฺฤฤฤฤฤฤฤฤฤฤฤฤฟ',
     '        ณ            ณ',
@@ -888,7 +926,7 @@ const
     '',
     '                          P4',
     '',
-    '`[AM/FM]`',
+    '`[AM/FM]` ~(*)~',
     '',
     '        ฺฤฤฤฤฤฤฤฤฤฤฤฤฟ',
     '        ณ            ณ',
@@ -925,13 +963,22 @@ const
     ' P4 ฤฤฤฤฤฤฤฤบ C2 วฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤู',
     '             ศออออผ',
     '',
+    '',
+    '~(*)~ `REMARK ABOUT  CONNECTiONS`',
+    'Please note, that since order of  tracks in the tracker is ๕ and ๔,',
+    'these non-symmetrical instrument connections are reversed.',
+    'The preview diagrams in the Instrument Editor window show actual order,',
+    'but here this information is kept in conformity with the official',
+    'Yamaha YMF262 data specification to prevent further confusion.',
+    '',
+    '',
     '~Tremolo (Amplitude modulation)~',
     'When set, turns tremolo (volume vibrato) ON for the corresponding slot.',
-    'The repetition rate is 3.7, the depth is optional (1dB/4.8dB).',
+    'The repetition rate is 3.7ฎ, the depth is optional (1dB/4.8dB).',
     '',
     '~Vibrato~',
     'When set, turns frequency vibrato ON for the corresponding slot.',
-    'The repetition rate is 6.1, the depth is optional (7%/14%).',
+    'The repetition rate is 6.1ฎ, the depth is optional (7%/14%).',
     '',
     '~Key scale rate (KSR)~',
     'When set, makes the sound shorter at higher frequencies.',
@@ -1004,18 +1051,18 @@ const
     'ณ  `[8]`  ณ  8  ณ 3 octaves above                    ณ',
     'ณ  `[9]`  ณ  9  ณ 3 octaves and a Major 2nd above    ณ',
     'ณ  `[A]`  ณ 10  ณ 3 octaves and a Major 3rd above    ณ',
-    'ณ  `[B]`  ณ 11  ณ " "       "   " "     "   "        ณ',
+    'ณ  `[B]`  ณ 10  ณ             ...                    ณ',
     'ณ  `[C]`  ณ 12  ณ 3 octaves and a 5th above          ณ',
-    'ณ  `[D]`  ณ 13  ณ " "       "   "     "              ณ',
-    'ณ  `[E]`  ณ 14  ณ 3 octaves and a Major 7th above    ณ',
-    'ณ  `[F]`  ณ 15  ณ " "       "   " "     "   "        ณ',
+    'ณ  `[D]`  ณ 12  ณ             ...                    ณ',
+    'ณ  `[E]`  ณ 15  ณ 3 octaves and a Major 7th above    ณ',
+    'ณ  `[F]`  ณ 15  ณ             ...                    ณ',
     'ภฤฤฤฤฤฤฤมฤฤฤฤฤมฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤู',
     '',
     '@topic:effects_page1',
     'อหอออออออออออออออออออหอ',
     ' บ `SUPPORTED EFFECTS` บ',
     'อสอออออออออออออออออออสออออออออออออออออออออออออออออออออออออออออออออออออออออ',
-    '`0`xy ฤฤ ARPEGGiO                   xy=1st_ซtone|2nd_ซtone  [1-F]',
+    '`0`xy ฤฤ ARPEGGiO                   xy=1st_tone|2nd_tone    [1-F]',
     '`1`xx ฤฤ FREQUENCY SLiDE UP         xx=speed_of_slide       [1-FF]',
     '`2`xx ฤฤ FREQUENCY SLiDE DOWN       xx=speed_of_slide       [1-FF]',
     '`3`xx ฤฤ TONE PORTAMENTO            xx=speed_of_slide       [1-FF] ~C~',
@@ -1029,7 +1076,7 @@ const
     '`B`xx ฤฤ POSiTiON JUMP              xx=position_in_order    [0-7F]',
     '`C`xx ฤฤ SET iNSTRUMENT VOLUME      xx=volume_level         [0-3F]',
     '`D`xx ฤฤ PATTERN BREAK              xx=line_in_next_pattern [0-FF]',
-    '`E`xx ฤฤ SET TEMPO                  xx=bpm_in_             [1-FF]',
+    '`E`xx ฤฤ SET TEMPO                  xx=bpm_in_ฎ             [1-FF]',
     '`F`xx ฤฤ SET SPEED                  xx=frames_per_row       [1-FF]',
     '`G`xy ฤฤ ~3xx~ & FiNE VOLUME SLiDE    xy=up_speed|down_speed  [1-F]  ~C~',
     '`H`xy ฤฤ ~4xy~ & FiNE VOLUME SLiDE    xy=up_speed|down_speed  [1-F]  ~C~',
@@ -1077,7 +1124,8 @@ const
     '    `B`x SET PANNiNG POSiTiON       x=panning_position      [0-2]  ~I~',
     '    `C`x PATTERN LOOP               x=parameter             [0-F]',
     '    `D`x RECURSiVE PATTERN LOOP     x=parameter             [0-F]',
-    '    `E`x MACRO KEY-OFF LOOP         x=off/on                [0-1]',
+    '    `E`x EXTENDED COMMANDS (1)',
+    '    `F`x EXTENDED COMMANDS (2)',
     '',
     '`ZB`?  `0` = Center',
     '     `1` = Left',
@@ -1087,24 +1135,26 @@ const
     '     x = Loop ~x~ times',
     '',
     '@topic:effects_page4',
-    '`ZF`?  `0` RELEASE SUSTAiNiNG SOUND',
-    '     `1` RESET iNSTRUMENT VOLUME',
-    '     `2` LOCK TRACK VOLUME',
-    '     `3` UNLOCK TRACK VOLUME ',
-    '     `4` LOCK VOLUME PEAK',
-    '     `5` UNLOCK VOLUME PEAK',
-    '     `6` TOGGLE MODULATOR VOLUME SLiDES',
-    '     `7` TOGGLE CARRiER VOLUME SLiDES',
-    '     `8` TOGGLE DEFAULT VOLUME SLiDES',
-    '     `9` LOCK TRACK PANNiNG',
-    '     `A` UNLOCK TRACK PANNiNG',
-    '     `B` ViBRATO OFF',
-    '     `C` TREMOLO OFF',
-    '     `D` FORCE FiNE ViBRATO',
-    '       FORCE FiNE GLOBAL FREQ. SLiDE',
-    '     `E` FORCE FiNE TREMOLO',
-    '       FORCE EXTRA FiNE GLOBAL FREQ. SLiDE',
-    '     `F` FORCE NO RESTART FOR MACRO TABLES',
+    '`ZE`?  `0`/`1` DiSABLE/ENABLE MACRO KEY-OFF LOOP',
+    '     `2`/`3` DiSABLE/ENABLE RESTART ENVELOPE WiTH TONE PORTAMENTO',
+    '     `4`   PERFORM RESTART ENVELOPE',
+    '     `5`/`6` DiSABLE/ENABLE '#4#3' TRACK VOLUME LOCK',
+    '',
+    '`ZF`?  `0`   RELEASE SUSTAiNiNG SOUND',
+    '     `1`   RESET iNSTRUMENT VOLUME',
+    '     `2`/`3` LOCK/UNLOCK TRACK VOLUME',
+    '     `4`/`5` LOCK/UNLOCK VOLUME PEAK',
+    '     `6`   TOGGLE MODULATOR VOLUME SLiDES',
+    '     `7`   TOGGLE CARRiER VOLUME SLiDES',
+    '     `8`   TOGGLE DEFAULT VOLUME SLiDES',
+    '     `9`/`A` LOCK/UNLOCK TRACK PANNiNG',
+    '     `B`   ViBRATO OFF',
+    '     `C`   TREMOLO OFF',
+    '     `D`   FORCE FiNE ViBRATO',
+    '         FORCE FiNE GLOBAL FREQ. SLiDE',
+    '     `E`   FORCE FiNE TREMOLO',
+    '         FORCE EXTRA FiNE GLOBAL FREQ. SLiDE',
+    '     `F`   FORCE NO RESTART FOR MACRO TABLES',
     '',
     '@topic:effects_page5',
     '`#`?? `0`x SET CONNECTiON TYPE        x=FM/AM                 [0-1]  ~I~',
@@ -1140,7 +1190,7 @@ const
     '    `F`x EXTRA FiNE FSLiDE DOWN     x=speed_of_slide        [1-F]',
     '',
     '@topic:effects_page7',
-    '`$`xy ฤฤ EXTRA FiNE ARPEGGiO        xy=1st_ซtone|2nd_ซtone  [1-F]',
+    '`$`xy ฤฤ EXTRA FiNE ARPEGGiO        xy=1st_tone|2nd_tone    [1-F]',
     '`@@~xy ฤฤ EXTRA FiNE ViBRATO         xy=speed|depth          [1-F]  ~C~',
     '`^`xy ฤฤ EXTRA FiNE TREMOLO         xy=speed|depth          [1-F]  ~C~',
     '`!`xx ฤฤ SWAP ARPEGGiO TABLE        xx=table_number         [0-FF]',
@@ -1177,13 +1227,13 @@ const
     '',
     '',
     '                                ฤยฤ       ฤฤ',
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
     '                           /ดDLiBณR/ดCK3R ณณ G3',
 {$ELSE}
     '                           /ดDLiBณR/ดCK3R ณณ SDL',
 {$ENDIF}
     '                            ณ       ณ     ฤฤ',
-    '                                      '+at2ver+'',
+    '                                      '+at2ver,
     '',
     '',
     '`Get the latest version from:`',
@@ -1195,42 +1245,47 @@ const
     '',
     '`Credits:`',
 
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
 
-    'TMT Development Corp. [TMT Pascal Compiler Lite 3.90]',
-    'Borland International [Turbo Assembler 4.1]',
-    'Charles Scheffold & Thomas Pytel [PMODE/W 1.33]',
-    'Joergen Ibsen [aPLib 0.26b]',
+    'Florian Klaempfl and others [Free Pascal Compiler 2.6.4]',
+    'Karoly Balogh [GO32V2 Timer Services Unit 1.1.0]',
+    'Haruhiko Okomura & Haruyasu Yoshizaki [LZH algorithm]',
     'Markus Oberhumer, Laszlo Molnar & John Reiser [UPX 3.91d]',
-    'Virtual Research independent group production [VESA 2.0 LFB library]',
 
 {$ELSE}
 
     'Florian Klaempfl and others [Free Pascal Compiler 2.6.4]',
-    'Japheth [JWasm v2.11]',
-
-    'Joergen Ibsen [aPLib 0.26b]',
-    'Simple DirectMedia Layer [SDL 1.2]',
-
+    'Simple DirectMedia Layer [SDL 1.2.15]',
     'Daniel F. Moisset [SDL4Freepascal-1.2.0.0]',
-    'Jarek Burczynski and MAME Development Team [ymf262.c version 0.2]',
+    'Alexey Khokholov [NukedOPL3 1.6]',
+    'Haruhiko Okomura & Haruyasu Yoshizaki [LZH algorithm]',
     'Markus Oberhumer, Laszlo Molnar & John Reiser [UPX 3.91w]',
 
 {$ENDIF}
 
     '',
 
-    '`subz3ro thanks to:`',
+    '`Honest ''thank you'' to the following people:`',
     'Slawomir Bubel (Malfunction/Altair), Daniel Illgen (insane/Altair),',
     'Mikkel Hastrup (encore), Florian Jung (Windfisch), Dmitry Smagin,',
+    'David Cohen (Diode Milliampere), Nick Balega,',
     'Cecill Etheredge (ijsf), Sven Renner (NeuralNET),',
     'Tyler Montbriand (Corona688), Janwillem Jagersma, PissMasterPlus,',
     'and Mr. Maan M. Hamze :-)',
     '',
     '`Greetz fly to the following people:`',
     'Dragan Espenschied (drx/Bodenstandig 2000), Carl Peczynski (OxygenStar),',
-    'Hubert Lamontagne (Madbrain), Diode Milliampere, Jason Karl Warren,',
-    'Nick Balega and all members of AT2 community who are missing here :-)');
+    'Hubert Lamontagne (Madbrain), Jason Karl Warren (Televicious),',
+    'Vojta Nedved (nula), and all members of AT2 user group on Facebook');
+
+procedure HELP(topic: String);
+procedure ShowStartMessage;
+
+implementation
+
+uses
+  AdT2unit,AdT2sys,AdT2keyb,AdT2data,
+  TxtScrIO,StringIO,DialogIO,ParserIO;
 
 const
   key_comment_B =
@@ -1257,7 +1312,7 @@ var
   temps: String;
   page,temp,fkey: Word;
   temp2: Byte;
-  xstart,ystart,ypos: Byte;
+  xstart,ystart,ypos,page_len: Byte;
   mpos: Byte;
   mchr: Char;
   new_atr1,
@@ -1323,11 +1378,12 @@ begin
 end;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2TEXT.PAS:Help';
 {$ENDIF}
   ScreenMemCopy(screen_ptr,ptr_screen_backup);
+  centered_frame_vdest := screen_ptr;
 
   // assign special attribute values
   FillChar(spec_attr_table,SizeOf(spec_attr_table),0);
@@ -1335,28 +1391,29 @@ begin
   spec_attr_table[2] := main_hi_stat_line SHL 4 AND $0f0;
 
   HideCursor;
-  centered_frame(xstart,ystart,77,MAX_PATTERN_ROWS+8,' HELP ',
+  page_len := MAX_PATTERN_ROWS+6;
+  centered_frame(xstart,ystart,77,page_len+2,' HELP ',
                  help_background+help_border,
                  help_background+help_title,
-                 double);
+                 frame_double);
   page := 1;
-  While (page <= LINES-24) and ((Copy(help_data[page],1,6) <> '@topic') or
+  While (page <= HELP_LINES-24) and ((Copy(help_data[page],1,6) <> '@topic') or
         (Copy(help_data[page],8,Length(help_data[page])-7) <> topic)) do
     Inc(page);
 
-  If page < 1 then page := 1;
-  If page > LINES-(MAX_PATTERN_ROWS+6) then page := LINES-24;
+  If (page < 1) then page := 1;
+  If (page > HELP_LINES-page_len) then page := HELP_LINES-page_len;
 
   Repeat
     If (page > 1) then temps := '' else temps := '-';
-    If (page < LINES-(MAX_PATTERN_ROWS+6)) then temps := temps+'' else temps := temps+'-';
-    ShowCStr(screen_ptr,xstart+1+74-Length(temps),ystart+MAX_PATTERN_ROWS+8,
+    If (page < HELP_LINES-page_len) then temps := temps+'' else temps := temps+'-';
+    ShowCStr(screen_ptr,xstart+1+74-Length(temps),ystart+page_len+2,
              '[~'+temps+'~]',
              help_background+help_border,
              help_background+help_indicators);
     ypos := ystart+1;
     temp := page;
-    While (ypos <= ystart+(MAX_PATTERN_ROWS+6)+1) and (temp <= LINES) do
+    While (ypos <= ystart+page_len+1) and (temp <= HELP_LINES) do
       begin
         If (Copy(help_data[temp],1,6) <> '@topic') and
            (Copy(help_data[temp],1,6) <> '@input') then
@@ -1467,45 +1524,49 @@ begin
     fkey := getkey;
     Case fkey of
       kUP:     begin
-                 If page > 1 then Dec(page);
+                 If (page > 1) then Dec(page);
                  If (Copy(help_data[page-1],1,6) = '@topic') and
                     (page > 1) then Dec(page);
                end;
 
       kDOWN:   begin
                  If (Copy(help_data[page],1,6) = '@topic') and
-                    (page < LINES-(MAX_PATTERN_ROWS+6)) then Inc(page);
-                 If page < LINES-(MAX_PATTERN_ROWS+6) then Inc(page);
+                    (page < HELP_LINES-page_len) then Inc(page);
+                 If (page < HELP_LINES-page_len) then Inc(page);
                end;
 
       kPgUP:   begin
-                 If page > 24 then Dec(page,(MAX_PATTERN_ROWS+6)) else page := 1;
+                 If (page > page_len) then Dec(page,page_len)
+                 else page := 1;
                  If (Copy(help_data[page-1],1,6) = '@topic') and
-                    (page > 1) then Dec(page);
+                    (page > 1) then
+                   Dec(page);
                end;
 
       kPgDOWN: begin
                  If (Copy(help_data[page],1,6) = '@topic') and
-                    (page < LINES-(MAX_PATTERN_ROWS+6)) then Inc(page);
-                 If page+(MAX_PATTERN_ROWS+6) < LINES-(MAX_PATTERN_ROWS+6) then Inc(page,(MAX_PATTERN_ROWS+6)) else
-                 page := LINES-(MAX_PATTERN_ROWS+6);
+                    (page < HELP_LINES-page_len) then
+                   Inc(page);
+                 If (page+page_len <= HELP_LINES-page_len) then
+                   Inc(page,page_len)
+                 else page := HELP_LINES-page_len;
                end;
 
       kHOME:   page := 1;
-      kEND:    page := LINES-(MAX_PATTERN_ROWS+6);
+      kEND:    page := HELP_LINES-page_len;
     end;
-    // emulate_screen;
+    // draw_screen;
   until (fkey = kENTER) or (fkey = kESC) or _force_program_quit;
 
   move_to_screen_data := ptr_screen_backup;
   move_to_screen_area[1] := xstart;
   move_to_screen_area[2] := ystart;
   move_to_screen_area[3] := xstart+77+2;
-  move_to_screen_area[4] := ystart+(MAX_PATTERN_ROWS+8)+1;
+  move_to_screen_area[4] := ystart+page_len+1;
   move2screen;
 end;
 
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
 
 procedure C3WriteLn(str: String; atr1,atr2,atr3: Byte);
 begin
@@ -1529,7 +1590,7 @@ end;
 
 procedure ShowStartMessage;
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   WriteLn;
   WriteLn(_ADT2_TITLE_STRING_,' coded by subz3ro/Altair');
   WriteLn('            ',at2ver,' ',at2date,' ',at2link,'');

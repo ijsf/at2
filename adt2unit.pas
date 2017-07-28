@@ -1,13 +1,19 @@
 unit AdT2unit;
-{$IFNDEF __TMT__}
+{$S-,Q-,R-,V-,B-,X+}
 {$PACKRECORDS 1}
-{$ENDIF}
 interface
+
+{$IFDEF GO32V2}
+const
+  ___UNIT_DATA_START___: Dword = 0;
+{$ENDIF}
 
 const
   MAX_IRQ_FREQ = 1000;
 
-{$i typconst.inc}
+{$i typcons1.inc}
+{$i typcons2.inc}
+
 const
   IRQ_freq:          Longint   = 50;
   tempo:             Byte      = 50;
@@ -39,6 +45,7 @@ const
   max_patterns:      Byte      = 128;
   jump_mark_mode:    Boolean   = FALSE;
   force_macro_keyon: Boolean   = FALSE;
+  ins_trailing_flag: Boolean   = FALSE;
 
 const
   def_vibtrem_speed_factor: Byte = 1;
@@ -66,6 +73,21 @@ var
   vibtrem_table_size: Byte;
   vibtrem_table: array[0..255] of Byte;
 
+type
+  tVIBRATO_TREMOLO_TABLE =
+    array[1..20] of Record
+                      pos: Byte;
+                      dir: Byte;
+                      speed: Byte;
+                      depth: Byte;
+                      fine: Boolean;
+                    end;
+var
+  vibr_table:  tVIBRATO_TREMOLO_TABLE;
+  vibr_table2: tVIBRATO_TREMOLO_TABLE;
+  trem_table:  tVIBRATO_TREMOLO_TABLE;
+  trem_table2: tVIBRATO_TREMOLO_TABLE;
+
 const
   macro_preview_indic_proc: procedure(state: Byte) = NIL;
   seconds_counter: Longint = 0;
@@ -81,6 +103,7 @@ const
 var
   fmpar_table:   array[1..20] of tFM_PARAMETER_TABLE;
   volume_lock:   array[1..20] of Boolean;
+  vol4op_lock:   array[1..20] of Boolean;
   volume_table:  array[1..20] of Word;
   vscale_table:  array[1..20] of Word;
   peak_lock:     array[1..20] of Boolean;
@@ -93,6 +116,7 @@ var
   event_table:   array[1..20] of tCHUNK;
   voice_table:   array[1..20] of Byte;
   freq_table:    array[1..20] of Word;
+  zero_fq_table: array[1..20] of Word;
   effect_table:  array[1..20] of Word;
   effect_table2: array[1..20] of Word;
   fslide_table:  array[1..20] of Byte;
@@ -101,12 +125,9 @@ var
   glfsld_table2: array[1..20] of Word;
   porta_table:   array[1..20] of Record freq: Word; speed: Byte; end;
   porta_table2:  array[1..20] of Record freq: Word; speed: Byte; end;
+  portaFK_table: array[1..20] of Boolean;
   arpgg_table:   array[1..20] of Record state,note,add1,add2: Byte; end;
   arpgg_table2:  array[1..20] of Record state,note,add1,add2: Byte; end;
-  vibr_table:    array[1..20] of Record pos,speed,depth: Byte; fine: Boolean; end;
-  vibr_table2:   array[1..20] of Record pos,speed,depth: Byte; fine: Boolean; end;
-  trem_table:    array[1..20] of Record pos,speed,depth: Byte; fine: Boolean; end;
-  trem_table2:   array[1..20] of Record pos,speed,depth: Byte; fine: Boolean; end;
   retrig_table:  array[1..20] of Byte;
   retrig_table2: array[1..20] of Byte;
   tremor_table:  array[1..20] of Record pos: Integer; volume: Word; end;
@@ -150,6 +171,11 @@ const
   rec_correction: Byte = 0;
 
 const
+  MACRO_NOTE_RETRIG_FLAG = $80;
+  MACRO_ENVELOPE_RESTART_FLAG = $40;
+  MACRO_ZERO_FREQ_FLAG = $20;
+
+const
   current_order: Byte = 0;
   current_pattern: Byte = 0;
   current_line: Byte = 0;
@@ -169,8 +195,11 @@ var
 var
   songdata_crc,songdata_crc_ord: Longint;
   temp_instrument: tADTRACK2_INS;
+  temp_instrument2: tADTRACK2_INS;
   temp_instrument_macro: tREGISTER_TABLE;
+  temp_instrument_macro2: tREGISTER_TABLE;
   temp_instrument_dis_fmreg_col: tDIS_FMREG_COL;
+  temp_instrument_dis_fmreg_col2: tDIS_FMREG_COL;
   temp_ins_type: Byte;
   pattord_page,pattord_hpos,pattord_vpos: Byte;
   instrum_page: Byte;
@@ -190,13 +219,15 @@ var
   last_order: Byte;
 
 var
-  buf1: array[0..PRED(SizeOf(tVARIABLE_DATA))] of Byte;
-  buf2: array[WORD] of Byte;
+  buf1: tGENERIC_IO_BUFFER;
+  buf2: tGENERIC_IO_BUFFER;
   buf3: array[WORD] of Byte;
   buf4: array[WORD] of Byte;
 
+const
+  pattdata: ^tPATTERN_DATA = NIL;
+
 var
-  pattdata: ^tPATTERN_DATA;
   old_hash_buffer: tOLD_VARIABLE_DATA1;
   hash_buffer: tOLD_VARIABLE_DATA2;
   old_songdata: tOLD_FIXED_SONGDATA;
@@ -221,7 +252,7 @@ var
   time_playing,time_playing0: Real;
 
 const
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   timer_determinator: Longint = 1;
   timer_det2: Longint = 1;
   scr_scroll_x: Word = 0;
@@ -253,8 +284,9 @@ var
                  end;
 
 function  nFreq(note: Byte): Word;
+procedure change_freq(chan: Byte; freq: Word);
 function  calc_pattern_pos(pattern: Byte): Byte;
-function  concw(Lo,Hi: Byte): Word;
+function  concw(lo,hi: Byte): Word;
 function  ins_parameter(ins,param: Byte): Byte;
 function  is_chan_adsr_data_empty(chan: Byte): Boolean;
 function  is_ins_adsr_data_empty(ins: Byte): Boolean;
@@ -263,6 +295,7 @@ function  _macro_speedup: Word;
 procedure calibrate_player(order,line: Byte; status_filter: Boolean;
                            line_dependent: Boolean);
 procedure update_timer(Hz: Longint);
+procedure key_on(chan: Byte);
 procedure key_off(chan: Byte);
 procedure release_sustaining_sound(chan: Byte);
 procedure init_macro_table(chan,note,ins: Byte; freq: Word);
@@ -316,7 +349,8 @@ procedure init_old_songdata;
 procedure init_songdata;
 procedure update_instr_data(ins: Byte);
 procedure load_instrument(var data; chan: Byte);
-procedure output_note(note,ins,chan: Byte; restart_macro: Boolean);
+procedure output_note(note,ins,chan: Byte;
+                      restart_macro,restart_adsr: Boolean);
 
 function  min(value: Longint; minimum: Longint): Longint;
 function  max(value: Longint; maximum: Longint): Longint;
@@ -340,7 +374,11 @@ const
   macro_ticklooper: Longint = 0;
 
 const
+{$IFDEF GO32V2}
   MAX_NUM_BANK_POSITIONS = 1000;
+{$ELSE}
+  MAX_NUM_BANK_POSITIONS = 500;
+{$ENDIF}
 
 const
   bank_position_list_size: Longint = 0;
@@ -348,7 +386,11 @@ const
 var
   bank_position_list:
     array[1..MAX_NUM_BANK_POSITIONS] of Record
+{$IFDEF GO32V2}
+                                          bank_name: String[50];
+{$ELSE}
                                           bank_name: String;
+{$ENDIF}
                                           bank_size: Longint;
                                           bank_position: Longint;
                                         end;
@@ -356,18 +398,30 @@ var
 function  get_bank_position(bank_name: String; bank_size: Longint): Longint;
 procedure add_bank_position(bank_name: String; bank_size: Longint; bank_position: Longint);
 
+{$IFDEF GO32V2}
+const
+  ___UNIT_DATA_END___: Dword = 0;
+{$ENDIF}
+
 implementation
 
 uses
-{$IFDEF __TMT__}
-  CRT,DOS,DPMI,
+{$IFDEF GO32V2}
+  CRT,DOS,GO32,ISS_Tim,
 {$ELSE}
-  DOS,SDL_Timer,
+  DOS,SDL_Types,SDL_Timer,
 {$ENDIF}
   AdT2opl3,AdT2sys,AdT2extn,AdT2ext2,AdT2keyb,
-  TimerInt,TxtScrIO,StringIO,DialogIO,ParserIO;
+  TxtScrIO,StringIO,DialogIO,ParserIO;
 
-{$i realtime.inc}
+{$IFDEF GO32V2}
+
+const
+  ___IRQ_DATA_START___: Dword = 0;
+
+procedure ___IRQ_CODE_START___; begin end;
+
+{$ENDIF}
 
 const
   FreqStart = $156;
@@ -477,44 +531,50 @@ begin
   calc_freq_shift_down := result;
 end;
 
-function calc_vibtrem_shift(depth,position: Byte; var direction: Byte): Word;
+function calc_vibtrem_shift(chan: Byte; var table_data): Word;
 
 var
+  pos,dir,depth: Byte;
   result: Word;
 
 begin
+  pos := tVIBRATO_TREMOLO_TABLE(table_data)[chan].pos;
+  depth := tVIBRATO_TREMOLO_TABLE(table_data)[chan].depth;
   asm
         xor     ebx,ebx
         mov     al,depth
         xor     ah,ah
-        mov     bl,position
+        mov     bl,pos
         xor     bh,bh
         mov     dh,bl
-        mov     cl,vibtrem_table_size
+        mov     cl,byte ptr [vibtrem_table_size]
         dec     cl
         and     bl,cl
-        lea     edi,[vibtrem_table]
-        add     edi,ebx
-        mov     dl,byte ptr [edi]
+        mov     dl,byte ptr [vibtrem_table+ebx]
         mul     dl
         rol     ax,1
         xchg    ah,al
         and     ah,1
-        mov     ebx,[direction]
-        mov     cl,1
-        mov     [ebx],cl
-        mov     dl,vibtrem_table_size
+        mov     dir,1
+        mov     dl,byte ptr [vibtrem_table_size]
         test    dh,dl
         jne     @@1
-        mov     cl,0
-        mov     [ebx],cl
+        mov     dir,0
 @@1:    mov     result,ax
   end;
+  tVIBRATO_TREMOLO_TABLE(table_data)[chan].dir := dir;
   calc_vibtrem_shift := result;
 end;
 
 procedure change_freq(chan: Byte; freq: Word);
 begin
+  If is_4op_chan(chan) and (chan in _4op_tracks_hi) then
+    begin
+      freq_table[SUCC(chan)] := freq_table[chan];
+      freqtable2[SUCC(chan)] := freqtable2[chan];
+      chan := SUCC(chan);
+    end;
+
   asm
         xor     ebx,ebx
         mov     bl,chan
@@ -548,6 +608,12 @@ begin
         call    opl3out
 @@1:
   end;
+
+  If is_4op_chan(chan) then
+    begin
+      freq_table[PRED(chan)] := freq_table[chan];
+      freqtable2[PRED(chan)] := freqtable2[chan];
+    end;
 end;
 
 function ins_parameter(ins,param: Byte): Byte;
@@ -598,48 +664,45 @@ begin
     (ins_parameter(ins,6) AND $0f = 0);
 end;
 
-function get_event(pattern,line,channel: Byte): tCHUNK;
+function is_data_empty(var buf; size: Longint): Boolean;
+
+var
+  result: Boolean;
+
 begin
   asm
-        mov     esi,[pattdata]
-        mov     edi,@result
-        mov     al,pattern
-        inc     al
-        cmp     al,max_patterns
-        jbe     @@1
-        mov     ecx,CHUNK_SIZE
-        xor     al,al
-        rep     stosb
-        jmp     @@2
-@@1:    xor     eax,eax
-        mov     al,line
-        mov     ebx,CHUNK_SIZE
-        mul     ebx
+        xor     edx,edx
+        mov     eax,size
+        cmp     eax,16
+        jb      @@3
+        mov     ecx,4
+        div     ecx
         mov     ecx,eax
+        jecxz   @@1
+        mov     edi,[buf]
         xor     eax,eax
-        mov     al,channel
-        dec     eax
-        mov     ebx,256*CHUNK_SIZE
-        mul     ebx
-        add     ecx,eax
+        repz    scasd
+        jnz     @@2
+        mov     ecx,edx
+        jecxz   @@1
+        repz    scasb
+        jnz     @@2
+@@1:    mov     result,TRUE
+        jmp     @@6
+@@2:    mov     result,FALSE
+        jmp     @@6
+@@3:    mov     ecx,size
+        jecxz   @@4
+        mov     edi,[buf]
         xor     eax,eax
-        mov     al,pattern
-        mov     ebx,8
-        div     ebx
-        push    eax
-        mov     eax,edx
-        mov     ebx,20*256*CHUNK_SIZE
-        mul     ebx
-        add     ecx,eax
-        pop     eax
-        mov     ebx,8*20*256*CHUNK_SIZE
-        mul     ebx
-        add     ecx,eax
-        add     esi,ecx
-        mov     ecx,CHUNK_SIZE
-        rep     movsb
-@@2:
+        repz    scasb
+        jnz     @@5
+@@4:    mov     result,TRUE
+        jmp     @@6
+@@5:    mov     result,FALSE
+@@6:
   end;
+  is_data_empty := result;
 end;
 
 function min(value: Longint; minimum: Longint): Longint;
@@ -676,15 +739,34 @@ procedure change_frequency(chan: Byte; freq: Word);
 begin
   macro_table[chan].vib_paused := TRUE;
   change_freq(chan,freq);
+
+  If is_4op_chan(chan) then
+    If (chan in _4op_tracks_hi) then
+      begin
+        macro_table[SUCC(chan)].vib_count := 1;
+        macro_table[SUCC(chan)].vib_pos := 0;
+        macro_table[SUCC(chan)].vib_freq := freq;
+        macro_table[SUCC(chan)].vib_paused := FALSE;
+      end
+    else
+      begin
+        macro_table[PRED(chan)].vib_count := 1;
+        macro_table[PRED(chan)].vib_pos := 0;
+        macro_table[PRED(chan)].vib_freq := freq;
+        macro_table[PRED(chan)].vib_paused := FALSE;
+      end;
+
   macro_table[chan].vib_count := 1;
   macro_table[chan].vib_pos := 0;
   macro_table[chan].vib_freq := freq;
   macro_table[chan].vib_paused := FALSE;
 end;
 
+procedure TimerSetup(Hz: Longint); forward;
+
 procedure update_timer(Hz: Longint);
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2UNIT.PAS:update_timer';
 {$ENDIF}
@@ -697,10 +779,17 @@ begin
   TimerSetup(IRQ_freq);
 end;
 
+procedure key_on(chan: Byte);
+begin
+  If NOT (is_4op_chan(chan) and (chan in _4op_tracks_hi)) then
+    opl3out($0b0+_chan_n[chan],0)
+  else opl3out($0b0+_chan_n[SUCC(chan)],0);
+end;
+
 procedure key_off(chan: Byte);
 begin
   freq_table[chan] := LO(freq_table[chan])+
-                     (HI(freq_table[chan]) AND NOT $20) SHL 8;
+                      (HI(freq_table[chan]) AND NOT $20) SHL 8;
   change_freq(chan,freq_table[chan]);
   event_table[chan].note := event_table[chan].note OR keyoff_flag;
 end;
@@ -715,7 +804,7 @@ begin
   FillChar(fmpar_table[chan].adsrw_mod,
            SizeOf(fmpar_table[chan].adsrw_mod),0);
 
-  opl3out($0b0+_chan_n[chan],0);
+  key_on(chan);
   opl3out(_instr[04]+_chan_m[chan],BYTE_NULL);
   opl3out(_instr[05]+_chan_c[chan],BYTE_NULL);
   opl3out(_instr[06]+_chan_m[chan],BYTE_NULL);
@@ -732,13 +821,73 @@ begin
                            (63-scale_factor));
 end;
 
+function _4op_data_flag(chan: Byte): Dword;
+
+var
+  _4op_conn: Byte;
+  _4op_mode: Boolean;
+  _4op_ch1,_4op_ch2: Byte;
+  _4op_ins1,_4op_ins2: Byte;
+
+begin
+  _4op_mode := FALSE;
+  If is_4op_chan(chan) then
+    begin
+      _4op_mode := TRUE;
+      If (chan in _4op_tracks_hi) then
+        begin
+          _4op_ch1 := chan;
+          _4op_ch2 := SUCC(chan);
+        end
+      else
+        begin
+          _4op_ch1 := PRED(chan);
+          _4op_ch2 := chan;
+        end;
+      _4op_ins1 := event_table[_4op_ch1].instr_def;
+      If (_4op_ins1 = 0) then _4op_ins1 := voice_table[_4op_ch1];
+      _4op_ins2 := event_table[_4op_ch2].instr_def;
+      If (_4op_ins2 = 0) then _4op_ins2 := voice_table[_4op_ch2];
+      If (_4op_ins1 <> 0) and (_4op_ins2 <> 0) then
+        begin
+          _4op_mode := TRUE;
+          _4op_conn := (pBYTE(@Addr(songdata.instr_data[_4op_ins1])^)[_instr_data_ofs[11]] AND 1) SHL 1 +
+                       (pBYTE(@Addr(songdata.instr_data[_4op_ins2])^)[_instr_data_ofs[11]] AND 1);
+        end;
+    end;
+
+  {------+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+---}
+  { BIT  |31|30|29|28|27|26|25|24|23|22|21|20|19|18|17|16|15|14|13|12|11|10| 9| 8| 7| 6| 5| 4| 3| 2| 1| 0 }
+  {------+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+---}
+  { DATA |..|..|..|..|..|F7|F6|F5|F4|F3|F2|F1|F0|E7|E6|E5|E4|E3|E2|E1|E0|D3|D2|D1|D0|C3|C2|C1|C0|B1|B0|A0 }
+  {------+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+---}
+  _4op_data_flag := ORD(_4op_mode) +           {1-bit: A0}
+                    (_4op_conn AND 3) SHL 1 +  {2-bit: B1-B0}
+                    (_4op_ch1 AND 15) SHL 3 +  {4-bit: C3-C0}
+                    (_4op_ch2 AND 15) SHL 7 +  {4-bit: D3-D0}
+                    _4op_ins1 SHL 11 +         {8-bit: E7-E0}
+                    _4op_ins2 SHL 19;          {8-bit: F7-F0}
+end;
+
+function _4op_vol_valid_chan(chan: Byte): Boolean;
+
+var
+  _4op_flag: Dword;
+
+begin
+  _4op_flag := _4op_data_flag(chan);
+  _4op_vol_valid_chan := BOOLEAN(_4op_flag AND 1) and vol4op_lock[chan] and
+                     (BYTE(_4op_flag SHR 11) <> 0) and
+                     (BYTE(_4op_flag SHR 19) <> 0);
+end;
+
 procedure set_ins_volume(modulator,carrier,chan: Byte);
 
 var
   temp: Byte;
 
 begin
-{$IFNDEF __TMT__}
+{$IFNDEF GO32V2}
   // ** OPL3 emulation workaround **
   // force muted instrument volume with missing channel ADSR data
   // when there is additionally no FM-reg macro defined for this instrument
@@ -780,6 +929,97 @@ begin
               scale_volume(scale_volume(carrier,scale_volume(63-global_volume,63-fade_out_volume)),63-overall_volume)+HI(vscale_table[chan]));
       volume_table[chan] := concw(LO(volume_table[chan]),temp);
       carrier_vol[chan] := 63-scale_volume(carrier,scale_volume(63-global_volume,63-fade_out_volume));
+    end;
+end;
+
+procedure set_ins_volume_4op(volume,chan: Byte);
+
+var
+  _4op_flag: Dword;
+  _4op_conn: Byte;
+  _4op_ch1,_4op_ch2: Byte;
+
+procedure set_volume(modulator,carrier,chan: Byte);
+
+var
+  temp: Byte;
+
+begin
+{$IFNDEF GO32V2}
+  // ** OPL3 emulation workaround **
+  // force muted instrument volume with missing channel ADSR data
+  // when there is additionally no FM-reg macro defined for this instrument
+  If is_chan_adsr_data_empty(chan) and
+     NOT (songdata.instr_macros[voice_table[chan]].length <> 0) then
+    begin
+      modulator := 63;
+      carrier := 63;
+    end;
+{$ENDIF}
+
+  If (modulator <> BYTE_NULL) then
+    begin
+      temp := modulator;
+      modulator := scale_volume(ins_parameter(voice_table[chan],2) AND $3f,modulator);
+      opl3out(_instr[02]+_chan_m[chan],
+              scale_volume(scale_volume(modulator,scale_volume(63-global_volume,63-fade_out_volume)),63-overall_volume)+LO(vscale_table[chan]));
+      volume_table[chan] := concw(temp,HI(volume_table[chan]));
+      modulator_vol[chan] := 63-scale_volume(modulator,scale_volume(63-global_volume,63-fade_out_volume))
+    end;
+
+  If (carrier <> BYTE_NULL) then
+    begin
+      temp := carrier;
+      carrier := scale_volume(ins_parameter(voice_table[chan],3) AND $3f,carrier);
+      opl3out(_instr[03]+_chan_c[chan],
+              scale_volume(scale_volume(carrier,scale_volume(63-global_volume,63-fade_out_volume)),63-overall_volume)+HI(vscale_table[chan]));
+      volume_table[chan] := concw(LO(volume_table[chan]),temp);
+      carrier_vol[chan] := 63-scale_volume(carrier,scale_volume(63-global_volume,63-fade_out_volume));
+    end;
+end;
+
+begin
+  _4op_flag := _4op_data_flag(chan);
+  _4op_conn := (_4op_flag SHR 1) AND 3;
+  _4op_ch1 := (_4op_flag SHR 3) AND 15;
+  _4op_ch2 := (_4op_flag SHR 7) AND 15;
+
+  If _4op_vol_valid_chan(chan) then
+    Case _4op_conn of
+      // FM/FM
+      0: If (volume = BYTE_NULL) then
+           set_volume(BYTE_NULL,HI(volume_table[_4op_ch1]),_4op_ch1)
+         else set_volume(BYTE_NULL,volume,_4op_ch1);
+      // FM/AM
+      1: If (volume = BYTE_NULL) then
+           begin
+             set_volume(BYTE_NULL,HI(volume_table[_4op_ch1]),_4op_ch1);
+             set_volume(LO(volume_table[_4op_ch2]),BYTE_NULL,_4op_ch2);
+           end
+         else begin
+                set_volume(BYTE_NULL,volume,_4op_ch1);
+                set_volume(volume,BYTE_NULL,_4op_ch2);
+              end;
+      // AM/FM
+      2: If (volume = BYTE_NULL) then
+           begin
+             set_volume(BYTE_NULL,HI(volume_table[_4op_ch1]),_4op_ch1);
+             set_volume(BYTE_NULL,HI(volume_table[_4op_ch2]),_4op_ch2);
+           end
+         else begin
+                set_volume(BYTE_NULL,volume,_4op_ch1);
+                set_volume(BYTE_NULL,volume,_4op_ch2);
+              end;
+      // AM/AM
+      3: If (volume = BYTE_NULL) then
+           begin
+             set_volume(LO(volume_table[_4op_ch1]),HI(volume_table[_4op_ch1]),_4op_ch1);
+             set_volume(LO(volume_table[_4op_ch2]),BYTE_NULL,_4op_ch2);
+           end
+         else begin
+                set_volume(volume,volume,_4op_ch1);
+                set_volume(volume,BYTE_NULL,_4op_ch2);
+              end;
     end;
 end;
 
@@ -919,19 +1159,25 @@ end;
 
 procedure reset_chan_data(chan: Byte);
 begin
-  opl3out(_instr[02]+_chan_m[chan],63);
-  opl3out(_instr[03]+_chan_c[chan],63);
+  If (percussion_mode and (chan in [17..20])) then
+    If channel_flag[chan] then
+      reset_ins_volume(chan)
+    else set_ins_volume(0,0,chan)
+  else
+    begin
+      opl3out(_instr[02]+_chan_m[chan],63);
+      opl3out(_instr[03]+_chan_c[chan],63);
+      key_on(chan);
 
-  opl3out($0b0+_chan_n[chan],0);
-  opl3out(_instr[04]+_chan_m[chan],BYTE_NULL);
-  opl3out(_instr[05]+_chan_c[chan],BYTE_NULL);
-  opl3out(_instr[06]+_chan_m[chan],BYTE_NULL);
-  opl3out(_instr[07]+_chan_c[chan],BYTE_NULL);
+      opl3out(_instr[04]+_chan_m[chan],BYTE_NULL);
+      opl3out(_instr[05]+_chan_c[chan],BYTE_NULL);
+      opl3out(_instr[06]+_chan_m[chan],BYTE_NULL);
+      opl3out(_instr[07]+_chan_c[chan],BYTE_NULL);
+      key_off(chan);
+      update_fmpar(chan);
+    end;
 
-  key_off(chan);
-  update_fmpar(chan);
   reset_adsrw[chan] := TRUE;
-
   If (play_status <> isStopped) then
     If (event_table[chan].note AND $7f in [1..12*8+1]) then
       init_macro_table(chan,event_table[chan].note AND $7f,voice_table[chan],freq_table[chan])
@@ -954,10 +1200,11 @@ begin
   macro_table[chan].vib_table := songdata.instr_macros[ins].vibrato_table;
   macro_table[chan].vib_freq := freq;
   macro_table[chan].vib_delay := songdata.macro_table[macro_table[chan].vib_table].vibrato.delay;
+  zero_fq_table[chan] := 0;
 end;
 
-procedure output_note(note,ins,chan: Byte; restart_macro: Boolean);
-
+procedure output_note(note,ins,chan: Byte;
+                      restart_macro,restart_adsr: Boolean);
 var
   freq: Word;
 
@@ -966,60 +1213,57 @@ begin
   If NOT (note in [1..12*8+1]) then freq := freq_table[chan]
   else begin
          freq := nFreq(note-1)+SHORTINT(ins_parameter(ins,12));
-         If NOT (is_4op_chan(chan) and (chan in [1,3,5,10,12,14])) then
-           opl3out($0b0+_chan_n[chan],0);
+         If restart_adsr then key_on(chan);
 
          freq_table[chan] := concw(LO(freq_table[chan]),
                                    HI(freq_table[chan]) OR $20);
 
          If channel_flag[chan] then
            If is_4op_chan(chan) then
-             If (chan in [2,4,6,11,13,15]) then
-               begin
-                 If NOT (percussion_mode and (chan in [17..20])) then
-                   If (ins_parameter(voice_table[chan],10) AND 1 = 1) then
-                     If (volum_bar[chan].lvl < (carrier_vol[chan]+modulator_vol[chan]) DIV 2) then
-                       volum_bar[chan].dir := 1
-                     else
-                   else If (volum_bar[chan].lvl < carrier_vol[chan]) then
-                          volum_bar[chan].dir := 1
-                        else
-                 else If (volum_bar[chan].lvl < modulator_vol[chan]) then
-                        volum_bar[chan].dir := 1;
+             begin
+               If NOT (percussion_mode and (chan in [17..20])) then
+                 If (ins_parameter(voice_table[chan],10) AND 1 = 1) then
+                   If (volum_bar[chan].lvl < (carrier_vol[chan]+modulator_vol[chan]) DIV 2) then
+                     volum_bar[chan].dir := 1
+                   else
+                 else If (volum_bar[chan].lvl < carrier_vol[chan]) then
+                        volum_bar[chan].dir := 1
+                      else
+               else If (volum_bar[chan].lvl < modulator_vol[chan]) then
+                      volum_bar[chan].dir := 1;
 
-                 If NOT (percussion_mode and (PRED(chan) in [17..20])) then
-                   If (ins_parameter(voice_table[PRED(chan)],10) AND 1 = 1) then
-                     If (volum_bar[PRED(chan)].lvl < (carrier_vol[PRED(chan)]+modulator_vol[PRED(chan)]) DIV 2) then
-                       volum_bar[PRED(chan)].dir := 1
-                     else
-                   else If (volum_bar[PRED(chan)].lvl < carrier_vol[PRED(chan)]) then
-                          volum_bar[PRED(chan)].dir := 1
-                        else
-                 else If (volum_bar[PRED(chan)].lvl < modulator_vol[PRED(chan)]) then
-                        volum_bar[PRED(chan)].dir := 1;
+               If NOT (percussion_mode and (PRED(chan) in [17..20])) then
+                 If (ins_parameter(voice_table[PRED(chan)],10) AND 1 = 1) then
+                   If (volum_bar[PRED(chan)].lvl < (carrier_vol[PRED(chan)]+modulator_vol[PRED(chan)]) DIV 2) then
+                     volum_bar[PRED(chan)].dir := 1
+                   else
+                 else If (volum_bar[PRED(chan)].lvl < carrier_vol[PRED(chan)]) then
+                        volum_bar[PRED(chan)].dir := 1
+                      else
+               else If (volum_bar[PRED(chan)].lvl < modulator_vol[PRED(chan)]) then
+                      volum_bar[PRED(chan)].dir := 1;
 
-                 If (decay_bar[chan].lvl1 < carrier_vol[chan]) then
-                   decay_bar[chan].dir1 := 1;
+               If (decay_bar[chan].lvl1 < carrier_vol[chan]) then
+                 decay_bar[chan].dir1 := 1;
 
-                 If (decay_bar[chan].lvl2 < modulator_vol[chan]) then
-                   decay_bar[chan].dir2 := 1;
+               If (decay_bar[chan].lvl2 < modulator_vol[chan]) then
+                 decay_bar[chan].dir2 := 1;
 
-                 If (decay_bar[PRED(chan)].lvl1 < carrier_vol[PRED(chan)]) then
-                   decay_bar[PRED(chan)].dir1 := 1;
+               If (decay_bar[PRED(chan)].lvl1 < carrier_vol[PRED(chan)]) then
+                 decay_bar[PRED(chan)].dir1 := 1;
 
-                 If (decay_bar[PRED(chan)].lvl2 < modulator_vol[PRED(chan)]) then
-                   decay_bar[PRED(chan)].dir2 := 1;
+               If (decay_bar[PRED(chan)].lvl2 < modulator_vol[PRED(chan)]) then
+                 decay_bar[PRED(chan)].dir2 := 1;
 
-                 If (play_status <> isPlaying) then
-                   begin
-                     volum_bar[chan].dir := -1;
-                     decay_bar[chan].dir1 := -1;
-                     decay_bar[chan].dir2 := -1;
-                     decay_bar[PRED(chan)].dir1 := -1;
-                     decay_bar[PRED(chan)].dir2 := -1;
-                   end;
-               end
-             else
+               If (play_status <> isPlaying) then
+                 begin
+                   volum_bar[chan].dir := -1;
+                   decay_bar[chan].dir1 := -1;
+                   decay_bar[chan].dir2 := -1;
+                   decay_bar[PRED(chan)].dir1 := -1;
+                   decay_bar[PRED(chan)].dir2 := -1;
+                 end;
+             end
            else begin
                   If NOT (percussion_mode and (chan in [17..20])) then
                     If (ins_parameter(voice_table[chan],10) AND 1 = 1) then
@@ -1049,131 +1293,21 @@ begin
 
   If (ftune_table[chan] = -127) then ftune_table[chan] := 0;
   freq := freq+ftune_table[chan];
-
-  If NOT (is_4op_chan(chan) and (chan in [1,3,5,10,12,14])) then
-    change_frequency(chan,freq);
+  change_frequency(chan,freq);
 
   If (note <> 0) then
     begin
       event_table[chan].note := note;
+      If is_4op_chan(chan) then
+        event_table[PRED(chan)].note := note;
       If restart_macro then
         With event_table[chan] do
            If NOT (((effect_def = ef_Extended) and
-                   (effect DIV 16 = ef_ex_ExtendedCmd) and
-                   (effect MOD 16 = ef_ex_cmd_NoRestart)) or
+                   (effect DIV 16 = ef_ex_ExtendedCmd2) and
+                   (effect MOD 16 = ef_ex_cmd2_NoRestart)) or
                   ((effect_def2 = ef_Extended) and
-                   (effect2 DIV 16 = ef_ex_ExtendedCmd) and
-                   (effect2 MOD 16 = ef_ex_cmd_NoRestart))) then
-             init_macro_table(chan,note,ins,freq)
-           else macro_table[chan].arpg_note := note;
-    end;
-end;
-
-procedure output_note_NR(note,ins,chan: Byte; restart_macro: Boolean);
-
-var
-  freq: Word;
-
-begin
-  If (note = 0) and (ftune_table[chan] = 0) then EXIT;
-  If NOT (note in [1..12*8+1]) then freq := freq_table[chan]
-  else begin
-         freq := nFreq(note-1)+SHORTINT(ins_parameter(ins,12));
-         freq_table[chan] := concw(LO(freq_table[chan]),
-                                   HI(freq_table[chan]) OR $20);
-
-         If channel_flag[chan] then
-           If is_4op_chan(chan) then
-             If (chan in [2,4,6,11,13,15]) then
-               begin
-                 If NOT (percussion_mode and (chan in [17..20])) then
-                   If (ins_parameter(voice_table[chan],10) AND 1 = 1) then
-                     If (volum_bar[chan].lvl < (carrier_vol[chan]+modulator_vol[chan]) DIV 2) then
-                       volum_bar[chan].dir := 1
-                     else
-                   else If (volum_bar[chan].lvl < carrier_vol[chan]) then
-                          volum_bar[chan].dir := 1
-                        else
-                 else If (volum_bar[chan].lvl < modulator_vol[chan]) then
-                        volum_bar[chan].dir := 1;
-
-                 If NOT (percussion_mode and (PRED(chan) in [17..20])) then
-                   If (ins_parameter(voice_table[PRED(chan)],10) AND 1 = 1) then
-                     If (volum_bar[PRED(chan)].lvl < (carrier_vol[PRED(chan)]+modulator_vol[PRED(chan)]) DIV 2) then
-                       volum_bar[PRED(chan)].dir := 1
-                     else
-                   else If (volum_bar[PRED(chan)].lvl < carrier_vol[PRED(chan)]) then
-                          volum_bar[PRED(chan)].dir := 1
-                        else
-                 else If (volum_bar[PRED(chan)].lvl < modulator_vol[PRED(chan)]) then
-                        volum_bar[PRED(chan)].dir := 1;
-
-                 If (decay_bar[chan].lvl1 < carrier_vol[chan]) then
-                   decay_bar[chan].dir1 := 1;
-
-                 If (decay_bar[chan].lvl2 < modulator_vol[chan]) then
-                   decay_bar[chan].dir2 := 1;
-
-                 If (decay_bar[PRED(chan)].lvl1 < carrier_vol[PRED(chan)]) then
-                   decay_bar[PRED(chan)].dir1 := 1;
-
-                 If (decay_bar[PRED(chan)].lvl2 < modulator_vol[PRED(chan)]) then
-                   decay_bar[PRED(chan)].dir2 := 1;
-
-                 If (play_status <> isPlaying) then
-                   begin
-                     volum_bar[chan].dir := -1;
-                     decay_bar[chan].dir1 := -1;
-                     decay_bar[chan].dir2 := -1;
-                     decay_bar[PRED(chan)].dir1 := -1;
-                     decay_bar[PRED(chan)].dir2 := -1;
-                   end;
-               end
-             else
-           else begin
-                  If NOT (percussion_mode and (chan in [17..20])) then
-                    If (ins_parameter(voice_table[chan],10) AND 1 = 1) then
-                      If (volum_bar[chan].lvl < (carrier_vol[chan]+modulator_vol[chan]) DIV 2) then
-                        volum_bar[chan].dir := 1
-                      else
-                    else If (volum_bar[chan].lvl < carrier_vol[chan]) then
-                           volum_bar[chan].dir := 1
-                         else
-                  else If (volum_bar[chan].lvl < modulator_vol[chan]) then
-                         volum_bar[chan].dir := 1;
-
-                  If (decay_bar[chan].lvl1 < carrier_vol[chan]) then
-                    decay_bar[chan].dir1 := 1;
-
-                  If (decay_bar[chan].lvl2 < modulator_vol[chan]) then
-                    decay_bar[chan].dir2 := 1;
-
-                  If (play_status <> isPlaying) then
-                    begin
-                      volum_bar[chan].dir := -1;
-                      decay_bar[chan].dir1 := -1;
-                      decay_bar[chan].dir2 := -1;
-                    end;
-                end;
-       end;
-
-  If (ftune_table[chan] = -127) then ftune_table[chan] := 0;
-  freq := freq+ftune_table[chan];
-
-  If NOT (is_4op_chan(chan) and (chan in [1,3,5,10,12,14])) then
-    change_frequency(chan,freq);
-
-  If (note <> 0) then
-    begin
-      event_table[chan].note := note;
-      If restart_macro then
-        With event_table[chan] do
-           If NOT (((effect_def = ef_Extended) and
-                   (effect DIV 16 = ef_ex_ExtendedCmd) and
-                   (effect MOD 16 = ef_ex_cmd_NoRestart)) or
-                  ((effect_def2 = ef_Extended) and
-                   (effect2 DIV 16 = ef_ex_ExtendedCmd) and
-                   (effect2 MOD 16 = ef_ex_cmd_NoRestart))) then
+                   (effect2 DIV 16 = ef_ex_ExtendedCmd2) and
+                   (effect2 MOD 16 = ef_ex_cmd2_NoRestart))) then
              init_macro_table(chan,note,ins,freq)
            else macro_table[chan].arpg_note := note;
     end;
@@ -1247,6 +1381,7 @@ var
   chan,idx: Byte;
   event: array[1..20] of tCHUNK;
   eLo,eHi,eLo2,eHi2: array[1..20] of Byte;
+  tporta_flag: Boolean;
 
 function no_loop(current_chan,current_line: Byte): Boolean;
 
@@ -1285,7 +1420,8 @@ begin
 
   For chan := 1 to songdata.nm_tracks do
     begin
-      event[chan] := get_event(current_pattern,current_line,chan);
+      event[chan] := pattdata^[current_pattern DIV 8][current_pattern MOD 8]
+                              [chan][current_line];
       If (effect_table[chan] <> 0) then last_effect[chan] := effect_table[chan];
       If (glfsld_table[chan] <> 0) then effect_table[chan] := glfsld_table[chan]
       else effect_table[chan] := effect_table[chan] AND $0ff00;
@@ -1319,8 +1455,8 @@ begin
         end;
 
       If (event[chan].instr_def <> 0) then
-        If NOT Empty(songdata.instr_data[event[chan].instr_def],
-                     INSTRUMENT_SIZE) then
+        If NOT is_data_empty(songdata.instr_data[event[chan].instr_def],
+                             INSTRUMENT_SIZE) then
           set_ins_data(event[chan].instr_def,chan)
         else begin
                release_sustaining_sound(chan);
@@ -1367,6 +1503,11 @@ begin
 
   For chan := 1 to songdata.nm_tracks do
     begin
+      If event_new[chan] and is_4op_chan(chan) then
+        If (chan in _4op_tracks_hi) then
+           event_new[SUCC(chan)] := TRUE
+        else event_new[PRED(chan)] := TRUE;
+
       If (tremor_table[chan].pos <> 0) and
          (event[chan].effect_def <> ef_Tremor) then
         begin
@@ -1457,22 +1598,22 @@ begin
           If (event[chan].effect_def = ef_GlobalFSlideUp) then
             begin
               If (event[chan].effect_def2 = ef_Extended) and
-                 (event[chan].effect2 = ef_ex_ExtendedCmd*16+ef_ex_cmd_FTrm_XFGFS) then
+                 (event[chan].effect2 = ef_ex_ExtendedCmd2*16+ef_ex_cmd2_FTrm_XFGFS) then
                 effect_table[chan] := concw(ef_extended2+ef_fix2+ef_ex2_FreqSlideUpXF,
                                             event[chan].effect)
               else If (event[chan].effect_def2 = ef_Extended) and
-                      (event[chan].effect2 = ef_ex_ExtendedCmd*16+ef_ex_cmd_FVib_FGFS) then
+                      (event[chan].effect2 = ef_ex_ExtendedCmd2*16+ef_ex_cmd2_FVib_FGFS) then
                      effect_table[chan] := concw(ef_FSlideUpFine,event[chan].effect)
                    else effect_table[chan] := concw(ef_FSlideUp,event[chan].effect);
             end
           else
             begin
               If (event[chan].effect_def2 = ef_Extended) and
-                 (event[chan].effect2 = ef_ex_ExtendedCmd*16+ef_ex_cmd_FTrm_XFGFS) then
+                 (event[chan].effect2 = ef_ex_ExtendedCmd2*16+ef_ex_cmd2_FTrm_XFGFS) then
                 effect_table[chan] := concw(ef_extended2+ef_fix2+ef_ex2_FreqSlideDnXF,
                                             event[chan].effect)
               else If (event[chan].effect_def2 = ef_Extended) and
-                      (event[chan].effect2 = ef_ex_ExtendedCmd*16+ef_ex_cmd_FVib_FGFS) then
+                      (event[chan].effect2 = ef_ex_ExtendedCmd2*16+ef_ex_cmd2_FVib_FGFS) then
                      effect_table[chan] := concw(ef_FSlideDownFine,event[chan].effect)
                    else effect_table[chan] := concw(ef_FSlideDown,event[chan].effect);
             end;
@@ -1545,7 +1686,7 @@ begin
                else effect_table[chan] := event[chan].effect_def;
 
           If (event[chan].effect_def2 = ef_Extended) and
-             (event[chan].effect2 = ef_ex_ExtendedCmd*16+ef_ex_cmd_FVib_FGFS) then
+             (event[chan].effect2 = ef_ex_ExtendedCmd2*16+ef_ex_cmd2_FVib_FGFS) then
             vibr_table[chan].fine := TRUE;
 
           vibr_table[chan].speed := HI(effect_table[chan]) DIV 16;
@@ -1563,7 +1704,7 @@ begin
                else effect_table[chan] := event[chan].effect_def;
 
           If (event[chan].effect_def2 = ef_Extended) and
-             (event[chan].effect2 = ef_ex_ExtendedCmd*16+ef_ex_cmd_FTrm_XFGFS) then
+             (event[chan].effect2 = ef_ex_ExtendedCmd2*16+ef_ex_cmd2_FTrm_XFGFS) then
             trem_table[chan].fine := TRUE;
 
           trem_table[chan].speed := HI(effect_table[chan]) DIV 16;
@@ -1581,7 +1722,7 @@ begin
                else effect_table[chan] := effect_table[chan] AND $0ff00;
 
           If (event[chan].effect_def2 = ef_Extended) and
-             (event[chan].effect2 = ef_ex_ExtendedCmd*16+ef_ex_cmd_FVib_FGFS) then
+             (event[chan].effect2 = ef_ex_ExtendedCmd2*16+ef_ex_cmd2_FVib_FGFS) then
             vibr_table[chan].fine := TRUE;
         end;
 
@@ -1592,11 +1733,13 @@ begin
         set_ins_volume(63-event[chan].effect,BYTE_NULL,chan);
 
       ef_SetInsVolume:
-        If percussion_mode and (chan in [17..20]) then
-          set_ins_volume(63-event[chan].effect,BYTE_NULL,chan)
-        else If (ins_parameter(voice_table[chan],10) AND 1 = 0) then
-               set_ins_volume(BYTE_NULL,63-event[chan].effect,chan)
-             else set_ins_volume(63-event[chan].effect,63-event[chan].effect,chan);
+        If _4op_vol_valid_chan(chan) then
+          set_ins_volume_4op(63-event[chan].effect,chan)
+        else If percussion_mode and (chan in [17..20]) then
+               set_ins_volume(63-event[chan].effect,BYTE_NULL,chan)
+             else If (ins_parameter(voice_table[chan],10) AND 1 = 0) then
+                    set_ins_volume(BYTE_NULL,63-event[chan].effect,chan)
+                  else set_ins_volume(63-event[chan].effect,63-event[chan].effect,chan);
 
       ef_ForceInsVolume:
         If percussion_mode and (chan in [17..20]) then
@@ -1786,36 +1929,68 @@ begin
                             loop_table[chan][current_line] := BYTE_NULL;
                    end;
 
-          ef_ex_MacroKOffLoop:
-            If (event[chan].effect MOD 16 <> 0) then
-              keyoff_loop[chan] := TRUE
-            else keyoff_loop[chan] := FALSE;
-
           ef_ex_ExtendedCmd:
             Case (event[chan].effect MOD 16) of
-              ef_ex_cmd_RSS:        release_sustaining_sound(chan);
-              ef_ex_cmd_ResetVol:   reset_ins_volume(chan);
-              ef_ex_cmd_LockVol:    volume_lock  [chan] := TRUE;
-              ef_ex_cmd_UnlockVol:  volume_lock  [chan] := FALSE;
-              ef_ex_cmd_LockVP:     peak_lock    [chan] := TRUE;
-              ef_ex_cmd_UnlockVP:   peak_lock    [chan] := FALSE;
-              ef_ex_cmd_VSlide_def: volslide_type[chan] := 0;
-              ef_ex_cmd_LockPan:    pan_lock     [chan] := TRUE;
-              ef_ex_cmd_UnlockPan:  pan_lock     [chan] := FALSE;
-              ef_ex_cmd_VibrOff:    change_frequency(chan,freq_table[chan]);
-              ef_ex_cmd_TremOff:    set_ins_volume(LO(volume_table[chan]),
-                                                   HI(volume_table[chan]),chan);
-              ef_ex_cmd_VSlide_car:
+              ef_ex_cmd_MKOffLoopDi: keyoff_loop[chan] := FALSE;
+              ef_ex_cmd_MKOffLoopEn: keyoff_loop[chan] := TRUE;
+              ef_ex_cmd_TPortaFKdis: portaFK_table[chan] := FALSE;
+              ef_ex_cmd_TPortaFKenb: portaFK_table[chan] := TRUE;
+
+              ef_ex_cmd_RestartEnv:
+                begin
+                  key_on(chan);
+                  change_freq(chan,freq_table[chan]);
+                end;
+
+              ef_ex_cmd_4opVlockOff:
+                If is_4op_chan(chan) then
+                  begin
+                    vol4op_lock[chan] := FALSE;
+                    If (chan in _4op_tracks_hi) then
+                      vol4op_lock[SUCC(chan)] := FALSE
+                    else vol4op_lock[PRED(chan)] := FALSE;
+                  end;
+
+              ef_ex_cmd_4opVlockOn:
+                If is_4op_chan(chan) then
+                  begin
+                    vol4op_lock[chan] := TRUE;
+                    If (chan in _4op_tracks_hi) then
+                      vol4op_lock[SUCC(chan)] := TRUE
+                    else vol4op_lock[PRED(chan)] := TRUE;
+                  end;
+            end;
+
+          ef_ex_ExtendedCmd2:
+            Case (event[chan].effect MOD 16) of
+              ef_ex_cmd2_RSS:        release_sustaining_sound(chan);
+              ef_ex_cmd2_ResetVol:   reset_ins_volume(chan);
+              ef_ex_cmd2_LockVol:    volume_lock  [chan] := TRUE;
+              ef_ex_cmd2_UnlockVol:  volume_lock  [chan] := FALSE;
+              ef_ex_cmd2_LockVP:     peak_lock    [chan] := TRUE;
+              ef_ex_cmd2_UnlockVP:   peak_lock    [chan] := FALSE;
+              ef_ex_cmd2_VSlide_def: volslide_type[chan] := 0;
+              ef_ex_cmd2_LockPan:    pan_lock     [chan] := TRUE;
+              ef_ex_cmd2_UnlockPan:  pan_lock     [chan] := FALSE;
+              ef_ex_cmd2_VibrOff:    change_frequency(chan,freq_table[chan]);
+
+              ef_ex_cmd2_TremOff:
+                If is_4op_chan(chan) then
+                  set_ins_volume_4op(BYTE_NULL,chan)
+                else set_ins_volume(LO(volume_table[chan]),
+                                    HI(volume_table[chan]),chan);
+
+              ef_ex_cmd2_VSlide_car:
                 If (event[chan].effect_def2 = ef_Extended) and
-                   (event[chan].effect2 = ef_ex_ExtendedCmd*16+
-                                    ef_ex_cmd_VSlide_mod) then
+                   (event[chan].effect2 = ef_ex_ExtendedCmd2*16+
+                                    ef_ex_cmd2_VSlide_mod) then
                   volslide_type[chan] := 3
                 else volslide_type[chan] := 1;
 
-              ef_ex_cmd_VSlide_mod:
+              ef_ex_cmd2_VSlide_mod:
                 If (event[chan].effect_def2 = ef_Extended) and
-                   (event[chan].effect2 = ef_ex_ExtendedCmd*16+
-                                    ef_ex_cmd_VSlide_car) then
+                   (event[chan].effect2 = ef_ex_ExtendedCmd2*16+
+                                    ef_ex_cmd2_VSlide_car) then
                   volslide_type[chan] := 3
                 else volslide_type[chan] := 2;
             end;
@@ -2032,22 +2207,22 @@ begin
           If (event[chan].effect_def2 = ef_GlobalFSlideUp) then
             begin
               If (event[chan].effect_def = ef_Extended) and
-                 (event[chan].effect = ef_ex_ExtendedCmd*16+ef_ex_cmd_FTrm_XFGFS) then
+                 (event[chan].effect = ef_ex_ExtendedCmd2*16+ef_ex_cmd2_FTrm_XFGFS) then
                 effect_table2[chan] := concw(ef_extended2+ef_fix2+ef_ex2_FreqSlideUpXF,
                                              event[chan].effect2)
               else If (event[chan].effect_def = ef_Extended) and
-                      (event[chan].effect = ef_ex_ExtendedCmd*16+ef_ex_cmd_FVib_FGFS) then
+                      (event[chan].effect = ef_ex_ExtendedCmd2*16+ef_ex_cmd2_FVib_FGFS) then
                      effect_table2[chan] := concw(ef_FSlideUpFine,event[chan].effect2)
                    else effect_table2[chan] := concw(ef_FSlideUp,event[chan].effect2);
             end
           else
             begin
               If (event[chan].effect_def = ef_Extended) and
-                 (event[chan].effect = ef_ex_ExtendedCmd*16+ef_ex_cmd_FTrm_XFGFS) then
+                 (event[chan].effect = ef_ex_ExtendedCmd2*16+ef_ex_cmd2_FTrm_XFGFS) then
                 effect_table2[chan] := concw(ef_extended2+ef_fix2+ef_ex2_FreqSlideDnXF,
                                              event[chan].effect2)
               else If (event[chan].effect_def = ef_Extended) and
-                      (event[chan].effect = ef_ex_ExtendedCmd*16+ef_ex_cmd_FVib_FGFS) then
+                      (event[chan].effect = ef_ex_ExtendedCmd2*16+ef_ex_cmd2_FVib_FGFS) then
                      effect_table2[chan] := concw(ef_FSlideDownFine,event[chan].effect2)
                    else effect_table2[chan] := concw(ef_FSlideDown,event[chan].effect2);
             end;
@@ -2120,7 +2295,7 @@ begin
                else effect_table2[chan] := event[chan].effect_def2;
 
           If (event[chan].effect_def = ef_Extended) and
-             (event[chan].effect = ef_ex_ExtendedCmd*16+ef_ex_cmd_FVib_FGFS) then
+             (event[chan].effect = ef_ex_ExtendedCmd2*16+ef_ex_cmd2_FVib_FGFS) then
             vibr_table2[chan].fine := TRUE;
 
           vibr_table2[chan].speed := HI(effect_table2[chan]) DIV 16;
@@ -2138,7 +2313,7 @@ begin
                else effect_table2[chan] := event[chan].effect_def2;
 
           If (event[chan].effect_def = ef_Extended) and
-             (event[chan].effect = ef_ex_ExtendedCmd*16+ef_ex_cmd_FTrm_XFGFS) then
+             (event[chan].effect = ef_ex_ExtendedCmd2*16+ef_ex_cmd2_FTrm_XFGFS) then
             trem_table2[chan].fine := TRUE;
 
           trem_table2[chan].speed := HI(effect_table2[chan]) DIV 16;
@@ -2156,7 +2331,7 @@ begin
                else effect_table2[chan] := effect_table2[chan] AND $0ff00;
 
           If (event[chan].effect_def = ef_Extended) and
-             (event[chan].effect = ef_ex_ExtendedCmd*16+ef_ex_cmd_FVib_FGFS) then
+             (event[chan].effect = ef_ex_ExtendedCmd2*16+ef_ex_cmd2_FVib_FGFS) then
             vibr_table2[chan].fine := TRUE;
         end;
 
@@ -2167,11 +2342,13 @@ begin
         set_ins_volume(63-event[chan].effect2,BYTE_NULL,chan);
 
       ef_SetInsVolume:
-        If percussion_mode and (chan in [17..20]) then
-          set_ins_volume(63-event[chan].effect2,BYTE_NULL,chan)
-        else If (ins_parameter(voice_table[chan],10) AND 1 = 0) then
-               set_ins_volume(BYTE_NULL,63-event[chan].effect2,chan)
-             else set_ins_volume(63-event[chan].effect2,63-event[chan].effect2,chan);
+        If _4op_vol_valid_chan(chan) then
+          set_ins_volume_4op(63-event[chan].effect2,chan)
+        else If percussion_mode and (chan in [17..20]) then
+               set_ins_volume(63-event[chan].effect2,BYTE_NULL,chan)
+             else If (ins_parameter(voice_table[chan],10) AND 1 = 0) then
+                    set_ins_volume(BYTE_NULL,63-event[chan].effect2,chan)
+                  else set_ins_volume(63-event[chan].effect2,63-event[chan].effect2,chan);
 
       ef_ForceInsVolume:
         If percussion_mode and (chan in [17..20]) then
@@ -2361,35 +2538,66 @@ begin
                             loop_table[chan][current_line] := BYTE_NULL;
                    end;
 
-          ef_ex_MacroKOffLoop:
-            If (event[chan].effect2 MOD 16 <> 0) then
-              keyoff_loop[chan] := TRUE
-            else keyoff_loop[chan] := FALSE;
-
           ef_ex_ExtendedCmd:
             Case (event[chan].effect2 MOD 16) of
-              ef_ex_cmd_RSS:        release_sustaining_sound(chan);
-              ef_ex_cmd_ResetVol:   reset_ins_volume(chan);
-              ef_ex_cmd_LockVol:    volume_lock  [chan] := TRUE;
-              ef_ex_cmd_UnlockVol:  volume_lock  [chan] := FALSE;
-              ef_ex_cmd_LockVP:     peak_lock    [chan] := TRUE;
-              ef_ex_cmd_UnlockVP:   peak_lock    [chan] := FALSE;
-              ef_ex_cmd_VSlide_def: volslide_type[chan] := 0;
-              ef_ex_cmd_LockPan:    pan_lock     [chan] := TRUE;
-              ef_ex_cmd_UnlockPan:  pan_lock     [chan] := FALSE;
-              ef_ex_cmd_VibrOff:    change_frequency(chan,freq_table[chan]);
-              ef_ex_cmd_TremOff:    set_ins_volume(LO(volume_table[chan]),
-                                                   HI(volume_table[chan]),chan);
-              ef_ex_cmd_VSlide_car:
+              ef_ex_cmd_MKOffLoopDi: keyoff_loop[chan] := FALSE;
+              ef_ex_cmd_MKOffLoopEn: keyoff_loop[chan] := TRUE;
+              ef_ex_cmd_TPortaFKdis: portaFK_table[chan] := FALSE;
+              ef_ex_cmd_TPortaFKenb: portaFK_table[chan] := TRUE;
+
+              ef_ex_cmd_RestartEnv:
+                begin
+                  key_on(chan);
+                  change_freq(chan,freq_table[chan]);
+                end;
+
+              ef_ex_cmd_4opVlockOff:
+                If is_4op_chan(chan) then
+                  begin
+                    vol4op_lock[chan] := FALSE;
+                    If (chan in _4op_tracks_hi) then
+                      vol4op_lock[SUCC(chan)] := FALSE
+                    else vol4op_lock[PRED(chan)] := FALSE;
+                  end;
+
+              ef_ex_cmd_4opVlockOn:
+                If is_4op_chan(chan) then
+                  begin
+                    vol4op_lock[chan] := TRUE;
+                    If (chan in _4op_tracks_hi) then
+                      vol4op_lock[SUCC(chan)] := TRUE
+                    else vol4op_lock[PRED(chan)] := TRUE;
+                  end;
+            end;
+
+          ef_ex_ExtendedCmd2:
+            Case (event[chan].effect2 MOD 16) of
+              ef_ex_cmd2_RSS:        release_sustaining_sound(chan);
+              ef_ex_cmd2_ResetVol:   reset_ins_volume(chan);
+              ef_ex_cmd2_LockVol:    volume_lock  [chan] := TRUE;
+              ef_ex_cmd2_UnlockVol:  volume_lock  [chan] := FALSE;
+              ef_ex_cmd2_LockVP:     peak_lock    [chan] := TRUE;
+              ef_ex_cmd2_UnlockVP:   peak_lock    [chan] := FALSE;
+              ef_ex_cmd2_VSlide_def: volslide_type[chan] := 0;
+              ef_ex_cmd2_LockPan:    pan_lock     [chan] := TRUE;
+              ef_ex_cmd2_UnlockPan:  pan_lock     [chan] := FALSE;
+              ef_ex_cmd2_VibrOff:    change_frequency(chan,freq_table[chan]);
+
+              ef_ex_cmd2_TremOff:
+                If _4op_vol_valid_chan(chan) then
+                  set_ins_volume_4op(BYTE_NULL,chan)
+                else set_ins_volume(LO(volume_table[chan]),
+                                    HI(volume_table[chan]),chan);
+              ef_ex_cmd2_VSlide_car:
                 If NOT ((event[chan].effect_def = ef_Extended) and
-                        (event[chan].effect = ef_ex_ExtendedCmd*16+
-                                        ef_ex_cmd_VSlide_mod)) then
+                        (event[chan].effect = ef_ex_ExtendedCmd2*16+
+                                        ef_ex_cmd2_VSlide_mod)) then
                   volslide_type[chan] := 1;
 
-              ef_ex_cmd_VSlide_mod:
+              ef_ex_cmd2_VSlide_mod:
                 If NOT ((event[chan].effect_def = ef_Extended) and
-                        (event[chan].effect = ef_ex_ExtendedCmd*16+
-                                        ef_ex_cmd_VSlide_car)) then
+                        (event[chan].effect = ef_ex_ExtendedCmd2*16+
+                                        ef_ex_cmd2_VSlide_car)) then
                   volslide_type[chan] := 2;
             end;
         end;
@@ -2539,6 +2747,13 @@ begin
 
   For chan := 1 to songdata.nm_tracks do
     begin
+      tporta_flag := (event[chan].effect_def in [ef_TonePortamento,
+                                                 ef_TPortamVolSlide,
+                                                 ef_TPortamVSlideFine]) or
+                     (event[chan].effect_def2 in [ef_TonePortamento,
+                                                  ef_TPortamVolSlide,
+                                                  ef_TPortamVSlideFine]);
+
       If (event[chan].effect_def+event[chan].effect = 0) then
         If (glfsld_table[chan] = 0) then effect_table[chan] := 0
       else begin
@@ -2553,11 +2768,14 @@ begin
              event_table[chan].effect2 := event[chan].effect2;
            end;
 
+      // treat Tone Portamento based effects
+      //   vs. note Key-Off's
+      //   vs. step-playing with Spacebar in Pattern Editor window
       If (event[chan].note = event[chan].note OR keyoff_flag) then key_off(chan)
-      else If NOT (LO(effect_table[chan]) in  [ef_TonePortamento,
-                                               ef_TPortamVolSlide,
-                                               ef_TPortamVSlideFine,
-                                               ef_extended2+ef_fix2+ef_ex2_NoteDelay]) and
+      else If NOT (LO(effect_table[chan]) in [ef_TonePortamento,
+                                              ef_TPortamVolSlide,
+                                              ef_TPortamVSlideFine,
+                                              ef_extended2+ef_fix2+ef_ex2_NoteDelay]) and
               NOT (LO(effect_table2[chan]) in [ef_TonePortamento,
                                                ef_TPortamVolSlide,
                                                ef_TPortamVSlideFine,
@@ -2565,48 +2783,44 @@ begin
              If NOT (((event[chan].effect_def2 = ef_SwapArpeggio) or
                       (event[chan].effect_def2 = ef_SwapVibrato)) and
                      (event[chan].effect_def = ef_Extended) and
-                     (event[chan].effect DIV 16 = ef_ex_ExtendedCmd) and
-                     (event[chan].effect MOD 16 = ef_ex_cmd_NoRestart)) and
+                     (event[chan].effect DIV 16 = ef_ex_ExtendedCmd2) and
+                     (event[chan].effect MOD 16 = ef_ex_cmd2_NoRestart)) and
                 NOT (((event[chan].effect_def = ef_SwapArpeggio) or
                       (event[chan].effect_def = ef_SwapVibrato)) and
                      (event[chan].effect_def2 = ef_Extended) and
-                     (event[chan].effect2 DIV 16 = ef_ex_ExtendedCmd) and
-                     (event[chan].effect2 MOD 16 = ef_ex_cmd_NoRestart)) then
+                     (event[chan].effect2 DIV 16 = ef_ex_ExtendedCmd2) and
+                     (event[chan].effect2 MOD 16 = ef_ex_cmd2_NoRestart)) then
                If NOT ignore_note_once[chan] then
-                 output_note(event[chan].note,voice_table[chan],chan,TRUE)
+                 output_note(event[chan].note,voice_table[chan],chan,TRUE,TRUE)
                else
-             else output_note_NR(event[chan].note,voice_table[chan],chan,TRUE)
-          else If (event[chan].note <> 0) and
-                  (event_table[chan].note = event_table[chan].note OR keyoff_flag) and
-                  ((event[chan].effect_def in [ef_TonePortamento,
-                                         ef_TPortamVolSlide,
-                                         ef_TPortamVSlideFine]) or
-                   (event[chan].effect_def2 in [ef_TonePortamento,
-                                          ef_TPortamVolSlide,
-                                          ef_TPortamVSlideFine])) then
-                 If NOT ignore_note_once[chan] then
-                   output_note(event_table[chan].note AND NOT keyoff_flag,voice_table[chan],chan,FALSE)
-                 else
+             else output_note(event[chan].note,voice_table[chan],chan,TRUE,FALSE)
+          else If NOT single_play and
+                  (event[chan].note <> 0) and tporta_flag then
+                 If (event_table[chan].note = event_table[chan].note OR keyoff_flag) then
+                   If NOT ignore_note_once[chan] then
+                     output_note(event_table[chan].note AND NOT keyoff_flag,voice_table[chan],chan,FALSE,TRUE)
+                   else
+                 else If portaFK_table[chan] then
+                        output_note(event_table[chan].note AND NOT keyoff_flag,voice_table[chan],chan,FALSE,TRUE)
+                      else If (event[chan].note <> 0) then
+                             event_table[chan].note := event[chan].note
+                           else
                else If single_play and
                        NOT (event[chan].note = event[chan].note OR keyoff_flag) and
                        NOT (event_table[chan].note <> 0) and
-                       (event[chan].instr_def <> 0) and
-                       ((event[chan].effect_def in [ef_TonePortamento,
-                                              ef_TPortamVolSlide,
-                                              ef_TPortamVSlideFine]) or
-                        (event[chan].effect_def2 in [ef_TonePortamento,
-                                               ef_TPortamVolSlide,
-                                               ef_TPortamVSlideFine])) then
-                      output_note(event[chan].note,event[chan].instr_def,chan,FALSE)
+                       (event[chan].instr_def <> 0) and tporta_flag then
+                      output_note(event[chan].note,event[chan].instr_def,chan,FALSE,TRUE)
                     else If (event[chan].note <> 0) then
-                           event_table[chan].note := event[chan].note;
+                           If portaFK_table[chan] and tporta_flag then
+                             output_note(event[chan].note,event[chan].instr_def,chan,FALSE,TRUE)
+                           else event_table[chan].note := event[chan].note;
 
       Case event[chan].effect_def of
         ef_SwapArpeggio:
           begin
             If (event[chan].effect_def2 = ef_Extended) and
-               (event[chan].effect2 DIV 16 = ef_ex_ExtendedCmd) and
-               (event[chan].effect2 MOD 16 = ef_ex_cmd_NoRestart) then
+               (event[chan].effect2 DIV 16 = ef_ex_ExtendedCmd2) and
+               (event[chan].effect2 MOD 16 = ef_ex_cmd2_NoRestart) then
               begin
                 If (macro_table[chan].arpg_pos >
                     songdata.macro_table[event[chan].effect].arpeggio.length) then
@@ -2625,8 +2839,8 @@ begin
         ef_SwapVibrato:
           begin
             If (event[chan].effect_def2 = ef_Extended) and
-               (event[chan].effect2 DIV 16 = ef_ex_ExtendedCmd) and
-               (event[chan].effect2 MOD 16 = ef_ex_cmd_NoRestart) then
+               (event[chan].effect2 DIV 16 = ef_ex_ExtendedCmd2) and
+               (event[chan].effect2 MOD 16 = ef_ex_cmd2_NoRestart) then
               begin
                 If (macro_table[chan].vib_table >
                     songdata.macro_table[event[chan].effect].vibrato.length) then
@@ -2650,8 +2864,8 @@ begin
         ef_SwapArpeggio:
           begin
             If (event[chan].effect_def = ef_Extended) and
-               (event[chan].effect DIV 16 = ef_ex_ExtendedCmd) and
-               (event[chan].effect MOD 16 = ef_ex_cmd_NoRestart) then
+               (event[chan].effect DIV 16 = ef_ex_ExtendedCmd2) and
+               (event[chan].effect MOD 16 = ef_ex_cmd2_NoRestart) then
               begin
                 If (macro_table[chan].arpg_pos >
                     songdata.macro_table[event[chan].effect2].arpeggio.length) then
@@ -2670,8 +2884,8 @@ begin
         ef_SwapVibrato:
           begin
             If (event[chan].effect_def = ef_Extended) and
-               (event[chan].effect DIV 16 = ef_ex_ExtendedCmd) and
-               (event[chan].effect MOD 16 = ef_ex_cmd_NoRestart) then
+               (event[chan].effect DIV 16 = ef_ex_ExtendedCmd2) and
+               (event[chan].effect MOD 16 = ef_ex_cmd2_NoRestart) then
               begin
                 If (macro_table[chan].vib_table >
                     songdata.macro_table[event[chan].effect2].vibrato.length) then
@@ -2765,96 +2979,189 @@ begin
          portamento_up(chan,porta_table2[chan].speed,porta_table2[chan].freq);
 end;
 
+procedure slide_carrier_volume_up(chan: Byte; slide,limit: Byte);
+
+var
+  vol: Word;
+  vLo,vHi: Byte;
+
+begin
+  vLo := LO(volume_table[chan]);
+  vHi := HI(volume_table[chan]);
+  If (vHi-slide >= limit) then vol := concw(vLo,vHi-slide)
+  else vol := concw(vLo,limit);
+  set_ins_volume(BYTE_NULL,HI(vol),chan);
+  volume_table[chan] := vol;
+end;
+
+procedure slide_modulator_volume_up(chan: Byte; slide,limit: Byte);
+
+var
+  vol: Word;
+  vLo,vHi: Byte;
+
+begin
+  vLo := LO(volume_table[chan]);
+  vHi := HI(volume_table[chan]);
+  If (vLo-slide >= limit) then vol := concw(vLo-slide,vHi)
+  else vol := concw(limit,vHi);
+  set_ins_volume(LO(vol),BYTE_NULL,chan);
+  volume_table[chan] := vol;
+end;
+
 procedure slide_volume_up(chan,slide: Byte);
 
 var
-  temp: Word;
-  limit1,limit2,vLo,vHi: Byte;
-
-procedure slide_carrier_volume_up;
-begin
-  vLo := LO(temp);
-  vHi := HI(temp);
-  If (vHi-slide >= limit1) then temp := concw(vLo,vHi-slide)
-  else temp := concw(vLo,limit1);
-  set_ins_volume(BYTE_NULL,HI(temp),chan);
-  volume_table[chan] := temp;
-end;
-
-procedure slide_modulator_volume_up;
-begin
-  vLo := LO(temp);
-  vHi := HI(temp);
-  If (vLo-slide >= limit2) then temp := concw(vLo-slide,vHi)
-  else temp := concw(limit2,vHi);
-  set_ins_volume(LO(temp),BYTE_NULL,chan);
-  volume_table[chan] := temp;
-end;
+  limit1,limit2: Byte;
+  limit1_4op,limit2_4op: Word;
+  _4op_flag: Dword;
+  _4op_conn: Byte;
+  _4op_ch1,_4op_ch2: Byte;
+  _4op_ins1,_4op_ins2: Byte;
 
 begin
-  If NOT peak_lock[chan] then limit1 := 0
-  else limit1 := ins_parameter(event_table[chan].instr_def,3) AND $3f;
+  _4op_flag := _4op_data_flag(chan);
+  _4op_conn := (_4op_flag SHR 1) AND 3;
+  _4op_ch1 := (_4op_flag SHR 3) AND 15;
+  _4op_ch2 := (_4op_flag SHR 7) AND 15;
+  _4op_ins1 := BYTE(_4op_flag SHR 11);
+  _4op_ins2 := BYTE(_4op_flag SHR 19);
 
-  If NOT peak_lock[chan] then limit2 := 0
-  else limit2 := ins_parameter(event_table[chan].instr_def,2) AND $3f;
-  temp := volume_table[chan];
+  If _4op_vol_valid_chan(chan) then
+    begin
+      If NOT peak_lock[_4op_ch1] then limit1_4op := 0
+      else limit1_4op := ins_parameter(_4op_ins1,3) AND $3f SHL 16 +
+                         ins_parameter(_4op_ins1,2) AND $3f;
+      If NOT peak_lock[_4op_ch2] then limit2_4op := 0
+      else limit2_4op := ins_parameter(_4op_ins2,3) AND $3f SHL 16 +
+                         ins_parameter(_4op_ins2,2) AND $3f;
+    end
+  else begin
+         If NOT peak_lock[chan] then limit1 := 0
+         else limit1 := ins_parameter(event_table[chan].instr_def,3) AND $3f;
+         If NOT peak_lock[chan] then limit2 := 0
+         else limit2 := ins_parameter(event_table[chan].instr_def,2) AND $3f;
+       end;
 
   Case volslide_type[chan] of
     0: begin
-         slide_carrier_volume_up;
-         If (ins_parameter(voice_table[chan],10) AND 1 = 1) or
-            (percussion_mode and (chan in [17..20])) then
-           slide_modulator_volume_up;
+         If NOT _4op_vol_valid_chan(chan) then
+           begin
+             slide_carrier_volume_up(chan,slide,limit1);
+             If (ins_parameter(voice_table[chan],10) AND 1 = 1) or
+                (percussion_mode and (chan in [17..20])) then
+               slide_modulator_volume_up(chan,slide,limit2);
+           end
+         else
+           Case _4op_conn of
+             // FM/FM
+             0: slide_carrier_volume_up(_4op_ch1,slide,HI(limit1_4op));
+             // FM/AM
+             1: begin
+                  slide_carrier_volume_up(_4op_ch1,slide,HI(limit1_4op));
+                  slide_modulator_volume_up(_4op_ch2,slide,LO(limit2_4op));
+                end;
+             // AM/FM
+             2: begin
+                  slide_carrier_volume_up(_4op_ch1,slide,HI(limit1_4op));
+                  slide_carrier_volume_up(_4op_ch2,slide,HI(limit2_4op));
+                end;
+             // AM/AM
+             3: begin
+                  slide_carrier_volume_up(_4op_ch1,slide,HI(limit1_4op));
+                  slide_modulator_volume_up(_4op_ch1,slide,LO(limit1_4op));
+                  slide_modulator_volume_up(_4op_ch2,slide,LO(limit2_4op));
+                end;
+           end;
        end;
-    1: slide_carrier_volume_up;
-    2: slide_modulator_volume_up;
+    1: slide_carrier_volume_up(chan,slide,limit1);
+    2: slide_modulator_volume_up(chan,slide,limit2);
     3: begin
-         slide_carrier_volume_up;
-         slide_modulator_volume_up;
+         slide_carrier_volume_up(chan,slide,limit1);
+         slide_modulator_volume_up(chan,slide,limit2);
        end;
   end;
+end;
+
+procedure slide_carrier_volume_down(chan: Byte; slide: Byte);
+
+var
+  vol: Word;
+  vLo,vHi: Byte;
+
+begin
+  vLo := LO(volume_table[chan]);
+  vHi := HI(volume_table[chan]);
+  If (vHi+slide <= 63) then vol := concw(vLo,vHi+slide)
+  else vol := concw(vLo,63);
+  set_ins_volume(BYTE_NULL,HI(vol),chan);
+  volume_table[chan] := vol;
+end;
+
+procedure slide_modulator_volume_down(chan: Byte; slide: Byte);
+
+var
+  vol: Word;
+  vLo,vHi: Byte;
+
+begin
+  vLo := LO(volume_table[chan]);
+  vHi := HI(volume_table[chan]);
+  If (vLo+slide <= 63) then vol := concw(vLo+slide,vHi)
+  else vol := concw(63,vHi);
+  set_ins_volume(LO(vol),BYTE_NULL,chan);
+  volume_table[chan] := vol;
 end;
 
 procedure slide_volume_down(chan,slide: Byte);
 
 var
-  temp: Word;
-  vLo,vHi: Byte;
-
-procedure slide_carrier_volume_down;
-begin
-  vLo := LO(temp);
-  vHi := HI(temp);
-  If (vHi+slide <= 63) then temp := concw(vLo,vHi+slide)
-  else temp := concw(vLo,63);
-  set_ins_volume(BYTE_NULL,HI(temp),chan);
-  volume_table[chan] := temp;
-end;
-
-procedure slide_modulator_volume_down;
-begin
-  vLo := LO(temp);
-  vHi := HI(temp);
-  If (vLo+slide <= 63) then temp := concw(vLo+slide,vHi)
-  else temp := concw(63,vHi);
-  set_ins_volume(LO(temp),BYTE_NULL,chan);
-  volume_table[chan] := temp;
-end;
+  _4op_flag: Dword;
+  _4op_conn: Byte;
+  _4op_ch1,_4op_ch2: Byte;
 
 begin
-  temp := volume_table[chan];
+  _4op_flag := _4op_data_flag(chan);
+  _4op_conn := (_4op_flag SHR 1) AND 3;
+  _4op_ch1 := (_4op_flag SHR 3) AND 15;
+  _4op_ch2 := (_4op_flag SHR 7) AND 15;
+
   Case volslide_type[chan] of
     0: begin
-         slide_carrier_volume_down;
-         If (ins_parameter(voice_table[chan],10) AND 1 = 1) or
-            (percussion_mode and (chan in [17..20])) then
-           slide_modulator_volume_down;
+         If NOT _4op_vol_valid_chan(chan) then
+           begin
+             slide_carrier_volume_down(chan,slide);
+             If (ins_parameter(voice_table[chan],10) AND 1 = 1) or
+                (percussion_mode and (chan in [17..20])) then
+               slide_modulator_volume_down(chan,slide);
+           end
+         else
+           Case _4op_conn of
+             // FM/FM
+             0: slide_carrier_volume_down(_4op_ch1,slide);
+             // FM/AM
+             1: begin
+                  slide_carrier_volume_down(_4op_ch1,slide);
+                  slide_modulator_volume_down(_4op_ch2,slide);
+                end;
+             // AM/FM
+             2: begin
+                  slide_carrier_volume_down(_4op_ch1,slide);
+                  slide_carrier_volume_down(_4op_ch2,slide);
+                end;
+             // AM/AM
+             3: begin
+                  slide_carrier_volume_down(_4op_ch1,slide);
+                  slide_modulator_volume_down(_4op_ch1,slide);
+                  slide_modulator_volume_down(_4op_ch2,slide);
+                end;
+           end;
        end;
-    1: slide_carrier_volume_down;
-    2: slide_modulator_volume_down;
+    1: slide_carrier_volume_down(chan,slide);
+    2: slide_modulator_volume_down(chan,slide);
     3: begin
-         slide_carrier_volume_down;
-         slide_modulator_volume_down;
+         slide_carrier_volume_down(chan,slide);
+         slide_modulator_volume_down(chan,slide);
        end;
   end;
 end;
@@ -2919,14 +3226,12 @@ procedure vibrato(chan: Byte);
 
 var
   freq,old_freq: Word;
-  direction: Byte;
 
 begin
   Inc(vibr_table[chan].pos,vibr_table[chan].speed*vibtrem_speed_factor);
-  freq := calc_vibtrem_shift(vibr_table[chan].depth,
-                             vibr_table[chan].pos,direction);
+  freq := calc_vibtrem_shift(chan,vibr_table);
   old_freq := freq_table[chan];
-  If (direction = 0) then portamento_down(chan,freq,nFreq(0))
+  If (vibr_table[chan].dir = 0) then portamento_down(chan,freq,nFreq(0))
   else portamento_up(chan,freq,nFreq(12*8+1));
   freq_table[chan] := old_freq;
 end;
@@ -2935,14 +3240,12 @@ procedure vibrato2(chan: Byte);
 
 var
   freq,old_freq: Word;
-  direction: Byte;
 
 begin
   Inc(vibr_table2[chan].pos,vibr_table2[chan].speed*vibtrem_speed_factor);
-  freq := calc_vibtrem_shift(vibr_table2[chan].depth,
-                             vibr_table2[chan].pos,direction);
+  freq := calc_vibtrem_shift(chan,vibr_table2);
   old_freq := freq_table[chan];
-  If (direction = 0) then portamento_down(chan,freq,nFreq(0))
+  If (vibr_table2[chan].dir = 0) then portamento_down(chan,freq,nFreq(0))
   else portamento_up(chan,freq,nFreq(12*8+1));
   freq_table[chan] := old_freq;
 end;
@@ -2951,14 +3254,12 @@ procedure tremolo(chan: Byte);
 
 var
   vol,old_vol: Word;
-  direction: Byte;
 
 begin
   Inc(trem_table[chan].pos,trem_table[chan].speed*vibtrem_speed_factor);
-  vol := calc_vibtrem_shift(trem_table[chan].depth,
-                            trem_table[chan].pos,direction);
+  vol := calc_vibtrem_shift(chan,trem_table);
   old_vol := volume_table[chan];
-  If (direction = 0) then slide_volume_down(chan,vol)
+  If (trem_table[chan].dir = 0) then slide_volume_down(chan,vol)
   else slide_volume_up(chan,vol);
   volume_table[chan] := old_vol;
 end;
@@ -2967,14 +3268,12 @@ procedure tremolo2(chan: Byte);
 
 var
   vol,old_vol: Word;
-  direction: Byte;
 
 begin
   Inc(trem_table2[chan].pos,trem_table2[chan].speed*vibtrem_speed_factor);
-  vol := calc_vibtrem_shift(trem_table2[chan].depth,
-                            trem_table2[chan].pos,direction);
+  vol := calc_vibtrem_shift(chan,trem_table2);
   old_vol := volume_table[chan];
-  If (direction = 0) then slide_volume_down(chan,vol)
+  If (trem_table2[chan].pos = 0) then slide_volume_down(chan,vol)
   else slide_volume_up(chan,vol);
   volume_table[chan] := old_vol;
 end;
@@ -3081,7 +3380,7 @@ begin
             begin
               retrig_table[chan] := 0;
               output_note(event_table[chan].note,
-                          event_table[chan].instr_def,chan,TRUE);
+                          event_table[chan].instr_def,chan,TRUE,TRUE);
             end
           else Inc(retrig_table[chan]);
 
@@ -3117,7 +3416,7 @@ begin
 
              retrig_table[chan] := 0;
              output_note(event_table[chan].note,
-                         event_table[chan].instr_def,chan,TRUE);
+                         event_table[chan].instr_def,chan,TRUE,TRUE);
             end
           else Inc(retrig_table[chan]);
 
@@ -3144,7 +3443,7 @@ begin
             begin
               notedel_table[chan] := BYTE_NULL;
               output_note(event_table[chan].note,
-                          event_table[chan].instr_def,chan,TRUE);
+                          event_table[chan].instr_def,chan,TRUE,TRUE);
             end
           else Dec(notedel_table[chan]);
 
@@ -3245,7 +3544,7 @@ begin
             begin
               retrig_table2[chan] := 0;
               output_note(event_table[chan].note,
-                          event_table[chan].instr_def,chan,TRUE);
+                          event_table[chan].instr_def,chan,TRUE,TRUE);
             end
           else Inc(retrig_table2[chan]);
 
@@ -3281,7 +3580,7 @@ begin
 
               retrig_table2[chan] := 0;
               output_note(event_table[chan].note,
-                          event_table[chan].instr_def,chan,TRUE);
+                          event_table[chan].instr_def,chan,TRUE,TRUE);
             end
           else Inc(retrig_table2[chan]);
 
@@ -3308,7 +3607,7 @@ begin
             begin
               notedel_table[chan] := BYTE_NULL;
               output_note(event_table[chan].note,
-                          event_table[chan].instr_def,chan,TRUE);
+                          event_table[chan].instr_def,chan,TRUE,TRUE);
             end
           else Dec(notedel_table[chan]);
 
@@ -3635,7 +3934,9 @@ begin
                       end
                     else If pattern_break and (next_line AND $0f0 = pattern_break_flag) then
                            begin
-                             current_order := event_table[next_line-pattern_break_flag].effect;
+                             If (event_table[next_line-pattern_break_flag].effect_def2 = ef_PositionJump) then
+                               current_order := event_table[next_line-pattern_break_flag].effect2
+                             else current_order := event_table[next_line-pattern_break_flag].effect;
                              pattern_break := FALSE;
                            end
                          else If (current_order > $7f) then
@@ -3680,26 +3981,16 @@ procedure poll_proc;
 
 var
   temp: Byte;
-  chunk: tCHUNK;
-{$IFDEF __TMT__}
+  factor: Real;
+{$IFDEF GO32V2}
   _debug_str_bak_: String;
 {$ENDIF}
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _debug_str_bak_ := _debug_str_;
   _debug_str_ := 'ADT2UNIT.PAS:_poll_proc';
 {$ENDIF}
-
-  If track_notes and scankey(SC_BACKSPACE) then
-    For temp := 1 to nm_track_chan do
-      If channel_flag[track_chan_start+temp-1] then
-        begin
-          get_chunk(pattern_patt,pattern_page,track_chan_start+temp-1,chunk);
-          chunk.note := 0;
-          chunk.instr_def := 0;
-          put_chunk(pattern_patt,pattern_page,track_chan_start+temp-1,chunk);
-        end;
 
   If (NOT pattern_delay and (ticks-tick0+1 >= speed)) or
      fast_forward or rewind or single_play then
@@ -3742,10 +4033,12 @@ begin
 
       If fast_forward or rewind then
         begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
           keyboard_reset_buffer;
 {$ENDIF}
-          If (Abs(time_playing-time_playing0) > 0.2*(1+(1/255*tempo))/speed) then
+          If fast_forward then factor := 1/(5-fforward_factor+1)
+          else factor := 1/(5-rewind_factor+1);
+          If (Abs(time_playing-time_playing0) > factor*(1+(1/255*tempo))/speed) then
             begin
               fast_forward := FALSE;
               rewind := FALSE;
@@ -3777,7 +4070,7 @@ begin
       update_extra_fine_effects;
       Dec(tickXF,4);
     end;
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _debug_str_ := _debug_str_bak_;
 {$ENDIF}
 end;
@@ -3792,13 +4085,13 @@ var
   chan: Byte;
   finished_flag: Word;
 
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
 var
   _debug_str_bak_: String;
 {$ENDIF}
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _debug_str_bak_ := _debug_str_;
   _debug_str_ := 'ADT2UNIT.PAS:macro_poll_proc';
 {$ENDIF}
@@ -3943,9 +4236,38 @@ begin
                                update_fmpar(chan);
 
                                If force_macro_keyon or
-                                  NOT (fm_data.FEEDBACK_FM OR $80 <> fm_data.FEEDBACK_FM) then
-                                 output_note(event_table[chan].note,
-                                             event_table[chan].instr_def,chan,FALSE);
+                                  NOT (fm_data.FEEDBACK_FM OR MACRO_NOTE_RETRIG_FLAG <> fm_data.FEEDBACK_FM) then
+                                 begin
+                                   If NOT (is_4op_chan(chan) and (chan in _4op_tracks_hi)) then
+                                     begin
+                                       output_note(event_table[chan].note,
+                                                   event_table[chan].instr_def,chan,FALSE,TRUE);
+                                       If (is_4op_chan(chan) and (chan in _4op_tracks_lo)) then
+                                         init_macro_table(PRED(chan),0,voice_table[PRED(chan)],0);
+                                     end;
+                                 end
+                               else
+                                 If NOT (fm_data.FEEDBACK_FM OR MACRO_ENVELOPE_RESTART_FLAG <> fm_data.FEEDBACK_FM) then
+                                   begin
+                                     key_on(chan);
+                                     change_freq(chan,freq_table[chan]);
+                                   end
+                                 else
+                                   If NOT (fm_data.FEEDBACK_FM OR MACRO_ZERO_FREQ_FLAG <> fm_data.FEEDBACK_FM) then
+                                     If (freq_table[chan] <> 0) then
+                                       begin
+                                         zero_fq_table[chan] := freq_table[chan];
+                                         freq_table[chan] := freq_table[chan] AND NOT $1fff;
+                                         change_freq(chan,freq_table[chan]);
+                                       end
+                                     else
+                                   else
+                                     If (zero_fq_table[chan] <> 0) then
+                                       begin
+                                         freq_table[chan] := zero_fq_table[chan];
+                                         zero_fq_table[chan] := 0;
+                                         change_freq(chan,freq_table[chan]);
+                                       end;
 
                                If NOT songdata.dis_fmreg_col[fmreg_table][26] then
                                  If (freq_slide > 0) then
@@ -4036,7 +4358,7 @@ begin
               else Inc(vib_count);
         end;
     end;
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _debug_str_ := _debug_str_bak_;
 {$ENDIF}
 end;
@@ -4048,18 +4370,49 @@ var
 
 begin
   For chan := 1 to songdata.nm_tracks do
-    If NOT ((carrier_vol[chan] = 0) and
-            (modulator_vol[chan] = 0)) then
-      If (ins_parameter(voice_table[chan],10) AND 1 = 0) then
-        set_ins_volume(BYTE_NULL,HI(volume_table[chan]),chan)
-      else set_ins_volume(LO(volume_table[chan]),HI(volume_table[chan]),chan);
+    If _4op_vol_valid_chan(chan) then
+      set_ins_volume_4op(BYTE_NULL,chan)
+    else If NOT ((carrier_vol[chan] = 0) and
+                 (modulator_vol[chan] = 0)) then
+           If (ins_parameter(voice_table[chan],10) AND 1 = 0) then
+             set_ins_volume(BYTE_NULL,HI(volume_table[chan]),chan)
+           else set_ins_volume(LO(volume_table[chan]),HI(volume_table[chan]),chan);
 end;
+
+{$IFDEF GO32V2}
+
+var
+  regs: tRealRegs;
+
+procedure update_mouse_position;
+begin
+  If mouse_active then
+    begin
+      FillChar(regs,SizeOf(regs),0);
+      regs.ax := $04;
+      regs.cx := scr_scroll_x;
+      regs.dx := scr_scroll_y;
+      RealIntr($33,regs);
+    end;
+end;
+
+{$ENDIF}
 
 procedure synchronize_screen;
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2UNIT.PAS:synchronize_screen';
+
+  If mouse_active then
+    begin
+      FillChar(regs,SizeOf(regs),0);
+      regs.ax := $03;
+      RealIntr($33,regs);
+      scr_scroll_x := regs.cx;
+      scr_scroll_y := regs.dx;
+    end;
+
   If (scr_scroll_x <> old_scr_scroll_x) or
      (scr_scroll_y <> old_scr_scroll_y) then
     begin
@@ -4067,19 +4420,24 @@ begin
       old_scr_scroll_y := scr_scroll_y;
 
       If (scr_scroll_x > scr_font_width*MaxCol-scr_font_width*hard_maxcol) then
-        scr_scroll_x := scr_font_width*MaxCol-scr_font_width*hard_maxcol;
+        begin
+          scr_scroll_x := scr_font_width*MaxCol-scr_font_width*hard_maxcol;
+          update_mouse_position;
+        end;
 
       If (scr_scroll_y > scr_font_height*MaxLn-scr_font_height*hard_maxln) then
-        scr_scroll_y := scr_font_height*MaxLn-scr_font_height*hard_maxln;
+        begin
+          scr_scroll_y := scr_font_height*MaxLn-scr_font_height*hard_maxln;
+          update_mouse_position;
+        end;
 
       WaitRetrace;
-      If (program_screen_mode < 3) or
-         ((program_screen_mode = 3) and (comp_text_mode < 2)) then
+      If NOT is_VESA_emulated_mode then
         SetTextDisp(scr_scroll_x,scr_scroll_y)
       else virtual_screen__first_row := scr_scroll_y*800;
     end;
 {$ELSE}
-  If (program_screen_mode <> 0) then EXIT;
+  If NOT is_default_screen_mode then EXIT;
   If (screen_scroll_offset > 16*MaxLn-16*hard_maxln) then
     screen_scroll_offset := 16*MaxLn-16*hard_maxln;
   virtual_screen__first_row := screen_scroll_offset*SCREEN_RES_X;
@@ -4094,14 +4452,14 @@ end;
 
 procedure timer_poll_proc;
 
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
 var
   _debug_str_bak_: String;
 {$ENDIF}
 
 begin
 
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
 
   _debug_str_bak_ := _debug_str_;
   _debug_str_ := 'ADT2UNIT.PAS:timer_poll_proc';
@@ -4119,32 +4477,9 @@ begin
          Inc(_screen_refresh_pending_frames);
        end;
 
-  vchg_ticks := vchg_ticks+1/IRQ_freq*100;
-  If (vchg_ticks > overall_volume DIV 20) then
-    begin
-      If alt_pressed and NOT ctrl_pressed then
-        begin
-          If scankey(SC_PLUS) or scankey(SC_UP) then
-            If (overall_volume < 63) then
-              begin
-                Inc(overall_volume);
-                set_global_volume;
-              end
-            else
-          else
-            If scankey(SC_MINUS2) or scankey(SC_DOWN) then
-              If (overall_volume > 0) then
-                begin
-                  Dec(overall_volume);
-                  set_global_volume;
-                end;
-        end;
-      vchg_ticks := 0;
-    end;
-
 {$ENDIF}
 
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
 
   If NOT reset_gfx_ticks then Inc(gfx_ticks)
   else begin
@@ -4159,41 +4494,58 @@ begin
         begin
           If scankey(SC_UP) then
             If (scr_scroll_y > 0) then
-              Dec(scr_scroll_y);
+              begin
+                Dec(scr_scroll_y);
+                update_mouse_position;
+              end;
 
           If scankey(SC_DOWN) then
             If (scr_scroll_y < scr_font_height*MaxLn-scr_font_height*hard_maxln) then
-              Inc(scr_scroll_y);
+              begin
+                Inc(scr_scroll_y);
+                update_mouse_position;
+              end;
 
           If scankey(SC_PAGEUP) then
-            scr_scroll_y := 0;
+            begin
+              scr_scroll_y := 0;
+              update_mouse_position;
+            end;
+
           If scankey(SC_PAGEDOWN) then
-            scr_scroll_y := scr_font_height*MaxLn-scr_font_height*hard_maxln;
+            begin
+              scr_scroll_y := scr_font_height*MaxLn-scr_font_height*hard_maxln;
+              update_mouse_position;
+            end;
+
           If scankey(SC_HOME) then
-            scr_scroll_x := 0;
+            begin
+              scr_scroll_x := 0;
+              update_mouse_position;
+            end;
+
           If scankey(SC_END) then
-            scr_scroll_x := scr_font_width*MaxCol-scr_font_width*hard_maxcol;
+            begin
+              scr_scroll_x := scr_font_width*MaxCol-scr_font_width*hard_maxcol;
+              update_mouse_position;
+            end;
 
           If scankey(SC_LEFT) then
             If (scr_scroll_x > 0) then
-              Dec(scr_scroll_x);
+              begin
+                Dec(scr_scroll_x);
+                update_mouse_position;
+              end;
 
           If scankey(SC_RIGHT) then
             If (scr_scroll_x < scr_font_width*MaxCol-scr_font_width*hard_maxcol) then
-              Inc(scr_scroll_x);
+              begin
+                Inc(scr_scroll_x);
+                update_mouse_position;
+              end;
         end;
       scroll_ticks := 0;
     end;
-
-  If ctrl_pressed then
-    If scankey(SC_1) then current_octave := 1
-    else If scankey(SC_2) then current_octave := 2
-         else If scankey(SC_3) then current_octave := 3
-              else If scankey(SC_4) then current_octave := 4
-                   else If scankey(SC_5) then current_octave := 5
-                        else If scankey(SC_6) then current_octave := 6
-                             else If scankey(SC_7) then current_octave := 7
-                                  else If scankey(SC_8) then current_octave := 8;
 
 {$ELSE}
 
@@ -4229,13 +4581,13 @@ begin
   If (play_status = isPlaying) and
      NOT (debugging and (NOT space_pressed or no_step_debugging)) then
     begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
       song_timer_tenths := Trunc(100/IRQ_freq*timer_temp);
 {$ELSE}
       song_timer_tenths := timer_temp;
 {$ENDIF}
       If (song_timer_tenths >= 100) then song_timer_tenths := 0;
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
       If (timer_temp < IRQ_freq) then Inc(timer_temp)
 {$ELSE}
       If (timer_temp < 100) then Inc(timer_temp)
@@ -4255,7 +4607,7 @@ begin
       song_timer_tenths := 0;
     end;
 
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
 
   If (ticklooper > 0) then
     If (fast_forward or rewind) and NOT replay_forbidden then
@@ -4279,24 +4631,126 @@ begin
 {$ENDIF}
 end;
 
+{$IFDEF GO32V2}
+
+const
+  ___IRQ_DATA_END___: Dword = 0;
+
+procedure ___IRQ_CODE_END___; begin end;
+
+procedure DisableTimerIRQ;
+begin
+  asm
+        in      al,21h
+        or      al,1
+        out     21h,al
+  end;
+end;
+
+procedure EnableTimerIRQ;
+begin
+  asm
+        in      al,21h
+        and     al,0feh
+        out     21h,al
+  end;
+end;
+
+const
+  timer_poll_proc_ptr: Pointer = NIL;
+
+procedure TimerSetup(Hz: Longint);
+begin
+  _last_debug_str_ := _debug_str_;
+  _debug_str_ := 'ADT2UNIT.PAS:TimerSetup';
+  If (Hz < 19) then Hz := 19;
+  If (Hz > 1193180) then Hz := 1193180;
+  DisableTimerIRQ;
+  If (timer_poll_proc_ptr <> NIL) then ISS_StopTimer(timer_poll_proc_ptr);
+  timer_poll_proc_ptr := @timer_poll_proc;
+  ISS_StartTimer(timer_poll_proc_ptr,ISS_TimerSpeed DIV Hz);
+  EnableTimerIRQ;
+end;
+
+procedure TimerDone;
+begin
+  _last_debug_str_ := _debug_str_;
+  _debug_str_ := 'ADT2UNIT.PAS:TimerDone';
+  DisableTimerIRQ;
+  If (timer_poll_proc_ptr <> NIL) then ISS_StopTimer(timer_poll_proc_ptr);
+  timer_poll_proc_ptr := NIL;
+  EnableTimerIRQ;
+end;
+
+procedure TimerInstallHandler(handler: Pointer);
+begin
+end;
+
+procedure TimerRemoveHandler;
+begin
+end;
+
+{$ELSE}
+
+const
+  timer_handler: Procedure = NIL;
+  TimerID: SDL_TimerID = NIL;
+  _interval: longint = 1000 DIV 50; // 1000 ms / Hz
+
+function TimerCallback(interval: Uint32; param: Pointer):Uint32; cdecl;
+begin
+  If (@timer_handler <> NIL) then timer_handler;
+  TimerCallback := _interval; // trick to alter delay rate on the fly
+end;
+
+procedure TimerSetup(Hz: Longint);
+begin
+  _interval := 1000 DIV Hz;
+  // only activate timer once, later only alter delay rate
+  If (TimerID = NIL) then
+    begin
+      TimerID := SDL_AddTimer(_interval,SDL_NewTimerCallback(@TimerCallBack),NIL);
+      If (TimerID = NIL) then
+        Writeln('SDL: Error creating timer');
+    end;
+  snd_SetTimer(Hz);
+end;
+
+procedure TimerDone;
+begin
+end;
+
+procedure TimerInstallHandler(handler: Pointer);
+begin
+  @timer_handler := handler;
+end;
+
+procedure TimerRemoveHandler;
+begin
+  @timer_handler := NIL;
+end;
+
+{$ENDIF}
+
 procedure init_timer_proc;
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2UNIT.PAS:init_timer_proc';
-  vchg_ticks := 0;
   scroll_ticks := 0;
 {$ENDIF}
   Randomize;
   If timer_initialized then EXIT;
   timer_initialized := TRUE;
+{$IFNDEF GO32V2}
   TimerInstallHandler(@timer_poll_proc);
+{$ENDIF}
   TimerSetup(50);
 end;
 
 procedure done_timer_proc;
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2UNIT.PAS:done_timer_proc';
 {$ENDIF}
@@ -4306,6 +4760,8 @@ begin
   TimerRemoveHandler;
 end;
 
+{$i realtime.inc}
+
 function calc_pattern_pos(pattern: Byte): Byte;
 
 var
@@ -4313,7 +4769,7 @@ var
   jump_count,pattern_pos: Byte;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2UNIT.PAS:calc_pattern_pos';
 {$ENDIF}
@@ -4355,7 +4811,7 @@ var
   temp: Byte;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2UNIT.PAS:calibrate_player:update_status';
 {$ENDIF}
@@ -4364,10 +4820,10 @@ begin
   show_str(17,03,byte2hex(current_order),pattern_bckg+status_dynamic_txt);
   show_str(20,03,byte2hex(temp),pattern_bckg+status_dynamic_txt);
   show_str(17,04,'--',pattern_bckg+status_dynamic_txt);
-{$IFNDEF __TMT__}
-  _emulate_screen_without_delay := TRUE;
+{$IFNDEF GO32V2}
+  _draw_screen_without_delay := TRUE;
 {$ENDIF}
-  emulate_screen;
+  draw_screen;
 end;
 
 var
@@ -4375,7 +4831,7 @@ var
   _pattord_hpos,_pattord_vpos: Byte;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2UNIT.PAS:calibrate_player';
 {$ENDIF}
@@ -4428,10 +4884,10 @@ begin
   If NOT no_sync_playing then
     begin
       show_str(13,07,' --:--.- ',status_background+status_border);
-{$IFNDEF __TMT__}
-      _emulate_screen_without_delay := TRUE;
+{$IFNDEF GO32V2}
+      _draw_screen_without_delay := TRUE;
 {$ENDIF}
-      emulate_screen;
+      draw_screen;
     end;
 
   previous_order := current_order;
@@ -4541,7 +4997,7 @@ var
   temp: Byte;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2UNIT.PAS:init_buffers';
 {$ENDIF}
@@ -4555,6 +5011,7 @@ begin
   FillChar(volum_bar,SizeOf(volum_bar),0);
   FillChar(event_table,SizeOf(event_table),0);
   FillChar(freq_table,SizeOf(freq_table),0);
+  FillChar(zero_fq_table,SizeOf(zero_fq_table),0);
   FillChar(effect_table,SizeOf(effect_table),0);
   FillChar(effect_table2,SizeOf(effect_table2),0);
   FillChar(fslide_table,SizeOf(fslide_table),0);
@@ -4563,6 +5020,7 @@ begin
   FillChar(glfsld_table2,SizeOf(glfsld_table2),0);
   FillChar(porta_table,SizeOf(porta_table),0);
   FillChar(porta_table2,SizeOf(porta_table2),0);
+  FillChar(portaFK_table,SizeOf(portaFK_table),BYTE(FALSE));
   FillChar(arpgg_table,SizeOf(arpgg_table),0);
   FillChar(arpgg_table2,SizeOf(arpgg_table2),0);
   FillChar(vibr_table,SizeOf(vibr_table),0);
@@ -4598,6 +5056,15 @@ begin
   If NOT lockVP then FillChar(peak_lock,SizeOf(peak_lock),0)
   else For temp := 1 to 20 do peak_lock[temp] := BOOLEAN(songdata.lock_flags[temp] SHR 5 AND 1);
 
+  FillChar(vol4op_lock,SizeOf(vol4op_lock),BYTE(FALSE));
+  For temp := 1 to 6 do
+    begin
+      vol4op_lock[_4op_main_chan[temp]] :=
+        (songdata.lock_flags[_4op_main_chan[temp]] OR $40 = songdata.lock_flags[_4op_main_chan[temp]]);
+      vol4op_lock[PRED(_4op_main_chan[temp])] :=
+        (songdata.lock_flags[PRED(_4op_main_chan[temp])] OR $40 = songdata.lock_flags[PRED(_4op_main_chan[temp])]);
+    end;
+
   For temp := 1 to 20 do
     volslide_type[temp] := songdata.lock_flags[temp] SHR 2 AND 3;
 end;
@@ -4608,18 +5075,17 @@ var
   temp: Byte;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2UNIT.PAS:init_player';
 {$ELSE}
   opl3_init;
-  If opl3_channel_recording_mode then renew_wav_files_flag := TRUE;
 {$ENDIF}
 
   FillChar(ai_table,SizeOf(ai_table),0);
   opl2out($01,0);
 
-  For temp := 1 to 20 do opl2out($0b0+_chan_n[temp],0);
+  For temp := 1 to 18 do opl2out($0b0+_chan_n[temp],0);
   For temp := $080 to $08d do opl2out(temp,BYTE_NULL);
   For temp := $090 to $095 do opl2out(temp,BYTE_NULL);
 
@@ -4659,13 +5125,13 @@ var
   temp: Byte;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2UNIT.PAS:reset_player';
 {$ENDIF}
   opl2out($01,0);
 
-  For temp := 1 to 20 do opl2out($0b0+_chan_n[temp],0);
+  For temp := 1 to 18 do opl2out($0b0+_chan_n[temp],0);
   For temp := $080 to $08d do opl2out(temp,BYTE_NULL);
   For temp := $090 to $095 do opl2out(temp,BYTE_NULL);
 
@@ -4686,7 +5152,7 @@ end;
 
 procedure start_playing;
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2UNIT.PAS:start_playing';
 {$ENDIF}
@@ -4749,11 +5215,13 @@ var
   temp: Byte;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2UNIT.PAS:stop_playing';
 {$ELSE}
   flush_WAV_data;
+  If NOT opl3_flushmode then
+    renew_wav_files_flag := TRUE;
 {$ENDIF}
   replay_forbidden := TRUE;
   play_status := isStopped;
@@ -4825,11 +5293,11 @@ begin
   If (size < len1*4) and (len1 > 4) then
     begin
       pos := temp;
-      show_str(x,y,''+ExpStrL('',size-2,'°')+'',atr1);
-      If (size-2-1 < 10) then show_str(x+1+temp,y,'²',atr2)
-      else show_str(x+1+temp,y,'²²²',atr2);
+      show_str(x,y,#17+ExpStrL('',size-2,#176)+#16,atr1);
+      If (size-2-1 < 10) then show_str(x+1+temp,y,#178,atr2)
+      else show_str(x+1+temp,y,#178#178#178,atr2);
     end
-  else show_Str(x,y,''+ExpStrL('',size-2,'±')+'',atr1);
+  else show_Str(x,y,#17+ExpStrL('',size-2,#177)+#16,atr1);
   hscroll_bar := pos;
 end;
 
@@ -4854,11 +5322,11 @@ begin
   If (size < len1*4) and (len1 > 5) then
     begin
       pos := temp;
-      show_vstr(x,y,''+ExpStrL('',size-2,'°')+'',atr1);
-      If (size-2-1 < 10) then show_str(x,y+1+temp,'²',atr2)
-      else show_vstr(x,y+1+temp,'²²²',atr2);
+      show_vstr(x,y,#30+ExpStrL('',size-2,#176)+#31,atr1);
+      If (size-2-1 < 10) then show_str(x,y+1+temp,#178,atr2)
+      else show_vstr(x,y+1+temp,#178#178#178,atr2);
     end
-  else show_vstr(x,y,''+ExpStrL('',size-2,'±')+'',atr1);
+  else show_vstr(x,y,#30+ExpStrL('',size-2,#177)+#31,atr1);
   vscroll_bar := pos;
 end;
 
@@ -5077,7 +5545,7 @@ var
   index2: Byte;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2UNIT.PAS:count_order';
 {$ENDIF}
@@ -5108,7 +5576,7 @@ var
   temp1: Byte;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2UNIT.PAS:count_patterns';
 {$ENDIF}
@@ -5116,14 +5584,14 @@ begin
   For temp1 := 0 to PRED(max_patterns) do
     begin
       realtime_gfx_poll_proc;
-      If NOT Empty(pattdata^[temp1 DIV 8][temp1 MOD 8],PATTERN_SIZE) then
+      If NOT is_data_empty(pattdata^[temp1 DIV 8][temp1 MOD 8],PATTERN_SIZE) then
         patterns := temp1+1;
     end;
 end;
 
 procedure count_instruments(var instruments: Byte);
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2UNIT.PAS:count_instruments';
 {$ENDIF}
@@ -5140,7 +5608,7 @@ var
   result: Word;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2UNIT.PAS:calc_max_speedup';
 {$ENDIF}
@@ -5160,7 +5628,7 @@ var
   temp: Byte;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2UNIT.PAS:init_old_songdata';
 {$ENDIF}
@@ -5170,7 +5638,7 @@ begin
 
   For temp := 1 to 250 do
     old_songdata.instr_names[temp] :=
-      ' iNS_'+byte2hex(temp)+'÷ ';
+      ' iNS_'+byte2hex(temp)+#247' ';
 end;
 
 procedure init_songdata;
@@ -5179,7 +5647,7 @@ var
   temp: Byte;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2UNIT.PAS:init_songdata';
 {$ENDIF}
@@ -5232,10 +5700,10 @@ begin
     end;
 
   For temp := 1 to 255 do
-    songdata.instr_names[temp] := ' iNS_'+byte2hex(temp)+'÷ ';
+    songdata.instr_names[temp] := ' iNS_'+byte2hex(temp)+#247' ';
 
   For temp := 0 to $7f do
-    songdata.pattern_names[temp] := ' PAT_'+byte2hex(temp)+'  ÷ ';
+    songdata.pattern_names[temp] := ' PAT_'+byte2hex(temp)+'  '#247' ';
 
   songdata_crc_ord := Update32(songdata.pattern_order,
                                SizeOf(songdata.pattern_order),0);
@@ -5260,35 +5728,35 @@ end;
 
 procedure load_instrument(var data; chan: Byte);
 begin
-  fmpar_table[chan].connect := tDUMMY_BUFF(data)[10] AND 1;
-  fmpar_table[chan].feedb   := tDUMMY_BUFF(data)[10] SHR 1 AND 7;
-  fmpar_table[chan].multipM := tDUMMY_BUFF(data)[0]  AND $0f;
-  fmpar_table[chan].kslM    := tDUMMY_BUFF(data)[2]  SHR 6;
-  fmpar_table[chan].tremM   := tDUMMY_BUFF(data)[0]  SHR 7;
-  fmpar_table[chan].vibrM   := tDUMMY_BUFF(data)[0]  SHR 6 AND 1;
-  fmpar_table[chan].ksrM    := tDUMMY_BUFF(data)[0]  SHR 4 AND 1;
-  fmpar_table[chan].sustM   := tDUMMY_BUFF(data)[0]  SHR 5 AND 1;
-  fmpar_table[chan].multipC := tDUMMY_BUFF(data)[1]  AND $0f;
-  fmpar_table[chan].kslC    := tDUMMY_BUFF(data)[3]  SHR 6;
-  fmpar_table[chan].tremC   := tDUMMY_BUFF(data)[1]  SHR 7;
-  fmpar_table[chan].vibrC   := tDUMMY_BUFF(data)[1]  SHR 6 AND 1;
-  fmpar_table[chan].ksrC    := tDUMMY_BUFF(data)[1]  SHR 4 AND 1;
-  fmpar_table[chan].sustC   := tDUMMY_BUFF(data)[1]  SHR 5 AND 1;
+  fmpar_table[chan].connect := pBYTE(@data)[10] AND 1;
+  fmpar_table[chan].feedb   := pBYTE(@data)[10] SHR 1 AND 7;
+  fmpar_table[chan].multipM := pBYTE(@data)[0]  AND $0f;
+  fmpar_table[chan].kslM    := pBYTE(@data)[2]  SHR 6;
+  fmpar_table[chan].tremM   := pBYTE(@data)[0]  SHR 7;
+  fmpar_table[chan].vibrM   := pBYTE(@data)[0]  SHR 6 AND 1;
+  fmpar_table[chan].ksrM    := pBYTE(@data)[0]  SHR 4 AND 1;
+  fmpar_table[chan].sustM   := pBYTE(@data)[0]  SHR 5 AND 1;
+  fmpar_table[chan].multipC := pBYTE(@data)[1]  AND $0f;
+  fmpar_table[chan].kslC    := pBYTE(@data)[3]  SHR 6;
+  fmpar_table[chan].tremC   := pBYTE(@data)[1]  SHR 7;
+  fmpar_table[chan].vibrC   := pBYTE(@data)[1]  SHR 6 AND 1;
+  fmpar_table[chan].ksrC    := pBYTE(@data)[1]  SHR 4 AND 1;
+  fmpar_table[chan].sustC   := pBYTE(@data)[1]  SHR 5 AND 1;
 
-  fmpar_table[chan].adsrw_car.attck := tDUMMY_BUFF(data)[5] SHR 4;
-  fmpar_table[chan].adsrw_mod.attck := tDUMMY_BUFF(data)[4] SHR 4;
-  fmpar_table[chan].adsrw_car.dec   := tDUMMY_BUFF(data)[5] AND $0f;
-  fmpar_table[chan].adsrw_mod.dec   := tDUMMY_BUFF(data)[4] AND $0f;
-  fmpar_table[chan].adsrw_car.sustn := tDUMMY_BUFF(data)[7] SHR 4;
-  fmpar_table[chan].adsrw_mod.sustn := tDUMMY_BUFF(data)[6] SHR 4;
-  fmpar_table[chan].adsrw_car.rel   := tDUMMY_BUFF(data)[7] AND $0f;
-  fmpar_table[chan].adsrw_mod.rel   := tDUMMY_BUFF(data)[6] AND $0f;
-  fmpar_table[chan].adsrw_car.wform := tDUMMY_BUFF(data)[9] AND $07;
-  fmpar_table[chan].adsrw_mod.wform := tDUMMY_BUFF(data)[8] AND $07;
+  fmpar_table[chan].adsrw_car.attck := pBYTE(@data)[5] SHR 4;
+  fmpar_table[chan].adsrw_mod.attck := pBYTE(@data)[4] SHR 4;
+  fmpar_table[chan].adsrw_car.dec   := pBYTE(@data)[5] AND $0f;
+  fmpar_table[chan].adsrw_mod.dec   := pBYTE(@data)[4] AND $0f;
+  fmpar_table[chan].adsrw_car.sustn := pBYTE(@data)[7] SHR 4;
+  fmpar_table[chan].adsrw_mod.sustn := pBYTE(@data)[6] SHR 4;
+  fmpar_table[chan].adsrw_car.rel   := pBYTE(@data)[7] AND $0f;
+  fmpar_table[chan].adsrw_mod.rel   := pBYTE(@data)[6] AND $0f;
+  fmpar_table[chan].adsrw_car.wform := pBYTE(@data)[9] AND $07;
+  fmpar_table[chan].adsrw_mod.wform := pBYTE(@data)[8] AND $07;
 
-  panning_table[chan] := tDUMMY_BUFF(data)[11] AND 3;
-  volume_table[chan] := concw(tDUMMY_BUFF(data)[2] AND $3f,
-                              tDUMMY_BUFF(data)[3] AND $3f);
+  panning_table[chan] := pBYTE(@data)[11] AND 3;
+  volume_table[chan] := concw(pBYTE(@data)[2] AND $3f,
+                              pBYTE(@data)[3] AND $3f);
 
   update_modulator_adsrw(chan);
   update_carrier_adsrw(chan);
@@ -5380,31 +5848,65 @@ begin
                  (y0 >= block_y0) and (y0 <= block_y1);
 end;
 
-procedure fade_out_playback(fade_screen: Boolean); // fade_screen is relevant in SDL version only
+procedure fade_out_playback(fade_screen: Boolean);
 
 var
+{$IFDEF GO32V2}
+  idx,idx2: Byte;
+  fade_buf: tFADE_BUF;
+{$ELSE}
   temp: Byte;
-{$IFNDEF __TMT__}
   temp2,temp3: Byte;
   factor: Byte;
 {$ENDIF}
 
 begin
 
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
 
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2UNIT.PAS:fade_out_playback';
 
-  If (play_status <> isStopped) then
-    For fade_out_volume := 63 downto 0 do
-      begin
-        set_global_volume;
-        Delay(fade_out_volume DIV 32);
-        realtime_gfx_poll_proc;
-        keyboard_reset_buffer;
-      end;
+  If fade_screen then
+    begin
+      draw_screen;
+      fade_buf.action := first;
+      fade_speed := 32;
+      GetPalette(fade_buf.pal0,0,255);
 
+      For idx := fade_speed downto 0 do
+        begin
+          For idx2 := 0 to 255 do
+            begin
+              fade_buf.pal1[idx2].r := fade_buf.pal0[idx2].r * idx DIV fade_speed;
+              fade_buf.pal1[idx2].g := fade_buf.pal0[idx2].g * idx DIV fade_speed;
+              fade_buf.pal1[idx2].b := fade_buf.pal0[idx2].b * idx DIV fade_speed;
+            end;
+
+          SetPalette(fade_buf.pal1,0,255);
+          If (play_status <> isStopped) then
+            begin
+              fade_out_volume := idx*2;
+              set_global_volume;
+              CRT.Delay(fade_out_volume DIV 32);
+            end
+          else CRT.Delay(1);
+
+          realtime_gfx_poll_proc;
+          draw_screen;
+          keyboard_reset_buffer;
+        end;
+      fade_buf.action := fadeIn;
+    end
+  else If (play_status <> isStopped) then
+         For idx := 63 downto 0 do
+           begin
+             fade_out_volume := idx;
+             set_global_volume;
+             CRT.Delay(fade_out_volume DIV 32);
+             realtime_gfx_poll_proc;
+             keyboard_reset_buffer;
+           end;
 {$ELSE}
 
   If fade_screen then factor := 255
@@ -5426,8 +5928,8 @@ begin
             set_global_volume;
             If fade_screen or (temp MOD 5 = 0) then
               begin
-                _emulate_screen_without_delay := TRUE;
-                emulate_screen;
+                _draw_screen_without_delay := TRUE;
+                draw_screen;
                 keyboard_reset_buffer;
               end;
           end;
@@ -5453,7 +5955,7 @@ procedure realtime_gfx_poll_proc;
 begin
   If _realtime_gfx_no_update then EXIT;
 
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   If NOT reset_gfx_ticks and
      (gfx_ticks > (IRQ_freq DIV 100)*SUCC(fps_down_factor)) then
     begin
@@ -5470,7 +5972,7 @@ begin
         begin
           If debugging and (play_status = isStopped) then status_layout[isStopped][9] := #9
           else status_layout[isStopped][9] := ' ';
-          If NOT debugging then status_layout[isPlaying][9] := ''
+          If NOT debugging then status_layout[isPlaying][9] := #16
           else status_layout[isPlaying][9] := #9;
           status_layout[isPaused][8] := #8;
           If (@macro_preview_indic_proc <> NIL) then
@@ -5486,23 +5988,23 @@ begin
         end;
 
       decay_bars_refresh;
-{$IFNDEF __TMT__}
+{$IFNDEF GO32V2}
       If opl3_channel_recording_mode then update_recorded_channels;
 {$ENDIF}
       If do_synchronize then synchronize_screen;
-{$IFNDEF __TMT__}
+{$IFNDEF GO32V2}
       If (_name_scrl_pending_frames > 0) then Dec(_name_scrl_pending_frames);
       Inc(_cursor_blink_pending_frames);
 {$ENDIF}
       status_refresh;
       STATUS_LINE_refresh;
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
       reset_gfx_ticks := TRUE;
 {$ENDIF}
       trace_update_proc;
       If (@mn_environment.ext_proc_rt <> NIL) then
         mn_environment.ext_proc_rt;
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
     end;
 {$ENDIF}
 end;
@@ -5514,7 +6016,7 @@ var
   result: Longint;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2UNIT.PAS:get_bank_position';
 {$ENDIF}
@@ -5538,7 +6040,7 @@ var
   found_flag: Boolean;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2UNIT.PAS:add_bank_position';
 {$ENDIF}
@@ -5573,5 +6075,27 @@ begin
   bank_position_list[bank_position_list_size].bank_size := bank_size;
   bank_position_list[bank_position_list_size].bank_position := bank_position;
 end;
+
+{$IFDEF GO32V2}
+
+var
+  old_exit_proc: procedure;
+
+procedure new_exit_proc;
+begin
+  Unlock_Data(___UNIT_DATA_START___,DWORD(Addr(___UNIT_DATA_END___))-DWORD(Addr(___UNIT_DATA_START___)));
+  Unlock_Data(___IRQ_DATA_START___,DWORD(Addr(___IRQ_DATA_END___))-DWORD(Addr(___IRQ_DATA_START___)));
+  Unlock_Code(@___IRQ_CODE_START___,DWORD(@___IRQ_CODE_END___)-DWORD(@___IRQ_CODE_START___));
+  ExitProc := @old_exit_proc;
+end;
+
+begin
+  Lock_Data(___UNIT_DATA_START___,DWORD(Addr(___UNIT_DATA_END___))-DWORD(Addr(___UNIT_DATA_START___)));
+  Lock_Data(___IRQ_DATA_START___,DWORD(Addr(___IRQ_DATA_END___))-DWORD(Addr(___IRQ_DATA_START___)));
+  Lock_Code(@___IRQ_CODE_START___,DWORD(@___IRQ_CODE_END___)-DWORD(@___IRQ_CODE_START___));
+  @old_exit_proc := ExitProc;
+  ExitProc := @new_exit_proc;
+
+{$ENDIF}
 
 end.

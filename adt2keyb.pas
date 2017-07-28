@@ -1,10 +1,10 @@
 unit AdT2keyb;
-{$IFNDEF __TMT__}
+{$S-,Q-,R-,V-,B-,X+}
 {$PACKRECORDS 1}
-{$ENDIF}
 interface
 
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
+{$MODE FPC}
 
 const
   keyboard_sleep: Boolean = FALSE;
@@ -12,13 +12,6 @@ const
   _ctrl_pressed: Boolean = FALSE;
   _2x_ctrl_pressed: Boolean = FALSE;
 
-{$ENDIF}
-
-var
-{$IFDEF __TMT__}
-  keydown: array[0..127] of Boolean;
-{$ELSE}
-  keydown: array[0..255] of Boolean;
 {$ENDIF}
 
 procedure keyboard_init;
@@ -40,7 +33,7 @@ function  ctrl_tab_pressed: Boolean;
 function  LookUpKey(key: Word; var table; size: Byte): Boolean;
 procedure screen_saver;
 
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
 
 procedure keyboard_reset_buffer_alt;
 procedure keyboard_toggle_sleep;
@@ -56,24 +49,61 @@ uses
   CRT,
 {$ENDIF}
   DOS,
-{$IFNDEF __TMT__}
+{$IFDEF GO32V2}
+  GO32,
+{$ELSE}
   SDL_Types,SDL_Timer,SDL_Events,SDL_Keyboard,
 {$ENDIF}
   AdT2unit,AdT2sys,AdT2ext2,
   TxtScrIO,DialogIO,ParserIO;
 
-{$IFDEF __TMT__}
+var
+{$IFDEF GO32V2}
+  keydown: array[0..127] of Boolean;
+{$ELSE}
+  keydown: array[0..255] of Boolean;
+{$ENDIF}
+
+{$IFDEF GO32V2}
 
 var
-  oldint09: FarPointer;
+  oldint09_handler: tSegInfo;
+  newint09_handler: tSegInfo;
+  user_proc_ptr: Pointer;
+  backupDS_adt2keyb: Word; EXTERNAL NAME '___v2prt0_ds_alias';
 
-procedure newint09; forward;
+procedure newint09_proc; assembler;
+asm
+        cli
+        push    ds
+        push    es
+        push    fs
+        push    gs
+        pushad
+        mov     ax,cs:[backupDS_adt2keyb]
+        mov     ds,ax
+        mov     es,ax
+        mov     ax,DosMemSelector
+        mov     fs,ax
+        call    dword ptr [user_proc_ptr]
+        popad
+        pop     gs
+        pop     fs
+        pop     es
+        pop     ds
+        jmp     cs:[oldint09_handler]
+end;
+
+procedure newint09_proc_end; begin end;
+
+procedure int09_user_proc; forward;
+procedure int09_user_proc_end; forward;
 
 {$ELSE}
 
 const
-  _numlock:    Boolean = FALSE;
-  _capslock:   Boolean = FALSE;
+  _numlock:  Boolean = FALSE;
+  _capslock: Boolean = FALSE;
 
 var
   keystate: ^BoolArray;
@@ -83,12 +113,19 @@ var
 
 procedure keyboard_init;
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2KEYB.PAS:keyboard_init';
   FillChar(keydown,SizeOf(keydown),FALSE);
-  GetIntVec($09,oldint09);
-  SetIntVec($09,@newint09);
+  user_proc_ptr := @int09_user_proc;
+  lock_data(user_proc_ptr,SizeOf(user_proc_ptr));
+  lock_data(DosMemSelector,SizeOf(DosMemSelector));
+  lock_code(@int09_user_proc,DWORD(@int09_user_proc_end)-DWORD(@int09_user_proc));
+  lock_code(@newint09_proc,DWORD(@newint09_proc_end)-DWORD(@newint09_proc));
+  newint09_handler.offset := @newint09_proc;
+  newint09_handler.segment := get_cs;
+  get_pm_interrupt($09,oldint09_handler);
+  set_pm_interrupt($09,newint09_handler);
 {$ELSE}
   SDL_EnableKeyRepeat(sdl_typematic_delay,sdl_typematic_rate);
   keystate := SDL_GetKeyState(varnum);
@@ -97,20 +134,24 @@ end;
 
 procedure keyboard_done;
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2KEYB.PAS:keyboard_done';
-  SetIntVec($09,oldint09);
+  set_pm_interrupt($09,oldint09_handler);
+  unlock_data(DosMemSelector,SizeOf(DosMemSelector));
+  unlock_data(user_proc_ptr,SizeOf(user_proc_ptr));
+  unlock_code(@int09_user_proc,DWORD(@int09_user_proc_end)-DWORD(@int09_user_proc));
+  lock_code(@newint09_proc,DWORD(@newint09_proc_end)-DWORD(@newint09_proc));
   keyboard_reset_buffer;
 {$ENDIF}
 end;
 
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
 
 function keypressed: Boolean;
 begin
   realtime_gfx_poll_proc;
-  emulate_screen;
+  draw_screen;
   // filter out CTRL+TAB combo as it is handled within timer routine
   If ctrl_tab_pressed then
     begin
@@ -131,13 +172,13 @@ begin
   While NOT keypressed do
     begin
       realtime_gfx_poll_proc;
-      emulate_screen;
+      draw_screen;
       If (seconds_counter >= ssaver_time) then screen_saver;
     end;
   key_c := BYTE(CRT.ReadKey);
   If (key_c = 0) then result := BYTE(CRT.ReadKey) SHL 8
   else begin
-         scan_c := PORT[$60];
+         scan_c := inportb($60);
          If (scan_c > $80) then scan_c := scan_c-$80;
          result := key_c+(scan_c SHL 8);
        end;
@@ -149,66 +190,74 @@ begin
   scankey := keydown[scancode];
 end;
 
-procedure newint09; interrupt;
-begin
-  asm
+{$ASMMODE INTEL}
+
+procedure int09_user_proc; assembler;
+asm
+        push    eax
+        push    ebx
+        push    es
+        push    ds
+        call    process_global_keys
+        pop     ds
+        pop     es
         mov     dword ptr [seconds_counter],0
         in      al,60h
         xor     ebx,ebx
         mov     bx,ax
         and     bx,007fh
         and     al,80h
-        jz      @@2
+        jz      @@4
 @@1:    mov     byte ptr keydown[ebx],0
         cmp     ebx,1dh // [Ctrl]
-        jnz     @@1b
+        jnz     @@3
         cmp     byte ptr [_ctrl_pressed],1
-        jnz     @@1a
+        jnz     @@2
         mov     byte ptr [_2x_ctrl_pressed],1
-@@1a:   mov     byte ptr [_ctrl_pressed],1
-@@1b:   jmp     @@3
-@@2:    mov     byte ptr keydown[ebx],1
+@@2:    mov     byte ptr [_ctrl_pressed],1
+@@3:    jmp     @@5
+@@4:    mov     byte ptr keydown[ebx],1
         cmp     ebx,1dh // [Ctrl]
-        jz      @@3
+        jz      @@5
         mov     byte ptr [_ctrl_pressed],0
         mov     byte ptr [_2x_ctrl_pressed],0
-@@3:    cmp     keyboard_sleep,1
-        jz      @@4
+@@5:    cmp     keyboard_sleep,1
+        jz      @@10
         cmp     byte ptr keydown[1dh],1 // [Ctrl]
-        jnz     @@3a
+        jnz     @@6
         cmp     byte ptr keydown[38h],1 // [Alt]
-        jnz     @@3a
+        jnz     @@6
         cmp     byte ptr keydown[4ah],1 // *[-]
-        jz      @@4
+        jz      @@10
         cmp     byte ptr keydown[4eh],1 // *[+]
-        jz      @@4
-@@3a:   cmp     byte ptr keydown[1dh],1 // [Ctrl]
-        jnz     @@3b
+        jz      @@10
+@@6:    cmp     byte ptr keydown[1dh],1 // [Ctrl]
+        jnz     @@7
         cmp     byte ptr keydown[38h],1 // [Alt]
-        jnz     @@3b
+        jnz     @@7
         cmp     byte ptr keydown[53h],1 // [Del]
-        jz      @@4a
-@@3b:   cmp     byte ptr keydown[1dh],1 // [Ctrl]
-        jnz     @@3d
+        jz      @@9
+@@7:    cmp     byte ptr keydown[1dh],1 // [Ctrl]
+        jnz     @@8
         cmp     byte ptr keydown[02h],1 // *[1]
-        jz      @@4
+        jz      @@10
         cmp     byte ptr keydown[03h],1 // *[2]
-        jz      @@4
+        jz      @@10
         cmp     byte ptr keydown[04h],1 // *[3]
-        jz      @@4
+        jz      @@10
         cmp     byte ptr keydown[05h],1 // *[4]
-        jz      @@4
+        jz      @@10
         cmp     byte ptr keydown[06h],1 // *[5]
-        jz      @@4
+        jz      @@10
         cmp     byte ptr keydown[07h],1 // *[6]
-        jz      @@4
+        jz      @@10
         cmp     byte ptr keydown[08h],1 // *[7]
-        jz      @@4
+        jz      @@10
         cmp     byte ptr keydown[09h],1 // *[8]
-        jz      @@4
-@@3d:   jmp     @@5
-@@4a:   mov     CTRL_ALT_DEL_pressed,1
-@@4:    in      al,61h
+        jz      @@10
+@@8:    jmp     @@11
+@@9:    mov     CTRL_ALT_DEL_pressed,1
+@@10:   in      al,61h
         mov     ah,al
         or      al,80h
         out     61h,al
@@ -216,12 +265,15 @@ begin
         out     61h,al
         mov     al,20h
         out     20h,al
-        jmp     @@6
-@@5:    pushfd
-        call    oldint09
-@@6:
-  end;
+        pop     ebx
+        pop     eax
+        jmp     @@12
+@@11:   pop     ebx
+        pop     eax
+@@12:
 end;
+
+procedure int09_user_proc_end; begin end;
 
 procedure keyboard_toggle_sleep;
 begin
@@ -230,7 +282,7 @@ end;
 
 procedure keyboard_reset_buffer;
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2KEYB.PAS:keyboard_reset_buffer';
 {$ENDIF}
@@ -239,7 +291,7 @@ end;
 
 procedure keyboard_reset_buffer_alt;
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2KEYB.PAS:keyboard_reset_buffer_alt';
 {$ENDIF}
@@ -249,15 +301,15 @@ end;
 
 procedure wait_until_F11_F12_released;
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2KEYB.PAS:wait_until_key_released';
 {$ENDIF}
   Repeat
     realtime_gfx_poll_proc;
-    emulate_screen;
+    draw_screen;
     keyboard_reset_buffer;
-    If (PORT[$60] > $80) then FillChar(keydown,SizeOf(keydown),0);
+    If (inportb($60) > $80) then FillChar(keydown,SizeOf(keydown),0);
   until NOT keydown[$57] and NOT keydown[$58];
 end;
 
@@ -286,7 +338,7 @@ begin
 end;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2KEYB.PAS:screen_saver:fadeout';
 {$ENDIF}
@@ -302,7 +354,7 @@ begin
         end;
       WaitRetrace;
       realtime_gfx_poll_proc;
-      If (depth MOD 4 = 0) then emulate_screen;
+      If (depth MOD 4 = 0) then draw_screen;
       keyboard_reset_buffer;
     end;
 end;
@@ -310,13 +362,12 @@ end;
 procedure fadein;
 
 var
-  r,g,b: Byte;
   index: Byte;
   depth: Byte;
 
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2KEYB.PAS:screen_saver:fadein';
 {$ENDIF}
@@ -328,13 +379,13 @@ begin
                          temp_buf[depth][index].b);
       If (depth MOD 4 <> 0) then WaitRetrace;
       realtime_gfx_poll_proc;
-      If (depth MOD 4 = 0) then emulate_screen;
+      If (depth MOD 4 = 0) then draw_screen;
       keyboard_reset_buffer;
     end;
 end;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2KEYB.PAS:screen_saver';
 {$ENDIF}
@@ -342,7 +393,7 @@ begin
   fadeout;
   Repeat
     realtime_gfx_poll_proc;
-    emulate_screen;
+    draw_screen;
   until (seconds_counter = 0);
   fadein;
 end;
@@ -579,7 +630,7 @@ var
 
 begin
   Repeat
-    emulate_screen;
+    draw_screen;
     If (SDL_PollEvent(@event) <> 0) then
       begin
         If (event.eventtype = SDL_EVENTQUIT) or _force_program_quit then
@@ -654,11 +705,11 @@ begin
 end;
 
 begin
-  Repeat emulate_screen until keypressed;
+  Repeat draw_screen until keypressed;
   // filter out CTRL+TAB combo as it is handled within timer routine
   If ctrl_tab_pressed then
     begin
-      emulate_screen;
+      draw_screen;
       keyboard_reset_buffer;
       getkey := WORD_NULL;
     end
@@ -685,7 +736,7 @@ procedure wait_until_F11_F12_released;
 begin
   _debug_str_ := 'ADT2KEYB.PAS:wait_until_F11_F12_released';
   Repeat
-    emulate_screen;
+    draw_screen;
     SDL_PumpEvents;
     TranslateKeycodes;
   until NOT keydown[SC_F11] and NOT keydown[SC_F12];
@@ -729,7 +780,7 @@ end;
 
 procedure screen_saver;
 begin
-  // to be implemented later :-)
+  // relevant for DOS version only
 end;
 
 {$ENDIF}

@@ -10,7 +10,7 @@ release_: all
 	rm -rf release
 	mkdir release
 	mkdir release/src
-	cp -r *.pas *.inc Makefile TODO *.asm *.bat sdl.dll *.c *.h sdl utils package release/src/
+	cp -r *.pas *.inc Makefile TODO *.bat sdl.dll sdl utils package release/src/
 	cp -r package release/bin
 	cp adtrack2 release/bin/
 	rm -f release/bin/techinfo.*
@@ -34,12 +34,5 @@ mrproper: clean
 	mkdir bin/
 	rm -rf release/
 
-adtrack2: ymf262.o aplib.o adt2apak.pas adt2data.pas adt2ext2.pas adt2ext3.pas adt2ext4.pas adt2extn.pas adt2keyb.pas adt2opl3.pas adt2sys.pas adt2text.pas adt2unit.pas adtrack2.pas depackio.pas dialogio.pas iloaders.inc iloadins.inc instedit.inc ipattern.inc ipattord.inc menulib1.pas menulib2.pas parserio.pas realtime.inc stringio.pas timerint.pas txtscrio.pas typconst.inc
+adtrack2: adt2data.pas adt2ext2.pas adt2ext3.pas adt2ext4.pas adt2ext5.pas adt2extn.pas adt2keyb.pas adt2opl3.pas adt2pack.pas adt2sys.pas adt2text.pas adt2unit.pas adt2vesa.pas adtrack2.pas depackio.pas dialogio.pas iloaders.inc iloadins.inc instedit.inc ipattern.inc ipattord.inc iss_tim.pas menulib1.pas menulib2.pas opl3emu.pas parserio.pas realtime.inc stringio.pas txtscrio.pas typcons1.inc typcons2.inc
 	fpc -O2 -OpPENTIUM2 -Ccpascal -Mtp -Rintel -Fusdl adtrack2.pas -oadtrack2
-
-ymf262.o: ymf262.c ymf262.h
-	gcc -c ymf262.c -o ymf262.o -shared -Wall -O3 -std=c99 -fms-extensions -DINLINE="static"
-
-aplib.o: aplib.asm 
-	jwasm -elf -Foaplib.o aplib.asm
-

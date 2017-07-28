@@ -9,21 +9,18 @@ echo.
 if not exist *.exe goto :no_exe_file
 del *.exe >nul
 :no_exe_file
-if not exist *.fpd goto :no_fpd_file
-del *.fpd >nul
-:no_fpd_file
-if not exist *.map goto :no_map_file
-del *.map
-:no_map_file
-if not exist *.obj goto :no_obj_file
-del *.obj
-:no_obj_file
-if not exist *.sym goto :no_sym_file
-del *.sym
-:no_sym_file
+if not exist *.ppu goto :no_ppu_file
+del *.ppu
+:no_ppu_file
+if not exist *.o goto :no_o_file
+del *.o
+:no_o_file
 if not exist !log goto :no_log_file
 del !log
 :no_log_file
+if not exist adt2help.* goto :no_help_file
+del adt2help.* >nul
+:no_help_file
 if not exist adt2play\*.exe goto :no_exe_file2
 del adt2play\*.exe >nul
 :no_exe_file2

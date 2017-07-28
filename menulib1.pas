@@ -1,7 +1,6 @@
 unit MenuLib1;
-{$IFNDEF __TMT__}
+{$S-,Q-,R-,V-,B-,X+}
 {$PACKRECORDS 1}
-{$ENDIF}
 interface
 
 uses
@@ -32,7 +31,7 @@ const
                          terminate_keys: array[1..50] of Word;
                        end
 
-  = (frame_type:     single;
+  = (frame_type:     frame_single;
      shadow_enabled: TRUE;
      posbar_enabled: TRUE;
      title_attr:     $0f;
@@ -96,8 +95,8 @@ type
                                  use: Boolean;
                                end;
 var
-  i,k,m,max: Word;
-  len2b,page,first,last,temp,temp2,opage,opos: Word;
+  idx,idx2,max,len2b,page,
+  first,last,temp,temp2,opage,opos: Word;
   old_fr_shadow_enabled: Boolean;
   key:    Word;
   solid:  Boolean;
@@ -119,8 +118,8 @@ var
   result: Char;
 
 begin
-  If SYSTEM.Pos('~',str) = 0 then result := '~'
-  else If str[SYSTEM.Pos('~',str)+2] <> '~' then result := '~'
+  If (SYSTEM.Pos('~',str) = 0) then result := '~'
+  else If (str[SYSTEM.Pos('~',str)+2] <> '~') then result := '~'
        else result := str[SYSTEM.Pos('~',str)+1];
   OutKey := result;
 end;
@@ -131,7 +130,7 @@ var
   temp: String;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'MENULIB1.PAS:pstr';
 {$ENDIF}
@@ -146,11 +145,11 @@ var
   temp: String;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'MENULIB1.PAS:pdes';
 {$ENDIF}
-  If mn_environment.descr <> NIL then
+  If (mn_environment.descr <> NIL) then
     Move(POINTER(Ptr(0,Ofs(mn_environment.descr^)+
       (item-1)*(mn_environment.descr_len+1)))^,temp,mn_environment.descr_len+1)
   else temp := '';
@@ -166,7 +165,7 @@ var
   highlighted: Boolean;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'MENULIB1.PAS:refresh:ShowCStr_clone';
 {$ENDIF}
@@ -197,41 +196,41 @@ begin
 end;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'MENULIB1.PAS:refresh';
 {$ENDIF}
-  If (page = opage) and (k = opos) and NOT MenuLib1_mn_environment.do_refresh then EXIT
+  If (page = opage) and (idx2 = opos) and NOT MenuLib1_mn_environment.do_refresh then EXIT
   else begin
          opage := page;
-         opos  := k;
+         opos  := idx2;
          MenuLib1_mn_environment.do_refresh := FALSE;
        end;
 
-  For i := page to mnu_len2+page-1 do
-    If (i = k+page-1) then
-      ShowCStr_clone(MenuLib1_mn_environment.v_dest,mnu_x+1,mnu_y+k,
-                     ExpStrR(pstr(k+page-1)+pdes(k+page-1),
-                     max+(Length(pstr(k+page-1))+Length(pdes(k+page-1))-
-                     CStrLen(pstr(k+page-1)+pdes(k+page-1))),' '),
+  For idx := page to mnu_len2+page-1 do
+    If (idx = idx2+page-1) then
+      ShowCStr_clone(MenuLib1_mn_environment.v_dest,mnu_x+1,mnu_y+idx2,
+                     ExpStrR(pstr(idx2+page-1)+pdes(idx2+page-1),
+                     max+(Length(pstr(idx2+page-1))+Length(pdes(idx2+page-1))-
+                     CStrLen(pstr(idx2+page-1)+pdes(idx2+page-1))),' '),
                      MenuLib1_mn_setting.text2_attr,MenuLib1_mn_setting.short2_attr,
                      MenuLib1_mn_setting.text_attr,MenuLib1_mn_setting.short_attr)
     else
-      If mbuf[i].use then
-        ShowCStr(MenuLib1_mn_environment.v_dest,mnu_x+1,mnu_y+i-page+1,
-                 ExpStrR(pstr(i)+pdes(i),
-                 max+(Length(pstr(i))+Length(pdes(k+page-1))-
-                 CStrLen(pstr(i)+pdes(i))),' '),
+      If mbuf[idx].use then
+        ShowCStr(MenuLib1_mn_environment.v_dest,mnu_x+1,mnu_y+idx-page+1,
+                 ExpStrR(pstr(idx)+pdes(idx),
+                 max+(Length(pstr(idx))+Length(pdes(idx2+page-1))-
+                 CStrLen(pstr(idx)+pdes(idx))),' '),
                  MenuLib1_mn_setting.text_attr,MenuLib1_mn_setting.short_attr)
       else
-        ShowCStr(MenuLib1_mn_environment.v_dest,mnu_x+1,mnu_y+i-page+1,
-                 ExpStrR(pstr(i)+pdes(i),
-                 max+(Length(pstr(i))+Length(pdes(k+page-1))-
-                 CStrLen(pstr(i)+pdes(i))),' '),
+        ShowCStr(MenuLib1_mn_environment.v_dest,mnu_x+1,mnu_y+idx-page+1,
+                 ExpStrR(pstr(idx)+pdes(idx),
+                 max+(Length(pstr(idx))+Length(pdes(idx2+page-1))-
+                 CStrLen(pstr(idx)+pdes(idx))),' '),
                  MenuLib1_mn_setting.disbld_attr,MenuLib1_mn_setting.disbld_attr);
 
   vscrollbar_pos :=
-    VScrollBar(MenuLib1_mn_environment.v_dest,mnu_x+max+1,mnu_y+1,temp2,mnu_count,k+page-1,
+    VScrollBar(MenuLib1_mn_environment.v_dest,mnu_x+max+1,mnu_y+1,temp2,mnu_count,idx2+page-1,
                vscrollbar_pos,MenuLib1_mn_setting.menu_attr,MenuLib1_mn_setting.menu_attr);
 end;
 
@@ -245,9 +244,15 @@ var
 
 begin
   temp := p;
-  If (temp > 1) and mbuf[temp+page-2].use then Dec(temp)
-  else If temp > 1 then begin Dec(temp); SubPos(temp); end
-       else If page > first then Dec(page);
+  If (temp > 1) and mbuf[temp+page-2].use then
+    Dec(temp)
+  else If (temp > 1) then
+         begin
+           Dec(temp);
+           SubPos(temp);
+         end
+       else If (page > first) then
+              Dec(page);
   If mbuf[temp+page-1].use then p := temp
   else If (temp+page-1 > first) then SubPos(temp);
 end;
@@ -259,23 +264,33 @@ var
 
 begin
   temp := p;
-  If (temp < len2) and (temp < last) and mbuf[temp+page].use then Inc(temp)
-  else If (temp < len2) and (temp < last) then begin Inc(temp); AddPos(temp); end
-       else If page+temp <= last then Inc(page);
+  If (temp < len2) and (temp < last) and
+     mbuf[temp+page].use then
+    Inc(temp)
+  else If (temp < len2) and (temp < last) then
+         begin
+           Inc(temp);
+           AddPos(temp);
+         end
+       else If (page+temp <= last) then
+              Inc(page);
   If mbuf[temp+page-1].use then p := temp
   else If (temp+page-1 < last) then AddPos(temp);
 end;
 
-procedure RetKey(code: Byte; var p: Word);
+function RetKey(code: Byte): Word;
 
 var
   temp: Byte;
 
 begin
-  p := 0;
+  RetKey := 0;
   For temp := 1 to count do
-    If (p = 0) and (UpCase(mbuf[temp].key) = UpCase(CHR(code))) then
-      p := temp;
+    If (UpCase(mbuf[temp].key) = UpCase(CHR(code))) then
+      begin
+        RetKey := temp;
+        BREAK;
+      end;
 end;
 
 procedure edit_contents(item: Word);
@@ -284,12 +299,12 @@ var
   temp: String;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'MENULIB1.PAS:MenuLib1_Menu:edit_contents';
 {$ENDIF}
   is_setting.append_enabled := TRUE;
-  is_setting.character_set  := [#$20..#$ff];
+  is_setting.character_set  := [#32..#255];
   is_environment.locate_pos := 1;
 
   If (MenuLib1_mn_environment.edit_pos > 0) and (MenuLib1_mn_environment.edit_pos < max-2) then
@@ -299,12 +314,12 @@ begin
     temp := CutStr(pstr(item));
 
   While (temp <> '') and (temp[Length(temp)] = ' ') do Delete(temp,Length(temp),1);
-  temp := InputStr(temp,x+1+MenuLib1_mn_environment.edit_pos,y+k,
+  temp := InputStr(temp,x+1+MenuLib1_mn_environment.edit_pos,y+idx2,
                max-2-MenuLib1_mn_environment.edit_pos+1,
                max-2-MenuLib1_mn_environment.edit_pos+1,
                MenuLib1_mn_setting.text2_attr,MenuLib1_mn_setting.default_attr);
 
-  If (is_environment.keystroke = $1c0d) then
+  If (is_environment.keystroke = kENTER) then
     begin
       If (MenuLib1_mn_environment.edit_pos > 0) and (MenuLib1_mn_environment.edit_pos < max-2) then
         temp := Copy(pstr(item),1,MenuLib1_mn_environment.edit_pos)+temp
@@ -313,20 +328,27 @@ begin
       Move(temp,POINTER(Ptr(0,Ofs(data)+(item-1)*(len+1)))^,len+1);
     end;
 
-  ShowCStr(MenuLib1_mn_environment.v_dest,x+1,y+k,
+  ShowCStr(MenuLib1_mn_environment.v_dest,x+1,y+idx2,
            ExpStrR(pstr(item),max+(Length(pstr(item)))-
            CStrLen(pstr(item)),' '),
            MenuLib1_mn_setting.text2_attr,MenuLib1_mn_setting.short2_attr);
 end;
 
 begin { MenuLib1_Menu }
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'MENULIB1.PAS:MenuLib1_Menu';
 {$ENDIF}
-  If count = 0 then begin MenuLib1_Menu := 0; EXIT; end;
+  If (count = 0) then
+    begin
+      MenuLib1_Menu := 0;
+      EXIT;
+    end;
+
   max := Length(title);
-  mnu_data := Addr(data); mnu_count := count; mnu_len := len;
+  mnu_data := Addr(data);
+  mnu_count := count;
+  mnu_len := len;
 
   If NOT MenuLib1_mn_environment.unpolite then
     ScreenMemCopy(MenuLib1_mn_environment.v_dest,ptr_scr_backup);
@@ -337,12 +359,12 @@ begin { MenuLib1_Menu }
   If NOT MenuLib1_mn_environment.preview then HideCursor;
   temp := 0;
 
-  For i := 1 to count do
+  For idx := 1 to count do
     begin
-      mbuf[i].key := OutKey(pstr(i));
-      If NOT MenuLib1_mn_setting.reverse_use then mbuf[i].use := mbuf[i].key <> '~'
-      else mbuf[i].use := NOT (mbuf[i].key <> '~');
-      If mbuf[i].use then temp := 1;
+      mbuf[idx].key := OutKey(pstr(idx));
+      If NOT MenuLib1_mn_setting.reverse_use then mbuf[idx].use := mbuf[idx].key <> '~'
+      else mbuf[idx].use := NOT (mbuf[idx].key <> '~');
+      If mbuf[idx].use then temp := 1;
     end;
 
   solid := FALSE;
@@ -352,9 +374,9 @@ begin { MenuLib1_Menu }
       solid := TRUE;
     end;
 
-  For i := 1 to count do
-    If max < CStrLen(pstr(i))+MenuLib1_mn_environment.descr_len then
-      max := CStrLen(pstr(i))+MenuLib1_mn_environment.descr_len;
+  For idx := 1 to count do
+    If (max < CStrLen(pstr(idx))+MenuLib1_mn_environment.descr_len) then
+      max := CStrLen(pstr(idx))+MenuLib1_mn_environment.descr_len;
 
   If MenuLib1_mn_setting.center_box then
     begin
@@ -362,7 +384,8 @@ begin { MenuLib1_Menu }
       y := (work_MaxLn-len2-1) DIV 2+(work_MaxLn-len2-1) MOD 2;
     end;
 
-  mnu_x := x; mnu_y := y;
+  mnu_x := x;
+  mnu_y := y;
   len2b := len2;
 
   If NOT MenuLib1_mn_environment.unpolite then
@@ -381,23 +404,29 @@ begin { MenuLib1_Menu }
                contxt,MenuLib1_mn_setting.contxt_attr,MenuLib1_mn_setting.contxt2_attr);
 
       temp2 := len2;
-      If len2 > count then len2 := count;
-      If len2 < 1 then len2 := 1;
-      If spos < 1 then spos := 1;
-      If spos > count then spos := count;
+      If (len2 > count) then len2 := count;
+      If (len2 < 1) then len2 := 1;
+      If (spos < 1) then spos := 1;
+      If (spos > count) then spos := count;
 
       mnu_len2 := len2;
       MenuLib1_mn_environment.refresh := refresh;
 
-      first := 1; While NOT mbuf[first].use do Inc(first);
-      last  := count; While NOT mbuf[last].use do Dec(last);
+      first := 1;
+      last := count;
+      While NOT mbuf[first].use do Inc(first);
+      While NOT mbuf[last].use do Dec(last);
 
-      If (spos < first) or (spos > last) then spos := first;
-      k := 1; page := 1; opage := WORD_NULL; opos := WORD_NULL;
-      While (k+page-1 < spos) do AddPos(k);
+      If (spos < first) or (spos > last) then
+        spos := first;
+      idx2 := 1;
+      page := 1;
+      opage := WORD_NULL;
+      opos := WORD_NULL;
+      While (idx2+page-1 < spos) do AddPos(idx2);
     end;
 
-  MenuLib1_mn_environment.curr_pos := k+page-1;
+  MenuLib1_mn_environment.curr_pos := idx2+page-1;
   MenuLib1_mn_environment.keystroke := WORD_NULL;
   If (Addr(MenuLib1_mn_environment.ext_proc) <> NIL) then MenuLib1_mn_environment.ext_proc;
 
@@ -414,71 +443,72 @@ begin { MenuLib1_Menu }
       If LookUpKey(key,MenuLib1_mn_setting.terminate_keys,50) then
         If NOT ((key = MenuLib1_mn_setting.terminate_keys[2]) and
                  MenuLib1_mn_setting.edit_contents) then qflg := TRUE
-        else edit_contents(k+page-1);
+        else edit_contents(idx2+page-1);
 
       If NOT qflg then
-        Case LO(key) of
-          $00: If NOT shift_pressed and
-                  NOT ctrl_pressed and NOT alt_pressed then
-                 Case HI(key) of
-                   $48: If (page+k-1 > first) or
-                           NOT MenuLib1_mn_setting.cycle_moves then SubPos(k)
-                        else begin
-                               k := len2; page := count-len2+1;
-                               If NOT mbuf[k+page-1].use then SubPos(k);
-                             end;
-
-                   $50: If (page+k-1 < last) or
-                           NOT MenuLib1_mn_setting.cycle_moves then AddPos(k)
-                        else begin
-                               k := 1; page := 1;
-                               If NOT mbuf[k+page-1].use then AddPos(k);
-                             end;
-
-                   $47: begin
-                          k := 1; page := 1;
-                          If NOT mbuf[k+page-1].use then AddPos(k);
-                        end;
-
-                   $4f: begin
-                          k := len2; page := count-len2+1;
-                          If NOT mbuf[k+page-1].use then SubPos(k);
-                        end;
-
-                   $49: For temp := 1 to len2-1 do SubPos(k);
-                   $51: For temp := 1 to len2-1 do AddPos(k);
-                 end;
-
-        $32..$0ff:
+        If (LO(key) in [$20..$0ff]) then
           begin
-            RetKey(Lo(key),m);
-            If m <> 0 then
+            idx := RetKey(LO(key));
+            If (idx <> 0) then
               begin
                 refresh;
-                k := m;
+                idx2 := idx;
                 If NOT ((key = MenuLib1_mn_setting.terminate_keys[2]) and
                          MenuLib1_mn_setting.edit_contents) then qflg := TRUE
-                else edit_contents(m);
+                else edit_contents(idx);
               end;
-          end;
-      end;
+          end
+        else If NOT shift_pressed and
+                NOT ctrl_pressed and NOT alt_pressed then
+               Case key of
+                 kUP: If (page+idx2-1 > first) or
+                        NOT MenuLib1_mn_setting.cycle_moves then SubPos(idx2)
+                      else begin
+                             idx2 := len2;
+                             page := count-len2+1;
+                             If NOT mbuf[idx2+page-1].use then SubPos(idx2);
+                           end;
 
-      MenuLib1_mn_environment.curr_pos := k+page-1;
+                 kDOWN: If (page+idx2-1 < last) or
+                           NOT MenuLib1_mn_setting.cycle_moves then AddPos(idx2)
+                        else begin
+                               idx2 := 1;
+                               page := 1;
+                               If NOT mbuf[idx2+page-1].use then AddPos(idx2);
+                             end;
+
+                 kHOME: begin
+                          idx2 := 1;
+                          page := 1;
+                          If NOT mbuf[idx2+page-1].use then AddPos(idx2);
+                        end;
+
+                 kEND: begin
+                         idx2 := len2;
+                         page := count-len2+1;
+                         If NOT mbuf[idx2+page-1].use then SubPos(idx2);
+                       end;
+
+                 kPgUP: For temp := 1 to len2-1 do SubPos(idx2);
+                 kPgDOWN: For temp := 1 to len2-1 do AddPos(idx2);
+               end;
+
+      MenuLib1_mn_environment.curr_pos := idx2+page-1;
       refresh;
       MenuLib1_mn_environment.keystroke := key;
       If (Addr(MenuLib1_mn_environment.ext_proc) <> NIL) then MenuLib1_mn_environment.ext_proc;
-{$IFDEF __TMT__}
-      // emulate_screen;
+{$IFDEF GO32V2}
+      // draw_screen;
       keyboard_reset_buffer_alt;
 {$ELSE}
-      emulate_screen;
+      draw_screen;
       // keyboard_reset_buffer;
 {$ENDIF}
     until qflg or _force_program_quit;
 
   If MenuLib1_mn_environment.winshade and NOT MenuLib1_mn_environment.unpolite then
     begin
-      If Addr(move_to_screen_routine) <> NIL then
+      If (Addr(move_to_screen_routine) <> NIL) then
         begin
           move_to_screen_data := ptr_scr_backup;
           move_to_screen_area[1] := x;
@@ -491,17 +521,17 @@ begin { MenuLib1_Menu }
         ScreenMemCopy(ptr_scr_backup,MenuLib1_mn_environment.v_dest);
     end;
 
-  MenuLib1_Menu := k+page-1;
+  MenuLib1_Menu := idx2+page-1;
 end;
 
 procedure MenuLib1_Init;
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'MENULIB1.PAS:MenuLib1_Init';
 {$ENDIF}
 
-  MenuLib1_mn_setting.frame_type     := single;
+  MenuLib1_mn_setting.frame_type     := frame_single;
   MenuLib1_mn_setting.center_box     := FALSE;
   MenuLib1_mn_setting.shadow_enabled := FALSE;
   MenuLib1_mn_setting.cycle_moves    := FALSE;

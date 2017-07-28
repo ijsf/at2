@@ -1,7 +1,6 @@
 unit ParserIO;
-{$IFNDEF __TMT__}
+{$S-,Q-,R-,V-,B-,X+}
 {$PACKRECORDS 1}
-{$ENDIF}
 interface
 
 function Scan(var buf; skip,size: Longint; str: String): Longint;
@@ -342,7 +341,7 @@ end;
 procedure make_table_32bit;
 
 var
-  crc: DWord;
+  crc: Dword;
   n,index: Byte;
 
 begin

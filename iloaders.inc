@@ -1,6 +1,5 @@
 {
         function  check_byte(var data; _byte: Byte; size: Longint): Boolean;
-        procedure insert_command(cmd,cmd2: Word; patterns: Byte; chan: Byte; exceptions: tByteSet);
         procedure import_old_a2m_event1(patt,line,chan: Byte; old_chunk: tOLD_CHUNK;
                                         processing_whole_song: Boolean);
         procedure replace_old_adsr(patterns: Byte);
@@ -14,6 +13,7 @@
                                          instr,count: Byte);
         procedure import_single_old_instrument(old_songdata: pOLD_FIXED_SONGDATA;
                                                pos,instr: Byte);
+        function  insert_command(cmd,cmd2: Word; patterns: Byte; chan: Byte; exceptions: tByteSet): Boolean;
         procedure a2m_file_loader;
         procedure a2t_file_loader;
         procedure a2p_file_loader;
@@ -66,72 +66,6 @@ begin
 @@2:
   end;
   check_byte := result;
-end;
-
-procedure insert_command(cmd,cmd2: Word; patterns: Byte; chan: Byte; exceptions: tByteSet);
-
-var
-  chunk: tCHUNK;
-  temp2,temp3: Byte;
-  patt_break: Byte;
-  order,patt: Byte;
-  patts: String;
-
-begin
-  patts := '';
-  order := 0; patt := BYTE_NULL;
-
-  Repeat
-    If (Pos(CHR(songdata.pattern_order[order]),patts) <> 0) or
-       (songdata.pattern_order[order] >= $80) then Inc(order)
-    else
-      begin
-        patt := songdata.pattern_order[order];
-        patt_break := songdata.patt_len;
-        For temp3 := 1 to songdata.nm_tracks do
-          For temp2 := 0 to PRED(songdata.patt_len) do
-            begin
-              get_chunk(patt,temp2,temp3,chunk);
-              If (chunk.effect_def in [ef_PositionJump,ef_PatternBreak]) or
-                 (chunk.effect_def2 in [ef_PositionJump,ef_PatternBreak]) then
-                patt_break := temp2;
-
-              If (temp3 = chan) and (temp2 <= patt_break) then
-                If (cmd2 = 0) then
-                  If (chunk.effect_def+chunk.effect = 0) or
-                     (chunk.effect_def in exceptions) then
-                    begin
-                      chunk.effect_def := HI(cmd);
-                      chunk.effect := LO(cmd);
-                      put_chunk(patt,temp2,temp3,chunk);
-                      EXIT;
-                    end
-                  else If (chunk.effect_def2+chunk.effect2 = 0) or
-                          (chunk.effect_def2 in exceptions) then
-                         begin
-                           chunk.effect_def2 := HI(cmd);
-                           chunk.effect2 := LO(cmd);
-                           put_chunk(patt,temp2,temp3,chunk);
-                           EXIT;
-                         end
-                       else
-                else If ((chunk.effect_def+chunk.effect = 0) or
-                         (chunk.effect_def in exceptions)) and
-                        ((chunk.effect_def2+chunk.effect2 = 0) or
-                         (chunk.effect_def2 in exceptions)) then
-                       begin
-                         chunk.effect_def := HI(cmd);
-                         chunk.effect := LO(cmd);
-                         chunk.effect_def2 := HI(cmd2);
-                         chunk.effect2 := LO(cmd2);
-                         put_chunk(patt,temp2,temp3,chunk);
-                         EXIT;
-                       end;
-            end;
-        Inc(order);
-        patts := patts+CHR(patt);
-      end;
-  until (patt >= patterns) or (order > $7f);
 end;
 
 var
@@ -325,14 +259,14 @@ begin
           If (old_chunk.effect MOD 16 in [0..9]) then
             begin
               chunk.effect_def := ef_Extended;
-              chunk.effect := ef_ex_ExtendedCmd*16;
+              chunk.effect := ef_ex_ExtendedCmd2*16;
 
               Case old_chunk.effect MOD 16 of
-                0: Inc(chunk.effect,ef_ex_cmd_RSS);
-                1: Inc(chunk.effect,ef_ex_cmd_LockVol);
-                2: Inc(chunk.effect,ef_ex_cmd_UnlockVol);
-                3: Inc(chunk.effect,ef_ex_cmd_LockVP);
-                4: Inc(chunk.effect,ef_ex_cmd_UnlockVP);
+                0: Inc(chunk.effect,ef_ex_cmd2_RSS);
+                1: Inc(chunk.effect,ef_ex_cmd2_LockVol);
+                2: Inc(chunk.effect,ef_ex_cmd2_UnlockVol);
+                3: Inc(chunk.effect,ef_ex_cmd2_LockVP);
+                4: Inc(chunk.effect,ef_ex_cmd2_UnlockVP);
 
                 5: begin
                      If processing_whole_song then chunk.effect_def := 255
@@ -349,9 +283,9 @@ begin
                      adsr_carrier[chan] := FALSE;
                    end;
 
-                7: Inc(chunk.effect,ef_ex_cmd_VSlide_car);
-                8: Inc(chunk.effect,ef_ex_cmd_VSlide_mod);
-                9: Inc(chunk.effect,ef_ex_cmd_VSlide_def);
+                7: Inc(chunk.effect,ef_ex_cmd2_VSlide_car);
+                8: Inc(chunk.effect,ef_ex_cmd2_VSlide_mod);
+                9: Inc(chunk.effect,ef_ex_cmd2_VSlide_def);
               end;
             end
           else begin
@@ -575,6 +509,81 @@ begin
 end;
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
 
+function insert_command(cmd,cmd2: Word; patterns: Byte; chan: Byte; exceptions: tByteSet): Boolean;
+
+var
+  chunk: tCHUNK;
+  temp2,temp3: Byte;
+  patt_break: Byte;
+  order,patt: Byte;
+  patts: String;
+
+begin
+  patts := '';
+  order := 0;
+  patt := BYTE_NULL;
+  insert_command := FALSE;
+
+  Repeat
+    If (Pos(CHR(songdata.pattern_order[order]),patts) <> 0) or
+       (songdata.pattern_order[order] >= $80) then Inc(order)
+    else
+      begin
+        patt := songdata.pattern_order[order];
+        patt_break := songdata.patt_len;
+        For temp3 := 1 to songdata.nm_tracks do
+          For temp2 := 0 to PRED(songdata.patt_len) do
+            begin
+              get_chunk(patt,temp2,temp3,chunk);
+              If (chunk.effect_def in [ef_PositionJump,ef_PatternBreak]) or
+                 (chunk.effect_def2 in [ef_PositionJump,ef_PatternBreak]) then
+                patt_break := temp2;
+
+              If (temp3 = chan) and (temp2 <= patt_break) then
+                If (cmd2 = 0) then
+                  If (chunk.effect_def+chunk.effect = 0) or
+                     (chunk.effect_def SHL 8 + chunk.effect = cmd) or
+                     (chunk.effect_def in exceptions) then
+                    begin
+                      chunk.effect_def := HI(cmd);
+                      chunk.effect := LO(cmd);
+                      put_chunk(patt,temp2,temp3,chunk);
+                      insert_command := TRUE;
+                      EXIT;
+                    end
+                  else If (chunk.effect_def2+chunk.effect2 = 0) or
+                          (chunk.effect_def2 SHL 8 + chunk.effect2 = cmd2) or
+                          (chunk.effect_def2 in exceptions) then
+                         begin
+                           chunk.effect_def2 := HI(cmd);
+                           chunk.effect2 := LO(cmd);
+                           put_chunk(patt,temp2,temp3,chunk);
+                           insert_command := TRUE;
+                           EXIT;
+                         end
+                       else
+                else If ((chunk.effect_def+chunk.effect = 0) or
+                         (chunk.effect_def SHL 8 + chunk.effect = cmd) or
+                         (chunk.effect_def in exceptions)) and
+                        ((chunk.effect_def2+chunk.effect2 = 0) or
+                         (chunk.effect_def2 SHL 8 + chunk.effect2 = cmd2) or
+                         (chunk.effect_def2 in exceptions)) then
+                       begin
+                         chunk.effect_def := HI(cmd);
+                         chunk.effect := LO(cmd);
+                         chunk.effect_def2 := HI(cmd2);
+                         chunk.effect2 := LO(cmd2);
+                         put_chunk(patt,temp2,temp3,chunk);
+                         insert_command := TRUE;
+                         EXIT;
+                       end;
+            end;
+        Inc(order);
+        patts := patts+CHR(patt);
+      end;
+  until (patt >= patterns) or (order > $7f);
+end;
+
 procedure a2m_file_loader;
 
 type
@@ -619,7 +628,7 @@ var
 
 begin
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADERS.INC:a2m_file_loader';
 {$ENDIF}
@@ -653,7 +662,7 @@ begin
     end;
 
 {@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  load_flag := $7f;}
-  If NOT (header.ffver in [1..11]) then
+  If NOT (header.ffver in [1..FFVER_A2M]) then
     begin
       CloseF(f);
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
@@ -1130,13 +1139,13 @@ begin
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
       For temp := 1 to 255 do
         Insert(songdata.instr_names[temp][1]+
-               'iNS_'+byte2hex(temp)+'÷ ',
+               'iNS_'+byte2hex(temp)+#247' ',
                songdata.instr_names[temp],1);
 
       If (header.ffver = 11) then
         For temp := 0 to $7f do
           Insert(songdata.pattern_names[temp][1]+
-                 'PAT_'+byte2hex(temp)+'  ÷ ',
+                 'PAT_'+byte2hex(temp)+'  '#247' ',
                  songdata.pattern_names[temp],1);
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
 
@@ -1158,6 +1167,155 @@ begin
 
             If (temp2*8+8 <= max_patterns) then
               APACK_decompress(buf1,pattdata^[temp2])
+            else limit_exceeded := TRUE;
+          end;
+    end;
+
+  If (header.ffver in [12,FFVER_A2M]) then
+    begin
+      crc := DWORD_NULL;
+      BlockReadF(f,buf1,header.b0len,temp);
+      If NOT (temp = header.b0len) then
+        begin
+          CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
+                 'LOADiNG STOPPED$',
+                 '~O~KAY$',' A2M LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
+          EXIT;
+        end;
+
+      crc := Update32(buf1,temp,crc);
+      BlockReadF(f,buf1,header.b1len[0],temp);
+      If NOT (temp = header.b1len[0]) then
+        begin
+          CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
+                 'LOADiNG STOPPED$',
+                 '~O~KAY$',' A2M LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
+          EXIT;
+        end;
+
+      crc := Update32(buf1,temp,crc);
+      For temp2 := 1 to 15 do
+        If ((header.patts-1) DIV 8 > PRED(temp2)) then
+          begin
+            BlockReadF(f,buf1,header.b1len[temp2],temp);
+            If NOT (temp = header.b1len[temp2]) then
+              begin
+                CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+                Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
+                       'LOADiNG STOPPED$',
+                       '~O~KAY$',' A2M LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
+                EXIT;
+              end;
+            crc := Update32(buf1,temp,crc);
+          end;
+
+      crc := Update32(header.b0len,2,crc);
+      For temp2 := 0 to 15 do
+        crc := Update32(header.b1len[temp2],2,crc);
+
+      If (crc <> header.crc32) then
+        begin
+          CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+          Dialog('CRC FAiLED - FiLE CORRUPTED$'+
+                 'LOADiNG STOPPED$',
+                 '~O~KAY$',' A2M LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
+          EXIT;
+        end;
+
+      init_songdata;
+      load_flag := 0;
+
+      SeekF(f,SizeOf(header));
+      If (IOresult <> 0) then
+        begin
+          CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
+                 'LOADiNG STOPPED$',
+                 '~O~KAY$',' A2M LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
+          EXIT;
+        end;
+
+      BlockReadF(f,buf1,header.b0len,temp);
+      If NOT (temp = header.b0len) then
+        begin
+          CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
+                 'LOADiNG STOPPED$',
+                 '~O~KAY$',' A2M LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
+          EXIT;
+        end;
+
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+      progress_num_steps := (header.patts-1) DIV 8 +2;
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
+      LZH_decompress(buf1,songdata,header.b0len);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+      Inc(progress_step);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
+      BlockReadF(f,buf1,header.b1len[0],temp);
+      If NOT (temp = header.b1len[0]) then
+        begin
+          CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
+                 'LOADiNG STOPPED$',
+                 '~O~KAY$',' A2M LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
+          EXIT;
+        end;
+
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+      For temp := 1 to 255 do
+        Insert(songdata.instr_names[temp][1]+
+               'iNS_'+byte2hex(temp)+#247' ',
+               songdata.instr_names[temp],1);
+
+      For temp := 0 to $7f do
+        Insert(songdata.pattern_names[temp][1]+
+               'PAT_'+byte2hex(temp)+'  '#247' ',
+               songdata.pattern_names[temp],1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
+
+      LZH_decompress(buf1,pattdata^[0],header.b1len[0]);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+      Inc(progress_step);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
+      For temp2 := 1 to 15 do
+        If ((header.patts-1) DIV 8 > PRED(temp2)) then
+          begin
+            BlockReadF(f,buf1,header.b1len[temp2],temp);
+            If NOT (temp = header.b1len[temp2]) then
+              begin
+                CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+                Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
+                       'LOADiNG STOPPED$',
+                       '~O~KAY$',' A2M LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
+                EXIT;
+              end;
+
+            If (temp2*8+8 <= max_patterns) then
+              begin
+                LZH_decompress(buf1,pattdata^[temp2],header.b1len[temp2]);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+                Inc(progress_step);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
+              end
             else limit_exceeded := TRUE;
           end;
     end;
@@ -1297,7 +1455,7 @@ var
 
 begin
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADERS.INC:a2t_file_loader';
 {$ENDIF}
@@ -1331,7 +1489,7 @@ begin
     end;
 
 {@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  load_flag := $7f;}
-  If NOT (header.ffver in [1..11]) then
+  If NOT (header.ffver in [1..FFVER_A2T]) then
     begin
       CloseF(f);
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
@@ -2452,6 +2610,294 @@ begin
           end;
     end;
 
+  If (header.ffver in [12,FFVER_A2T]) then
+    begin
+      crc := DWORD_NULL;
+      BlockReadF(f,buf1,header.b0len,temp);
+      If NOT (temp = header.b0len) then
+        begin
+          CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
+                 'LOADiNG STOPPED$',
+                 '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
+          EXIT;
+        end;
+
+      crc := Update32(buf1,temp,crc);
+      BlockReadF(f,buf1,header.b1len,temp);
+      If NOT (temp = header.b1len) then
+        begin
+          CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
+                 'LOADiNG STOPPED$',
+                 '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
+          EXIT;
+        end;
+
+      crc := Update32(buf1,temp,crc);
+      BlockReadF(f,buf1,header.b2len,temp);
+      If NOT (temp = header.b2len) then
+        begin
+          CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
+                 'LOADiNG STOPPED$',
+                 '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
+          EXIT;
+        end;
+
+      crc := Update32(buf1,temp,crc);
+      BlockReadF(f,buf1,header.b3len,temp);
+      If NOT (temp = header.b3len) then
+        begin
+          CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
+                 'LOADiNG STOPPED$',
+                 '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
+          EXIT;
+        end;
+
+      crc := Update32(buf1,temp,crc);
+      BlockReadF(f,buf1,header.b4len,temp);
+      If NOT (temp = header.b4len) then
+        begin
+          CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
+                 'LOADiNG STOPPED$',
+                 '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
+          EXIT;
+        end;
+
+      crc := Update32(buf1,temp,crc);
+      BlockReadF(f,buf1,header.b5len[0],temp);
+      If NOT (temp = header.b5len[0]) then
+        begin
+          CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
+                 'LOADiNG STOPPED$',
+                 '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
+          EXIT;
+        end;
+
+      crc := Update32(buf1,temp,crc);
+      For temp2 := 1 to 15 do
+        If ((header.patts-1) DIV 8 > PRED(temp2)) then
+          begin
+            BlockReadF(f,buf1,header.b5len[temp2],temp);
+            If NOT (temp = header.b5len[temp2]) then
+              begin
+                CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+                Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
+                       'LOADiNG STOPPED$',
+                       '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
+                EXIT;
+              end;
+            crc := Update32(buf1,temp,crc);
+          end;
+
+      crc := Update32(header.b0len,2,crc);
+      crc := Update32(header.b1len,2,crc);
+      crc := Update32(header.b2len,2,crc);
+      crc := Update32(header.b3len,2,crc);
+      crc := Update32(header.b4len,2,crc);
+
+      For temp2 := 0 to 15 do
+        crc := Update32(header.b5len[temp2],2,crc);
+
+      If (crc <> header.crc32) then
+        begin
+          CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+          Dialog('CRC FAiLED - FiLE CORRUPTED$'+
+                 'LOADiNG STOPPED$',
+                 '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
+          EXIT;
+        end;
+
+      init_songdata;
+      load_flag := 0;
+
+      SeekF(f,SizeOf(header));
+      If (IOresult <> 0) then
+        begin
+          CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
+                 'LOADiNG STOPPED$',
+                 '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
+          EXIT;
+        end;
+
+      BlockReadF(f,buf1,header.b0len,temp);
+      If NOT (temp = header.b0len) then
+        begin
+          CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
+                 'LOADiNG STOPPED$',
+                 '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
+          EXIT;
+        end;
+
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+      progress_num_steps := (header.patts-1) DIV 8 +6;
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
+      temp := LZH_decompress(buf1,buf2,header.b0len);
+      Move(buf2,songdata.ins_4op_flags,SizeOf(songdata.ins_4op_flags));
+      Move(buf2[SizeOf(songdata.ins_4op_flags)],songdata.reserved_data,
+           SizeOf(songdata.reserved_data));
+      Move(buf2[SizeOf(songdata.ins_4op_flags)],songdata.reserved_data,
+           SizeOf(songdata.reserved_data));
+      Move(buf2[SizeOf(songdata.ins_4op_flags)+
+                SizeOf(songdata.reserved_data)],songdata.instr_data,
+                temp-SizeOf(songdata.ins_4op_flags)+
+                     SizeOf(songdata.reserved_data));
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+      Inc(progress_step);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
+      If (header.b1len <> 0) then
+        begin
+          BlockReadF(f,buf1,header.b1len,temp);
+          If NOT (temp = header.b1len) then
+            begin
+              CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+              Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
+                     'LOADiNG STOPPED$',
+                     '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
+              EXIT;
+            end;
+
+          LZH_decompress(buf1,songdata.instr_macros,header.b1len);
+        end;
+
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+      Inc(progress_step);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
+      If (header.b2len <> 0) then
+        begin
+          BlockReadF(f,buf1,header.b2len,temp);
+          If NOT (temp = header.b2len) then
+            begin
+              CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+              Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
+                     'LOADiNG STOPPED$',
+                     '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
+              EXIT;
+            end;
+
+          LZH_decompress(buf1,songdata.macro_table,header.b2len);
+        end;
+
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+      Inc(progress_step);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
+      If (header.b3len <> 0) then
+        begin
+          BlockReadF(f,buf1,header.b3len,temp);
+          If NOT (temp = header.b3len) then
+            begin
+              CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+              Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
+                     'LOADiNG STOPPED$',
+                     '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
+              EXIT;
+            end;
+
+          LZH_decompress(buf1,songdata.dis_fmreg_col,header.b3len);
+        end;
+
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+      Inc(progress_step);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
+      BlockReadF(f,buf1,header.b4len,temp);
+      If NOT (temp = header.b4len) then
+        begin
+          CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
+                 'LOADiNG STOPPED$',
+                 '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
+          EXIT;
+        end;
+
+      songdata.tempo := header.tempo;
+      songdata.speed := header.speed;
+      songdata.common_flag := header.cflag;
+      songdata.patt_len := header.patln;
+      songdata.nm_tracks := header.nmtrk;
+      songdata.macro_speedup := header.mcspd;
+      songdata.flag_4op := header.is4op;
+      Move(header.locks,songdata.lock_flags,SizeOf(songdata.lock_flags));
+
+      LZH_decompress(buf1,songdata.pattern_order,header.b4len);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+      Inc(progress_step);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
+      BlockReadF(f,buf1,header.b5len[0],temp);
+      If NOT (temp = header.b5len[0]) then
+        begin
+          CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
+                 'LOADiNG STOPPED$',
+                 '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
+          EXIT;
+        end;
+
+      LZH_decompress(buf1,pattdata^[0],header.b5len[0]);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+      Inc(progress_step);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
+      For temp2 := 1 to 15 do
+        If ((header.patts-1) DIV 8 > PRED(temp2)) then
+          begin
+            BlockReadF(f,buf1,header.b5len[temp2],temp);
+            If NOT (temp = header.b5len[temp2]) then
+              begin
+                CloseF(f);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+                Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
+                       'LOADiNG STOPPED$',
+                       '~O~KAY$',' A2T LOADER ',1);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
+                EXIT;
+              end;
+
+            If (temp2*8+8 <= max_patterns) then
+              begin
+                LZH_decompress(buf1,pattdata^[temp2],header.b5len[temp2]);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
+                Inc(progress_step);
+{@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
+              end
+            else limit_exceeded := TRUE;
+          end;
+    end;
+
   speed := songdata.speed;
   tempo := songdata.tempo;
 
@@ -2513,7 +2959,7 @@ var
   _pattern: Byte;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADERS.INC:a2p_file_loader';
 {$ENDIF}
@@ -2544,7 +2990,7 @@ begin
       EXIT;
     end;
 
-  If NOT (header.ffver in [1..10]) then
+  If NOT (header.ffver in [1..FFVER_A2P]) then
     begin
       CloseF(f);
       Dialog('UNKNOWN FiLE FORMAT VERSiON$'+
@@ -2797,6 +3243,78 @@ begin
            end;
     end;
 
+  If (header.ffver = FFVER_A2P) then
+    begin
+      ResetF(f);
+      BlockReadF(f,header2,SizeOf(header2),temp);
+      If NOT ((temp = SizeOf(header2)) and (header2.ident = id)) then
+        begin
+          CloseF(f);
+          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
+                 'LOADiNG STOPPED$',
+                 '~O~KAY$',' A2P LOADER ',1);
+          EXIT;
+        end;
+
+      crc := DWORD_NULL;
+      BlockReadF(f,buf1,header2.b0len,temp);
+      If NOT (temp = header2.b0len) then
+        begin
+          CloseF(f);
+          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
+                 'LOADiNG STOPPED$',
+                 '~O~KAY$',' A2P LOADER ',1);
+          EXIT;
+        end;
+
+      crc := Update32(buf1,temp,crc);
+      crc := Update32(header2.b0len,2,crc);
+
+      If (crc <> header2.crc32) then
+        begin
+          CloseF(f);
+          Dialog('CRC FAiLED - FiLE CORRUPTED$'+
+                 'LOADiNG STOPPED$',
+                 '~O~KAY$',' A2P LOADER ',1);
+          EXIT;
+        end;
+
+      progress_num_steps := 0;
+      If (pattern2use <> BYTE_NULL) and (_patts_marked <> 0) then
+        For temp := 0 to PRED(max_patterns) do
+          begin
+            If (songdata.pattern_names[temp][1] <> ' ') then
+              begin
+                LZH_decompress(buf1,buf2,header2.b0len);
+                Move(buf2,pattdata^[temp DIV 8][temp MOD 8],PATTERN_SIZE);
+                Move(buf2[PATTERN_SIZE],temp_str,buf2[PATTERN_SIZE]+1);
+
+                If (temp_str <> '') then
+                  songdata.pattern_names[temp] :=
+                    Copy(songdata.pattern_names[temp],1,11)+
+                    temp_str
+                else
+                  songdata.pattern_names[temp] :=
+                    Copy(songdata.pattern_names[temp],1,11)+
+                    Lower(NameOnly(songdata_source));
+              end;
+          end
+      else begin
+             LZH_decompress(buf1,buf2,header2.b0len);
+             Move(buf2,pattdata^[_pattern DIV 8][_pattern MOD 8],PATTERN_SIZE);
+             Move(buf2[PATTERN_SIZE],temp_str,buf2[PATTERN_SIZE]+1);
+
+             If (temp_str <> '') then
+               songdata.pattern_names[_pattern] :=
+                 Copy(songdata.pattern_names[_pattern],1,11)+
+                 temp_str
+             else
+               songdata.pattern_names[_pattern] :=
+                 Copy(songdata.pattern_names[_pattern],1,11)+
+                 Lower(NameOnly(songdata_source));
+           end;
+    end;
+
   CloseF(f);
   load_flag := 1;
 end;
@@ -2836,7 +3354,7 @@ type
                                                {         11h=packed module }
             end;
 const
-  id_amd = '<oïQUîRoR';
+  id_amd = '<o'#239'QU'#238'RoR';
   id_xms = 'MaDoKaN96';
 
 var
@@ -2849,17 +3367,17 @@ procedure import_amd_instrument(inst: Byte; var data);
 begin
   With songdata.instr_data[inst] do
     begin
-      fm_data.AM_VIB_EG_modulator := tDUMMY_BUFF(data)[0];
-      fm_data.KSL_VOLUM_modulator := tDUMMY_BUFF(data)[1];
-      fm_data.ATTCK_DEC_modulator := tDUMMY_BUFF(data)[2];
-      fm_data.SUSTN_REL_modulator := tDUMMY_BUFF(data)[3];
-      fm_data.WAVEFORM_modulator  := tDUMMY_BUFF(data)[4]  AND 3;
-      fm_data.AM_VIB_EG_carrier   := tDUMMY_BUFF(data)[5];
-      fm_data.KSL_VOLUM_carrier   := tDUMMY_BUFF(data)[6];
-      fm_data.ATTCK_DEC_carrier   := tDUMMY_BUFF(data)[7];
-      fm_data.SUSTN_REL_carrier   := tDUMMY_BUFF(data)[8];
-      fm_data.WAVEFORM_carrier    := tDUMMY_BUFF(data)[9]  AND 3;
-      fm_data.FEEDBACK_FM         := tDUMMY_BUFF(data)[10] AND $0f;
+      fm_data.AM_VIB_EG_modulator := pBYTE(@data)[0];
+      fm_data.KSL_VOLUM_modulator := pBYTE(@data)[1];
+      fm_data.ATTCK_DEC_modulator := pBYTE(@data)[2];
+      fm_data.SUSTN_REL_modulator := pBYTE(@data)[3];
+      fm_data.WAVEFORM_modulator  := pBYTE(@data)[4]  AND 3;
+      fm_data.AM_VIB_EG_carrier   := pBYTE(@data)[5];
+      fm_data.KSL_VOLUM_carrier   := pBYTE(@data)[6];
+      fm_data.ATTCK_DEC_carrier   := pBYTE(@data)[7];
+      fm_data.SUSTN_REL_carrier   := pBYTE(@data)[8];
+      fm_data.WAVEFORM_carrier    := pBYTE(@data)[9]  AND 3;
+      fm_data.FEEDBACK_FM         := pBYTE(@data)[10] AND $0f;
     end;
 
   songdata.instr_data[inst].panning := 0;
@@ -3015,7 +3533,7 @@ begin
   temp := (patterns+1)*9*SizeOf(WORD);
   Move(data,track_order,temp);
 
-  tracks := tDUMMY_BUFF(data)[temp]+(tDUMMY_BUFF(data)[temp+1]) SHL 8;
+  tracks := pBYTE(@data)[temp]+(pBYTE(@data)[temp+1]) SHL 8;
   Inc(temp,2);
 
   temp3 := 0;
@@ -3027,22 +3545,22 @@ begin
       begin
         If (temp3 = 0) then
           begin
-            temp2 := tDUMMY_BUFF(data)[temp]+(tDUMMY_BUFF(data)[temp+1]) SHL 8;
+            temp2 := pBYTE(@data)[temp]+(pBYTE(@data)[temp+1]) SHL 8;
             Inc(temp,2);
           end;
 
-        If (tDUMMY_BUFF(data)[temp] OR $80 <> tDUMMY_BUFF(data)[temp]) then
+        If (pBYTE(@data)[temp] OR $80 <> pBYTE(@data)[temp]) then
           begin
             If (temp2 DIV 9 <= $3f) and (temp2 MOD 9 < 9) then
               import_amd_event(temp2 DIV 9,temp3,temp2 MOD 9 +1,
-                               tDUMMY_BUFF(data)[temp+2],
-                               tDUMMY_BUFF(data)[temp+1],
-                               tDUMMY_BUFF(data)[temp+0]);
+                               pBYTE(@data)[temp+2],
+                               pBYTE(@data)[temp+1],
+                               pBYTE(@data)[temp+0]);
             Inc(temp,3);
           end
         else
           begin
-            count := (tDUMMY_BUFF(data)[temp] AND $7f)-1;
+            count := (pBYTE(@data)[temp] AND $7f)-1;
             Inc(temp);
           end;
       end
@@ -3086,7 +3604,7 @@ end;
 
 begin
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADERS.INC:amd_file_loader';
 {$ENDIF}
@@ -3301,7 +3819,7 @@ begin
     'I': If (temp1 < 47) then
            begin
              chunk.effect_def := ef_Extended;
-             chunk.effect := ef_ex_ExtendedCmd*16+ef_ex_cmd_ResetVol;
+             chunk.effect := ef_ex_ExtendedCmd2*16+ef_ex_cmd2_ResetVol;
              chunk.instr_def := temp1+1;
            end;
 
@@ -3365,9 +3883,9 @@ var
 
 function _empty_event(var data): Boolean;
 begin
-  _empty_event := (tDUMMY_BUFF(data)[0] = 0) and
-                  (tDUMMY_BUFF(data)[1] = 0) and
-                  (tDUMMY_BUFF(data)[2] = 0);
+  _empty_event := (pBYTE(@data)[0] = 0) and
+                  (pBYTE(@data)[1] = 0) and
+                  (pBYTE(@data)[2] = 0);
 end;
 
 begin
@@ -3536,7 +4054,7 @@ var
 begin
   While (bits_left < code_length) do
     begin
-      bits_buffer := bits_buffer OR (tDUMMY_BUFF(input)[input_idx] SHL
+      bits_buffer := bits_buffer OR (pBYTE(@input)[input_idx] SHL
                                      bits_left);
       Inc(input_idx);
       Inc(bits_left,8);
@@ -3577,7 +4095,7 @@ begin
   If (the_string[0] > 0) then
     For idx := 0 to the_string[0]-1 do
       begin
-        tDUMMY_BUFF(output)[output_length] := the_string[idx+1];
+        pBYTE(@output)[output_length] := the_string[idx+1];
         Inc(output_length);
       end;
 end;
@@ -3638,8 +4156,8 @@ begin
 
         For idx := 0 to PRED(repeat_counter*repeat_length) do
           begin
-            tDUMMY_BUFF(output)[output_length] :=
-              tDUMMY_BUFF(output)[output_length-repeat_length];
+            pBYTE(@output)[output_length] :=
+              pBYTE(@output)[output_length-repeat_length];
             Inc(output_length);
           end;
 
@@ -3664,7 +4182,7 @@ begin
 
     For idx := 0 to PRED(the_string[0]) do
       begin
-        tDUMMY_BUFF(output)[output_length] := the_string[idx+1];
+        pBYTE(@output)[output_length] := the_string[idx+1];
         Inc(output_length);
       end;
 
@@ -3676,7 +4194,7 @@ end;
 
 begin
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADERS.INC:cff_file_loader';
 {$ENDIF}
@@ -3825,17 +4343,17 @@ procedure import_standard_instrument(inst: Byte; var data);
 begin
   With songdata.instr_data[inst] do
     begin
-      fm_data.AM_VIB_EG_modulator := tDUMMY_BUFF(data)[0];
-      fm_data.AM_VIB_EG_carrier   := tDUMMY_BUFF(data)[1];
-      fm_data.KSL_VOLUM_modulator := tDUMMY_BUFF(data)[2];
-      fm_data.KSL_VOLUM_carrier   := tDUMMY_BUFF(data)[3];
-      fm_data.ATTCK_DEC_modulator := tDUMMY_BUFF(data)[4];
-      fm_data.ATTCK_DEC_carrier   := tDUMMY_BUFF(data)[5];
-      fm_data.SUSTN_REL_modulator := tDUMMY_BUFF(data)[6];
-      fm_data.SUSTN_REL_carrier   := tDUMMY_BUFF(data)[7];
-      fm_data.WAVEFORM_modulator  := tDUMMY_BUFF(data)[8]  AND 3;
-      fm_data.WAVEFORM_carrier    := tDUMMY_BUFF(data)[9]  AND 3;
-      fm_data.FEEDBACK_FM         := tDUMMY_BUFF(data)[10] AND $0f;
+      fm_data.AM_VIB_EG_modulator := pBYTE(@data)[0];
+      fm_data.AM_VIB_EG_carrier   := pBYTE(@data)[1];
+      fm_data.KSL_VOLUM_modulator := pBYTE(@data)[2];
+      fm_data.KSL_VOLUM_carrier   := pBYTE(@data)[3];
+      fm_data.ATTCK_DEC_modulator := pBYTE(@data)[4];
+      fm_data.ATTCK_DEC_carrier   := pBYTE(@data)[5];
+      fm_data.SUSTN_REL_modulator := pBYTE(@data)[6];
+      fm_data.SUSTN_REL_carrier   := pBYTE(@data)[7];
+      fm_data.WAVEFORM_modulator  := pBYTE(@data)[8]  AND 3;
+      fm_data.WAVEFORM_carrier    := pBYTE(@data)[9]  AND 3;
+      fm_data.FEEDBACK_FM         := pBYTE(@data)[10] AND $0f;
     end;
 
   songdata.instr_data[inst].panning := 0;
@@ -3938,7 +4456,7 @@ begin
               If (chunk.instr_def <> 0) then
                 begin
                   chunk.effect_def := ef_Extended;
-                  chunk.effect := ef_ex_ExtendedCmd*16+ef_ex_cmd_ResetVol;
+                  chunk.effect := ef_ex_ExtendedCmd2*16+ef_ex_cmd2_ResetVol;
                   instr_cache[temp3] := chunk.instr_def;
                   If NOT (chunk.note in [1..12*8+1]) and
                      NOT accurate_conv then
@@ -3959,7 +4477,7 @@ end;
 
 begin
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADERS.INC:dfm_file_loader';
 {$ENDIF}
@@ -4135,7 +4653,7 @@ begin
   { INSTRUMENT }
     $80: begin
            chunk.effect_def := ef_Extended;
-           chunk.effect := ef_ex_ExtendedCmd*16+ef_ex_cmd_ResetVol;
+           chunk.effect := ef_ex_ExtendedCmd2*16+ef_ex_cmd2_ResetVol;
            chunk.instr_def := LO(event)+1;
            chunk.note := BYTE_NULL;
          end;
@@ -4297,21 +4815,21 @@ procedure import_hsc_instrument(inst: Byte; var data);
 begin
   With songdata.instr_data[inst] do
     begin
-      fm_data.AM_VIB_EG_carrier   := tDUMMY_BUFF(data)[0];
-      fm_data.AM_VIB_EG_modulator := tDUMMY_BUFF(data)[1];
-      fm_data.KSL_VOLUM_carrier   := tDUMMY_BUFF(data)[2];
-      fm_data.KSL_VOLUM_modulator := tDUMMY_BUFF(data)[3];
-      fm_data.ATTCK_DEC_carrier   := tDUMMY_BUFF(data)[4];
-      fm_data.ATTCK_DEC_modulator := tDUMMY_BUFF(data)[5];
-      fm_data.SUSTN_REL_carrier   := tDUMMY_BUFF(data)[6];
-      fm_data.SUSTN_REL_modulator := tDUMMY_BUFF(data)[7];
-      fm_data.FEEDBACK_FM         := tDUMMY_BUFF(data)[8]  AND $0f;
-      fm_data.WAVEFORM_carrier    := tDUMMY_BUFF(data)[9]  AND 3;
-      fm_data.WAVEFORM_modulator  := tDUMMY_BUFF(data)[10] AND 3;
+      fm_data.AM_VIB_EG_carrier   := pBYTE(@data)[0];
+      fm_data.AM_VIB_EG_modulator := pBYTE(@data)[1];
+      fm_data.KSL_VOLUM_carrier   := pBYTE(@data)[2];
+      fm_data.KSL_VOLUM_modulator := pBYTE(@data)[3];
+      fm_data.ATTCK_DEC_carrier   := pBYTE(@data)[4];
+      fm_data.ATTCK_DEC_modulator := pBYTE(@data)[5];
+      fm_data.SUSTN_REL_carrier   := pBYTE(@data)[6];
+      fm_data.SUSTN_REL_modulator := pBYTE(@data)[7];
+      fm_data.FEEDBACK_FM         := pBYTE(@data)[8]  AND $0f;
+      fm_data.WAVEFORM_carrier    := pBYTE(@data)[9]  AND 3;
+      fm_data.WAVEFORM_modulator  := pBYTE(@data)[10] AND 3;
     end;
 
   songdata.instr_data[inst].panning := 0;
-  songdata.instr_data[inst].fine_tune := tDUMMY_BUFF(data)[11] SHR 4;
+  songdata.instr_data[inst].fine_tune := pBYTE(@data)[11] SHR 4;
 end;
 
 var
@@ -4328,7 +4846,7 @@ var
 
 begin
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADERS.INC:hsc_file_loader';
 {$ENDIF}
@@ -4381,18 +4899,18 @@ begin
   temp3 := 0;
   While (temp3 < temp-SizeOf(hscbuf.instr)-SizeOf(hscbuf.order)) do
     begin
-      If NOT (tDUMMY_BUFF(Addr(hscbuf.patts)^)[temp3+1] in
+      If NOT (pBYTE(@Addr(hscbuf.patts)^)[temp3+1] in
              [1..12*8+1,$00,$7f,$80]) or
-         NOT (tDUMMY_BUFF(Addr(hscbuf.patts)^)[temp3] AND $0f0 in
+         NOT (pBYTE(@Addr(hscbuf.patts)^)[temp3] AND $0f0 in
              [$00,$10,$20,$a0,$b0,$c0,$f0]) then
         begin
-          If NOT (tDUMMY_BUFF(Addr(hscbuf.patts)^)[temp3+1] in
+          If NOT (pBYTE(@Addr(hscbuf.patts)^)[temp3+1] in
                  [1..12*8+1,$00,$7f,$80]) then
-            tDUMMY_BUFF(Addr(hscbuf.patts)^)[temp3+1] := $00;
+            pBYTE(@Addr(hscbuf.patts)^)[temp3+1] := $00;
 
-          If NOT (tDUMMY_BUFF(Addr(hscbuf.patts)^)[temp3] AND $0f0 in
+          If NOT (pBYTE(@Addr(hscbuf.patts)^)[temp3] AND $0f0 in
                  [$00,$10,$20,$a0,$b0,$c0,$f0]) then
-            tDUMMY_BUFF(Addr(hscbuf.patts)^)[temp3] := 0;
+            pBYTE(@Addr(hscbuf.patts)^)[temp3] := 0;
         end;
       Inc(temp3,2);
     end;
@@ -4462,7 +4980,7 @@ var
   old_c_fix: Boolean;
 
 const
-  id = 'mpu401tr’kkîr@data';
+  id = 'mpu401tr'#146'kk'#238'r@data';
 
 var
   header: Record
@@ -4472,7 +4990,7 @@ var
           end;
 begin
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADERS.INC:mtk_file_loader';
 {$ENDIF}
@@ -4571,7 +5089,7 @@ begin
                                       -SizeOf(buffer2.order)-1) DIV $480);
   fix_c_note_bug := old_c_fix;
 
-// specific corrections for MPU-401 TR’KKîR instrument
+// specific corrections for MPU-401 TRAKKER instrument
   For temp2 := 0 to $7f do
     begin
       import_hsc_instrument(temp2+1,buffer2.instt[temp2]);
@@ -4759,10 +5277,12 @@ begin
   If (temp2 = 0) then EXIT;
 
   ScreenMemCopy(screen_ptr,ptr_screen_backup);
+  centered_frame_vdest := screen_ptr;
   centered_frame(xstart,ystart,81,24,' RAD DESCRiPTiON ',
                  dialog_background+dialog_border,
                  dialog_background+dialog_title,
-                 double);
+                 frame_double);
+
   For temp := 1 to 22 do
     ShowStr(screen_ptr,xstart+1,ystart+temp,FilterStr2(desc[temp],_valid_characters,'_'),
             dialog_background+dialog_context_dis);
@@ -4786,7 +5306,7 @@ end;
 
 begin
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADERS.INC:rad_file_loader';
 {$ENDIF}
@@ -5201,7 +5721,7 @@ begin
             begin
               chunk2 := chunk;
               chunk2.effect_def := ef_Extended;
-              chunk2.effect := ef_ex_ExtendedCmd*16+ef_ex_cmd_VibrOff;
+              chunk2.effect := ef_ex_ExtendedCmd2*16+ef_ex_cmd2_VibrOff;
               If NOT ((chunk2.effect_def = chunk2.effect_def2) and
                       (chunk2.effect = chunk2.effect2)) then
                 begin
@@ -5213,7 +5733,7 @@ begin
                  begin
                    chunk2 := chunk;
                    chunk2.effect_def2 := ef_Extended;
-                   chunk2.effect2 := ef_ex_ExtendedCmd*16+ef_ex_cmd_VibrOff;
+                   chunk2.effect2 := ef_ex_ExtendedCmd2*16+ef_ex_cmd2_VibrOff;
                    If NOT ((chunk2.effect_def2 = chunk2.effect_def) and
                            (chunk2.effect2 = chunk2.effect)) then
                      begin
@@ -5727,7 +6247,7 @@ end;
 
 begin
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADERS.INC:s3m_file_loader';
 {$ENDIF}
@@ -6083,9 +6603,9 @@ begin
             forcevol_cache[temp3] := 0;
 
         If ((chunk.effect_def = ef_Extended) and
-            (chunk.effect = ef_ex_ExtendedCmd*16+ef_ex_cmd_ResetVol)) or
+            (chunk.effect = ef_ex_ExtendedCmd2*16+ef_ex_cmd2_ResetVol)) or
            ((chunk.effect_def2 = ef_Extended) and
-            (chunk.effect2 = ef_ex_ExtendedCmd*16+ef_ex_cmd_ResetVol)) then
+            (chunk.effect2 = ef_ex_ExtendedCmd2*16+ef_ex_cmd2_ResetVol)) then
           forcevol_cache[temp3] := 0;
 
         If (chunk.effect_def2 = ef_ForceInsVolume) and
@@ -6190,7 +6710,7 @@ begin
             begin
               chunk2 := chunk;
               chunk2.effect_def := ef_Extended;
-              chunk2.effect := ef_ex_ExtendedCmd*16+ef_ex_cmd_VibrOff;
+              chunk2.effect := ef_ex_ExtendedCmd2*16+ef_ex_cmd2_VibrOff;
               If NOT ((chunk2.effect_def = chunk2.effect_def2) and
                       (chunk2.effect = chunk2.effect2)) then
                 begin
@@ -6202,7 +6722,7 @@ begin
                  begin
                    chunk2 := chunk;
                    chunk2.effect_def2 := ef_Extended;
-                   chunk2.effect2 := ef_ex_ExtendedCmd*16+ef_ex_cmd_VibrOff;
+                   chunk2.effect2 := ef_ex_ExtendedCmd2*16+ef_ex_cmd2_VibrOff;
                    If NOT ((chunk2.effect_def2 = chunk2.effect_def) and
                            (chunk2.effect2 = chunk2.effect)) then
                      begin
@@ -6219,7 +6739,7 @@ begin
             If NOT (chunk.effect_def in [ef_SetModulatorVol,ef_SetCarrierVol]) then
               begin
                 chunk.effect_def2 := ef_Extended;
-                chunk.effect2 := ef_ex_ExtendedCmd*16+ef_ex_cmd_ResetVol;
+                chunk.effect2 := ef_ex_ExtendedCmd2*16+ef_ex_cmd2_ResetVol;
                 put_chunk(patt,temp2,temp3,chunk);
                 forcevol_cache[temp3] := 0;
                 _1st_ins_load[temp3] := FALSE;
@@ -6228,7 +6748,7 @@ begin
                   chunk.effect_def2 := chunk.effect_def;
                   chunk.effect2 := chunk.effect;
                   chunk.effect_def := ef_Extended;
-                  chunk.effect := ef_ex_ExtendedCmd*16+ef_ex_cmd_ResetVol;
+                  chunk.effect := ef_ex_ExtendedCmd2*16+ef_ex_cmd2_ResetVol;
                   put_chunk(patt,temp2,temp3,chunk);
                   forcevol_cache[temp3] := 0;
                   _1st_ins_load[temp3] := FALSE;
@@ -6240,7 +6760,7 @@ begin
         prev_cache[temp3].effect2 := chunk.effect2;
 
         If is_4op_chan(temp3) and
-           (temp3 in [1,3,5,10,12,14]) then
+           (temp3 in _4op_tracks_hi) then
           begin
             get_chunk(patt,temp2,SUCC(temp3),chunk3);
             If (chunk.instr_def = 0) and (chunk3.instr_def <> 0) then
@@ -6306,17 +6826,17 @@ procedure import_fin_instrument(inst: Byte; var data);
 begin
   With songdata.instr_data[inst] do
     begin
-      fm_data.AM_VIB_EG_modulator := tDUMMY_BUFF(data)[0];
-      fm_data.AM_VIB_EG_carrier   := tDUMMY_BUFF(data)[1];
-      fm_data.KSL_VOLUM_modulator := tDUMMY_BUFF(data)[2];
-      fm_data.KSL_VOLUM_carrier   := tDUMMY_BUFF(data)[3];
-      fm_data.ATTCK_DEC_modulator := tDUMMY_BUFF(data)[4];
-      fm_data.ATTCK_DEC_carrier   := tDUMMY_BUFF(data)[5];
-      fm_data.SUSTN_REL_modulator := tDUMMY_BUFF(data)[6];
-      fm_data.SUSTN_REL_carrier   := tDUMMY_BUFF(data)[7];
-      fm_data.WAVEFORM_modulator  := tDUMMY_BUFF(data)[8]  AND 7;
-      fm_data.WAVEFORM_carrier    := tDUMMY_BUFF(data)[9]  AND 7;
-      fm_data.FEEDBACK_FM         := tDUMMY_BUFF(data)[10] AND $0f;
+      fm_data.AM_VIB_EG_modulator := pBYTE(@data)[0];
+      fm_data.AM_VIB_EG_carrier   := pBYTE(@data)[1];
+      fm_data.KSL_VOLUM_modulator := pBYTE(@data)[2];
+      fm_data.KSL_VOLUM_carrier   := pBYTE(@data)[3];
+      fm_data.ATTCK_DEC_modulator := pBYTE(@data)[4];
+      fm_data.ATTCK_DEC_carrier   := pBYTE(@data)[5];
+      fm_data.SUSTN_REL_modulator := pBYTE(@data)[6];
+      fm_data.SUSTN_REL_carrier   := pBYTE(@data)[7];
+      fm_data.WAVEFORM_modulator  := pBYTE(@data)[8]  AND 7;
+      fm_data.WAVEFORM_carrier    := pBYTE(@data)[9]  AND 7;
+      fm_data.FEEDBACK_FM         := pBYTE(@data)[10] AND $0f;
     end;
 
   songdata.instr_data[inst].panning := 0;
@@ -6404,10 +6924,11 @@ begin
   If (temp2 = 0) then EXIT;
 
   ScreenMemCopy(screen_ptr,ptr_screen_backup);
+  centered_frame_vdest := screen_ptr;
   centered_frame(xstart,ystart,21,26,' FMK DESCRiPTiON ',
                  dialog_background+dialog_border,
                  dialog_background+dialog_title,
-                 double);
+                 frame_double);
 
   For temp := 1 to rows do
     ShowStr(screen_ptr,xstart+1,ystart+temp,FilterStr2(desc[temp],_valid_characters,'_'),
@@ -6693,7 +7214,7 @@ end;
 
 begin
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADERS.INC:fmk_file_loader';
 {$ENDIF}
@@ -7081,17 +7602,17 @@ procedure import_sat_instrument(inst: Byte; var data);
 begin
   With songdata.instr_data[inst] do
     begin
-      fm_data.FEEDBACK_FM         := tDUMMY_BUFF(data)[0] AND $0f;
-      fm_data.AM_VIB_EG_modulator := tDUMMY_BUFF(data)[1];
-      fm_data.AM_VIB_EG_carrier   := tDUMMY_BUFF(data)[2];
-      fm_data.ATTCK_DEC_modulator := tDUMMY_BUFF(data)[3];
-      fm_data.ATTCK_DEC_carrier   := tDUMMY_BUFF(data)[4];
-      fm_data.SUSTN_REL_modulator := tDUMMY_BUFF(data)[5];
-      fm_data.SUSTN_REL_carrier   := tDUMMY_BUFF(data)[6];
-      fm_data.WAVEFORM_modulator  := tDUMMY_BUFF(data)[7] AND 3;
-      fm_data.WAVEFORM_carrier    := tDUMMY_BUFF(data)[8] AND 3;
-      fm_data.KSL_VOLUM_modulator := tDUMMY_BUFF(data)[9];
-      fm_data.KSL_VOLUM_carrier   := tDUMMY_BUFF(data)[10];
+      fm_data.FEEDBACK_FM         := pBYTE(@data)[0] AND $0f;
+      fm_data.AM_VIB_EG_modulator := pBYTE(@data)[1];
+      fm_data.AM_VIB_EG_carrier   := pBYTE(@data)[2];
+      fm_data.ATTCK_DEC_modulator := pBYTE(@data)[3];
+      fm_data.ATTCK_DEC_carrier   := pBYTE(@data)[4];
+      fm_data.SUSTN_REL_modulator := pBYTE(@data)[5];
+      fm_data.SUSTN_REL_carrier   := pBYTE(@data)[6];
+      fm_data.WAVEFORM_modulator  := pBYTE(@data)[7] AND 3;
+      fm_data.WAVEFORM_carrier    := pBYTE(@data)[8] AND 3;
+      fm_data.KSL_VOLUM_modulator := pBYTE(@data)[9];
+      fm_data.KSL_VOLUM_carrier   := pBYTE(@data)[10];
     end;
 
   songdata.instr_data[inst].panning := 0;
@@ -7112,14 +7633,14 @@ begin
 
   While (temp1 < 496) do
     begin
-      If (tDUMMY_BUFF(data)[temp1] = BYTE('')) then Inc(temp2);
+      If (pBYTE(@data)[temp1] = BYTE(#16)) then Inc(temp2);
       Inc(temp1);
       If (temp2 = inst+1) then
         begin
-          While (tDUMMY_BUFF(data)[temp1] in [$20..$0ff]) and
+          While (pBYTE(@data)[temp1] in [$20..$0ff]) and
                 (Length(temp3) < 22) do
             begin
-              temp3 := temp3+CHR(tDUMMY_BUFF(data)[temp1]);
+              temp3 := temp3+CHR(pBYTE(@data)[temp1]);
               Inc(temp1);
             end;
           BREAK;
@@ -7184,7 +7705,7 @@ begin
 
   import_sa2_effect(byte3,byte4,byte5,chunk.effect_def,chunk.effect);
   If (chunk.effect_def = ef_Extended) and
-     (chunk.effect = ef_ex_ExtendedCmd*16) and (chunk.note = 0) then
+     (chunk.effect = ef_ex_ExtendedCmd2*16) and (chunk.note = 0) then
     begin
       chunk.note := BYTE_NULL;
       chunk.effect_def := 0;
@@ -7212,7 +7733,7 @@ end;
 
 begin
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADERS.INC:sat_file_loader';
 {$ENDIF}
@@ -7533,7 +8054,7 @@ begin
   { RELEASE SUSTAINING SOUND }
     $08: begin
            out1 := ef_Extended;
-           out2 := ef_ex_ExtendedCmd*16+0;
+           out2 := ef_ex_ExtendedCmd2*16+0;
          end;
 
   { VOLUME SLIDE }
@@ -7634,7 +8155,7 @@ begin
   import_sa2_effect(byte2 AND $0f,byte3 SHR 4,byte3 AND $0f,
                     chunk.effect_def,chunk.effect);
   If (chunk.effect_def = ef_Extended) and
-     (chunk.effect = ef_ex_ExtendedCmd*16) and (chunk.note = 0) then
+     (chunk.effect = ef_ex_ExtendedCmd2*16) and (chunk.note = 0) then
     begin
       chunk.note := BYTE_NULL;
       chunk.effect_def := 0;
@@ -7646,7 +8167,7 @@ end;
 
 begin { sa2_file_loader }
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ILOADERS.INC:sa2_file_loader';
 {$ENDIF}

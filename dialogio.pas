@@ -1,17 +1,15 @@
 unit DialogIO;
-{$IFNDEF __TMT__}
+{$S-,Q-,R-,V-,B-,X+}
 {$PACKRECORDS 1}
-{$ENDIF}
 interface
 
 uses
-{$IFDEF __TMT__}
-  DOS,DPMI,
-{$ELSE}
   DOS,
+{$IFDEF GO32V2}
+  GO32,
+{$ENDIF}
 {$IFDEF WINDOWS}
   WINDOWS,
-{$ENDIF}
 {$ENDIF}
   AdT2unit,AdT2sys,AdT2keyb,AdT2text,
   TxtScrIO,StringIO,ParserIO;
@@ -99,15 +97,16 @@ type
                         xpos,ypos:   Byte;
                         xsize,ysize: Byte;
                         desc_pos:    Byte;
+                        hlight_chrs: Byte;
                       end;
 
 const
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   FILENAME_SIZE = 12;
   DIR_SIZE = 80;
   PATH_SIZE = 80;
 {$ELSE}
-  FILENAME_SIZE = 80;
+  FILENAME_SIZE = 255;
   DIR_SIZE = 170;
   PATH_SIZE = 255;
 {$ENDIF}
@@ -119,7 +118,7 @@ type
                          end;
 const
   dl_setting: tDIALOG_SETTING =
-    (frame_type:     single;
+    (frame_type:     frame_single;
      shadow_enabled: TRUE;
      title_attr:     $0f;
      box_attr:       $07;
@@ -150,7 +149,7 @@ const
                       $0000,$0000,$0000,$0000,$0000));
 const
   mn_setting: tMENU_SETTING =
-    (frame_type:     single;
+    (frame_type:     frame_single;
      frame_enabled:  TRUE;
      shadow_enabled: TRUE;
      posbar_enabled: TRUE;
@@ -215,8 +214,10 @@ type
                                  use: Boolean;
                                end;
 var
-  i,k,l,m,pos,max,mx2,num,nm2,xstart,ystart,count,
-  ln,ln1,len2b,atr1,atr2,page,first,last,temp,temp2,opage,opos: Word;
+  idx,idx2,idx3,pos,max,mx2,num,nm2,
+  xstart,ystart,count,
+  ln,ln1,len2b,atr1,atr2,
+  page,first,last,temp,temp2,opage,opos: Word;
   old_fr_shadow_enabled: Boolean;
   key:    Word;
   str:    String;
@@ -252,8 +253,8 @@ var
   result: Char;
 
 begin
-  If SYSTEM.Pos('~',str) = 0 then result := '~'
-  else If str[SYSTEM.Pos('~',str)+2] <> '~' then result := '~'
+  If (SYSTEM.Pos('~',str) = 0) then result := '~'
+  else If (str[SYSTEM.Pos('~',str)+2] <> '~') then result := '~'
        else result := str[SYSTEM.Pos('~',str)+1];
   OutKey := result;
 end;
@@ -265,7 +266,7 @@ var
 
 begin
   Delete(str,1,pos-1);
-  If SYSTEM.Pos('$',str) = 0 then result := ''
+  If (SYSTEM.Pos('$',str) = 0) then result := ''
   else result := Copy(str,1,SYSTEM.Pos('$',str)-1);
   ReadChunk := result;
 end;
@@ -280,7 +281,7 @@ var
 begin
   temp := p;
   If (temp > 1) and dbuf[temp-1].use then Dec(temp)
-  else If temp > 1 then begin Dec(temp); SubPos(temp); end;
+  else If (temp > 1) then begin Dec(temp); SubPos(temp); end;
   If dbuf[temp].use then p := temp;
 end;
 
@@ -292,48 +293,52 @@ var
 begin
   temp := p;
   If (temp < nm2) and dbuf[temp+1].use then Inc(temp)
-  else If temp < nm2 then begin Inc(temp); AddPos(temp); end;
+  else If (temp < nm2) then begin Inc(temp); AddPos(temp); end;
   If dbuf[temp].use then p := temp;
 end;
 
 procedure ShowItem;
 begin
-  If k = 0 then EXIT;
-  If k <> l then
-    ShowCStr(screen_ptr,dbuf[l].pos,ystart+num+1,dbuf[l].str,
+  If (idx2 = 0) then EXIT;
+  If (idx2 <> idx3) then
+    ShowCStr(screen_ptr,dbuf[idx3].pos,ystart+num+1,dbuf[idx3].str,
              dl_setting.keys_attr,dl_setting.short_attr);
 
-    ShowCStr(screen_ptr,dbuf[k].pos,ystart+num+1,dbuf[k].str,
+    ShowCStr(screen_ptr,dbuf[idx2].pos,ystart+num+1,dbuf[idx2].str,
              dl_setting.keys2_attr,dl_setting.short2_attr);
-  l := k;
+  idx3 := idx2;
 end;
 
-procedure RetKey(code: Byte; var p: Word);
+function RetKey(code: Byte): Word;
 
 var
   temp: Byte;
 
 begin
-  p := 0;
+  RetKey := 0;
   For temp := 1 to nm2 do
-    If (p = 0) and (UpCase(dbuf[temp].key) = UpCase(CHR(code))) then p := temp;
+    If (UpCase(dbuf[temp].key) = UpCase(CHR(code))) then
+      begin
+        RetKey := temp;
+        BREAK;
+      end;
 end;
 
 function CurrentKey(pos: Byte): Byte;
 
 var
-  i,temp: Byte;
+  idx,temp: Byte;
 
 begin
   temp := 0;
-  For i := 1 to nm2 do
-    If pos in [dbuf[i].pos,dbuf[i].pos+CStrLen(dbuf[i].str)-1] then
-      temp := i;
+  For idx := 1 to nm2 do
+    If (pos in [dbuf[idx].pos,dbuf[idx].pos+CStrLen(dbuf[idx].str)-1]) then
+      temp := idx;
   CurrentKey := temp;
 end;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'DIALOGIO.PAS:Dialog';
 {$ENDIF}
@@ -347,31 +352,31 @@ begin
   Repeat
     str := ReadChunk(text,pos);
     Inc(pos,Length(str)+1);
-    If CStrLen(str) > max then max := CStrLen(str);
-    If str <> '' then Inc(num);
+    If (CStrLen(str) > max) then max := CStrLen(str);
+    If (str <> '') then Inc(num);
   until (pos >= Length(text)) or (str = '');
 
   pos := 1;
   mx2 := 0;
   nm2 := 0;
 
-  If Copy(keys,1,14) = '%string_input%' then
+  If (Copy(keys,1,14) = '%string_input%') then
     begin
       Inc(pos,14);
       str := ReadChunk(keys,pos); ln := Str2num(str,10);
-      If str = '' then EXIT;
+      If (str = '') then EXIT;
       Inc(pos,Length(str)+1);
 
       str := ReadChunk(keys,pos); ln1 := Str2num(str,10); mx2 := ln1;
-      If str = '' then EXIT;
+      If (str = '') then EXIT;
       Inc(pos,Length(str)+1);
 
       str := ReadChunk(keys,pos); atr1 := Str2num(str,16);
-      If str = '' then EXIT;
+      If (str = '') then EXIT;
       Inc(pos,Length(str)+1);
 
       str := ReadChunk(keys,pos); atr2 := Str2num(str,16);
-      If str = '' then EXIT;
+      If (str = '') then EXIT;
       Inc(pos,Length(str)+1);
     end
   else
@@ -379,14 +384,14 @@ begin
       Repeat
         str := ReadChunk(keys,pos);
         Inc(pos,Length(str)+1);
-        If str <> '' then
+        If (str <> '') then
           begin
             Inc(nm2);
             dbuf[nm2].str := ' '+str+' ';
             dbuf[nm2].key := OutKey(str);
             If NOT dl_setting.all_enabled then dbuf[nm2].use := dbuf[nm2].key <> '~'
             else dbuf[nm2].use := TRUE;
-            If nm2 > 1 then
+            If (nm2 > 1) then
               begin
                 dbuf[nm2].pos := dbuf[nm2-1].pos+CStrLen(dbuf[nm2-1].str)+1;
                 Inc(mx2,CStrLen(dbuf[nm2].str)+1);
@@ -400,11 +405,11 @@ begin
       until (pos >= Length(keys)) or (str = '');
     end;
 
-  If max < mx2 then max := mx2
+  If (max < mx2) then max := mx2
   else
     begin
       ln1 := max;
-      If ln < max then ln := max;
+      If (ln < max) then ln := max;
     end;
 
   If dl_setting.center_box then
@@ -420,9 +425,6 @@ begin
 
   old_fr_shadow_enabled := fr_setting.shadow_enabled;
   fr_setting.shadow_enabled := dl_setting.shadow_enabled;
-{$IFDEF __TMT__}
-  toggle_waitretrace := TRUE;
-{$ENDIF}
   Frame(screen_ptr,xstart,ystart,xstart+max+3,ystart+num+2,
         dl_setting.box_attr,title,dl_setting.title_attr,
         dl_setting.frame_type);
@@ -434,20 +436,20 @@ begin
   ShowCStr(screen_ptr,xstart+max+3-CStrLen(contxt),ystart+num+2,
            contxt,dl_setting.contxt_attr,dl_setting.contxt2_attr);
 
-  For i := 1 to num do
+  For idx := 1 to num do
     begin
       str := ReadChunk(text,pos);
       Inc(pos,Length(str)+1);
       If dl_setting.center_text then
-        ShowCStr(screen_ptr,xstart+2,ystart+i,
+        ShowCStr(screen_ptr,xstart+2,ystart+idx,
                  ExpStrL(str,Length(str)+(max-CStrLen(str)) DIV 2,' '),
                  dl_setting.text_attr,dl_setting.text2_attr)
       else
-        ShowCStr(screen_ptr,xstart+2,ystart+i,
+        ShowCStr(screen_ptr,xstart+2,ystart+idx,
                  str,dl_setting.text_attr,dl_setting.text2_attr);
     end;
 
-  If Copy(keys,1,14) = '%string_input%' then
+  If (Copy(keys,1,14) = '%string_input%') then
     begin
       ThinCursor;
       str := InputStr(dl_environment.input_str,
@@ -458,91 +460,92 @@ begin
     end
   else
     begin
-      For i := 1 to nm2 do
+      For idx := 1 to nm2 do
         begin
-          Inc(dbuf[i].pos,xstart+(max-mx2) DIV 2+1);
-          If dbuf[i].use then
-            ShowCStr(screen_ptr,dbuf[i].pos,ystart+num+1,
-                     dbuf[i].str,dl_setting.keys_attr,dl_setting.short_attr)
+          Inc(dbuf[idx].pos,xstart+(max-mx2) DIV 2+1);
+          If dbuf[idx].use then
+            ShowCStr(screen_ptr,dbuf[idx].pos,ystart+num+1,
+                     dbuf[idx].str,dl_setting.keys_attr,dl_setting.short_attr)
           else
-            ShowCStr(screen_ptr,dbuf[i].pos,ystart+num+1,
-                     dbuf[i].str,dl_setting.disbld_attr,dl_setting.disbld_attr);
+            ShowCStr(screen_ptr,dbuf[idx].pos,ystart+num+1,
+                     dbuf[idx].str,dl_setting.disbld_attr,dl_setting.disbld_attr);
         end;
 
-      If spos < 1 then spos := 1;
-      If spos > nm2 then spos := nm2;
+      If (spos < 1) then spos := 1;
+      If (spos > nm2) then spos := nm2;
 
-      k := spos;
-      l := 1;
+      idx2 := spos;
+      idx3 := 1;
 
-      If NOT dbuf[k].use then
+      If NOT dbuf[idx2].use then
         begin
-          SubPos(k);
-          If NOT dbuf[k].use then AddPos(k);
+          SubPos(idx2);
+          If NOT dbuf[idx2].use then AddPos(idx2);
         end;
 
       ShowItem;
       ShowItem;
       qflg := FALSE;
-      If keys = '$' then EXIT;
+      If (keys = '$') then EXIT;
 
       Repeat
         key := getkey;
         If LookUpKey(key,dl_setting.terminate_keys,50) then qflg := TRUE;
 
         If NOT qflg then
-          Case LO(key) of
-            $00: If NOT shift_pressed and
-                    NOT ctrl_pressed and NOT alt_pressed then
-                   Case HI(key) of
-                     $4b: If (k > 1) or
-                             NOT dl_setting.cycle_moves then SubPos(k)
-                          else begin
-                                 k := nm2;
-                                 If NOT dbuf[k].use then SubPos(k);
-                               end;
-
-                     $4d: If (k < nm2) or
-                             NOT dl_setting.cycle_moves then
-                            begin
-                              temp := k;
-                              AddPos(k);
-                              If (k = temp) then
-                                begin
-                                  k := 1;
-                                  If NOT dbuf[k].use then AddPos(k);
-                                end;
-                            end
-                          else begin
-                                 k := 1;
-                                 If NOT dbuf[k].use then AddPos(k);
-                               end;
-
-                     $47: begin
-                            k := 1;
-                            If NOT dbuf[k].use then AddPos(k);
-                          end;
-
-                     $4f: begin
-                            k := nm2;
-                            If NOT dbuf[k].use then SubPos(k);
-                          end;
-                   end;
-
-          $20..$0ff:
+          If (LO(key) in [$20..$0ff]) then
             begin
-              RetKey(LO(key),m);
-              If m <> 0 then begin qflg := TRUE; k := m; end;
-            end;
-        end;
+              idx := RetKey(LO(key));
+              If (idx <> 0) then
+                begin
+                  qflg := TRUE;
+                  idx2 := idx;
+                end;
+            end
+          else If NOT shift_pressed and
+                  NOT ctrl_pressed and NOT alt_pressed then
+                 Case key of
+                   kLEFT: If (idx2 > 1) or
+                             NOT dl_setting.cycle_moves then SubPos(idx2)
+                          else begin
+                                 idx2 := nm2;
+                                 If NOT dbuf[idx2].use then SubPos(idx2);
+                               end;
+
+                   kRIGHT: If (idx2 < nm2) or
+                              NOT dl_setting.cycle_moves then
+                             begin
+                               temp := idx2;
+                               AddPos(idx2);
+                               If (idx2 = temp) then
+                                 begin
+                                   idx2 := 1;
+                                   If NOT dbuf[idx2].use then AddPos(idx2);
+                                 end;
+                             end
+                           else begin
+                                  idx2 := 1;
+                                  If NOT dbuf[idx2].use then AddPos(idx2);
+                                end;
+
+                   kHOME: begin
+                            idx2 := 1;
+                            If NOT dbuf[idx2].use then AddPos(idx2);
+                          end;
+
+                   kEND: begin
+                           idx2 := nm2;
+                           If NOT dbuf[idx2].use then SubPos(idx2);
+                         end;
+                 end;
 
         ShowItem;
-{$IFNDEF __TMT__}
-        emulate_screen;
+{$IFNDEF GO32V2}
+        draw_screen;
 {$ENDIF}
       until qflg or _force_program_quit;
 
-      Dialog := k;
+      Dialog := idx2;
       dl_environment.keystroke := key;
     end;
 
@@ -573,7 +576,7 @@ var
   temp: String;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'DIALOGIO.PAS:pstr';
 {$ENDIF}
@@ -613,7 +616,7 @@ var
   temp: String;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'DIALOGIO.PAS:pdes';
 {$ENDIF}
@@ -634,7 +637,7 @@ var
   highlighted: Boolean;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'DIALOGIO.PAS:refresh:ShowCStr_clone';
 {$ENDIF}
@@ -668,58 +671,86 @@ begin
          end;
 end;
 
+var
+  item_str,item_str_alt,
+  item_str2,item_str2_alt: String;
+  desc_str,desc_str2,desc_str3: String;
+
 begin { refresh }
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'DIALOGIO.PAS:refresh';
 {$ENDIF}
-  If (page = opage) and (k = opos) and NOT mn_environment.do_refresh then EXIT
+  If (page = opage) and (idx2 = opos) and NOT mn_environment.do_refresh then EXIT
   else begin
          opage := page;
-         opos  := k;
+         opos  := idx2;
          mn_environment.do_refresh := FALSE;
        end;
 
   If NOT mn_environment.own_refresh then
-    For i := page to mnu_len2+page-1 do
-      If (i = k+page-1) then
-        ShowCStr_clone(mn_environment.v_dest,mnu_x+1,mnu_y+k,
-                       ExpStrR(pstr2(k+page-1)+pdes(k+page-1),
-                       max+(Length(pstr2(k+page-1))+Length(pdes(k+page-1))-
-                       (C3StrLen(pstr2(k+page-1))+CStrLen(pdes(k+page-1)))),' '),
-                       mn_setting.text2_attr,
-                       mn_setting.short2_attr,
-                       mn_setting.text_attr,
-                       mn_setting.short_attr)
-      else
-        If (i-page+1 <= mnu_topic_len) then
-          ShowCStr(mn_environment.v_dest,mnu_x+1,mnu_y+i-page+1,
-                   ExpStrR(pstr(i-page+1)+pdes(i-page+1),
-                   max+(Length(pstr(i-page+1))+Length(pdes(k+page-1))-
-                   CStrLen(pstr(i-page+1)+pdes(i-page+1))),' '),
-                   mn_setting.topic_attr,
-                   mn_setting.hi_topic_attr)
+    For idx := page to mnu_len2+page-1 do
+      begin
+        item_str := pstr(idx-page+1);
+        item_str_alt := pstr(idx);
+        item_str2 := pstr2(idx2+page-1);
+        item_str2_alt := pstr2(idx);
+        desc_str := pdes(idx-page+1);
+        desc_str2 := pdes(idx);
+        desc_str3 := pdes(idx2+page-1);
+
+        If (mn_environment.hlight_chrs <> 0) and (item_str <> '') then
+          item_str := '~'+Copy(item_str,1,mn_environment.hlight_chrs)+
+                      '~'+Copy(item_str,mn_environment.hlight_chrs+1,Length(item_str)-mn_environment.hlight_chrs);
+        If (mn_environment.hlight_chrs <> 0) and (item_str_alt <> '') then
+          item_str_alt := '~'+Copy(item_str_alt,1,mn_environment.hlight_chrs)+
+                          '~'+Copy(item_str_alt,mn_environment.hlight_chrs+1,Length(item_str_alt)-mn_environment.hlight_chrs);
+        If (mn_environment.hlight_chrs <> 0) and (item_str2 <> '') then
+          item_str2 := '~'+Copy(item_str2,1,mn_environment.hlight_chrs)+
+                       '~'+Copy(item_str2,mn_environment.hlight_chrs+1,Length(item_str2)-mn_environment.hlight_chrs);
+        If (mn_environment.hlight_chrs <> 0) and (item_str2_alt <> '') then
+          item_str2_alt := '~'+Copy(item_str2_alt,1,mn_environment.hlight_chrs)+
+                           '~'+Copy(item_str2_alt,mn_environment.hlight_chrs+1,Length(item_str2_alt)-mn_environment.hlight_chrs);
+
+        If (idx = idx2+page-1) then
+          ShowCStr_clone(mn_environment.v_dest,mnu_x+1,mnu_y+idx2,
+                         ExpStrR(item_str2+desc_str3,
+                         max+(Length(item_str2)+Length(desc_str3)-
+                         (C3StrLen(item_str2)+CStrLen(desc_str3))),' '),
+                         mn_setting.text2_attr,
+                         mn_setting.short2_attr,
+                         mn_setting.text_attr,
+                         mn_setting.short_attr)
         else
-          If mbuf[i].use then
-            ShowC3Str(mn_environment.v_dest,mnu_x+1,mnu_y+i-page+1,
-                      ExpStrR(pstr2(i)+pdes(i),
-                      max+(Length(pstr2(i))+Length(pdes(k+page-1))-
-                      (C3StrLen(pstr2(i))+CStrLen(pdes(i)))),' '),
-                      mn_setting.text_attr,
-                      mn_setting.short_attr,
-                      mn_setting.topic_attr)
+          If (idx-page+1 <= mnu_topic_len) then
+            ShowCStr(mn_environment.v_dest,mnu_x+1,mnu_y+idx-page+1,
+                     ExpStrR(item_str+desc_str,
+                     max+(Length(item_str)+Length(desc_str3)-
+                     CStrLen(item_str+desc_str)),' '),
+                     mn_setting.topic_attr,
+                     mn_setting.hi_topic_attr)
           else
-            ShowCStr(mn_environment.v_dest,mnu_x+1,mnu_y+i-page+1,
-                     ExpStrR(pstr(i)+pdes(i),
-                     max+(Length(pstr(i))+Length(pdes(k+page-1))-
-                     CStrLen(pstr(i)+pdes(i))),' '),
-                     mn_setting.disbld_attr,
-                     mn_setting.disbld_attr);
+            If mbuf[idx].use then
+              ShowC3Str(mn_environment.v_dest,mnu_x+1,mnu_y+idx-page+1,
+                        ExpStrR(item_str2_alt+desc_str2,
+                        max+(Length(item_str2_alt)+Length(desc_str3)-
+                        (C3StrLen(item_str2_alt)+CStrLen(desc_str2))),' '),
+                        mn_setting.text_attr,
+                        mn_setting.short_attr,
+                        mn_setting.topic_attr)
+            else
+              ShowCStr(mn_environment.v_dest,mnu_x+1,mnu_y+idx-page+1,
+                       ExpStrR(item_str_alt+desc_str2,
+                       max+(Length(item_str_alt)+Length(desc_str3)-
+                       CStrLen(item_str_alt+desc_str2)),' '),
+                       mn_setting.disbld_attr,
+                       mn_setting.disbld_attr);
+      end;
 
   If mn_setting.show_scrollbar then
     vscrollbar_pos :=
       VScrollBar(mn_environment.v_dest,mnu_x+max+1,mnu_y+1-mn_setting.topic_len,
-                 temp2,mnu_count,k+page-1,
+                 temp2,mnu_count,idx2+page-1,
                  vscrollbar_pos,mn_setting.menu_attr,mn_setting.menu_attr);
 end;
 
@@ -733,9 +764,15 @@ var
 
 begin
   temp := p;
-  If (temp > 1) and mbuf[temp+page-2].use then Dec(temp)
-  else If temp > 1 then begin Dec(temp); SubPos(temp); end
-       else If page > first then Dec(page);
+  If (temp > 1) and mbuf[temp+page-2].use then
+    Dec(temp)
+  else If (temp > 1) then
+         begin
+           Dec(temp);
+           SubPos(temp);
+         end
+       else If (page > first) then
+              Dec(page);
   If mbuf[temp+page-1].use then p := temp
   else If (temp+page-1 > first) then SubPos(temp);
 end;
@@ -747,48 +784,59 @@ var
 
 begin
   temp := p;
-  If (temp < len2) and (temp < last) and mbuf[temp+page].use then Inc(temp)
-  else If (temp < len2) and (temp < last) then begin Inc(temp); AddPos(temp); end
-       else If page+temp <= last then Inc(page);
+  If (temp < len2) and (temp < last) and
+     mbuf[temp+page].use then
+    Inc(temp)
+  else If (temp < len2) and (temp < last) then
+         begin
+           Inc(temp);
+           AddPos(temp);
+         end
+       else If (page+temp <= last) then
+              Inc(page);
   If mbuf[temp+page-1].use then p := temp
   else If (temp+page-1 < last) then AddPos(temp);
 end;
 
-procedure RetKey(code: Byte; var p: Word);
+function RetKey(code: Byte): Word;
 
 var
   temp: Byte;
 
 begin
-  p := 0;
+  RetKey := 0;
   For temp := 1 to count do
-    If (p = 0) and (UpCase(mbuf[temp].key) = UpCase(CHR(code))) then
-      p := temp;
+    If (UpCase(mbuf[temp].key) = UpCase(CHR(code))) then
+      begin
+        RetKey := temp;
+        BREAK;
+      end;
 end;
 
 procedure edit_contents(item: Word);
 
 var
-  temp: String;
+  item_str,temp: String;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'DIALOGIO.PAS:Menu:edit_contents';
 {$ENDIF}
   is_setting.append_enabled := TRUE;
-  is_setting.character_set  := [#$20..#$7d,#$7f..#$ff];
+  is_setting.character_set  := [' '..'_','a'..'}',#128..#255]; // exclude ` and ~ characters
   is_environment.locate_pos := 1;
 
+  item_str := pstr(item);
   If (mn_environment.edit_pos > 0) and (mn_environment.edit_pos < max-2) then
-    temp := Copy(pstr(item),mn_environment.edit_pos+1,
-                      Length(pstr(item))-mn_environment.edit_pos+1)
+    temp := Copy(item_str,mn_environment.edit_pos+1,
+                 Length(item_str)-mn_environment.edit_pos+1)
   else
-    temp := CutStr(pstr(item));
+    temp := CutStr(item_str);
 
   mn_environment.is_editing := TRUE;
   While (temp <> '') and (temp[Length(temp)] = ' ') do Delete(temp,Length(temp),1);
-  temp := InputStr(temp,x+1+mn_environment.edit_pos,y+k,
+  temp := InputStr(temp,x+1+mn_environment.edit_pos,y+idx2,
                max-2-mn_environment.edit_pos+1,
                max-2-mn_environment.edit_pos+1,
                mn_setting.text2_attr,mn_setting.default_attr);
@@ -798,7 +846,7 @@ begin
   If (is_environment.keystroke = kENTER) then
     begin
       If (mn_environment.edit_pos > 0) and (mn_environment.edit_pos < max-2) then
-        temp := Copy(pstr(item),1,mn_environment.edit_pos)+temp
+        temp := Copy(item_str,1,mn_environment.edit_pos)+temp
       else
         temp := CutStr(temp);
       Move(temp,POINTER(Ptr(0,Ofs(data)+(item-1)*(len+1)))^,len+1);
@@ -809,13 +857,20 @@ begin
 end;
 
 begin { Menu }
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'DIALOGIO.PAS:Menu';
 {$ENDIF}
-  If count = 0 then begin Menu := 0; EXIT; end;
+  If (count = 0) then
+    begin
+      Menu := 0;
+      EXIT;
+    end;
+
   max := Length(title);
-  mnu_data := Addr(data); mnu_count := count; mnu_len := len;
+  mnu_data := Addr(data);
+  mnu_count := count;
+  mnu_len := len;
 
   If NOT mn_environment.unpolite then
     ScreenMemCopy(mn_environment.v_dest,ptr_scr_backup2);
@@ -826,12 +881,12 @@ begin { Menu }
   If NOT mn_environment.preview then HideCursor;
   temp := 0;
 
-  For i := 1 to count do
+  For idx := 1 to count do
     begin
-      mbuf[i].key := OutKey(pstr(i));
-      If NOT mn_setting.reverse_use then mbuf[i].use := mbuf[i].key <> '~'
-      else mbuf[i].use := NOT (mbuf[i].key <> '~');
-      If mbuf[i].use then temp := 1;
+      mbuf[idx].key := OutKey(pstr(idx));
+      If NOT mn_setting.reverse_use then mbuf[idx].use := mbuf[idx].key <> '~'
+      else mbuf[idx].use := NOT (mbuf[idx].key <> '~');
+      If mbuf[idx].use then temp := 1;
     end;
 
   solid := FALSE;
@@ -841,9 +896,9 @@ begin { Menu }
       solid := TRUE;
     end;
 
-  For i := 1 to count do
-    If max < CStrLen(pstr(i))+mn_environment.descr_len then
-      max := CStrLen(pstr(i))+mn_environment.descr_len;
+  For idx := 1 to count do
+    If (max < CStrLen(pstr(idx))+mn_environment.descr_len) then
+      max := CStrLen(pstr(idx))+mn_environment.descr_len;
 
   If mn_setting.center_box then
     begin
@@ -851,7 +906,8 @@ begin { Menu }
       y := (work_MaxLn-len2-1) DIV 2+(work_MaxLn-len2-1) MOD 2;
     end;
 
-  mnu_x := x; mnu_y := y;
+  mnu_x := x;
+  mnu_y := y;
   len2b := len2;
   mn_environment.xpos := x;
   mn_environment.ypos := y;
@@ -866,13 +922,8 @@ begin { Menu }
       If mn_environment.intact_area then
         fr_setting.update_area := FALSE;
       If mn_setting.frame_enabled then
-        begin
-{$IFDEF __TMT__}
-          toggle_waitretrace := TRUE;
-{$ENDIF}
-          Frame(mn_environment.v_dest,x,y,x+max+1,y+len2+1,mn_setting.menu_attr,
-                title,mn_setting.title_attr,mn_setting.frame_type);
-        end;
+        Frame(mn_environment.v_dest,x,y,x+max+1,y+len2+1,mn_setting.menu_attr,
+              title,mn_setting.title_attr,mn_setting.frame_type);
       If mn_environment.intact_area then
         fr_setting.update_area := TRUE;
       fr_setting.shadow_enabled := old_fr_shadow_enabled;
@@ -891,20 +942,27 @@ begin { Menu }
       temp2 := len2;
       mnu_len2 := len2;
 
-      If len2 > count then len2 := count;
-      If len2 < 1 then len2 := 1;
-      If spos < 1 then spos := 1;
-      If spos > count then spos := count;
+      If (len2 > count) then len2 := count;
+      If (len2 < 1) then len2 := 1;
+      If (spos < 1) then spos := 1;
+      If (spos > count) then spos := count;
 
       mn_environment.refresh := refresh;
 
-      first := 1; While NOT mbuf[first].use do Inc(first);
-      last  := count; While NOT mbuf[last].use do Dec(last);
+      first := 1;
+      last := count;
+      While NOT mbuf[first].use do Inc(first);
+      While NOT mbuf[last].use do Dec(last);
 
-      If (first <= mn_setting.topic_len) then first := SUCC(mn_setting.topic_len);
-      If (spos < first) or (spos > last) then spos := first;
-      k := 1; page := 1; opage := WORD_NULL; opos := WORD_NULL;
-      While (k+page-1 < spos) do AddPos(k);
+      If (first <= mn_setting.topic_len) then
+        first := SUCC(mn_setting.topic_len);
+      If (spos < first) or (spos > last) then
+        spos := first;
+      idx2 := 1;
+      page := 1;
+      opage := WORD_NULL;
+      opos := WORD_NULL;
+      While (idx2+page-1 < spos) do AddPos(idx2);
     end;
 
   mnu_topic_len := mn_setting.topic_len;
@@ -923,18 +981,19 @@ begin { Menu }
       Move(mbuf[SUCC(mn_setting.topic_len)],mbuf[1],
               (count-mn_setting.topic_len)*SizeOf(mbuf[1]));
 
-      For temp := 1 to mn_setting.topic_len do SubPos(k);
+      For temp := 1 to mn_setting.topic_len do SubPos(idx2);
       Dec(count,mn_setting.topic_len);
       Dec(mnu_count,mn_setting.topic_len);
       Dec(first,mn_setting.topic_len);
       Dec(last,mn_setting.topic_len);
+      refresh;
     end
   else
     refresh;
 
   mn_environment.curr_page := page;
-  mn_environment.curr_pos := k+page-1;
-  mn_environment.curr_item := CutStr(pstr(k+page-1));
+  mn_environment.curr_pos := idx2+page-1;
+  mn_environment.curr_item := CutStr(pstr(idx2+page-1));
   mn_environment.keystroke := WORD_NULL;
   If (Addr(mn_environment.ext_proc) <> NIL) then mn_environment.ext_proc;
 
@@ -950,91 +1009,100 @@ begin { Menu }
         mn_environment.keystroke := key;
         key := getkey;
         If NOT qflg then
-          Case LO(key) of
-            $00: If NOT shift_pressed and
-                    NOT ctrl_pressed and NOT alt_pressed then
-                   Case HI(key) of
-                     $48: If (page+k-1 > first) or
-                             NOT mn_setting.cycle_moves then SubPos(k)
+          If (LO(key) in [$20..$0ff]) then
+            begin
+              idx := RetKey(LO(key));
+              If (idx <> 0) then
+                begin
+                  refresh;
+                  idx2 := idx;
+                  If NOT ((key = mn_setting.terminate_keys[2]) and
+                           mn_setting.edit_contents) then qflg := TRUE
+                  else edit_contents(idx);
+                end;
+            end
+          else If NOT shift_pressed and
+                  NOT ctrl_pressed and NOT alt_pressed then
+                 Case key of
+                   kUP: If (page+idx2-1 > first) or
+                          NOT mn_setting.cycle_moves then SubPos(idx2)
+                        else begin
+                               idx2 := len2;
+                               page := count-len2+1;
+                               If NOT mbuf[idx2+page-1].use then SubPos(idx2);
+                             end;
+                   kDOWN: If (page+idx2-1 < last) or
+                            NOT mn_setting.cycle_moves then AddPos(idx2)
                           else begin
-                                 k := len2; page := count-len2+1;
-                                 If NOT mbuf[k+page-1].use then SubPos(k);
+                                 idx2 := 1;
+                                 page := 1;
+                                 If NOT mbuf[idx2+page-1].use then AddPos(idx2);
                                end;
-
-                     $50: If (page+k-1 < last) or
-                             NOT mn_setting.cycle_moves then AddPos(k)
-                          else begin
-                                 k := 1; page := 1;
-                                 If NOT mbuf[k+page-1].use then AddPos(k);
-                               end;
-
-                     $47: begin
-                            If (mn_setting.homing_pos = 0) then begin k := 1; page := 1; end
-                            else If (k+page-1 > mn_setting.homing_pos) and
+                   kHOME: begin
+                            If (mn_setting.homing_pos = 0) then begin idx2 := 1; page := 1; end
+                            else If (idx2+page-1 > mn_setting.homing_pos) and
                                     (mn_setting.homing_pos < count) then
-                                   Repeat SubPos(k) until (k+page-1 <= mn_setting.homing_pos)
-                                 else begin k := 1; page := 1; end;
-                            If NOT mbuf[k+page-1].use then AddPos(k);
+                                   Repeat SubPos(idx2) until (idx2+page-1 <= mn_setting.homing_pos)
+                                 else begin
+                                        idx2 := 1;
+                                        page := 1;
+                                      end;
+                            If NOT mbuf[idx2+page-1].use then AddPos(idx2);
                           end;
 
-                     $4f: begin
-                            If (mn_setting.homing_pos = 0) then begin k := len2; page := count-len2+1; end
-                            else If (k+page-1 < mn_setting.homing_pos) and
-                                    (mn_setting.homing_pos < count) then
-                                   Repeat AddPos(k) until (k+page-1 >= mn_setting.homing_pos)
-                                 else begin k := len2; page := count-len2+1; end;
-                            If NOT mbuf[k+page-1].use then SubPos(k);
-                          end;
+                   kEND: begin
+                           If (mn_setting.homing_pos = 0) then begin idx2 := len2; page := count-len2+1; end
+                           else If (idx2+page-1 < mn_setting.homing_pos) and
+                                   (mn_setting.homing_pos < count) then
+                                  Repeat
+                                    AddPos(idx2);
+                                  until (idx2+page-1 >= mn_setting.homing_pos)
+                                else begin
+                                       idx2 := len2;
+                                       page := count-len2+1;
+                                     end;
+                           If NOT mbuf[idx2+page-1].use then SubPos(idx2);
+                         end;
 
-                     $49: If (k+page-1-(len2-1) > mn_setting.homing_pos) or
-                             (k+page-1 <= mn_setting.homing_pos) or
+                   kPgUP: If (idx2+page-1-(len2-1) > mn_setting.homing_pos) or
+                             (idx2+page-1 <= mn_setting.homing_pos) or
                              (mn_setting.homing_pos = 0) or
                              NOT (mn_setting.homing_pos < count) then
-                            For temp := 1 to len2-1 do SubPos(k)
-                          else Repeat SubPos(k) until (k+page-1 <= mn_setting.homing_pos);
+                            For temp := 1 to len2-1 do SubPos(idx2)
+                          else Repeat
+                                 SubPos(idx2);
+                               until (idx2+page-1 <= mn_setting.homing_pos);
 
-                     $51: If (k+page-1+(len2-1) < mn_setting.homing_pos) or
-                             (k+page-1 >= mn_setting.homing_pos) or
-                             (mn_setting.homing_pos = 0) or
-                             NOT (mn_setting.homing_pos < count) then
-                            For temp := 1 to len2-1 do AddPos(k)
-                          else Repeat AddPos(k) until (k+page-1 >= mn_setting.homing_pos);
-                   end;
-
-            $20..$0ff:
-              begin
-                RetKey(LO(key),m);
-                If m <> 0 then
-                  begin
-                    refresh;
-                    k := m;
-                    If NOT ((key = mn_setting.terminate_keys[2]) and
-                             mn_setting.edit_contents) then qflg := TRUE
-                    else edit_contents(m);
-                  end;
-              end;
-          end;
+                   kPgDOWN: If (idx2+page-1+(len2-1) < mn_setting.homing_pos) or
+                               (idx2+page-1 >= mn_setting.homing_pos) or
+                               (mn_setting.homing_pos = 0) or
+                               NOT (mn_setting.homing_pos < count) then
+                              For temp := 1 to len2-1 do AddPos(idx2)
+                            else Repeat
+                                   AddPos(idx2);
+                                 until (idx2+page-1 >= mn_setting.homing_pos);
+                 end;
 
         If LookUpKey(key,mn_setting.terminate_keys,50) then
           If NOT ((key = mn_setting.terminate_keys[2]) and
                    mn_setting.edit_contents) then qflg := TRUE
-          else edit_contents(k+page-1);
+          else edit_contents(idx2+page-1);
 
         mn_environment.curr_page := page;
-        mn_environment.curr_pos := k+page-1;
-        mn_environment.curr_item := CutStr(pstr(k+page-1));
+        mn_environment.curr_pos := idx2+page-1;
+        mn_environment.curr_item := CutStr(pstr(idx2+page-1));
         refresh;
         mn_environment.keystroke := key;
         If (Addr(mn_environment.ext_proc) <> NIL) then mn_environment.ext_proc;
-{$IFNDEF __TMT__}
-        emulate_screen;
+{$IFNDEF GO32V2}
+        draw_screen;
 {$ENDIF}
       until qflg or _force_program_quit;
     end;
 
   If mn_environment.winshade and NOT mn_environment.unpolite then
     begin
-      If Addr(move_to_screen_routine) <> NIL then
+      If (Addr(move_to_screen_routine) <> NIL) then
         begin
           move_to_screen_data := ptr_scr_backup2;
           move_to_screen_area[1] := x;
@@ -1047,12 +1115,12 @@ begin { Menu }
         ScreenMemCopy(ptr_scr_backup2,mn_environment.v_dest);
     end;
 
-  Menu := k+page-1;
+  Menu := idx2+page-1;
 end;
 
 const
   MAX_FILES = 4096;
-  UPDIR_STR = 'updir';
+  UPDIR_STR = #19'updir';
 {$IFDEF UNIX}
   DRIVE_DIVIDER = 0;
 {$ELSE}
@@ -1074,7 +1142,7 @@ type
               match_count: Word;
             end;
 type
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   tMNUDAT = array[1..MAX_FILES] of String[1+12+1];
 {$ELSE}
   tMNUDAT = array[1..MAX_FILES] of String[1+23+1];
@@ -1088,7 +1156,7 @@ var
   descr: tDSCDAT;
   masks: array[1..20] of String;
   fstream: tSTREAM;
-{$IFNDEF __TMT__}
+{$IFNDEF GO32V2}
   drive_list: array[0..128] of Char;
 {$ENDIF}
 
@@ -1101,7 +1169,7 @@ var
 begin
   okay := FALSE;
   For temp := 1 to count do
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
     If SameName(Upper(masks[temp]),Upper(filename)) then
 {$ELSE}
     If (Upper(Copy(masks[temp],3,Length(masks[temp]))) = Upper(ExtOnly(filename))) then
@@ -1113,25 +1181,22 @@ begin
   LookUpMask := okay;
 end;
 
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
 
 function valid_drive(drive: Char): Boolean;
 
 function phantom_drive(drive: Char): Boolean;
 
 var
-  regs: tRmRegs;
-  IsPhantom : Boolean;
-  DriveNum : Byte;
+  regs: tRealRegs;
 
 begin
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'DIALOGIO.PAS:phantom_drive';
 
-  ClearRmRegs(regs);
   regs.ax := $440e;
   regs.bl := BYTE(UpCase(drive))-$40;
-  RealModeInt($21,regs);
+  RealIntr($21,regs);
 
   If Odd(regs.flags) then phantom_drive := FALSE
   else If (regs.al = 0) then phantom_drive := FALSE
@@ -1139,28 +1204,32 @@ begin
 end;
 
 var
-  regs: tRmRegs;
-  fcb: array[0..36] of Byte;
-  dos_seg: Word;
+  regs: tRealRegs;
+  dos_sel,dos_seg: Word;
+  dos_mem_adr: Dword;
+  dos_data: array[0..PRED(40)] of Byte;
 
 begin
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'DIALOGIO.PAS:valid_drive';
 
-  dos_seg := DosMemoryAlloc(40);
-  MEM[dos_seg:0] := BYTE(UpCase(drive));
-  MEM[dos_seg:1] := BYTE(':');
-  MEM[dos_seg:2] := 0;
+  dos_mem_adr := global_dos_alloc(40);
+  dos_sel := WORD(dos_mem_adr);
+  dos_seg := WORD(dos_mem_adr SHR 16);
 
-  ClearRmRegs(regs);
-  regs.ax  := $2906;
-  regs.si  := 0;
-  regs.di  := 3;
-  regs.ds  := dos_seg;
-  regs.es  := dos_seg;
-  RealModeInt($21,regs);
+  dos_data[0] := BYTE(UpCase(drive));
+  dos_data[1] := BYTE(':');
+  dos_data[2] := 0;
+  dosmemput(dos_seg,0,dos_data,40);
 
-  DosMemoryFree(dos_seg);
+  regs.ax := $2906;
+  regs.si := 0;
+  regs.di := 3;
+  regs.ds := dos_seg;
+  regs.es := dos_seg;
+  RealIntr($21,regs);
+
+  global_dos_free(dos_sel);
   valid_drive := (regs.al <> BYTE_NULL) and NOT phantom_drive(drive);
 end;
 
@@ -1195,7 +1264,7 @@ var
   count1,count2: Word;
   drive: Char;
 
-{$IFNDEF __TMT__}
+{$IFNDEF GO32V2}
 
 type
   tCOMPARE_STR_RESULT = (isLess,isMore,isEqual);
@@ -1260,7 +1329,7 @@ begin
   j := r;
 
   Repeat
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
     While (i < r) and (stream.stuff[i].name < cmp) do
       Inc(i);
     While (j > l) and (stream.stuff[j].name > cmp) do
@@ -1280,7 +1349,7 @@ begin
         stream.stuff[i] := stream.stuff[j];
         stream.stuff[j] := tmp;
         Inc(i);
-                Dec(j);
+        Dec(j);
       end;
   until (i > j);
 
@@ -1289,7 +1358,7 @@ begin
 end;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'DIALOGIO.PAS:make_stream';
 {$ELSE}
@@ -1300,7 +1369,7 @@ begin
 
   count1 := 0;
   For drive := 'A' to 'Z' do
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
     If valid_drive(drive) then
 {$ELSE}
     If valid_drive(drive,stream.stuff[SUCC(count1)].info) then
@@ -1313,13 +1382,13 @@ begin
       end;
 
   Inc(count1);
-  stream.stuff[count1].name := '~'+#$ff+'~';
+  stream.stuff[count1].name := '~'+#255+'~';
   stream.stuff[count1].attr := volumeid;
 
   count2 := 0;
   stream.drive_count := count1;
 
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   If (DiskSize(ORD(UpCase(path[1]))-ORD('A')+1) > 0) then
     begin
 {$ENDIF}
@@ -1343,7 +1412,7 @@ begin
           FindNext(search);
         end;
 
-{$IFNDEF __TMT__}
+{$IFNDEF GO32V2}
   If (Length(path) > 3) and (count1 = stream.drive_count) then
     begin
       Inc(count1);
@@ -1365,7 +1434,7 @@ begin
             end;
           FindNext(search);
         end;
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
     end;
 {$ENDIF}
 
@@ -1389,7 +1458,10 @@ end;
 function Fselect(mask: String): String;
 
 var
-  temp1,temp2: Longint;
+{$IFNDEF GO32V2}
+  temp1: Longint;
+{$ENDIF}
+  temp2: Longint;
   temp3,temp4: String;
   temp5: Longint;
   temp6,temp7: String;
@@ -1408,7 +1480,7 @@ end;
 label _jmp1;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'DIALOGIO.PAS:Fselect';
 {$ENDIF}
@@ -1467,7 +1539,7 @@ _jmp1:
     path[SUCC(ORD(UpCase(temp3[1]))-ORD('A'))] := path_filter(temp3);
     make_stream(temp3,mask,fstream);
 
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
 
     For temp2 := 1 to fstream.count do
       If (fstream.stuff[temp2].name <> UPDIR_STR) then
@@ -1488,7 +1560,7 @@ _jmp1:
     For temp2 := 1 to fstream.count do
       If (fstream.stuff[temp2].attr = volumeid) then
         begin
-          If (fstream.stuff[temp2].name = '~'+#$ff+'~') then descr[temp2] := ''
+          If (fstream.stuff[temp2].name = '~'+#255+'~') then descr[temp2] := ''
           else
             descr[temp2] := '[~DRiVE~]';
         end
@@ -1545,7 +1617,7 @@ _jmp1:
     For temp2 := 1 to fstream.count do
       If (fstream.stuff[temp2].attr = volumeid) then
         begin
-          If (fstream.stuff[temp2].name = '~'+#$ff+'~') then descr[temp2] := ''
+          If (fstream.stuff[temp2].name = '~'+#255+'~') then descr[temp2] := ''
           else descr[temp2] := '[~'+fstream.stuff[temp2].info+'~]';
         end
       else If NOT (fstream.stuff[temp2].attr AND directory <> 0) then
@@ -1567,7 +1639,7 @@ _jmp1:
 
     For temp2 := 1 to fstream.count do
       If (SYSTEM.Pos('~',fstream.stuff[temp2].name) <> 0) and
-         (fstream.stuff[temp2].name <> '~'+#$ff+'~') then
+         (fstream.stuff[temp2].name <> '~'+#255+'~') then
         While (SYSTEM.Pos('~',menudat[temp2]) <> 0) do
           menudat[temp2][SYSTEM.Pos('~',menudat[temp2])] := PATHSEP;
 
@@ -1611,25 +1683,14 @@ _jmp1:
     Dec(fstream.count);
 {$ENDIF}
 
-{$IFDEF __TMT__}
-    If NOT (program_screen_mode in [1,2]) then
-      temp2 := Menu(menudat,01,01,lastp,
-                    1+12+1,work_MaxLn-7,fstream.count,' '+
-                    iCASE(DietStr(path_filter(temp3),28)+' '))
-    else
-      temp2 := Menu(menudat,01,01,lastp,
-                    1+12+1,work_MaxLn-15,fstream.count,' '+
-                    iCASE(DietStr(path_filter(temp3),28)+' '));
+{$IFDEF GO32V2}
+    temp2 := Menu(menudat,01,01,lastp,
+                  1+12+1,AdT2unit.max(work_MaxLn-7,30),fstream.count,' '+
+                  iCASE(DietStr(path_filter(temp3),28)+' '));
 {$ELSE}
-    If (program_screen_mode = 0) then
-
-      temp2 := Menu(menudat,01,01,lastp,
-                    1+23+1,work_MaxLn-5,fstream.count,' '+
-                    iCASE(DietStr(FilterStr2(path_filter(temp3),_valid_characters_fname,'_'),38))+' ')
-    else
-      temp2 := Menu(menudat,01,01,lastp,
-                    1+23+1,work_MaxLn-15,fstream.count,' '+
-                    iCASE(DietStr(FilterStr2(path_filter(temp3),_valid_characters_fname,'_'),38))+' ');
+    temp2 := Menu(menudat,01,01,lastp,
+                  1+23+1,AdT2unit.max(work_MaxLn-5,30),fstream.count,' '+
+                  iCASE(DietStr(FilterStr2(path_filter(temp3),_valid_characters_fname,'_'),38))+' ');
 {$ENDIF}
 
     mn_environment.ext_proc := old_fselect_external_proc;
@@ -1790,7 +1851,7 @@ var
   temp: Word;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'DIALOGIO.PAS:HScrollBar';
 {$ENDIF}
@@ -1809,11 +1870,11 @@ begin
   If (size < len1) then
     begin
       pos := temp;
-      ShowStr(dest,x,y,''+ExpStrL('',size-2,'°')+'',atr1);
-      If (size-2-1 < 10) then ShowStr(dest,x+1+temp,y,'²',atr2)
-      else ShowStr(dest,x+1+temp,y,'²²²',atr2);
+      ShowStr(dest,x,y,#17+ExpStrL('',size-2,#176)+#16,atr1);
+      If (size-2-1 < 10) then ShowStr(dest,x+1+temp,y,#178,atr2)
+      else ShowStr(dest,x+1+temp,y,#178#178#178,atr2);
     end
-  else ShowCStr(dest,x,y,'~~'+ExpStrL('',size-2,'±')+'~~',atr2,atr1);
+  else ShowCStr(dest,x,y,'~'#17'~'+ExpStrL('',size-2,#177)+'~'#16'~',atr2,atr1);
   HScrollBar := pos;
 end;
 
@@ -1823,7 +1884,7 @@ var
   temp: Word;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'DIALOGIO.PAS:VScrollBar';
 {$ENDIF}
@@ -1842,11 +1903,11 @@ begin
   If (size < len1) then
     begin
       pos := temp;
-      ShowVStr(dest,x,y,''+ExpStrL('',size-2,'°')+'',atr1);
-      If (size-2-1 < 10) then ShowStr(dest,x,y+1+temp,'²',atr2)
-      else ShowVStr(dest,x,y+1+temp,'²²²',atr2);
+      ShowVStr(dest,x,y,#30+ExpStrL('',size-2,#176)+#31,atr1);
+      If (size-2-1 < 10) then ShowStr(dest,x,y+1+temp,#178,atr2)
+      else ShowVStr(dest,x,y+1+temp,#178#178#178,atr2);
     end
-  else ShowVCStr(dest,x,y,'~~'+ExpStrL('',size-2,'±')+'~~',atr2,atr1);
+  else ShowVCStr(dest,x,y,'~'#30'~'+ExpStrL('',size-2,#177)+'~'#31'~',atr2,atr1);
   VScrollBar := pos;
 end;
 
@@ -1856,12 +1917,12 @@ var
   index: Byte;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'DIALOGIO.PAS:DialogIO_Init';
 {$ENDIF}
 
-  dl_setting.frame_type      := double;
+  dl_setting.frame_type      := frame_double;
   dl_setting.title_attr      := dialog_background+dialog_title;
   dl_setting.box_attr        := dialog_background+dialog_border;
   dl_setting.text_attr       := dialog_background+dialog_text;
@@ -1874,7 +1935,7 @@ begin
   dl_setting.contxt_attr     := dialog_background+dialog_context;
   dl_setting.contxt2_attr    := dialog_background+dialog_context_dis;
 
-  mn_setting.frame_type      := double;
+  mn_setting.frame_type      := frame_double;
   mn_setting.title_attr      := dialog_background+dialog_title;
   mn_setting.menu_attr       := dialog_background+dialog_border;
   mn_setting.text_attr       := dialog_background+dialog_item;
@@ -1915,6 +1976,7 @@ begin
   mn_environment.xsize       := 0;
   mn_environment.ysize       := 0;
   mn_environment.desc_pos    := 0;
+  mn_environment.hlight_chrs := 0;
 
   For index := 1 to 26 do
     path[index] := CHR(ORD('a')+PRED(index))+':'+PATHSEP;

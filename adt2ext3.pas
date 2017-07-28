@@ -1,7 +1,6 @@
 unit AdT2ext3;
-{$IFNDEF __TMT__}
+{$S-,Q-,R-,V-,B-,X+}
 {$PACKRECORDS 1}
-{$ENDIF}
 interface
 
 procedure a2m_file_loader;
@@ -26,19 +25,16 @@ procedure sbi_file_loader;
 procedure sgi_file_loader;
 procedure fselect_external_proc;
 procedure import_standard_instrument_alt(var data);
-procedure test_instrument_alt(chan: Byte; fkey: Word; loadMacros: Boolean; bankSelector: Boolean; loadArpVib: Boolean);
+procedure test_instrument_alt(chan: Byte; fkey: Word; loadMacros: Boolean; bankSelector: Boolean; loadArpVib: Boolean;
+                              test_ins1,test_ins2: Byte);
 procedure test_instrument_alt2(chan: Byte; fkey: Word);
 
 implementation
 
 uses
-{$IFDEF __TMT__}
-  DOS,DPMI,
-{$ELSE}
   DOS,
-{$ENDIF}
-  AdT2opl3,AdT2sys,AdT2keyb,AdT2unit,AdT2extn,AdT2ext2,AdT2ext4,AdT2ext5,AdT2text,AdT2apak,
-  StringIO,DialogIO,ParserIO,DepackIO,TxtScrIO;
+  AdT2opl3,AdT2sys,AdT2keyb,AdT2unit,AdT2extn,AdT2ext2,AdT2ext4,AdT2ext5,AdT2text,AdT2pack,
+  StringIO,DialogIO,ParserIO,TxtScrIO,DepackIO;
 
 {$i iloadins.inc}
 {$i iloaders.inc}
@@ -66,12 +62,16 @@ var
   f: File;
   header: tOLD_HEADER;
   header2: tHEADER;
-  temp: Longint;
+  temp,temp2: Longint;
+  ins_4op: Word;
   crc: Word;
-  temp_str: String;
+  temp_ins,temp_ins2: tADTRACK2_INS;
+  temp_str,temp_str2: String;
+  _4op_ins_flag: Boolean;
+  _4op_ins_idx: Byte;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
     _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2EXT3.PAS:a2i_file_loader';
 {$ENDIF}
@@ -98,7 +98,7 @@ begin
       EXIT;
     end;
 
-  If NOT (header.ffver in [1..9]) then
+  If NOT (header.ffver in [1..FFVER_A2I]) then
     begin
       CloseF(f);
       Dialog('UNKNOWN FiLE FORMAT VERSiON$'+
@@ -248,6 +248,90 @@ begin
         Copy(songdata.instr_names[current_inst],1,9)+truncate_string(temp_str);
     end;
 
+  If (header.ffver = FFVER_A2I) then
+    begin
+      ResetF(f);
+      BlockReadF(f,header2,SizeOf(header2),temp);
+      If NOT ((temp = SizeOf(header2)) and (header2.ident = id)) then
+        begin
+          CloseF(f);
+          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
+                 'LOADiNG STOPPED$',
+                 '~O~KAY$',' A2i LOADER ',1);
+          EXIT;
+        end;
+
+      BlockReadF(f,buf2,header2.b0len,temp);
+      If NOT (temp = header2.b0len) then
+        begin
+          CloseF(f);
+          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
+                 'LOADiNG STOPPED$',
+                 '~O~KAY$',' A2i LOADER ',1);
+          EXIT;
+        end;
+
+      crc := WORD_NULL;
+      crc := Update16(header2.b0len,1,crc);
+      crc := Update16(buf2,header2.b0len,crc);
+
+      If (crc <> header2.crc16) then
+        begin
+          CloseF(f);
+          Dialog('CRC FAiLED - FiLE CORRUPTED$'+
+                 'LOADiNG STOPPED$',
+                 '~O~KAY$',' A2i LOADER ',1);
+          EXIT;
+        end;
+
+      _4op_ins_flag := FALSE;
+      progress_num_steps := 0;
+      temp := 0;
+      temp2 := LZH_decompress(buf2,buf3,header2.b0len);
+      Move(buf3[temp],temp_ins,SizeOf(temp_ins));
+      Inc(temp,SizeOf(temp_ins)); // instrument data
+      Move(buf3[temp],temp_str,SUCC(buf3[temp]));
+      Inc(temp,SUCC(buf3[temp])); // instrument name
+      If (temp < temp2) then // more data present => 4op instrument
+        begin
+          _4op_ins_flag := TRUE;
+          Move(buf3[temp],temp_ins2,SizeOf(temp_ins2));
+          Inc(temp,SizeOf(temp_ins2));
+          Move(buf3[temp],temp_str2,SUCC(buf3[temp]));
+          Inc(temp,SUCC(buf3[temp]));
+        end;
+      If NOT _4op_ins_flag then
+        begin
+          ins_4op := check_4op_to_test;
+          If (ins_4op <> 0) then
+            begin
+              reset_4op_flag(HI(ins_4op));
+              update_4op_flag_marks;
+            end;
+          Move(temp_ins,songdata.instr_data[current_inst],SizeOf(temp_ins));
+          If (temp_str = '') then temp_str := Lower(NameOnly(instdata_source));
+          songdata.instr_names[current_inst] :=
+            Copy(songdata.instr_names[current_inst],1,9)+truncate_string(temp_str);
+        end
+      else
+        begin
+          _4op_ins_idx := current_inst;
+          set_4op_flag(current_inst);
+          update_4op_flag_marks;
+          If (_4op_ins_idx = 255) then Dec(_4op_ins_idx);
+          // 4OP 1/2
+          Move(temp_ins,songdata.instr_data[_4op_ins_idx],SizeOf(temp_ins));
+          If (temp_str = '') then temp_str := Lower(NameOnly(instdata_source))+' [4OP 1/2]';
+          songdata.instr_names[_4op_ins_idx] :=
+            Copy(songdata.instr_names[_4op_ins_idx],1,9)+truncate_string(temp_str);
+          // 4OP 2/2
+          Move(temp_ins2,songdata.instr_data[SUCC(_4op_ins_idx)],SizeOf(temp_ins2));
+          If (temp_str2 = '') then temp_str2 := Lower(NameOnly(instdata_source))+' [4OP 2/2]';
+          songdata.instr_names[SUCC(_4op_ins_idx)] :=
+            Copy(songdata.instr_names[SUCC(_4op_ins_idx)],1,9)+truncate_string(temp_str2);
+        end;
+    end;
+
   CloseF(f);
   load_flag := 1;
 end;
@@ -267,11 +351,19 @@ const
 var
   f: File;
   header: tHEADER;
-  crc,temp: Longint;
-  temp_str: String;
+  crc,temp,temp2: Longint;
+  ins_4op: Word;
+  temp_ins,temp_ins2: tADTRACK2_INS;
+  temp_str,temp_str2: String;
+  temp_macro: tREGISTER_TABLE;
+  temp_macro2: tREGISTER_TABLE;
+  temp_dis_fmreg_col: tDIS_FMREG_COL;
+  temp_dis_fmreg_col2: tDIS_FMREG_COL;
+  _4op_ins_flag: Boolean;
+  _4op_ins_idx: Byte;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2EXT3.PAS:a2f_file_loader';
 {$ENDIF}
@@ -298,7 +390,7 @@ begin
       EXIT;
     end;
 
-  If NOT (header.ffver in [1]) then
+  If NOT (header.ffver in [1..FFVER_A2F]) then
     begin
       CloseF(f);
       Dialog('UNKNOWN FiLE FORMAT VERSiON$'+
@@ -356,6 +448,93 @@ begin
            SizeOf(songdata.dis_fmreg_col[current_inst]));
     end;
 
+  If (header.ffver = FFVER_A2F) then
+    begin
+      BlockReadF(f,buf2,header.b0len,temp);
+      If NOT (temp = header.b0len) then
+        begin
+          CloseF(f);
+          Dialog('ERROR READiNG DATA - FiLE CORRUPTED$'+
+                 'LOADiNG STOPPED$',
+                 '~O~KAY$',' A2F LOADER ',1);
+          EXIT;
+        end;
+
+      crc := DWORD_NULL;
+      crc := Update32(header.b0len,1,crc);
+      crc := Update32(buf2,header.b0len,crc);
+
+      If (crc <> header.crc32) then
+        begin
+          CloseF(f);
+          Dialog('CRC FAiLED - FiLE CORRUPTED$'+
+                 'LOADiNG STOPPED$',
+                 '~O~KAY$',' A2F LOADER ',1);
+          EXIT;
+        end;
+
+      _4op_ins_flag := FALSE;
+      progress_num_steps := 0;
+      temp := 0;
+      temp2 := LZH_decompress(buf2,buf3,header.b0len);
+      Move(buf3[temp],temp_ins,SizeOf(temp_ins));
+      Inc(temp,SizeOf(temp_ins)); // instrument data
+      Move(buf3[temp],temp_str,SUCC(buf3[temp]));
+      Inc(temp,SUCC(buf3[temp])); // instrument name
+      Move(buf3[temp],temp_macro,SizeOf(temp_macro));
+      Inc(temp,SizeOf(temp_macro)); // FM-macro data
+      Move(buf3[temp],temp_dis_fmreg_col,SizeOf(temp_dis_fmreg_col));
+      Inc(temp,SizeOf(temp_dis_fmreg_col)); // disabled FM-macro column data
+      If (temp < temp2) then // more data present => 4op instrument
+        begin
+          _4op_ins_flag := TRUE;
+          Move(buf3[temp],temp_ins2,SizeOf(temp_ins2));
+          Inc(temp,SizeOf(temp_ins2));
+          Move(buf3[temp],temp_str2,SUCC(buf3[temp]));
+          Inc(temp,SUCC(buf3[temp]));
+          Move(buf3[temp],temp_macro2,SizeOf(temp_macro2));
+          Inc(temp,SizeOf(temp_macro2));
+          Move(buf3[temp],temp_dis_fmreg_col2,SizeOf(temp_dis_fmreg_col2));
+        end;
+
+      If NOT _4op_ins_flag then
+        begin
+          ins_4op := check_4op_to_test;
+          If (ins_4op <> 0) then
+            begin
+              reset_4op_flag(HI(ins_4op));
+              update_4op_flag_marks;
+            end;
+          Move(temp_ins,songdata.instr_data[current_inst],SizeOf(temp_ins));
+          Move(temp_macro,songdata.instr_macros[current_inst],SizeOf(temp_macro));
+          Move(temp_dis_fmreg_col,songdata.dis_fmreg_col[current_inst],SizeOf(temp_dis_fmreg_col));
+          If (temp_str = '') then temp_str := Lower(NameOnly(instdata_source));
+          songdata.instr_names[current_inst] :=
+            Copy(songdata.instr_names[current_inst],1,9)+truncate_string(temp_str);
+        end
+      else
+        begin
+          _4op_ins_idx := current_inst;
+          set_4op_flag(current_inst);
+          update_4op_flag_marks;
+          If (_4op_ins_idx = 255) then Dec(_4op_ins_idx);
+          // 4OP 1/2
+          Move(temp_ins,songdata.instr_data[_4op_ins_idx],SizeOf(temp_ins));
+          Move(temp_macro,songdata.instr_macros[_4op_ins_idx],SizeOf(temp_macro));
+          Move(temp_dis_fmreg_col,songdata.dis_fmreg_col[_4op_ins_idx],SizeOf(temp_dis_fmreg_col));
+          If (temp_str = '') then temp_str := Lower(NameOnly(instdata_source))+' [4OP 1/2]';
+          songdata.instr_names[_4op_ins_idx] :=
+            Copy(songdata.instr_names[_4op_ins_idx],1,9)+truncate_string(temp_str);
+          // 4OP 2/2
+          Move(temp_ins2,songdata.instr_data[SUCC(_4op_ins_idx)],SizeOf(temp_ins2));
+          Move(temp_macro2,songdata.instr_macros[SUCC(_4op_ins_idx)],SizeOf(temp_macro2));
+          Move(temp_dis_fmreg_col2,songdata.dis_fmreg_col[SUCC(_4op_ins_idx)],SizeOf(temp_dis_fmreg_col2));
+          If (temp_str2 = '') then temp_str2 := Lower(NameOnly(instdata_source))+' [4OP 2/2]';
+          songdata.instr_names[SUCC(_4op_ins_idx)] :=
+            Copy(songdata.instr_names[SUCC(_4op_ins_idx)],1,9)+truncate_string(temp_str2);
+        end;
+    end;
+
   CloseF(f);
   load_flag := 1;
 end;
@@ -383,7 +562,7 @@ const
                  SizeOf(buffer.idata)+
                  SizeOf(buffer.resrv);
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2EXT3.PAS:cif_file_loader';
 {$ENDIF}
@@ -432,7 +611,7 @@ var
   temp_str: String;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2EXT3.PAS:fin_file_loader';
 {$ENDIF}
@@ -502,7 +681,7 @@ begin
 end;
 
 begin { ins_file_loader }
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2EXT3.PAS:ins_file_loader';
 {$ENDIF}
@@ -580,7 +759,7 @@ var
   temp_str: String;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2EXT3.PAS:sbi_file_loader';
 {$ENDIF}
@@ -625,32 +804,32 @@ begin
 
   With songdata.instr_data[inst] do
     begin
-      fm_data.ATTCK_DEC_modulator := (tDUMMY_BUFF(data)[1]  AND $0f)+
-                                     (tDUMMY_BUFF(data)[0]  AND $0f) SHL 4;
-      fm_data.SUSTN_REL_modulator := (tDUMMY_BUFF(data)[3]  AND $0f)+
-                                     (tDUMMY_BUFF(data)[2]  AND $0f) SHL 4;
-      fm_data.WAVEFORM_modulator  := (tDUMMY_BUFF(data)[4]  AND 3);
-      fm_data.KSL_VOLUM_modulator := (tDUMMY_BUFF(data)[7]  AND $3f)+
-                                     (tDUMMY_BUFF(data)[6]  AND 3) SHL 6;
-      fm_data.AM_VIB_EG_modulator := (tDUMMY_BUFF(data)[5]  AND $0f)+
-                                     (tDUMMY_BUFF(data)[8]  AND 1) SHL 4+
-                                     (tDUMMY_BUFF(data)[11] AND 1) SHL 5+
-                                     (tDUMMY_BUFF(data)[10] AND 1) SHL 6+
-                                     (tDUMMY_BUFF(data)[9]  AND 1) SHL 7;
-      fm_data.ATTCK_DEC_carrier   := (tDUMMY_BUFF(data)[13] AND $0f)+
-                                     (tDUMMY_BUFF(data)[12] AND $0f) SHL 4;
-      fm_data.SUSTN_REL_carrier   := (tDUMMY_BUFF(data)[15] AND $0f)+
-                                     (tDUMMY_BUFF(data)[14] AND $0f) SHL 4;
-      fm_data.WAVEFORM_carrier    := (tDUMMY_BUFF(data)[16] AND 3);
-      fm_data.KSL_VOLUM_carrier   := (tDUMMY_BUFF(data)[19] AND $3f)+
-                                     (tDUMMY_BUFF(data)[18] AND 3) SHL 6;
-      fm_data.AM_VIB_EG_carrier   := (tDUMMY_BUFF(data)[17] AND $0f)+
-                                     (tDUMMY_BUFF(data)[20] AND 1) SHL 4+
-                                     (tDUMMY_BUFF(data)[23] AND 1) SHL 5+
-                                     (tDUMMY_BUFF(data)[22] AND 1) SHL 6+
-                                     (tDUMMY_BUFF(data)[21] AND 1) SHL 7;
-      fm_data.FEEDBACK_FM         := (tDUMMY_BUFF(data)[25] AND 1)+
-                                     (tDUMMY_BUFF(data)[24] AND 7) SHL 1;
+      fm_data.ATTCK_DEC_modulator := (pBYTE(@data)[1]  AND $0f)+
+                                     (pBYTE(@data)[0]  AND $0f) SHL 4;
+      fm_data.SUSTN_REL_modulator := (pBYTE(@data)[3]  AND $0f)+
+                                     (pBYTE(@data)[2]  AND $0f) SHL 4;
+      fm_data.WAVEFORM_modulator  := (pBYTE(@data)[4]  AND 3);
+      fm_data.KSL_VOLUM_modulator := (pBYTE(@data)[7]  AND $3f)+
+                                     (pBYTE(@data)[6]  AND 3) SHL 6;
+      fm_data.AM_VIB_EG_modulator := (pBYTE(@data)[5]  AND $0f)+
+                                     (pBYTE(@data)[8]  AND 1) SHL 4+
+                                     (pBYTE(@data)[11] AND 1) SHL 5+
+                                     (pBYTE(@data)[10] AND 1) SHL 6+
+                                     (pBYTE(@data)[9]  AND 1) SHL 7;
+      fm_data.ATTCK_DEC_carrier   := (pBYTE(@data)[13] AND $0f)+
+                                     (pBYTE(@data)[12] AND $0f) SHL 4;
+      fm_data.SUSTN_REL_carrier   := (pBYTE(@data)[15] AND $0f)+
+                                     (pBYTE(@data)[14] AND $0f) SHL 4;
+      fm_data.WAVEFORM_carrier    := (pBYTE(@data)[16] AND 3);
+      fm_data.KSL_VOLUM_carrier   := (pBYTE(@data)[19] AND $3f)+
+                                     (pBYTE(@data)[18] AND 3) SHL 6;
+      fm_data.AM_VIB_EG_carrier   := (pBYTE(@data)[17] AND $0f)+
+                                     (pBYTE(@data)[20] AND 1) SHL 4+
+                                     (pBYTE(@data)[23] AND 1) SHL 5+
+                                     (pBYTE(@data)[22] AND 1) SHL 6+
+                                     (pBYTE(@data)[21] AND 1) SHL 7;
+      fm_data.FEEDBACK_FM         := (pBYTE(@data)[25] AND 1)+
+                                     (pBYTE(@data)[24] AND 7) SHL 1;
     end;
 end;
 
@@ -693,7 +872,7 @@ var
   temp_str: String;
 
 begin
-{$IFDEF __TMT__}
+{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2EXT3.PAS:sgi_file_loader';
 {$ENDIF}

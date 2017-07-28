@@ -9,6 +9,97 @@ For complete AT2 revision history refer to:
 http://www.adlibtracker.net/files/revision.htm
 
 
+* version 2.4.23
+  released: 07/27/2016
+
+  . fixed typing behavior bugs in Message Board window
+  . fixed pattern names not being read from A2M file
+  . fixed typing with Alt-codes; changed alternative hotkey
+    for adjusting volume of sound output (new hotkey: [Alt][Shift] Up,Down)
+  . fixed ADSR preview being shown for KSR instead of Envelope type
+  . fixed incorrect pitch calculation in instrument preview
+  . fixed bug when preview of non-macro instrument in File Selector
+    overwritten macro data of current instrument
+  . fixed interface bug occurring on instrument preview in File Selector
+  . fixed replace function for Key-Off notes
+  . added back and improved 'per instrument' positional memory
+  . improved functionality of Pattern List window
+  . added operator preview functionality to Instrument and Macro Editor
+  . added automatic 4OP track volume manipulation (4OP+) for much more
+    convenient work with volume for some volume-based commands
+    and added command switches for toggling old (2OP) handling (for more
+    information, refer to documentation of extended command 'ZE5/ZE6')
+  . fixed 'Bxx' command not being evaluated correctly in 2nd effect column
+  . fixed mistyped frequency multiplier values
+  . added 'reset envelope' and 'ZERO frequency' triggers to FM-macro table
+  . added short keys for copying data between carrier/modulator column
+    in Macro Editor window and copying data between carrier/modulator slot
+    in Instrument Editor window
+  . added possibility to apply table indexes to current instrument
+    in Arpeggio/Vibrato Macro Editor window
+  . completely redesigned handling of notes within 4OP channels
+    and improved user interface
+  . fixed slow reading of instrument bank files
+  . fixed preview of empty instrument with FM-register macro
+  . slightly fixed channel ON/OFF for percussion tracks SD/TT/TC/HH
+  . added possibility to slow down SDL timer so playback speed is more accurate
+    to real hardware (refer to option 'sdl_timer_slowdown' in config file)
+  . implemented new (improved) OPL3 emulator
+
+
+* version 2.4.22
+  released: 09/20/2015 (* 12/17/2015)
+
+  . changes/improvements in Instrument Editor window:
+    - added operator connection graphics
+    - added browsing through all 4 operators with Enter and Tab/Shift+Tab keys
+    - added status hints for current operator/instrument/4OP track
+    - rearranged carrier/modulator/general settings
+    - improved browsing through radio button sections
+    - added separate color for percussive instruments
+    - added section hotkeys for quick navigation
+    - removed 'per instrument' positional memory (obsolete now)
+  . improved speed of user interface in Macro Editor window
+  . improved changing current instrument when 4OP instrument is selected
+  . changed behaviour after releasing MBoard keys in instrument preview mode
+    to Key-Off trailing
+  . fixed Key-Off phase preview with 4OP instruments
+  . improved functionality of Macro Browser under different conditions of use
+  . fixed unintentional setting of octave while forcing KeyOff trailing
+    with Ctrl key upon instrument preview
+  . fixed interface bug in Macro Editor window when changing current instrument
+    upon macro preview
+  . fixed interface bug when loading complete content from A2B/A2W files
+  . fixed macro restart with 4OP tracks upon note retrigger
+  . changed compression algorithm to LZH / new file format versions
+  . added fast-forward / rewind multiplication factor options (refer to
+    options "fforward_factor" and "rewind_facotr" in config file)
+  . updated file system and overall improved manipulation for more
+    convenience when working with 4OP instruments
+  . added new effect commands for restarting envelope (refer to "ZEx")
+  . fixed non-functional hotkey for operation Paste object
+    from clipboard to more patterns (new hotkey: [Alt][Shift] P)
+  . added one step undo operation in Pattern Editor window (hotkey: ^Z)
+  . added hotkey to delete complete note/instrument columns of track group
+    when in when in Note Recorder mode (hotkey: ^Backspace)
+  . fixed program freeze upon reaching last marked line when jump to next
+    marked line was activated while cycle pattern was disabled
+  . added option to keep track position (column) when jumping over tracks
+    with Tab/Shift+Tab keys (refer to option "keep_track_pos" in config file)
+  . improved seeking to pattern / position when song is played without trace
+  . fixed several bugs in OPL3 recording;
+    invoke of recording mode 'per channel' is now ignored when recording
+    to single file is set by user configuration
+  . pretty much improved internal logic for preview of 4OP instruments
+  . added key shortcut for Instrument Editor window (hotkey: ^E);
+    changed hotkey for Arpeggio/Vibrato Macro Editor window (new hotkey: ^G)
+  . added Message Board window (hotkey: ^B)
+  . (LINUX) fixed case sensitivity issue for filename extension
+  * fixed bug that may lead to program crash when previewing TT/HH instrument
+  * fixed cursor behavior on typing instrument name and in Message Board window 
+  * upgraded SDL to version 1.2.15
+
+
 * version 2.4.21
   released: 04/12/2015 (* 05/11/2015)
 
@@ -152,7 +243,7 @@ http://www.adlibtracker.net/files/revision.htm
      with command line (refer to tip #25 in program documentation)
    . fixed handling of ON/OFF flags for 4-OP track pair
    . added positional memory for Song variables and Replace window
-   . majorily improved Debug Info window functionality (hotkey: ^D)
+   . majorly improved Debug Info window functionality (hotkey: ^D)
    . fixed worse keyboard responsiveness upon instrument preview
 
 
