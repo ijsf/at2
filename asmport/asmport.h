@@ -1,6 +1,9 @@
+extern "C" {
+
 //
 // S: string funcs
 // V: var (reference) funcs
+// __int64?
 //
 
 // adt2ext3_iloaders
@@ -35,7 +38,7 @@ char ADT2SYS____DRAW_SDL_SCREEN_1440X960();
 // function calc_freq_shift_up(freq,shift: Word): Word;
 // function calc_freq_shift_down(freq,shift: Word): Word;
 // V function calc_vibtrem_shift(chan: Byte; var table_data): Word;
-// procedure change_freq(chan: Byte; freq: Word);
+// procedure change_freq(chan: Byte; freq: Word); // _asm part
 // function ins_parameter(ins,param: Byte): Byte;
 // V function is_data_empty(var buf; size: Longint): Boolean;
 // V procedure get_chunk(pattern,line,channel: Byte; var chunk: tCHUNK);
@@ -49,7 +52,7 @@ signed short ADT2UNIT____NFREQ_BYTE__WORD(unsigned char a1);
 short ADT2UNIT____CALC_FREQ_SHIFT_UP_WORD_WORD__WORD(short a2, short a1);
 short ADT2UNIT____CALC_FREQ_SHIFT_DOWN_WORD_WORD__WORD(short a2, short a1);
 short ADT2UNIT____CALC_VIBTREM_SHIFT_BYTE_formal__WORD(unsigned char a2, unsigned char *a1);
-int ADT2UNIT____CHANGE_FREQ_BYTE_WORD(char a2, short a1);
+void ADT2UNIT____CHANGE_FREQ_BYTE_WORD_ASM(char a2, short a1);
 char ADT2UNIT____INS_PARAMETER_BYTE_BYTE__BYTE(unsigned char a2, char a1);
 char ADT2UNIT____IS_DATA_EMPTY_formal_LONGINT__BOOLEAN(unsigned char *a2, unsigned int a1);
 char ADT2UNIT____GET_CHUNK_BYTE_BYTE_BYTE_TCHUNK(unsigned char a4, unsigned char a3, unsigned char a2, unsigned char *a1);
@@ -116,16 +119,18 @@ char TXTSCRIO____SHOW_CSTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE(char a5, unsigned cha
 char TXTSCRIO____SHOW_CSTR_ALT_BYTE_BYTE_SHORTSTRING_BYTE_BYTE(char a5, unsigned char a4, unsigned char *a3, char a2, char a1);
 char TXTSCRIO____SHOW_VSTR_BYTE_BYTE_SHORTSTRING_BYTE(unsigned char a4, char a3, unsigned char *a2, char a1);
 char TXTSCRIO____SHOW_VCSTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE(unsigned char a5, char a4, unsigned char *a3, char a2, char a1);
-char TXTSCRIO____SHOWSTR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE(int a5, char a4, char a3, unsigned char *a2, char a1);
-char TXTSCRIO____SHOWVSTR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE(int a5, char a4, char a3, unsigned char *a2, char a1);
-char TXTSCRIO____SHOWCSTR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE(int a6, char a5, char a4, unsigned char *a3, char a2, char a1);
-char TXTSCRIO____SHOWCSTR2_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE(int a6, char a5, char a4, unsigned char *a3, char a2, char a1);
-char TXTSCRIO____SHOWVCSTR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE(int a6, char a5, char a4, unsigned char *a3, char a2, char a1);
-char TXTSCRIO____SHOWC3STR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE_BYTE(int a7, char a6, char a5, unsigned char *a4, char a3, char a2, char a1);
-char TXTSCRIO____SHOWC4STR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE_BYTE_BYTE(int a8, char a7, char a6, unsigned char *a5, char a4, char a3, char a2, char a1);
-char TXTSCRIO____SHOWVC3STR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE_BYTE(int a7, char a6, char a5, unsigned char *a4, char a3, char a2, char a1);
+char TXTSCRIO____SHOWSTR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE(unsigned char *a5, char a4, char a3, unsigned char *a2, char a1);
+char TXTSCRIO____SHOWVSTR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE(unsigned char *a5, char a4, char a3, unsigned char *a2, char a1);
+char TXTSCRIO____SHOWCSTR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE(unsigned char *a6, char a5, char a4, unsigned char *a3, char a2, char a1);
+char TXTSCRIO____SHOWCSTR2_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE(unsigned char *a6, char a5, char a4, unsigned char *a3, char a2, char a1);
+char TXTSCRIO____SHOWVCSTR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE(unsigned char *a6, char a5, char a4, unsigned char *a3, char a2, char a1);
+char TXTSCRIO____SHOWC3STR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE_BYTE(unsigned char *a7, char a6, char a5, unsigned char *a4, char a3, char a2, char a1);
+char TXTSCRIO____SHOWC4STR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE_BYTE_BYTE(unsigned char *a8, char a7, char a6, unsigned char *a5, char a4, char a3, char a2, char a1);
+char TXTSCRIO____SHOWVC3STR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE_BYTE(unsigned char *a7, char a6, char a5, unsigned char *a4, char a3, char a2, char a1);
 char TXTSCRIO____CSTRLEN_SHORTSTRING__BYTE(unsigned char *a1);
 char TXTSCRIO____C3STRLEN_SHORTSTRING__BYTE(unsigned char *a1);
 unsigned int TXTSCRIO____SCREENMEMCOPY_TSCREEN_MEM_PTR_TSCREEN_MEM_PTR(const void *a2, void *a1);
-char TXTSCRIO____FRAME_crc0EA7F576(int a9, char a8, char a7, char a6, char a5, char a4, unsigned char *a3, char a2, unsigned char *a1);
+char TXTSCRIO____FRAME_crc0EA7F576(unsigned char *a9, char a8, char a7, char a6, char a5, char a4, unsigned char *a3, char a2, unsigned char *a1);
 short TXTSCRIO____MOVE2SCREEN_ALT();
+
+};

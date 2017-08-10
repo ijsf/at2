@@ -1,6 +1,7 @@
-#include "asmport.h"
-#include "fpc.h"
 #include "defs.h"
+#include "asmport.h"
+#include "import.h"
+#include "fpc.h"
 
 /*
 FPC_SHORTSTR_TO_SHORTSTR
@@ -9,14 +10,14 @@ CRC16_table
 CRC32_table
 */
 
-int PARSERIO____SENSITIVESCAN_formal_LONGINT_LONGINT_SHORTSTRING__LONGINT(unsigned char *buf, int skip, int size, unsigned char *str)
+int PARSERIO____SENSITIVESCAN_formal_LONGINT_LONGINT_SHORTSTRING__LONGINT(unsigned char *buf, int skip, int size, unsigned char *strin)
 {
   _BYTE *v4; // edi@1
   unsigned int v5; // ecx@1
   int v6; // eax@1
   bool v7; // zf@2
   int v8; // ebx@8
-  __int16 *v9; // esi@9
+  unsigned char *v9; // esi@9
   int v10; // edx@9
   bool v11; // zf@10
   int v12; // edx@10
@@ -24,32 +25,36 @@ int PARSERIO____SENSITIVESCAN_formal_LONGINT_LONGINT_SHORTSTRING__LONGINT(unsign
   int v14; // ecx@14
   int v15; // ecx@18
   int v16; // eax@19
+  /*
   unsigned __int8 str_; // [sp+Ch] [bp-108h]@1
   char v19; // [sp+Dh] [bp-107h]@5
   __int16 v20; // [sp+Eh] [bp-106h]@9
+  */
 
-  FPC_SHORTSTR_TO_SHORTSTR(&str_, 0xFFu, (_BYTE *)str);
+  unsigned char str[255];
+  FPC_SHORTSTR_TO_SHORTSTR(str, 0xFFu, (_BYTE *)strin);
+
   v4 = (_BYTE *)(skip + buf);
   v5 = size - skip;
   HIWORD(v6) = 0;
   if ( size != skip )
   {
-    LOBYTE(v6) = str_;
-    v7 = str_ == 1;
-    if ( str_ < 1u )
+    LOBYTE(v6) = str[0];
+    v7 = str[0] == 1;
+    if ( str[0] < 1u )
     {
 LABEL_21:
       //v16 = (int)&v4[-buf];
-      v16 = (int)((&v4) - buf);
+      v16 = (size_t)(v4 - buf);
       return v16 - 1;
     }
-    if ( str_ > 1u )
+    if ( str[0] > 1u )
     {
       BYTE1(v6) = 0;
       v8 = v6 - 1;
       if ( v5 >= v6 )
       {
-        v9 = &v20;
+        v9 = &str[2];
         v10 = v5 - v6 + 2;
         do
         {
@@ -60,7 +65,7 @@ LABEL_21:
           {
             if ( !v13 )
               break;
-            v11 = *v4++ == v19;
+            v11 = *v4++ == str[1];
             --v13;
           }
           while ( !v11 );
@@ -73,7 +78,7 @@ LABEL_21:
             if ( !v14 )
               break;
             v11 = *(_BYTE *)v9 == *v4;
-            v9 = (__int16 *)((char *)v9 + 1);
+            v9 = (unsigned char *)((char *)v9 + 1);
             ++v4;
             --v14;
           }
@@ -84,7 +89,7 @@ LABEL_21:
             goto LABEL_21;
           }
           v15 = v14 - v8;
-          v9 = (__int16 *)((char *)v9 + v15);
+          v9 = (unsigned char *)((char *)v9 + v15);
           v4 += v15 + 1;
         }
         while ( v10 );
@@ -96,7 +101,7 @@ LABEL_21:
       {
         if ( !v5 )
           break;
-        v7 = *v4++ == v19;
+        v7 = *v4++ == str[1];
         --v5;
       }
       while ( !v7 );
@@ -148,8 +153,8 @@ LABEL_23:
     v5 = a1 / 4;
     if ( !(a1 / 4) )
       goto LABEL_24;
-    v6 = a3;
-    v7 = a2;
+    v6 = (_DWORD *)a3;
+    v7 = (_DWORD *)a2;
     do
     {
       if ( !v5 )
@@ -222,7 +227,7 @@ LABEL_23:
     v2 = a1 / 4;
     if ( !(a1 / 4) )
       goto LABEL_24;
-    v3 = a2;
+    v3 = (_DWORD *)a2;
     v4 = 1;
     do
     {

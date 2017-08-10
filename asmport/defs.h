@@ -11,6 +11,8 @@
 #ifndef HEXRAYS_DEFS_H
 #define HEXRAYS_DEFS_H
 
+#include <string.h>
+
 #if defined(__GNUC__)
   typedef          long long ll;
   typedef unsigned long long ull;

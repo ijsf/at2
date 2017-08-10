@@ -1,6 +1,7 @@
-#include "asmport.h"
-#include "fpc.h"
 #include "defs.h"
+#include "asmport.h"
+#include "import.h"
+#include "fpc.h"
 
 /*
 TC__ADT2DATA____FONT8X16
@@ -23,7 +24,7 @@ char ADT2SYS____DRAW_SDL_SCREEN_720X480()
   signed int v5; // [sp+10h] [bp-24h]@5
   signed int v6; // [sp+14h] [bp-20h]@4
   signed int v7; // [sp+18h] [bp-1Ch]@3
-  unsigned int v8; // [sp+1Ch] [bp-18h]@3
+  unsigned char *v8; // [sp+1Ch] [bp-18h]@3
   int v9; // [sp+20h] [bp-14h]@3
   char v10; // [sp+24h] [bp-10h]@3
   char v11; // [sp+28h] [bp-Ch]@5
@@ -69,20 +70,20 @@ char ADT2SYS____DRAW_SDL_SCREEN_720X480()
             if ( v12 & (unsigned __int8)((unsigned __int16)(1 << v4) >> 1) )
             {
               LOBYTE(v2) = v1[1] & 0xF;
-              if ( (unsigned int)v0 <= v8 )
+              if ( v0 <= v8 )
                 *v0++ = v2;
             }
             else
             {
               LOBYTE(v2) = (unsigned __int8)v1[1] >> 4;
-              if ( (unsigned int)v0 <= v8 )
+              if ( v0 <= v8 )
                 *v0++ = v2;
             }
           }
           else
           {
             LOBYTE(v2) = v1[1] & 0xF;
-            if ( (unsigned int)v0 <= v8 )
+            if ( v0 <= v8 )
               *v0++ = v2;
           }
           --v4;

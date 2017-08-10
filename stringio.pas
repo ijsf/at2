@@ -126,10 +126,12 @@ var
   strOut: String;
 begin
   if (len <> 0) and (Length(str) <> 0) then
+    i := 0;
+    j := 0;
     begin
       while (i <= len) do
         begin
-          strOut[j] = str[j];
+          strOut[j] := str[j];
           if str[j] <> '`' then
             inc(i);
           inc(j);

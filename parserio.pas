@@ -9,8 +9,8 @@ uses
   StringIO;
 
 var
-  CRC16_table: array[BYTE] of Word;
-  CRC32_table: array[BYTE] of Longint;
+  CRC16_table: array[BYTE] of Word; extern; cvar;
+  CRC32_table: array[BYTE] of Longint; extern; cvar;
 
 procedure make_table_16bit;
 

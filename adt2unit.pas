@@ -5586,4 +5586,22 @@ begin
 
 {$ENDIF}
 
+procedure change_freq(chan: Byte; freq: Word);
+begin
+  If is_4op_chan(chan) and (chan in _4op_tracks_hi) then
+    begin
+      freq_table[SUCC(chan)] := freq_table[chan];
+      freqtable2[SUCC(chan)] := freqtable2[chan];
+      chan := SUCC(chan);
+    end;
+
+  change_freq_asm(chan, freq);
+
+  If is_4op_chan(chan) then
+    begin
+      freq_table[PRED(chan)] := freq_table[chan];
+      freqtable2[PRED(chan)] := freqtable2[chan];
+    end;
+end;
+
 end.

@@ -1,6 +1,7 @@
-#include "asmport.h"
-#include "fpc.h"
 #include "defs.h"
+#include "asmport.h"
+#include "import.h"
+#include "fpc.h"
 
 /*
 FPC_SHORTSTR_TO_SHORTSTR
@@ -18,20 +19,28 @@ char STRINGIO____SAMENAME_SHORTSTRING_SHORTSTRING__BOOLEAN(unsigned char *a2, un
   unsigned __int8 v9; // al@16
   char v10; // al@30
   __int16 v11; // ax@43
+  /*
   unsigned __int8 v13; // [sp+Ch] [bp-20Ch]@1
   _BYTE v14[3]; // [sp+Dh] [bp-20Bh]@1
+  */
+  /*
   unsigned __int8 v15; // [sp+10Ch] [bp-10Ch]@1
   _BYTE v16[3]; // [sp+10Dh] [bp-10Bh]@1
+  */
   __int16 v18; // [sp+210h] [bp-8h]@1
 
-  FPC_SHORTSTR_TO_SHORTSTR(&v15, 0xFFu, a2);
-  FPC_SHORTSTR_TO_SHORTSTR(&v13, 0xFFu, a1);
+  unsigned char str1[255];
+  FPC_SHORTSTR_TO_SHORTSTR(str1, 0xFFu, a2);
+
+  unsigned char str2[255];
+  FPC_SHORTSTR_TO_SHORTSTR(str2, 0xFFu, a1);
+
   v18 = 0;
-  v3 = v16;
-  v4 = v15;
-  v5 = v14;
-  v6 = v13;
-  if ( v15 )
+  v3 = (char *)&str1[1];
+  v4 = str1[0];
+  v5 = (char *)&str2[1];
+  v6 = str2[0];
+  if ( str1[0] )
   {
     do
     {
@@ -148,7 +157,7 @@ LABEL_33:
       goto LABEL_39;
     return 1;
   }
-  if ( !v13 )
+  if ( !str2[0] )
     return 1;
 LABEL_39:
   if ( HIBYTE(v2) )

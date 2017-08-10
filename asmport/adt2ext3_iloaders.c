@@ -1,4 +1,5 @@
 #include "asmport.h"
+#include "import.h"
 #include "fpc.h"
 #include "defs.h"
 

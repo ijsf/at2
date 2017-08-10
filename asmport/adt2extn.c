@@ -1,4 +1,5 @@
 #include "asmport.h"
+#include "import.h"
 #include "fpc.h"
 #include "defs.h"
 
@@ -44,7 +45,7 @@ char ADT2EXTN___REPLACE_____FIND_FX_CHAR__BYTE(char a1)
   signed int v3; // ecx@1
   bool v4; // zf@3
 
-  v2 = &TC__ADT2UNIT____FX_DIGITS;
+  v2 = (char *)TC__ADT2UNIT____FX_DIGITS;
   v3 = 48;
   do
   {
@@ -54,5 +55,5 @@ char ADT2EXTN___REPLACE_____FIND_FX_CHAR__BYTE(char a1)
     --v3;
   }
   while ( !v4 );
-  return (_BYTE)v2 - (unsigned int)&TC__ADT2UNIT____FX_DIGITS - 1;
+  return (_BYTE)(v2 - (char *)TC__ADT2UNIT____FX_DIGITS - 1);
 }

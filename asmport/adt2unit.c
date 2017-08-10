@@ -1,6 +1,7 @@
-#include "asmport.h"
-#include "fpc.h"
 #include "defs.h"
+#include "asmport.h"
+#include "import.h"
+#include "fpc.h"
 
 /*
 TC__ADT2OPL3____OPL3OUT
@@ -20,13 +21,12 @@ U__ADT2UNIT____LIMIT_EXCEEDED
 TC__ADT2SYS_____PATTEDIT_LASTPOS
 TC__TXTSCRIO____MAX_TRACKS
 
-var_songdata___instr_data
-var_songdata___flag_4op
-
-Local variables:
-
-var_fnum // Fnum: array[0..11] of Word = ($157,$16b,$181,$198,$1b0,$1ca,$1e5,$202,$220,$241,$263,$287);
+var_songdata__instr_data
+var_songdata__flag_4op
 */
+
+// var_fnum // Fnum: array[0..11] of Word = ($157,$16b,$181,$198,$1b0,$1ca,$1e5,$202,$220,$241,$263,$287);
+short var_fnum[] = {0x157,0x16b,0x181,0x198,0x1b0,0x1ca,0x1e5,0x202,0x220,0x241,0x263,0x287};
 
 signed short ADT2UNIT____NFREQ_BYTE__WORD(unsigned char a1)
 {
@@ -110,7 +110,7 @@ short ADT2UNIT____CALC_VIBTREM_SHIFT_BYTE_formal__WORD(unsigned char a2, unsigne
   return result;
 }
 
-int ADT2UNIT____CHANGE_FREQ_BYTE_WORD(char a2, short a1)
+void ADT2UNIT____CHANGE_FREQ_BYTE_WORD_ASM(char a2, short a1)
 {
   int v2; // ebx@5
   __int16 v3; // ax@5
@@ -119,20 +119,7 @@ int ADT2UNIT____CHANGE_FREQ_BYTE_WORD(char a2, short a1)
   int v6; // ST0C_4@6
   int v7; // edx@6
   int v8; // ST08_4@6
-  int result; // eax@7
 
-  if ( (unsigned __int8)ADT2UNIT____IS_4OP_CHAN_BYTE__BOOLEAN(a2)
-    && _bittest((const signed __int32 *)&TC__ADT2UNIT_____4OP_TRACKS_HI, (unsigned __int8)a2) )
-  {
-    /*
-    PASCAL
-      freq_table[SUCC(chan)] := freq_table[chan];
-      freqtable2[SUCC(chan)] := freqtable2[chan];
-    */
-    U__ADT2UNIT____FREQ_TABLE[(unsigned __int8)(a2 - 1 + 1)] = U__ADT2UNIT____FREQ_TABLE[(unsigned __int8)(a2 - 1)];
-    U__ADT2UNIT____FREQTABLE2[(unsigned __int8)(a2 - 1 + 1)] = U__ADT2UNIT____FREQTABLE2[(unsigned __int8)(a2 - 1)];
-    ++a2;
-  }
   v2 = (unsigned __int8)a2 - 1;
   v3 = (U__ADT2UNIT____FREQ_TABLE[v2] & 0xE000) + (a1 & 0x1FFF);
   U__ADT2UNIT____FREQ_TABLE[v2] = v3;
@@ -148,19 +135,6 @@ int ADT2UNIT____CHANGE_FREQ_BYTE_WORD(char a2, short a1)
     TC__ADT2OPL3____OPL3OUT(HIBYTE(v3), v7);
     TC__ADT2OPL3____OPL3OUT(v8, v6);
   }
-  result = ADT2UNIT____IS_4OP_CHAN_BYTE__BOOLEAN(a2);
-  if ( (_BYTE)result )
-  {
-    /*
-    PASCAL
-      freq_table[PRED(chan)] := freq_table[chan];
-      freqtable2[PRED(chan)] := freqtable2[chan];
-    */
-    U__ADT2UNIT____FREQ_TABLE[(unsigned __int8)(a2 - 1 - 1)] = U__ADT2UNIT____FREQ_TABLE[(unsigned __int8)(a2 - 1)];
-    result = (unsigned __int8)(a2 - 1);
-    U__ADT2UNIT____FREQTABLE2[(result - 1)] = U__ADT2UNIT____FREQTABLE2[(unsigned __int8)(a2 - 1)];
-  }
-  return result;
 }
 
 char ADT2UNIT____INS_PARAMETER_BYTE_BYTE__BYTE(unsigned char a2, char a1)
@@ -171,7 +145,7 @@ char ADT2UNIT____INS_PARAMETER_BYTE_BYTE__BYTE(unsigned char a2, char a1)
   v2 = a2 - 1;
   v3 = 14 * v2;
   LOBYTE(v2) = a1;
-  return *(&var_songdata___instr_data[v3] + v2);
+  return *(&var_songdata__instr_data[v3] + v2); // ACHTUNG
 }
 
 char ADT2UNIT____IS_DATA_EMPTY_formal_LONGINT__BOOLEAN(unsigned char *a2, unsigned int a1)
@@ -211,7 +185,7 @@ LABEL_23:
     v2 = a1 / 4;
     if ( !(a1 / 4) )
       goto LABEL_24;
-    v3 = a2;
+    v3 = (_DWORD *)a2;
     v4 = 1;
     do
     {
@@ -382,29 +356,29 @@ bool ADT2UNIT____IS_4OP_CHAN_BYTE__BOOLEAN(unsigned char a1)
 {
   bool v2; // [sp+Ch] [bp-8h]@4
 
-  if ( var_songdata__flag_4op & 1 && a1 >= 1u && a1 <= 2u )
+  if ( *var_songdata__flag_4op & 1 && a1 >= 1u && a1 <= 2u )
   {
     v2 = 1;
   }
-  else if ( var_songdata__flag_4op & 2 && a1 >= 3u && a1 <= 4u )
+  else if ( *var_songdata__flag_4op & 2 && a1 >= 3u && a1 <= 4u )
   {
     v2 = 1;
   }
-  else if ( var_songdata__flag_4op & 4 && a1 >= 5u && a1 <= 6u )
+  else if ( *var_songdata__flag_4op & 4 && a1 >= 5u && a1 <= 6u )
   {
     v2 = 1;
   }
-  else if ( var_songdata__flag_4op & 8 && a1 >= 0xAu && a1 <= 0xBu )
+  else if ( *var_songdata__flag_4op & 8 && a1 >= 0xAu && a1 <= 0xBu )
   {
     v2 = 1;
   }
-  else if ( var_songdata__flag_4op & 0x10 && a1 >= 0xCu && a1 <= 0xDu )
+  else if ( *var_songdata__flag_4op & 0x10 && a1 >= 0xCu && a1 <= 0xDu )
   {
     v2 = 1;
   }
   else
   {
-    v2 = var_songdata__flag_4op & 0x20 && a1 >= 0xEu && a1 <= 0xFu;
+    v2 = *var_songdata__flag_4op & 0x20 && a1 >= 0xEu && a1 <= 0xFu;
   }
   return v2;
 }

@@ -1,9 +1,7 @@
-#include "asmport.h"
-#include "fpc.h"
 #include "defs.h"
-
-/*
-*/
+#include "asmport.h"
+#include "import.h"
+#include "fpc.h"
 
 char ADT2KEYB____LOOKUPKEY_WORD_formal_BYTE__BOOLEAN(short a3, short *a2, unsigned char a1)
 {

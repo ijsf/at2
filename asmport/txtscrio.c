@@ -1,6 +1,7 @@
-#include "asmport.h"
-#include "fpc.h"
 #include "defs.h"
+#include "asmport.h"
+#include "import.h"
+#include "fpc.h"
 
 /*
 FPC_SHORTSTR_TO_SHORTSTR
@@ -24,11 +25,10 @@ TC__TXTSCRIO____MOVE_TO_SCREEN_AREA
 TC__TXTSCRIO____MOVE_TO_SCREEN_AREA___PLUS1
 TC__TXTSCRIO____MOVE_TO_SCREEN_AREA___PLUS2
 TC__TXTSCRIO____MOVE_TO_SCREEN_AREA___PLUS3
-
-Local vars:
-
-var_absolute_pos
 */
+
+// var absolute_pos: Word;
+short var_absolute_pos;
 
 char TXTSCRIO____SHOW_STR_BYTE_BYTE_SHORTSTRING_BYTE(char a4, unsigned char a3, unsigned char *a2, char a1)
 {
@@ -37,8 +37,12 @@ char TXTSCRIO____SHOW_STR_BYTE_BYTE_SHORTSTRING_BYTE(char a4, unsigned char a3, 
   __int16 v6; // ax@1
   char *v7; // esi@1
   unsigned __int8 v8; // cl@1
+  
+  /*
   unsigned __int8 v10; // [sp+Ch] [bp-11Ch]@1
   _BYTE v11[3]; // [sp+Dh] [bp-11Bh]@1
+  */
+
   unsigned __int8 v12; // [sp+10Ch] [bp-1Ch]@2
   unsigned __int8 v13; // [sp+110h] [bp-18h]@2
   unsigned __int8 v14; // [sp+114h] [bp-14h]@2
@@ -47,13 +51,15 @@ char TXTSCRIO____SHOW_STR_BYTE_BYTE_SHORTSTRING_BYTE(char a4, unsigned char a3, 
   unsigned __int8 v17; // [sp+120h] [bp-8h]@2
   char v18; // [sp+124h] [bp-4h]@2
 
-  FPC_SHORTSTR_TO_SHORTSTR(&v10, 0xFFu, a2);
+  unsigned char str[255];
+  FPC_SHORTSTR_TO_SHORTSTR((unsigned char *)str, 0xFFu, a2);
+
   HIWORD(v4) = 0;
   v5 = (char *)TC__TXTSCRIO____SCREEN_PTR;
-  LOBYTE(v6) = v10;
-  v7 = v11;
-  v8 = v10;
-  if ( v10 )
+  LOBYTE(v6) = str[0];
+  v7 = (char *)&str[1];
+  v8 = str[0];
+  if ( str[0] )
   {
     v18 = TC__TXTSCRIO____AREA_X1 + 1;
     v17 = TC__TXTSCRIO____AREA_X1 + 2;
@@ -108,8 +114,10 @@ char TXTSCRIO____SHOW_CSTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE(char a5, unsigned cha
   int v13; // ST00_4@22
   char v14; // ah@22
   int v16; // [sp-4h] [bp-134h]@11
+  /*
   unsigned __int8 v17; // [sp+Ch] [bp-124h]@1
   _BYTE v18[3]; // [sp+Dh] [bp-123h]@1
+  */
   char v19; // [sp+10Ch] [bp-24h]@1
   char v20; // [sp+110h] [bp-20h]@1
   unsigned __int8 v21; // [sp+114h] [bp-1Ch]@2
@@ -120,15 +128,17 @@ char TXTSCRIO____SHOW_CSTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE(char a5, unsigned cha
   unsigned __int8 v26; // [sp+128h] [bp-8h]@2
   char v27; // [sp+12Ch] [bp-4h]@2
 
-  v7 = FPC_SHORTSTR_TO_SHORTSTR(&v17, 0xFFu, a3);
+  unsigned char str[255];
+  v7 = FPC_SHORTSTR_TO_SHORTSTR(str, 0xFFu, a3);
+
   v20 = a2;
   v19 = a1;
   HIWORD(v5) = 0;
   v6 = (char *)TC__TXTSCRIO____SCREEN_PTR;
-  LOBYTE(v7) = v17;
-  v8 = v18;
-  v9 = v17;
-  if ( v17 )
+  LOBYTE(v7) = str[0];
+  v8 = &str[1];
+  v9 = str[0];
+  if ( str[0] )
   {
     v27 = TC__TXTSCRIO____AREA_X1 + 1;
     v26 = TC__TXTSCRIO____AREA_X1 + 2;
@@ -225,8 +235,10 @@ char TXTSCRIO____SHOW_CSTR_ALT_BYTE_BYTE_SHORTSTRING_BYTE_BYTE(char a5, unsigned
   int v13; // ST00_4@22
   char v14; // ah@22
   int v16; // [sp-4h] [bp-134h]@11
+  /*
   unsigned __int8 v17; // [sp+Ch] [bp-124h]@1
   _BYTE v18[3]; // [sp+Dh] [bp-123h]@1
+  */
   char v19; // [sp+10Ch] [bp-24h]@1
   char v20; // [sp+110h] [bp-20h]@1
   unsigned __int8 v21; // [sp+114h] [bp-1Ch]@2
@@ -237,15 +249,17 @@ char TXTSCRIO____SHOW_CSTR_ALT_BYTE_BYTE_SHORTSTRING_BYTE_BYTE(char a5, unsigned
   unsigned __int8 v26; // [sp+128h] [bp-8h]@2
   char v27; // [sp+12Ch] [bp-4h]@2
 
-  v7 = FPC_SHORTSTR_TO_SHORTSTR(&v17, 0xFFu, a3);
+  unsigned char str[255];
+  v7 = FPC_SHORTSTR_TO_SHORTSTR(str, 0xFFu, a3);
+
   v20 = a2;
   v19 = a1;
   HIWORD(v5) = 0;
   v6 = (char *)TC__TXTSCRIO____SCREEN_PTR;
-  LOBYTE(v7) = v17;
-  v8 = v18;
-  v9 = v17;
-  if ( v17 )
+  LOBYTE(v7) = str[0];
+  v8 = &str[1];
+  v9 = str[0];
+  if ( str[0] )
   {
     v27 = TC__TXTSCRIO____AREA_X1 + 1;
     v26 = TC__TXTSCRIO____AREA_X1 + 2;
@@ -336,8 +350,10 @@ char TXTSCRIO____SHOW_VSTR_BYTE_BYTE_SHORTSTRING_BYTE(unsigned char a4, char a3,
   __int16 v6; // ax@1
   char *v7; // esi@1
   unsigned __int8 v8; // cl@1
+  /*
   unsigned __int8 v10; // [sp+Ch] [bp-11Ch]@1
   _BYTE v11[3]; // [sp+Dh] [bp-11Bh]@1
+  */
   unsigned __int8 v12; // [sp+10Ch] [bp-1Ch]@2
   unsigned __int8 v13; // [sp+110h] [bp-18h]@2
   unsigned __int8 v14; // [sp+114h] [bp-14h]@2
@@ -346,13 +362,15 @@ char TXTSCRIO____SHOW_VSTR_BYTE_BYTE_SHORTSTRING_BYTE(unsigned char a4, char a3,
   unsigned __int8 v17; // [sp+120h] [bp-8h]@2
   char v18; // [sp+124h] [bp-4h]@2
 
-  FPC_SHORTSTR_TO_SHORTSTR(&v10, 0xFFu, a2);
+  unsigned char str[255];
+  FPC_SHORTSTR_TO_SHORTSTR(str, 0xFFu, a2);
+  
   HIWORD(v4) = 0;
   v5 = (char *)TC__TXTSCRIO____SCREEN_PTR;
-  LOBYTE(v6) = v10;
-  v7 = v11;
-  v8 = v10;
-  if ( v10 )
+  LOBYTE(v6) = str[0];
+  v7 = (char *)&str[1];
+  v8 = str[0];
+  if ( str[0] )
   {
     v18 = TC__TXTSCRIO____AREA_X1 + 1;
     v17 = TC__TXTSCRIO____AREA_X1 + 2;
@@ -407,8 +425,10 @@ char TXTSCRIO____SHOW_VCSTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE(unsigned char a5, ch
   int v13; // ST00_4@22
   char v14; // ah@22
   int v16; // [sp-4h] [bp-134h]@11
+  /*
   unsigned __int8 v17; // [sp+Ch] [bp-124h]@1
   _BYTE v18[3]; // [sp+Dh] [bp-123h]@1
+  */
   char v19; // [sp+10Ch] [bp-24h]@1
   char v20; // [sp+110h] [bp-20h]@1
   unsigned __int8 v21; // [sp+114h] [bp-1Ch]@2
@@ -419,15 +439,17 @@ char TXTSCRIO____SHOW_VCSTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE(unsigned char a5, ch
   unsigned __int8 v26; // [sp+128h] [bp-8h]@2
   char v27; // [sp+12Ch] [bp-4h]@2
 
-  v7 = FPC_SHORTSTR_TO_SHORTSTR(&v17, 0xFFu, a3);
+  unsigned char str[255];
+  v7 = FPC_SHORTSTR_TO_SHORTSTR(str, 0xFFu, a3);
+  
   v20 = a2;
   v19 = a1;
   HIWORD(v5) = 0;
   v6 = (char *)TC__TXTSCRIO____SCREEN_PTR;
-  LOBYTE(v7) = v17;
-  v8 = v18;
-  v9 = v17;
-  if ( v17 )
+  LOBYTE(v7) = str[0];
+  v8 = &str[1];
+  v9 = str[0];
+  if ( str[0] )
   {
     v27 = TC__TXTSCRIO____AREA_X1 + 1;
     v26 = TC__TXTSCRIO____AREA_X1 + 2;
@@ -509,7 +531,7 @@ char TXTSCRIO____SHOW_VCSTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE(unsigned char a5, ch
   return v7;
 }
 
-long long TXTSCRIO____DUPCHAR(long long a1, int a2, int a3)
+long long TXTSCRIO____DUPCHAR(long long a1, int a2, unsigned char *a3)
 {
   __int16 v3; // bx@1
   char v4; // t1^1@1
@@ -545,7 +567,7 @@ long long TXTSCRIO____DUPCHAR(long long a1, int a2, int a3)
   return v8;
 }
 
-char TXTSCRIO____SHOWSTR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE(int a5, char a4, char a3, unsigned char *a2, char a1)
+char TXTSCRIO____SHOWSTR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE(unsigned char *a5, char a4, char a3, unsigned char *a2, char a1)
 {
   __int64 v5; // rax@1
   __int16 v6; // ax@1
@@ -553,16 +575,20 @@ char TXTSCRIO____SHOWSTR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE(int a5, char
   int v8; // ecx@1
   _WORD *v9; // edi@2
   __int16 v10; // ax@2
+  /*
   char v12; // [sp+Ch] [bp-100h]@1
   _BYTE v13[3]; // [sp+Dh] [bp-FFh]@1
+  */
 
-  LODWORD(v5) = FPC_SHORTSTR_TO_SHORTSTR(&v12, 0xFFu, a2);
+  unsigned char str[255];
+  LODWORD(v5) = FPC_SHORTSTR_TO_SHORTSTR(str, 0xFFu, a2);
+  
   LOBYTE(v5) = a4;
   BYTE1(v5) = a3;
   TXTSCRIO____DUPCHAR(v5, 0, a5);
-  LOBYTE(v6) = v12;
-  v7 = v13;
-  LOBYTE(v8) = v12;
+  LOBYTE(v6) = str[0];
+  v7 = &str[1];
+  LOBYTE(v8) = str[0];
   if ( v8 )
   {
     v9 = (_WORD *)((unsigned __int16)var_absolute_pos + a5);
@@ -579,7 +605,7 @@ char TXTSCRIO____SHOWSTR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE(int a5, char
   return v6;
 }
 
-char TXTSCRIO____SHOWVSTR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE(int a5, char a4, char a3, unsigned char *a2, char a1)
+char TXTSCRIO____SHOWVSTR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE(unsigned char *a5, char a4, char a3, unsigned char *a2, char a1)
 {
   __int64 v5; // rax@1
   int v6; // ebx@1
@@ -588,17 +614,17 @@ char TXTSCRIO____SHOWVSTR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE(int a5, cha
   int v9; // ecx@1
   char *v10; // edi@2
   __int16 v11; // ax@2
-  char v13; // [sp+Ch] [bp-100h]@1
-  _BYTE v14[3]; // [sp+Dh] [bp-FFh]@1
-
-  LODWORD(v5) = FPC_SHORTSTR_TO_SHORTSTR(&v13, 0xFFu, a2);
+  
+  unsigned char str[255];
+  LODWORD(v5) = FPC_SHORTSTR_TO_SHORTSTR(str, 0xFFu, a2);
+  
   v6 = (unsigned __int16)(2 * (unsigned __int8)(TC__TXTSCRIO____MAXCOL - 1));
   LOBYTE(v5) = a4;
   BYTE1(v5) = a3;
   TXTSCRIO____DUPCHAR(v5, 0, a5);
-  LOBYTE(v7) = v13;
-  v8 = v14;
-  LOBYTE(v9) = v13;
+  LOBYTE(v7) = str[0];
+  v8 = &str[1];
+  LOBYTE(v9) = str[0];
   if ( v9 )
   {
     v10 = (char *)((unsigned __int16)var_absolute_pos + a5);
@@ -615,7 +641,7 @@ char TXTSCRIO____SHOWVSTR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE(int a5, cha
   return v7;
 }
 
-char TXTSCRIO____SHOWCSTR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE(char a1, char a2, unsigned char *a3, char a4, char a5, int a6)
+char TXTSCRIO____SHOWCSTR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE(unsigned char *a6, char a5, char a4, unsigned char *a3, char a2, char a1)
 {
   __int64 v6; // rax@1
   _BYTE *v7; // esi@1
@@ -624,15 +650,15 @@ char TXTSCRIO____SHOWCSTR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE(char a
   _WORD *v10; // edi@2
   char v11; // bh@2
   char v12; // t0@6
-  unsigned __int8 v14; // [sp+Ch] [bp-100h]@1
-  _BYTE v15[3]; // [sp+Dh] [bp-FFh]@1
 
-  LODWORD(v6) = FPC_SHORTSTR_TO_SHORTSTR(&v14, 0xFFu, a3);
-  LOBYTE(v6) = v14;
-  v7 = v15;
-  if ( v14 )
+  unsigned char str[255];
+  LODWORD(v6) = FPC_SHORTSTR_TO_SHORTSTR(str, 0xFFu, a3);
+
+  LOBYTE(v6) = str[0];
+  v7 = &str[1];
+  if ( str[0] )
   {
-    v8 = v14;
+    v8 = str[0];
     LOBYTE(v6) = a5;
     BYTE1(v6) = a4;
     TXTSCRIO____DUPCHAR(v6, 0, a6);
@@ -662,7 +688,7 @@ char TXTSCRIO____SHOWCSTR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE(char a
   return v6;
 }
 
-char TXTSCRIO____SHOWCSTR2_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE(char a1, char a2, unsigned char *a3, char a4, char a5, int a6)
+char TXTSCRIO____SHOWCSTR2_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE(unsigned char *a6, char a5, char a4, unsigned char *a3, char a2, char a1)
 {
   __int64 v6; // rax@1
   _BYTE *v7; // esi@1
@@ -671,15 +697,15 @@ char TXTSCRIO____SHOWCSTR2_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE(char 
   _WORD *v10; // edi@2
   char v11; // bh@2
   char v12; // t0@6
-  unsigned __int8 v14; // [sp+Ch] [bp-100h]@1
-  _BYTE v15[3]; // [sp+Dh] [bp-FFh]@1
 
-  LODWORD(v6) = FPC_SHORTSTR_TO_SHORTSTR(&v14, 0xFFu, a3);
-  LOBYTE(v6) = v14;
-  v7 = v15;
-  if ( v14 )
+  unsigned char str[255];
+  LODWORD(v6) = FPC_SHORTSTR_TO_SHORTSTR(str, 0xFFu, a3);
+
+  LOBYTE(v6) = str[0];
+  v7 = &str[1];
+  if ( str[0] )
   {
-    v8 = v14;
+    v8 = str[0];
     LOBYTE(v6) = a5;
     BYTE1(v6) = a4;
     TXTSCRIO____DUPCHAR(v6, 0, a6);
@@ -709,7 +735,7 @@ char TXTSCRIO____SHOWCSTR2_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE(char 
   return v6;
 }
 
-char TXTSCRIO____SHOWVCSTR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE(char a1, char a2, unsigned char *a3, char a4, char a5, int a6)
+char TXTSCRIO____SHOWVCSTR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE(unsigned char *a6, char a5, char a4, unsigned char *a3, char a2, char a1)
 {
   unsigned __int16 v6; // bx@1
   __int64 v7; // rax@1
@@ -719,16 +745,16 @@ char TXTSCRIO____SHOWVCSTR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE(char 
   char *v11; // edi@2
   char v12; // bh@2
   char v13; // t0@6
-  unsigned __int8 v15; // [sp+Ch] [bp-100h]@1
-  _BYTE v16[3]; // [sp+Dh] [bp-FFh]@1
+  
+  unsigned char str[255];
+  LODWORD(v7) = FPC_SHORTSTR_TO_SHORTSTR(str, 0xFFu, a3);
 
-  LODWORD(v7) = FPC_SHORTSTR_TO_SHORTSTR(&v15, 0xFFu, a3);
   v6 = 2 * (unsigned __int8)(TC__TXTSCRIO____MAXCOL - 1);
-  LOBYTE(v7) = v15;
-  v8 = v16;
-  if ( v15 )
+  LOBYTE(v7) = str[0];
+  v8 = &str[1];
+  if ( str[0] )
   {
-    v9 = v15;
+    v9 = str[0];
     LOBYTE(v7) = a5;
     BYTE1(v7) = a4;
     TXTSCRIO____DUPCHAR(v7, 0, a6);
@@ -759,7 +785,7 @@ char TXTSCRIO____SHOWVCSTR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE(char 
   return v7;
 }
 
-char TXTSCRIO____SHOWC3STR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE_BYTE(int a7, char a6, char a5, unsigned char *a4, char a3, char a2, char a1)
+char TXTSCRIO____SHOWC3STR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE_BYTE(unsigned char *a7, char a6, char a5, unsigned char *a4, char a3, char a2, char a1)
 {
   __int64 v7; // rax@1
   _BYTE *v8; // esi@1
@@ -770,15 +796,14 @@ char TXTSCRIO____SHOWC3STR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE_BYTE(
   char v13; // bh@2
   char v14; // t0@7
   char v15; // t1@9
-  unsigned __int8 v17; // [sp+Ch] [bp-100h]@1
-  _BYTE v18[3]; // [sp+Dh] [bp-FFh]@1
 
-  LODWORD(v7) = FPC_SHORTSTR_TO_SHORTSTR(&v17, 0xFFu, a4);
-  LOBYTE(v7) = v17;
-  v8 = v18;
-  if ( v17 )
+  unsigned char str[255];
+  LODWORD(v7) = FPC_SHORTSTR_TO_SHORTSTR(str, 0xFFu, a4);
+  LOBYTE(v7) = str[0];
+  v8 = &str[1];
+  if ( str[0] )
   {
-    v9 = v17;
+    v9 = str[0];
     LOBYTE(v7) = a6;
     BYTE1(v7) = a5;
     TXTSCRIO____DUPCHAR(v7, 0, a7);
@@ -819,7 +844,7 @@ char TXTSCRIO____SHOWC3STR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE_BYTE(
   return v7;
 }
 
-char TXTSCRIO____SHOWC4STR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE_BYTE_BYTE(int a8, char a7, char a6, unsigned char *a5, char a4, char a3, char a2, char a1)
+char TXTSCRIO____SHOWC4STR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE_BYTE_BYTE(unsigned char *a8, char a7, char a6, unsigned char *a5, char a4, char a3, char a2, char a1)
 {
   __int64 v8; // rax@1
   _BYTE *v9; // esi@1
@@ -831,15 +856,19 @@ char TXTSCRIO____SHOWC4STR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE_BYTE_
   char v15; // t0@8
   char v16; // t1@10
   char v17; // t2@12
+  /*
   unsigned __int8 v19; // [sp+Ch] [bp-100h]@1
   _BYTE v20[3]; // [sp+Dh] [bp-FFh]@1
+  */
 
-  LODWORD(v8) = FPC_SHORTSTR_TO_SHORTSTR(&v19, 0xFFu, a5);
-  LOBYTE(v8) = v19;
-  v9 = v20;
-  if ( v19 )
+  unsigned char str[255];
+  LODWORD(v8) = FPC_SHORTSTR_TO_SHORTSTR(str, 0xFFu, a5);
+
+  LOBYTE(v8) = str[0];
+  v9 = &str[1];
+  if ( str[0] )
   {
-    v10 = v19;
+    v10 = str[0];
     LOBYTE(v8) = a7;
     BYTE1(v8) = a6;
     TXTSCRIO____DUPCHAR(v8, 0, a8);
@@ -891,7 +920,7 @@ char TXTSCRIO____SHOWC4STR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE_BYTE_
   return v8;
 }
 
-char TXTSCRIO____SHOWVC3STR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE_BYTE(int a7, char a6, char a5, unsigned char *a4, char a3, char a2, char a1)
+char TXTSCRIO____SHOWVC3STR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE_BYTE(unsigned char *a7, char a6, char a5, unsigned char *a4, char a3, char a2, char a1)
 {
   unsigned __int16 v7; // bx@1
   __int64 v8; // rax@1
@@ -903,16 +932,16 @@ char TXTSCRIO____SHOWVC3STR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE_BYTE
   char v14; // bh@2
   char v15; // t0@7
   char v16; // t1@9
-  unsigned __int8 v18; // [sp+Ch] [bp-100h]@1
-  _BYTE v19[3]; // [sp+Dh] [bp-FFh]@1
 
-  LODWORD(v8) = FPC_SHORTSTR_TO_SHORTSTR(&v18, 0xFFu, a4);
+  unsigned char str[255];
+  LODWORD(v8) = FPC_SHORTSTR_TO_SHORTSTR(str, 0xFFu, a4);
+
   v7 = 2 * (unsigned __int8)(TC__TXTSCRIO____MAXCOL - 1);
-  LOBYTE(v8) = v18;
-  v9 = v19;
-  if ( v18 )
+  LOBYTE(v8) = str[0];
+  v9 = &str[1];
+  if ( str[0] )
   {
-    v10 = v18;
+    v10 = str[0];
     LOBYTE(v8) = a6;
     BYTE1(v8) = a5;
     TXTSCRIO____DUPCHAR(v8, 0, a7);
@@ -960,14 +989,14 @@ char TXTSCRIO____CSTRLEN_SHORTSTRING__BYTE(unsigned char *a1)
   char v2; // bl@1
   int v3; // ecx@1
   char v4; // al@2
-  unsigned __int8 v6; // [sp+Ch] [bp-108h]@1
-  _BYTE v7[3]; // [sp+Dh] [bp-107h]@1
 
-  FPC_SHORTSTR_TO_SHORTSTR(&v6, 0xFFu, a1);
-  v1 = v7;
+  unsigned char str[255];
+  FPC_SHORTSTR_TO_SHORTSTR(str, 0xFFu, a1);
+
+  v1 = (char *)&str[1];
   v2 = 0;
-  v3 = v6;
-  if ( v6 )
+  v3 = str[0];
+  if ( str[0] )
   {
     do
     {
@@ -993,14 +1022,14 @@ char TXTSCRIO____C3STRLEN_SHORTSTRING__BYTE(unsigned char *a1)
   char v2; // bl@1
   int v3; // ecx@1
   char v4; // al@2
-  unsigned __int8 v6; // [sp+Ch] [bp-108h]@1
-  _BYTE v7[3]; // [sp+Dh] [bp-107h]@1
 
-  FPC_SHORTSTR_TO_SHORTSTR(&v6, 0xFFu, a1);
-  v1 = v7;
+  unsigned char str[255];
+  FPC_SHORTSTR_TO_SHORTSTR(str, 0xFFu, a1);
+
+  v1 = (char *)&str[1];
   v2 = 0;
-  v3 = v6;
-  if ( v6 )
+  v3 = str[0];
+  if ( str[0] )
   {
     do
     {
@@ -1049,7 +1078,7 @@ unsigned int TXTSCRIO____SCREENMEMCOPY_TSCREEN_MEM_PTR_TSCREEN_MEM_PTR(const voi
   return result;
 }
 
-char TXTSCRIO____FRAME_crc0EA7F576(int a9, char a8, char a7, char a6, char a5, char a4, unsigned char *a3, char a2, unsigned char *a1)
+char TXTSCRIO____FRAME_crc0EA7F576(unsigned char *a9, char a8, char a7, char a6, char a5, char a4, unsigned char *a3, char a2, unsigned char *a1)
 {
   __int64 v9; // rax@1
   char v10; // bh@3
@@ -1079,6 +1108,7 @@ char TXTSCRIO____FRAME_crc0EA7F576(int a9, char a8, char a7, char a6, char a5, c
   int v34; // ST00_4@17
   _BYTE *v35; // edi@17
   int v36; // ecx@17
+  /*
   char v38; // [sp+Ch] [bp-218h]@1
   char v39; // [sp+Dh] [bp-217h]@7
   char v40; // [sp+Eh] [bp-216h]@7
@@ -1088,17 +1118,24 @@ char TXTSCRIO____FRAME_crc0EA7F576(int a9, char a8, char a7, char a6, char a5, c
   char v44; // [sp+12h] [bp-212h]@9
   char v45; // [sp+13h] [bp-211h]@9
   char v46; // [sp+14h] [bp-210h]@9
+  */
+  /*
   char v47; // [sp+10Ch] [bp-118h]@1
   _BYTE v48[3]; // [sp+10Dh] [bp-117h]@10
-  int v49; // [sp+20Ch] [bp-18h]@3
+  */
+  unsigned char *v49; // [sp+20Ch] [bp-18h]@3
   char v50; // [sp+210h] [bp-14h]@4
   char v51; // [sp+214h] [bp-10h]@4
   char v52; // [sp+218h] [bp-Ch]@4
   char v53; // [sp+21Ch] [bp-8h]@4
   char v54; // [sp+220h] [bp-4h]@4
 
-  FPC_SHORTSTR_TO_SHORTSTR(&v47, 0xFFu, a3);
-  LODWORD(v9) = FPC_SHORTSTR_TO_SHORTSTR(&v38, 0xFFu, a1);
+  unsigned char str1[255];
+  FPC_SHORTSTR_TO_SHORTSTR((unsigned char *)str1, 0xFFu, a3);
+
+  unsigned char str2[255];
+  LODWORD(v9) = FPC_SHORTSTR_TO_SHORTSTR(str2, 0xFFu, a1);
+
   if ( TC__TXTSCRIO____FR_SETTING___UPDATE_AREA == 1 )
   {
     TC__TXTSCRIO____AREA_X1 = a8;
@@ -1147,16 +1184,16 @@ char TXTSCRIO____FRAME_crc0EA7F576(int a9, char a8, char a7, char a6, char a5, c
   }
   LOBYTE(v9) = a8;
   BYTE1(v9) = a7;
-  BYTE4(v9) = v39;
+  BYTE4(v9) = str2[1];
   BYTE5(v9) = a4;
   v16 = TXTSCRIO____DUPCHAR(v9, 1, a9);
   LOBYTE(v16) = v16 + 1;
-  BYTE4(v16) = v40;
+  BYTE4(v16) = str2[2];
   BYTE5(v16) = a4;
   LOBYTE(v17) = a6 - a8 - 1;
   v18 = TXTSCRIO____DUPCHAR(v16, v17, a9);
   LOBYTE(v18) = a6;
-  BYTE4(v18) = v41;
+  BYTE4(v18) = str2[3];
   BYTE5(v18) = a4;
   v19 = TXTSCRIO____DUPCHAR(v18, 1, a9);
   v20 = a7;
@@ -1165,7 +1202,7 @@ char TXTSCRIO____FRAME_crc0EA7F576(int a9, char a8, char a7, char a6, char a5, c
     ++v20;
     LOBYTE(v19) = a8;
     BYTE1(v19) = v20;
-    BYTE4(v19) = v42;
+    BYTE4(v19) = str2[4];
     BYTE5(v19) = a4;
     v21 = TXTSCRIO____DUPCHAR(v19, 1, a9);
     LOBYTE(v21) = v21 + 1;
@@ -1174,34 +1211,34 @@ char TXTSCRIO____FRAME_crc0EA7F576(int a9, char a8, char a7, char a6, char a5, c
     LOBYTE(v22) = a6 - a8 - 1;
     v23 = TXTSCRIO____DUPCHAR(v21, v22, a9);
     LOBYTE(v23) = a6;
-    BYTE4(v23) = v43;
+    BYTE4(v23) = str2[5];
     BYTE5(v23) = a4;
     v19 = TXTSCRIO____DUPCHAR(v23, 1, a9);
   }
   while ( v20 < a5 );
   LOBYTE(v19) = a8;
   BYTE1(v19) = a5;
-  BYTE4(v19) = v44;
+  BYTE4(v19) = str2[6];
   BYTE5(v19) = a4;
   v24 = TXTSCRIO____DUPCHAR(v19, 1, a9);
   LOBYTE(v24) = v24 + 1;
-  BYTE4(v24) = v45;
+  BYTE4(v24) = str2[7];
   LOBYTE(v25) = a6 - a8 - 1;
   v26 = TXTSCRIO____DUPCHAR(v24, v25, a9);
   LOBYTE(v26) = a6;
-  BYTE4(v26) = v46;
+  BYTE4(v26) = str2[8];
   BYTE5(v26) = a4;
   v27 = TXTSCRIO____DUPCHAR(v26, 1, a9);
-  LOBYTE(v28) = v47;
+  LOBYTE(v28) = str1[0];
   if ( v28 )
   {
-    LODWORD(v27) = (unsigned __int8)(a6 - a8 - v47);
-    LOBYTE(v27) = (unsigned __int8)(a6 - a8 - v47) % 2u + a8 + (unsigned __int8)(a6 - a8 - v47) / 2u;
+    LODWORD(v27) = (unsigned __int8)(a6 - a8 - str1[0]);
+    LOBYTE(v27) = (unsigned __int8)(a6 - a8 - str1[0]) % 2u + a8 + (unsigned __int8)(a6 - a8 - str1[0]) / 2u;
     BYTE1(v27) = a7;
     v27 = TXTSCRIO____DUPCHAR(v27, 0, a9);
     v11 = (_WORD *)((unsigned __int16)var_absolute_pos + v49);
-    v29 = v48;
-    LOBYTE(v30) = v47;
+    v29 = &str1[1];
+    LOBYTE(v30) = str1[0];
     BYTE1(v27) = a2;
     do
     {
@@ -1220,23 +1257,23 @@ char TXTSCRIO____FRAME_crc0EA7F576(int a9, char a8, char a7, char a6, char a5, c
       ++v31;
       LOBYTE(v27) = v54 + a6;
       BYTE1(v27) = v31;
-      v27 = TXTSCRIO____DUPCHAR(v27, 0, (int)v11);
+      v27 = TXTSCRIO____DUPCHAR(v27, 0, (unsigned char *)v11);
       v32 = (_BYTE *)((unsigned __int16)var_absolute_pos + v49 + 1);
       *v32 = 7;
       v32 += 2;
       *v32 = 7;
-      v11 = v32 + 1;
+      v11 = (unsigned short *)v32 + 1;
       if ( (unsigned __int8)TC__TXTSCRIO____MAXCOL > 0xB4u )
       {
-        v33 = (char *)v11 + 1;
+        v33 = (unsigned char *)((char *)v11 + 1);
         *v33 = 7;
-        v11 = v33 + 1;
+        v11 = (unsigned short *)v33 + 1;  // ACHTUNG
       }
     }
     while ( v31 <= a5 );
     LOBYTE(v27) = v53 + a8;
     BYTE1(v27) = v50 + a5;
-    v34 = TXTSCRIO____DUPCHAR(v27, 0, (int)v11);
+    v34 = TXTSCRIO____DUPCHAR(v27, 0, (unsigned char *)v11); // ACHTUNG
     v35 = (_BYTE *)((unsigned __int16)var_absolute_pos + v49 + 1);
     LOBYTE(v27) = 7;
     LOBYTE(v36) = v52 + a6 - a8;
@@ -1266,27 +1303,27 @@ short TXTSCRIO____MOVE2SCREEN_ALT()
   if ( TC__TXTSCRIO____MOVE_TO_SCREEN_DATA )
   {
     qmemcpy(&U__TXTSCRIO____TEMP_SCREEN2, TC__TXTSCRIO____SCREEN_PTR, TC__TXTSCRIO____SCREEN_MEM_SIZE);
-    v1 = TC__TXTSCRIO____MOVE_TO_SCREEN_DATA;
+    v1 = *TC__TXTSCRIO____MOVE_TO_SCREEN_DATA;
     v2 = (char *)TC__TXTSCRIO____PTR_TEMP_SCREEN2;
-    v3 = TC__TXTSCRIO____MOVE_TO_SCREEN_AREA___PLUS1;
+    v3 = *TC__TXTSCRIO____MOVE_TO_SCREEN_AREA___PLUS1;
     do
     {
       v7 = v3;
-      v4 = TC__TXTSCRIO____MOVE_TO_SCREEN_AREA;
+      v4 = *TC__TXTSCRIO____MOVE_TO_SCREEN_AREA;
       do
       {
         v5 = v4;
         LOBYTE(v0) = v4;
         BYTE1(v0) = v7;
-        v0 = TXTSCRIO____DUPCHAR(v0, 0, (int)v2);
+        v0 = TXTSCRIO____DUPCHAR(v0, 0, (unsigned char *)v2);
         LOWORD(v0) = *(_WORD *)(v1 + (unsigned __int16)var_absolute_pos);
         *(_WORD *)&v2[(unsigned __int16)var_absolute_pos] = v0;
         v4 = v5 + 1;
       }
-      while ( (unsigned __int8)(v5 + 1) <= (unsigned __int8)TC__TXTSCRIO____MOVE_TO_SCREEN_AREA___PLUS2 );
+      while ( (unsigned __int8)(v5 + 1) <= (unsigned __int8)*TC__TXTSCRIO____MOVE_TO_SCREEN_AREA___PLUS2 );
       v3 = v7 + 1;
     }
-    while ( (unsigned __int8)(v7 + 1) <= (unsigned __int8)TC__TXTSCRIO____MOVE_TO_SCREEN_AREA___PLUS3 );
+    while ( (unsigned __int8)(v7 + 1) <= (unsigned __int8)*TC__TXTSCRIO____MOVE_TO_SCREEN_AREA___PLUS3 );
     qmemcpy(TC__TXTSCRIO____SCREEN_PTR, &U__TXTSCRIO____TEMP_SCREEN2, TC__TXTSCRIO____SCREEN_MEM_SIZE);
   }
   return v0;

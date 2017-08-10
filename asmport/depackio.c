@@ -1,107 +1,76 @@
-#include "asmport.h"
-#include "fpc.h"
 #include "defs.h"
+#include "asmport.h"
+#include "import.h"
+#include "fpc.h"
 
 /*
 SYSTEM____FILLCHAR_formal_LONGINT_BYTE
-
-Local variables:
-
-var_ctrl_mask
-var_ctrl_bits
-var_ibuf_idx
-var_ibuf_end
-var_obuf_idx
-var_obuf_src
-var_command
-var_count
-var_offs
-
-var_work_mem
-var_ibufCount
-var_ibufSize
-var_input_size
-var_output_size
-var_input_ptr
-var_output_ptr
-var_work_ptr
-
-var_le76
-var_le77
-var_le6a
-var_le6c
-var_le6e
-var_le70
-var_le72
-var_le74
-var_le78,
-var_le7a_0
-var_le7a_2
-var_le7a_4
-var_le7a_6
-var_le7a_8
-var_le82a
-var_le82b
-
-var_BitValue
-var_CopyBits
-var_CopyMin
-
-var_dad
-var_frq
-var_leftC
-var_rghtC
-var_ibitCount
-var_ibutBuffer
-var_obufCount
-var_index
-
-PASCAL
-const
-  WORKMEM_SIZE = 64*1024;
-
-var
-  ibuf_idx,ibuf_end,obuf_idx,obuf_src: Pointer;
-  ctrl_bits,ctrl_mask,
-  command,count,offs: Word;
-
-var
-  work_mem: array[0..PRED(WORKMEM_SIZE)] of Byte;
-  ibufCount,ibufSize: Word;
-  input_size,output_size: Word;
-  input_ptr,output_ptr,work_ptr: Pointer;
-
-var
-  le76,le77: Byte;
-  le6a,le6c,le6e,le70,le72,le74,le78,
-  le7a_0,le7a_2,le7a_4,le7a_6,le7a_8,le82a,le82b: Word;
-
-const
-  MAXFREQ       = 2000;
-  MINCOPY       = 3;
-  MAXCOPY       = 255;
-  COPYRANGES    = 6;
-  TERMINATE     = 256;
-  FIRSTCODE     = 257;
-  ROOT          = 1;
-  CODESPERRANGE = MAXCOPY-MINCOPY+1;
-  MAXCHAR       = FIRSTCODE+COPYRANGES*CODESPERRANGE-1;
-  SUCCMAX       = MAXCHAR+1;
-  TWICEMAX      = 2*MAXCHAR+1;
-  MAXBUF        = PRED(64*1024);
-  MAXDISTANCE   = 21389;
-  MAXSIZE       = 21389+MAXCOPY;
-
-const
-  BitValue: array[1..14] of Word = (1,2,4,8,16,32,64,128,256,512,1024,2048,4096,8192);
-  CopyBits: array[0..PRED(COPYRANGES)] of Word = (4,6,8,10,12,14);
-  CopyMin:  array[0..PRED(COPYRANGES)] of Word = (0,16,80,336,1360,5456);
-
-var
-  leftC,rghtC: array[0..MAXCHAR] of Word;
-  dad,frq: array[0..TWICEMAX] of Word;
-  index,ibitCount,ibitBuffer,obufCount: Word;
 */
+
+// const WORKMEM_SIZE = 64*1024;
+#define WORKMEM_SIZE (64*1024)
+
+// const MAXFREQ       = 2000;
+#define MAXFREQ 2000
+// const MINCOPY       = 3;
+#define MINCOPY 3
+// const MAXCOPY       = 255;
+#define MAXCOPY 255
+// const COPYRANGES    = 6;
+#define COPYRANGES 6
+// const TERMINATE     = 256;
+#define TERMINATE 256
+// const FIRSTCODE     = 257;
+#define FIRSTCODE 257
+// const ROOT          = 1;
+#define ROOT 1
+// const CODESPERRANGE = MAXCOPY-MINCOPY+1;
+#define CODESPERRANGE (MAXCOPY-MINCOPY+1)
+// const MAXCHAR       = FIRSTCODE+COPYRANGES*CODESPERRANGE-1;
+#define MAXCHAR (FIRSTCODE+COPYRANGES+CODESPERRANGE-1)
+// const SUCCMAX       = MAXCHAR+1;
+#define SUCCMAX (MAXCHAR+1)
+// const TWICEMAX      = 2*MAXCHAR+1;
+#define TWICEMAX (2*MAXCHAR+1)
+// const MAXBUF        = PRED(64*1024);
+#define MAXBUF (64*1024-1)
+// const MAXDISTANCE   = 21389;
+#define MAXDISTANCE 21389
+// const MAXSIZE       = 21389+MAXCOPY;
+#define MAXSIZE (21389+MAXCOPY)
+
+// var ibuf_idx,ibuf_end,obuf_idx,obuf_src: Pointer;
+unsigned char *var_ibuf_idx, *var_ibuf_end, *var_obuf_idx, *var_obuf_src;
+// var ctrl_bits,ctrl_mask,command,count,offs: Word;
+short var_ctrl_bits, var_ctrl_mask, var_command, var_count, var_offs;
+
+// var work_mem: array[0..PRED(WORKMEM_SIZE)] of Byte;
+unsigned char var_work_mem[WORKMEM_SIZE];
+// var ibufCount,ibufSize: Word;
+short var_ibufCount, var_ibufSize;
+// var input_size,output_size: Word;
+short var_input_size, var_output_size;
+// var input_ptr,output_ptr,work_ptr: Pointer;
+unsigned char *var_input_ptr, *var_output_ptr, *var_work_ptr;
+
+// var le76,le77: Byte;
+unsigned char var_le76, var_le77;
+// var le6a,le6c,le6e,le70,le72,le74,le78,le7a_0,le7a_2,le7a_4,le7a_6,le7a_8,le82a,le82b: Word;
+short var_le6a, var_le6c, var_le6e, var_le70, var_le72, var_le74, var_le78, var_le7a_0, var_le7a_2, var_le7a_4, var_le7a_6, var_le7a_8, var_le82a, var_le82b;
+
+// BitValue: array[1..14] of Word = (1,2,4,8,16,32,64,128,256,512,1024,2048,4096,8192);
+short var_BitValue[] = {1,2,4,8,16,32,64,128,256,512,1024,2048,4096,8192};
+// CopyBits: array[0..PRED(COPYRANGES)] of Word = (4,6,8,10,12,14);
+short var_CopyBits[] = {4,6,8,10,12,14};
+// CopyMin:  array[0..PRED(COPYRANGES)] of Word = (0,16,80,336,1360,5456);
+short var_CopyMin[] = {0,16,80,336,1360,5456};
+
+// var leftC,rghtC: array[0..MAXCHAR] of Word;
+short var_leftC[MAXCHAR+1], var_rghtC[MAXCHAR+1];
+// var dad,frq: array[0..TWICEMAX] of Word;
+short var_dad[TWICEMAX+1], var_frq[TWICEMAX+1];
+// var index,ibitCount,ibitBuffer,obufCount: Word;
+short var_index, var_ibitCount, var_ibitBuffer, var_obufCount;
 
 int DEPACKIO____RDC_DECODE()
 {
@@ -119,7 +88,7 @@ int DEPACKIO____RDC_DECODE()
   while ( 1 )
   {
     HIWORD(v0) = 0;
-    if ( var_ibuf_idx >= (unsigned int)var_ibuf_end )
+    if ( var_ibuf_idx >= var_ibuf_end )
       break;
     var_ctrl_mask = (unsigned __int16)var_ctrl_mask >> 1;
     if ( !var_ctrl_mask )
@@ -197,7 +166,7 @@ short DEPACKIO____RDC_DECOMPRESS_formal_formal_WORD__WORD(unsigned char *a3, uns
 
 char DEPACKIO____GETCHAR(int a1)
 {
-  char result; // al@2
+  char result = 0; // al@2
 
   LOWORD(a1) = var_ibufCount;
   if ( (unsigned __int16)var_ibufCount < (unsigned __int16)var_ibufSize )
@@ -282,9 +251,9 @@ short DEPACKIO____LZSS_DECOMPRESS_formal_formal_WORD__WORD(unsigned char *a3, un
 {
   var_input_ptr = a3;
   var_output_ptr = a2;
-  var_work_ptr = (int)&var_work_mem;
+  var_work_ptr = var_work_mem;
   var_input_size = a1;
-  SYSTEM____FILLCHAR_formal_LONGINT_BYTE(0, 0x10000);
+  memset((void *)var_work_ptr, 0, WORKMEM_SIZE);
   DEPACKIO____LZSS_DECODE();
   return var_output_size;
 }
@@ -305,20 +274,45 @@ short DEPACKIO____NEXTCODE(int a1, int a2)
   v3 = var_le82b;
   var_le82b = v4;
   LOWORD(a1) = a2 & 7;
+
+  // ACHTUNG
+  unsigned short ax = v3;
+  unsigned short bx = LOWORD(a2);
+  bx = (bx >> 1) | ((ax & 1) << 15);
+  ax >>= 1;
+  bx = (bx >> 1) | ((ax & 1) << 15);
+  ax >>= 1;
+  bx = (bx >> 1) | ((ax & 1) << 15);
+  ax >>= 1;
+  v3 = ax;
+  LOWORD(a2) = bx;
+  
+  /*
   v5 = v3 & 1;
   v3 >>= 1;
   LOWORD(a2) = __RCR__(a2, v5);
   LOWORD(a2) = __RCR__(a2, v3 & 1);
   LOWORD(a2) = __RCR__(a2, (v3 >> 1) & 1);
+  */
+  
   v6 = *(_WORD *)(a2 + var_input_ptr);
   v7 = *(_BYTE *)(a2 + var_input_ptr + 2);
   if ( (_WORD)a1 )
   {
     do
     {
+      // ACHTUNG
+      // dl = v7;
+      // ax = v6;
+      v6 = (v6 >> 1) | ((v7 & 1) << 15);
+      v7 >>= 1;
+      
+      /*
       v5 = v7 & 1;
       v7 >>= 1;
       v6 = __RCR__(v6, v5);
+      */
+      
       --a1;
     }
     while ( a1 );
@@ -329,7 +323,7 @@ short DEPACKIO____NEXTCODE(int a1, int a2)
 
 short DEPACKIO____LZW_DECODE__WORD()
 {
-  int a1;
+  unsigned char *a1;
   int v1; // ebx@1
   int v2; // ecx@1
   _BYTE *v3; // edi@1
@@ -337,8 +331,8 @@ short DEPACKIO____LZW_DECODE__WORD()
   int v5; // ecx@2
   char v6; // al@8
   char v7; // al@9
-  int v8; // ST00_4@11
-  int v9; // esi@11
+  unsigned char *v8; // ST00_4@11
+  unsigned char *v9; // esi@11
 
   v1 = 0;
   v2 = 0;
@@ -430,7 +424,7 @@ short DEPACKIO____LZW_DECOMPRESS_formal_formal__WORD(unsigned char *a3, unsigned
 {
   var_input_ptr = a3;
   var_output_ptr = a2;
-  var_work_ptr = (int)&var_work_mem;
+  var_work_ptr = var_work_mem;
   DEPACKIO____LZW_DECODE__WORD();
   return var_output_size;
 }
@@ -449,8 +443,8 @@ short DEPACKIO____INITTREE()
     v1 = (unsigned __int16)v0 / 2u;
     v2 = v0;
     LOWORD(v0) = 2 * v0;
-    *(__int16 *)((char *)&var_dad + v0) = v1;
-    *(__int16 *)((char *)&var_frq + v0) = 1;
+    *(__int16 *)((char *)var_dad + v0) = v1;
+    *(__int16 *)((char *)var_frq + v0) = 1;
     HIWORD(v0) = HIWORD(v2);
     LOWORD(v0) = v2 + 1;
   }
@@ -460,9 +454,9 @@ short DEPACKIO____INITTREE()
   {
     v3 = v0;
     LOWORD(v0) = 2 * v0;
-    *(__int16 *)((char *)&var_leftC + v0) = v0;
+    *(__int16 *)((char *)var_leftC + v0) = v0;
     result = v0 + 1;
-    *(__int16 *)((char *)&var_rghtC + v0) = v0 + 1;
+    *(__int16 *)((char *)var_rghtC + v0) = v0 + 1;
     HIWORD(v0) = HIWORD(v3);
     LOWORD(v0) = v3 + 1;
   }
@@ -487,39 +481,39 @@ void DEPACKIO____UPDATEFREQ_WORD_WORD(short a1, short a2)
   do
   {
     LOWORD(v3) = 2 * a2;
-    v4 = *(__int16 *)((char *)&var_frq + v3);
+    v4 = *(__int16 *)((char *)var_frq + v3);
     LOWORD(v3) = 2 * a1;
-    v5 = *(__int16 *)((char *)&var_frq + v3) + v4;
+    v5 = *(__int16 *)((char *)var_frq + v3) + v4;
     LOWORD(v3) = 2 * a2;
-    v6 = *(__int16 *)((char *)&var_dad + v3);
-    LOWORD(v3) = 2 * *(__int16 *)((char *)&var_dad + v3);
-    *(__int16 *)((char *)&var_frq + v3) = v5;
+    v6 = *(__int16 *)((char *)var_dad + v3);
+    LOWORD(v3) = 2 * *(__int16 *)((char *)var_dad + v3);
+    *(__int16 *)((char *)var_frq + v3) = v5;
     a2 = v6;
     if ( v6 != 1 )
     {
       LOWORD(v3) = 2 * v6;
-      LOWORD(v3) = *(__int16 *)((char *)&var_dad + v3);
+      LOWORD(v3) = *(__int16 *)((char *)var_dad + v3);
       v7 = v3;
       LOWORD(v3) = 2 * v3;
-      if ( v6 == *(__int16 *)((char *)&var_leftC + v3) )
+      if ( v6 == *(__int16 *)((char *)var_leftC + v3) )
       {
         LOWORD(v3) = 2 * v7;
-        a1 = *(__int16 *)((char *)&var_rghtC + v3);
+        a1 = *(__int16 *)((char *)var_rghtC + v3);
       }
       else
       {
         LOWORD(v3) = 2 * v7;
-        a1 = *(__int16 *)((char *)&var_leftC + v3);
+        a1 = *(__int16 *)((char *)var_leftC + v3);
       }
     }
   }
   while ( v6 != 1 );
   LOWORD(v3) = 2;
-  if ( *(__int16 *)((char *)&var_frq + v3) == 2000 )
+  if ( *(__int16 *)((char *)var_frq + v3) == 2000 )
   {
     LOWORD(v2) = 3549;
-    v9 = &var_frq + 1;
-    v8 = &var_frq + 1;
+    v9 = var_frq + 1;
+    v8 = var_frq + 1;
     do
     {
       v10 = *v9;
@@ -551,7 +545,7 @@ void DEPACKIO____UPDATEMODEL_WORD(short a1)
 
   HIWORD(v1) = 0;
   v2 = a1 + 1775;
-  ++*(__int16 *)((char *)&var_frq + (unsigned __int16)(2 * (a1 + 1775)));
+  ++*(__int16 *)((char *)var_frq + (unsigned __int16)(2 * (a1 + 1775)));
   v3 = (unsigned __int16)(2 * (a1 + 1775));
   if ( *(__int16 *)((char *)var_dad + (unsigned __int16)v3) != 1 )
   {
@@ -575,7 +569,7 @@ void DEPACKIO____UPDATEMODEL_WORD(short a1)
       else
         v10 = *(__int16 *)((char *)var_leftC + v9);
       HIWORD(v11) = 0;
-      if ( *(unsigned __int16 *)((char *)&var_frq + (unsigned __int16)(2 * v2)) > *(unsigned __int16 *)((char *)&var_frq + (unsigned __int16)(2 * v10)) )
+      if ( *(unsigned __int16 *)((char *)var_frq + (unsigned __int16)(2 * v2)) > *(unsigned __int16 *)((char *)var_frq + (unsigned __int16)(2 * v10)) )
       {
         LOWORD(v11) = 2 * v8;
         if ( *(__int16 *)((char *)var_leftC + v11) == v7 )
@@ -632,7 +626,7 @@ short DEPACKIO____INPUTCODE_WORD__WORD(unsigned short a1)
       var_ibitCount = 15;
     }
     if ( (unsigned __int16)var_ibitBuffer > 0x7FFFu )
-      v1 |= *(__int16 *)((char *)&var_BitValue + (unsigned __int16)(2 * (v2 - 1)));
+      v1 |= *(__int16 *)((char *)var_BitValue + (unsigned __int16)(2 * (v2 - 1)));
     var_ibitBuffer *= 2;
     ++v2;
   }
@@ -707,9 +701,9 @@ short DEPACKIO____SIXPACK_DECODE()
       v2 = result - 257;
       var_index = v2 / 0xFDu;
       v3 = v2 + 3 - 253 * (v2 / 0xFDu);
-      v4 = *(__int16 *)((char *)&var_CopyMin + (unsigned __int16)(2 * (v2 / 0xFDu)))
+      v4 = *(__int16 *)((char *)var_CopyMin + (unsigned __int16)(2 * (v2 / 0xFDu)))
          + v3
-         + DEPACKIO____INPUTCODE_WORD__WORD(*(__int16 *)((char *)&var_CopyBits + (unsigned __int16)(2 * (v2 / 0xFDu))));
+         + DEPACKIO____INPUTCODE_WORD__WORD(*(__int16 *)((char *)var_CopyBits + (unsigned __int16)(2 * (v2 / 0xFDu))));
       LOWORD(v0) = var_count;
       LOWORD(v5) = var_count - v4;
       if ( (unsigned __int16)var_count < v4 )
@@ -764,7 +758,7 @@ short DEPACKIO____SIXPACK_DECOMPRESS_formal_formal_WORD__WORD(unsigned char *a3,
 {
   var_input_ptr = a3;
   var_output_ptr = a2;
-  var_work_ptr = (int)&var_work_mem;
+  var_work_ptr = var_work_mem;
   var_input_size = a1;
   DEPACKIO____SIXPACK_DECODE();
   return var_output_size;
@@ -772,6 +766,8 @@ short DEPACKIO____SIXPACK_DECOMPRESS_formal_formal_WORD__WORD(unsigned char *a3,
 
 int DEPACKIO____APACK_DECOMPRESS_formal_formal__LONGWORD(char *a2, unsigned char *a1)
 {
+  unsigned int swap;
+
   char *v2; // esi@1
   _BYTE *v3; // edi@1
   char v4; // dl@1
@@ -936,7 +932,9 @@ LABEL_44:
         if ( v37 > 0x7F )
         {
 LABEL_45:
-          _InterlockedExchange((volatile signed __int32 *)&v46, v37);
+          swap = v37;
+          v37 = v46;
+          v46 = swap;
 LABEL_46:
           v11 = v46;
           goto LABEL_47;
