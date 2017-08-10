@@ -6,6 +6,7 @@ interface
 type
   tCHARSET = Set of Char;
 
+function _str2(str: String; len: Byte): String;
 function byte2hex(value: Byte): String;
 function byte2dec(value: Byte): String;
 function Capitalize(str: String): String;
@@ -80,200 +81,94 @@ implementation
 uses
   DOS,
   AdT2unit,AdT2sys,AdT2keyb,
-  TxtScrIO;
+  TxtScrIO,
+  strutils, sysutils;
+
+{
+  function _str2(str: String; len: Byte): String;
+  begin
+    asm
+          lea     esi,[str]
+          mov     edi,@RESULT
+          movzx   ebx,len
+          xor     edx,edx # edx = 0
+        
+          push    edi # edi = &RESULT[0]
+          lodsb # load from esi (str[0]) in al, increment
+          inc     edi # edi++
+          xor     ecx,ecx
+          mov     ecx,ebx # len == null
+          jecxz   @@3
+          movzx   ecx,al # str[i] == null
+          jecxz   @@3
+  @@1:    cmp     edx,ebx # edx = counter, ebx = len
+          jae     @@3
+          lodsb # load from esi, increment
+          stosb # copy into edi, increment
+          cmp     al,'`'
+          jz      @@2 # jump if str[i] == '`'
+          inc     edx
+  @@2:    loop    @@1
+  @@3:    pop     edi # edi = &RESULT[0]
+
+          mov     eax,esi
+          lea     esi,[str]
+          sub     eax,esi
+          dec     eax
+          stosb # copy into edi (RESULT[0], length)
+    end;
+  end;
+}
+function _str2(str: String; len: Byte): String;
+var
+  i: Byte;
+  j: Byte;
+  strOut: String;
+begin
+  if (len <> 0) and (Length(str) <> 0) then
+    begin
+      while (i <= len) do
+        begin
+          strOut[j] = str[j];
+          if str[j] <> '`' then
+            inc(i);
+          inc(j);
+        end;
+    end;
+  _str2 := strOut;
+end;
 
 function byte2hex(value: Byte): String;
-
-const
-  data: array[0..15] of char = '0123456789ABCDEF';
-
 begin
-  asm
-        mov     edi,@RESULT
-        lea     ebx,[data]
-        mov     al,2
-        stosb
-        mov     al,value
-        xor     ah,ah
-        mov     cl,16
-        div     cl
-        xlat
-        stosb
-        mov     al,ah
-        xlat
-        stosb
-  end;
+  byte2hex := hexStr(value, 2);
 end;
 
 function byte2dec(value: Byte): String;
-
-const
-  data: array[0..9] of char = '0123456789';
-
+var
+  s : String;
 begin
-  asm
-        mov     edi,@RESULT
-        lea     ebx,[data]
-        mov     al,value
-        xor     ah,ah
-        mov     cl,100
-        div     cl
-        mov     ch,ah
-        xchg    ah,al
-        or      ah,ah
-        jz      @@1
-        mov     al,3
-        stosb
-        xchg    ah,al
-        xlat
-        stosb
-        mov     al,ch
-        jmp     @@2
-@@1:    mov     al,2
-        stosb
-        mov     al,value
-@@2:    xor     ah,ah
-        mov     cl,10
-        div     cl
-        xlat
-        stosb
-        mov     al,ah
-        xlat
-        stosb
-  end;
+  Str(value, s);
+  byte2dec := s;
 end;
 
 function Capitalize(str: String): String;
 begin
-  asm
-        lea     esi,[str]
-        mov     edi,@RESULT
-        mov     al,[esi]
-        inc     esi
-        mov     [edi],al
-        inc     edi
-        xor     ecx,ecx
-        mov     cl,al
-        jecxz   @@4
-        mov     al,[esi]
-        inc     esi
-        cmp     al,'a'
-        jb      @@0
-        cmp     al,'z'
-        ja      @@0
-        sub     al,20h
-@@0:    mov     [edi],al
-        inc     edi
-@@1:    mov     ah,al
-        mov     al,[esi]
-        inc     esi
-        cmp     ah,' '
-        jnz     @@2
-        cmp     al,'a'
-        jb      @@2
-        cmp     al,'z'
-        ja      @@2
-        sub     al,20h
-        jmp     @@3
-@@2:    cmp     al,'A'
-        jb      @@3
-        cmp     al,'Z'
-        ja      @@3
-        add     al,20h
-@@3:    mov     [edi],al
-        inc     edi
-        loop    @@1
-@@4:
-  end;
+  Capitalize := AnsiProperCase(str, StdWordDelims);
 end;
 
 function Upper(str: String): String;
 begin
-  asm
-        lea     esi,[str]
-        mov     edi,@RESULT
-        mov     al,[esi]
-        inc     esi
-        mov     [edi],al
-        inc     edi
-        xor     ecx,ecx
-        mov     cl,al
-        jecxz   @@3
-@@1:    mov     al,[esi]
-        inc     esi
-        cmp     al,'a'
-        jb      @@2
-        cmp     al,'z'
-        ja      @@2
-        sub     al,20h
-@@2:    mov     [edi],al
-        inc     edi
-        loop    @@1
-@@3:
-  end;
+  Upper := UpperCase(str);
 end;
 
 function Lower(str: String): String;
 begin
-  asm
-        lea     esi,[str]
-        mov     edi,@RESULT
-        mov     al,[esi]
-        inc     esi
-        mov     [edi],al
-        inc     edi
-        xor     ecx,ecx
-        mov     cl,al
-        jecxz   @@3
-@@1:    mov     al,[esi]
-        inc     esi
-        cmp     al,'A'
-        jb      @@2
-        cmp     al,'Z'
-        ja      @@2
-        add     al,20h
-@@2:    mov     [edi],al
-        inc     edi
-        loop    @@1
-@@3:
+  Lower := LowerCase(str);
   end;
-end;
 
 function iCase(str: String): String;
 begin
-  asm
-        lea     esi,[str]
-        mov     edi,@RESULT
-        mov     al,[esi]
-        inc     esi
-        mov     [edi],al
-        inc     edi
-        xor     ecx,ecx
-        mov     cl,al
-        jecxz   @@5
-        push    edi
-        push    ecx
-@@1:    mov     al,[esi]
-        inc     esi
-        cmp     al,'a'
-        jb      @@2
-        cmp     al,'z'
-        ja      @@2
-        sub     al,20h
-@@2:    mov     [edi],al
-        inc     edi
-        loop    @@1
-        pop     ecx
-        pop     edi
-@@3:    mov     al,[edi]
-        cmp     al,'i'-20h
-        jnz     @@4
-        add     al,20h
-@@4:    mov     [edi],al
-        inc     edi
-        loop    @@3
-@@5:
-  end;
+  iCase := ReplaceStr(Upper(str), 'I', 'i');
 end;
 
 function RotStrL(str1,str2: String; shift: Byte): String;
@@ -290,58 +185,12 @@ end;
 
 function ExpStrL(str: String; size: Byte; chr: Char): String;
 begin
-  asm
-        lea     esi,[str]
-        mov     edi,@RESULT
-        cld
-        xor     ecx,ecx
-        lodsb
-        cmp     al,size
-        jge     @@1
-        mov     ah,al
-        mov     al,size
-        stosb
-        mov     al,ah
-        mov     cl,size
-        sub     cl,al
-        mov     al,chr
-        rep     stosb
-        mov     cl,ah
-        rep     movsb
-        jmp     @@2
-@@1:    stosb
-        mov     cl,al
-        rep     movsb
-@@2:
-  end;
+  ExpStrL := AddChar(chr, str, size);
 end;
 
 function ExpStrR(str: String; size: Byte; chr: Char): String;
 begin
-  asm
-        lea     esi,[str]
-        mov     edi,@RESULT
-        cld
-        xor     ecx,ecx
-        lodsb
-        cmp     al,size
-        jge     @@1
-        mov     ah,al
-        mov     al,size
-        stosb
-        mov     cl,ah
-        rep     movsb
-        mov     al,ah
-        mov     cl,size
-        sub     cl,al
-        mov     al,chr
-        rep     stosb
-        jmp     @@2
-@@1:    stosb
-        mov     cl,al
-        rep     movsb
-@@2:
-  end;
+  ExpStrR := AddCharR(chr, str, size);
 end;
 
 function DietStr(str: String; size: Byte): String;
@@ -403,76 +252,17 @@ end;
 
 function FlipStr(str: String): String;
 begin
-   asm
-        lea     esi,[str]
-        mov     edi,@RESULT
-        mov     al,[esi]
-        inc     esi
-        mov     [edi],al
-        inc     edi
-        dec     edi
-        xor     ecx,ecx
-        mov     cl,al
-        jecxz   @@2
-        add     edi,ecx
-@@1:    mov     al,[esi]
-        inc     esi
-        mov     [edi],al
-        dec     edi
-        loop    @@1
-@@2:
-  end;
+  FlipStr := ReverseString(str);
 end;
 
 function FilterStr(str: String; chr0,chr1: Char): String;
 begin
-  asm
-        lea     esi,[str]
-        mov     edi,@RESULT
-        mov     al,[esi]
-        inc     esi
-        mov     [edi],al
-        inc     edi
-        xor     ecx,ecx
-        mov     cl,al
-        jecxz   @@3
-@@1:    mov     al,[esi]
-        inc     esi
-        cmp     al,chr0
-        jnz     @@2
-        mov     al,chr1
-@@2:    mov     [edi],al
-        inc     edi
-        loop    @@1
-@@3:
-  end;
+  FilterStr := ReplaceStr(str, chr0, chr1);
 end;
 
 function FilterStr1(str: String; chr0: Char): String;
 begin
-  asm
-        lea     esi,[str]
-        mov     edi,@RESULT
-        mov     al,[esi]
-        inc     esi
-        inc     edi
-        xor     ecx,ecx
-        mov     cl,al
-        mov     ebx,ecx
-        jecxz   @@4
-@@1:    mov     al,[esi]
-        inc     esi
-        cmp     al,chr0
-        jnz     @@2
-        dec     ebx
-        jmp     @@3
-@@2:    mov     [edi],al
-        inc     edi
-@@3:    loop    @@1
-@@4:    mov     eax,ebx
-        mov     edi,@RESULT
-        mov     [edi],al
-  end;
+  FilterStr1 := DelChars(str, chr0);
 end;
 
 const
@@ -495,48 +285,8 @@ begin
 end;
 
 function Num2str(num: Longint; base: Byte): String;
-
-const
-  hexa: array[0..PRED(16)+32] of Char = '0123456789ABCDEF'+
-                                        #0#0#0#0#0#0#0#0#0#0#0#0#0#0#0#0;
 begin
-  asm
-        xor     eax,eax
-        xor     edx,edx
-        xor     edi,edi
-        xor     esi,esi
-        mov     eax,num
-        xor     ebx,ebx
-        mov     bl,base
-        cmp     bl,2
-        jb      @@3
-        cmp     bl,16
-        ja      @@3
-        mov     edi,32
-@@1:    dec     edi
-        xor     edx,edx
-        div     ebx
-        mov     esi,edx
-        mov     dl,byte ptr [hexa+esi]
-        mov     byte ptr [hexa+edi+16],dl
-        and     eax,eax
-        jnz     @@1
-        mov     esi,edi
-        mov     ecx,32
-        sub     ecx,edi
-        mov     edi,@RESULT
-        mov     al,cl
-        stosb
-@@2:    mov     al,byte ptr [hexa+esi+16]
-        stosb
-        inc     esi
-        loop    @@2
-        jmp     @@4
-@@3:    mov     edi,@RESULT
-        xor     al,al
-        stosb
-@@4:
-  end;
+  Num2str := Dec2Numb(num, 1, base);
 end;
 
 const
@@ -823,135 +573,6 @@ _end:
   is_environment.keystroke := key;
   is_environment.insert_mode := ins;
   InputStr := s;
-end;
-
-function SameName(str1,str2: String): Boolean;
-
-var
-  LastW: Word;
-  result: Boolean;
-
-begin
-  asm
-        mov     [LastW],0
-        xor     eax,eax
-        xor     ecx,ecx
-        xor     ebx,ebx
-        lea     esi,[str1]
-        lea     edi,[str2]
-        xor     ah,ah
-        mov     al,[esi]
-        inc     esi
-        mov     cx,ax
-        mov     al,[edi]
-        inc     edi
-        mov     bx,ax
-        or      cx,cx
-        jnz     @@1
-        or      bx,bx
-        jz      @@13
-        jmp     @@14
-        xor     dh,dh
-@@1:    mov     al,[esi]
-        inc     esi
-        cmp     al,'*'
-        jne     @@2
-        dec     cx
-        jz      @@13
-        mov     dh,1
-        mov     LastW,cx
-        jmp     @@1
-@@2:    cmp     al,'?'
-        jnz     @@3
-        inc     edi
-        or      bx,bx
-        je      @@12
-        dec     bx
-        jmp     @@12
-@@3:    or      bx,bx
-        je      @@14
-        cmp     al,'['
-        jne     @@11
-        cmp     word ptr [esi],']?'
-        je      @@9
-        mov     ah,byte ptr [edi]
-        xor     dl,dl
-        cmp     byte ptr [esi],'!'
-        jnz     @@4
-        inc     esi
-        dec     cx
-        jz      @@14
-        inc     dx
-@@4:    mov     al,[esi]
-        inc     esi
-        dec     cx
-        jz      @@14
-        cmp     al,']'
-        je      @@7
-        cmp     ah,al
-        je      @@6
-        cmp     byte ptr [esi],'-'
-        jne     @@4
-        inc     esi
-        dec     cx
-        jz      @@14
-        cmp     ah,al
-        jae     @@5
-        inc     esi
-        dec     cx
-        jz      @@14
-        jmp     @@4
-@@5:    mov     al,[esi]
-        inc     esi
-        dec     cx
-        jz      @@14
-        cmp     ah,al
-        ja      @@4
-@@6:    or      dl,dl
-        jnz     @@14
-        inc     dx
-@@7:    or      dl,dl
-        jz      @@14
-@@8:    cmp     al,']'
-        je      @@10
-@@9:    mov     al,[esi]
-        inc     esi
-        cmp     al,']'
-        loopne  @@9
-        jne     @@14
-@@10:   dec     bx
-        inc     edi
-        jmp     @@12
-@@11:   cmp     [edi],al
-        jne     @@14
-        inc     edi
-        dec     bx
-@@12:   xor     dh,dh
-        dec     cx
-        jnz     @@1
-        or      bx,bx
-        jnz     @@14
-@@13:   mov     result,TRUE
-        jmp     @@16
-@@14:   or      dh,dh
-        jz      @@15
-        jecxz   @@15
-        or      bx,bx
-        jz      @@15
-        inc     edi
-        dec     bx
-        jz      @@15
-        mov     ax,LastW
-        sub     ax,cx
-        add     cx,ax
-        movsx   eax,ax
-        sub     esi,eax
-        dec     esi
-        jmp     @@1
-@@15:   mov     result,FALSE
-@@16:
-  end;
-  SameName := result;
 end;
 
 var

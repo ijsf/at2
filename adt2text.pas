@@ -5,8 +5,8 @@ interface
 
 const
 {__AT2VER__}at2ver  = '2.3.56';
-{__AT2DAT__}at2date = '07-01-2017';
-{__AT2LNK__}at2link = '1:03pm';
+{__AT2DAT__}at2date = '08-05-2017';
+{__AT2LNK__}at2link = '10:51pm';
 
 const
   _ADT2_TITLE_STRING_ = '/´DLiB TR/´CK3R ][';

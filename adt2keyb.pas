@@ -790,28 +790,4 @@ begin
   ctrl_tab_pressed := ctrl_pressed and scankey(SC_TAB);
 end;
 
-function LookUpKey(key: Word; var table; size: Byte): Boolean;
-
-var
-  result: Boolean;
-
-begin
-  asm
-        mov     esi,[table]
-        xor     ecx,ecx
-        mov     cl,size
-        mov     result,TRUE
-        jecxz   @@3
-@@1:    lodsw
-        cmp     ax,key
-        jz      @@2
-        loop    @@1
-@@2:    mov     result,FALSE
-        jecxz   @@3
-        mov     result,TRUE
-@@3:
-  end;
-  LookUpKey := result;
-end;
-
 end.

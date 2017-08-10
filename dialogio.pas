@@ -227,26 +227,6 @@ var
   mbuf:   tMBUFFR;
   contxt: String;
 
-function OutStr(var queue; len: Byte; order: Word): String;
-begin
-  asm
-        mov     esi,[queue]
-        mov     edi,@RESULT
-        xor     ecx,ecx
-        mov     cx,order
-        dec     ecx
-        xor     eax,eax
-        mov     al,len
-        inc     eax
-        jecxz   @@2
-@@1:    add     esi,eax
-        loop    @@1
-@@2:    xor     ecx,ecx
-        mov     cl,al
-        rep     movsb
-  end;
-end;
-
 function OutKey(str: String): Char;
 
 var

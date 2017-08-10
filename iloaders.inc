@@ -1,5 +1,4 @@
 {
-        function  check_byte(var data; _byte: Byte; size: Longint): Boolean;
         procedure import_old_a2m_event1(patt,line,chan: Byte; old_chunk: tOLD_CHUNK;
                                         processing_whole_song: Boolean);
         procedure replace_old_adsr(patterns: Byte);
@@ -40,33 +39,11 @@
         procedure import_sat_instrument(inst: Byte; var data);
         function  import_sat_instrument_name(var data; inst: Byte): String;
         procedure sat_file_loader;
-        function  _sal(op1,op2: Word): Byte;
         function  _sar(op1,op2: Word): Byte;
         procedure import_sa2_effect(effect,def1,def2: Byte;
                                     var out1,out2: Byte);
         procedure sa2_file_loader;
 }
-
-function check_byte(var data; _byte: Byte; size: Longint): Boolean;
-
-var
-  result: Boolean;
-
-begin
-  asm
-        mov     edi,[data]
-        mov     ecx,size
-        jecxz   @@1
-        mov     al,_byte
-        repnz   scasb
-        jnz     @@1
-        mov     result,TRUE
-        jmp     @@2
-@@1:    mov     result,FALSE
-@@2:
-  end;
-  check_byte := result;
-end;
 
 var
   adsr_carrier: array[1..9] of Boolean;
@@ -7951,36 +7928,6 @@ begin
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
   load_flag := 1;
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
-end;
-
-function _sal(op1,op2: Word): Byte;
-
-var
-  result: Byte;
-
-begin
-  asm
-        mov     ax,op1
-        mov     cx,op2
-        sal     ax,cl
-        mov     result,al
-  end;
-  _sal := result;
-end;
-
-function _sar(op1,op2: Word): Byte;
-
-var
-  result: Byte;
-
-begin
-  asm
-        mov     ax,op1
-        mov     cx,op2
-        sar     ax,cl
-        mov     result,al
-  end;
-  _sar := result;
 end;
 
 procedure import_sa2_effect(effect,def1,def2: Byte;

@@ -954,49 +954,7 @@ begin
 end;
 
 procedure override_frame(dest: tSCREEN_MEM_PTR; x,y: Byte; frame: String; attr: Byte);
-
-procedure override_attr(dest: tSCREEN_MEM_PTR; x,y: Byte; len: Byte; attr: Byte);
-begin
-  asm
-        mov     al,MaxCol
-        dec     al
-        xor     ah,ah
-        xor     ebx,ebx
-        mov     bl,2
-        mul     bl
-        mov     bx,ax
-        mov     edi,dword ptr [dest]
-        mov     al,x
-        mov     ah,y
-        push    eax
-        push    ebx
-        mov     al,MaxCol
-        xor     ah,ah
-        xor     ebx,ebx
-        mov     bl,y
-        dec     bl
-        mul     bl
-        mov     bl,x
-        dec     bl
-        add     eax,ebx
-        mov     edx,eax
-        shl     edx,1
-        pop     ebx
-        pop     eax
-        xor     ecx,ecx
-        mov     cl,len
-        jecxz   @@2
-        add     edi,edx
-        mov     al,attr
-@@1:    inc     edi
-        stosb
-        add     edi,ebx
-        loop    @@1
-@@2:
-  end;
-end;
-
-begin
+  begin
   ShowStr(dest,x,y,frame[1]+ExpStrL('',32,frame[2])+frame[3],attr);
   ShowVStr(dest,x,y+1,ExpStrL('',MAX_PATTERN_ROWS,frame[4]),attr);
   ShowStr(dest,x,y+MAX_PATTERN_ROWS+1,frame[6]+ExpStrL('',32,frame[7])+frame[8],attr);
@@ -1713,26 +1671,6 @@ begin
   else For temp := 0 to 12*8+1 do
          If SameName(note_layout[temp],layout) then BREAK;
   _find_note := temp;
-end;
-
-function _find_fx(fx_str: Char): Byte;
-
-var
-  result: Byte;
-
-begin
-  asm
-        lea     edi,[fx_digits]
-        mov     ebx,edi
-        mov     al,fx_str
-        mov     ecx,NM_FX_DIGITS
-        repnz   scasb
-        sub     edi,ebx
-        mov     eax,edi
-        dec     eax
-        mov     result,al
-  end;
-  _find_fx := result;
 end;
 
 function _wildcard_str(wildcard,str: String): String;

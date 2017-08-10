@@ -1469,38 +1469,6 @@ begin
   _str1 := temp_str;
 end;
 
-function _str2(str: String; len: Byte): String;
-begin
-  asm
-        lea     esi,[str]
-        mov     edi,@RESULT
-        movzx   ebx,len
-        xor     edx,edx
-        push    edi
-        lodsb
-        inc     edi
-        xor     ecx,ecx
-        mov     ecx,ebx
-        jecxz   @@3
-        movzx   ecx,al
-        jecxz   @@3
-@@1:    cmp     edx,ebx
-        jae     @@3
-        lodsb
-        stosb
-        cmp     al,'`'
-        jz      @@2
-        inc     edx
-@@2:    loop    @@1
-@@3:    pop     edi
-        mov     eax,esi
-        lea     esi,[str]
-        sub     eax,esi
-        dec     eax
-        stosb
-  end;
-end;
-
 procedure fmreg_page_refresh(xpos,ypos: Byte; page: Word);
 
 var
