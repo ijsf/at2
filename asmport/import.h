@@ -1,3 +1,5 @@
+extern "C" {
+
 // (at2unit) songdata:      tFIXED_SONGDATA;
 extern unsigned char *var_songdata__instr_data;
 extern unsigned char *var_songdata__flag_4op;
@@ -148,3 +150,4 @@ extern unsigned char *TC__TXTSCRIO____MOVE_TO_SCREEN_AREA;
 #define TC__TXTSCRIO____MOVE_TO_SCREEN_AREA___PLUS2 (TC__TXTSCRIO____MOVE_TO_SCREEN_AREA+2)
 #define TC__TXTSCRIO____MOVE_TO_SCREEN_AREA___PLUS3 (TC__TXTSCRIO____MOVE_TO_SCREEN_AREA+3)
 
+}

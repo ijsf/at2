@@ -1,7 +1,19 @@
 unit AdT2extn;
 {$S-,Q-,R-,V-,B-,X+}
 {$PACKRECORDS 1}
+{$i asmport.inc}
 interface
+
+uses
+{$IFNDEF UNIX}
+  CRT,
+{$ENDIF}
+{$IFNDEF GO32V2}
+  SDL_Timer,
+{$ENDIF}
+  AdT2opl3,
+  AdT2sys,AdT2keyb,AdT2unit,AdT2ext2,AdT2ext3,AdT2ext4,AdT2ext5,AdT2text,AdT2pack,
+  StringIO,DialogIO,ParserIO,TxtScrIO,MenuLib1,MenuLib2;
 
 const
   remap_mtype:         Byte = 1;
@@ -80,18 +92,10 @@ procedure MESSAGE_BOARD;
 procedure QUIT_request;
 procedure show_progress(value: Longint);
 
-implementation
+procedure override_attr(dest: tSCREEN_MEM_PTR; x,y: Byte; len: Byte; attr: Byte);
+function _find_fx(fx_str: Char): Byte;
 
-uses
-{$IFNDEF UNIX}
-  CRT,
-{$ENDIF}
-{$IFNDEF GO32V2}
-  SDL_Timer,
-{$ENDIF}
-  AdT2opl3,
-  AdT2sys,AdT2keyb,AdT2unit,AdT2ext2,AdT2ext3,AdT2ext4,AdT2ext5,AdT2text,AdT2pack,
-  StringIO,DialogIO,ParserIO,TxtScrIO,MenuLib1,MenuLib2;
+implementation
 
 function _patts_marked: Byte;
 
@@ -704,7 +708,7 @@ begin
   mn_setting.cycle_moves := TRUE;
   mn_setting.fixed_len := 14;
   mn_setting.terminate_keys[3] := kTAB;
-  mn_environment.ext_proc := transpose__control_proc;
+  mn_environment.ext_proc := @transpose__control_proc;
   count_patterns(patterns);
 
   Repeat
@@ -1001,8 +1005,8 @@ _jmp1:
 
   MenuLib1_mn_environment.v_dest := ptr_temp_screen;
   MenuLib2_mn_environment.v_dest := ptr_temp_screen;
-  MenuLib1_mn_environment.ext_proc := REMAP_instr_control_proc;
-  MenuLib2_mn_environment.ext_proc := REMAP_instr_control_proc;
+  MenuLib1_mn_environment.ext_proc := @REMAP_instr_control_proc;
+  MenuLib2_mn_environment.ext_proc := @REMAP_instr_control_proc;
 
   MenuLib1_mn_environment.unpolite := FALSE;
   MenuLib1_mn_environment.preview := TRUE;
@@ -5273,7 +5277,7 @@ _jmp1:
       fs_environment.last_dir  := last_dir[mpos];
 
       old_ext_proc := mn_environment.ext_proc;
-      If (mpos = 2) then mn_environment.ext_proc := fselect_external_proc;
+      If (mpos = 2) then mn_environment.ext_proc := @fselect_external_proc;
       fname := Fselect(masks);
       mn_environment.ext_proc := old_ext_proc;
 

@@ -638,7 +638,6 @@ begin
       EXIT;
     end;
 
-{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  load_flag := $7f;}
   If NOT (header.ffver in [1..FFVER_A2M]) then
     begin
       CloseF(f);
@@ -1302,10 +1301,6 @@ begin
 
   CloseF(f);
   songdata_title := NameOnly(songdata_source);
-{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  Case header.ffver of
-{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>    1..4: load_flag := 1;
-{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>    else  load_flag := 2;
-{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  end;
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
   temp := calc_max_speedup(songdata.tempo);
   If (songdata.macro_speedup > temp) then
@@ -1465,7 +1460,6 @@ begin
       EXIT;
     end;
 
-{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  load_flag := $7f;}
   If NOT (header.ffver in [1..FFVER_A2T]) then
     begin
       CloseF(f);
@@ -2880,10 +2874,6 @@ begin
 
   CloseF(f);
   songdata_title := NameOnly(songdata_source);
-{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  Case header.ffver of
-{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>    1..4: load_flag := 3;
-{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>    else  load_flag := 4;
-{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  end;
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
   temp := calc_max_speedup(songdata.tempo);
   If (songdata.macro_speedup > temp) then
@@ -3614,7 +3604,6 @@ begin
       EXIT;
     end;
 
-{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  load_flag := $7f;}
   If NOT (header.versn in [$10,$11]) then
     begin
       CloseF(f);
@@ -3710,8 +3699,6 @@ begin
 
   CloseF(f);
   songdata_title := NameOnly(songdata_source);
-{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  If (header.ident = id_amd) then load_flag := 5}
-{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  else load_flag := 6;}
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
   load_flag := 1;
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
@@ -4212,7 +4199,6 @@ begin
     end;
 
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
-{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  load_flag := $7f;}
   If (header.cflag = 1) then
     begin
       FillChar(buf1,SizeOf(buf1),0);
@@ -4310,7 +4296,6 @@ begin
 
   import_cff_patterns(buf1,headr2.nopat);
   songdata_title := NameOnly(songdata_source);
-{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  load_flag := 7;}
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
   load_flag := 1;
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
@@ -4494,7 +4479,6 @@ begin
     end;
 
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
-{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  load_flag := $7f;}
   FillChar(buf1,SizeOf(buf1),0);
   BlockReadF(f,buf1,SizeOf(buf1),temp);
   If (IOresult <> 0) then
@@ -4593,7 +4577,6 @@ begin
   CloseF(f);
 
   songdata_title := NameOnly(songdata_source);
-{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  load_flag := 8;}
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
   load_flag := 1;
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
@@ -4828,11 +4811,6 @@ begin
   _debug_str_ := 'ILOADERS.INC:hsc_file_loader';
 {$ENDIF}
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
-{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  If (Lower(ExtOnly(songdata_source)) <> 'hsc') then}
-{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>    begin}
-{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>      load_flag := $7f;}
-{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>      EXIT;}
-{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>    end;}
 
   {$i-}
   Assign(f,songdata_source);
@@ -4928,7 +4906,6 @@ begin
 
   CloseF(f);
   songdata_title := NameOnly(songdata_source);
-{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  load_flag := 9;}
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
   load_flag := 1;
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
@@ -5007,7 +4984,6 @@ begin
     end;
 
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
-{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  load_flag := $7f;}
   FillChar(buf1,SizeOf(buf1),0);
   BlockReadF(f,buf1,SizeOf(buf1),temp);
 
@@ -5088,7 +5064,6 @@ begin
 
   CloseF(f);
   songdata_title := NameOnly(songdata_source);
-{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  load_flag := 10;}
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
   load_flag := 1;
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
@@ -5323,7 +5298,6 @@ begin
     end;
 
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
-{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  load_flag := $7f;}
   FillChar(buf1,SizeOf(buf1),0);
   BlockReadF(f,buf1,SizeOf(buf1),temp);
   If (IOresult <> 0) then
@@ -5444,7 +5418,6 @@ begin
 
   CloseF(f);
   songdata_title := NameOnly(songdata_source);
-{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  load_flag := 11;}
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
   load_flag := 1;
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
@@ -6256,7 +6229,6 @@ begin
       EXIT;
     end;
 
-{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  load_flag := $7f;}
   If (header.byte1a <> $1a) or (header.ftype <> $10) then
     begin
       CloseF(f);
@@ -6487,7 +6459,6 @@ begin
   fix_s3m_commands(header.patnum);
   CloseF(f);
   songdata_title := NameOnly(songdata_source);
-{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  load_flag := 12;}
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
   load_flag := 1;
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
@@ -7223,7 +7194,6 @@ begin
       EXIT;
     end;
 
-{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  load_flag := $7f;}
   If (header.bytef4 <> $f4) or NOT (header.ftype in [1,2]) then
     begin
       CloseF(f);
@@ -7569,7 +7539,6 @@ begin
   fix_fmk_commands(header.patnum);
   CloseF(f);
   songdata_title := NameOnly(songdata_source);
-{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  load_flag := 13;}
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
   load_flag := 1;
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
@@ -7753,7 +7722,6 @@ begin
       EXIT;
     end;
 
-{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  load_flag := $7f;}
   SATver := header.vernm;
   If (SATver in [5,6]) then
     begin
@@ -7924,7 +7892,6 @@ begin
 
   CloseF(f);
   songdata_title := NameOnly(songdata_source);
-{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  load_flag := 14;}
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
   load_flag := 1;
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
@@ -8165,7 +8132,6 @@ begin { sa2_file_loader }
     end;
 
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}
-{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  load_flag := $7f;}
   If (header.vernm = 8) then
     begin
       SeekF(f,FilePos(f)-2);
@@ -8258,7 +8224,6 @@ begin { sa2_file_loader }
 
   CloseF(f);
   songdata_title := NameOnly(songdata_source);
-{@ADT2PLAY_COMPILER_DIRECTIVE:INSERT>  load_flag := 15;}
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_BEGIN}
   load_flag := 1;
 {@ADT2PLAY_COMPILER_DIRECTIVE:SKIP_END}

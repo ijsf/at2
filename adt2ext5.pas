@@ -1,6 +1,7 @@
 unit AdT2ext5;
 {$S-,Q-,R-,V-,B-,X+}
 {$PACKRECORDS 1}
+{$i asmport.inc}
 interface
 
 const
@@ -623,7 +624,7 @@ begin
   old_cycle_moves := mn_setting.cycle_moves;
 
   Move(new_keys,mn_setting.terminate_keys,SizeOf(new_keys));
-  mn_environment.ext_proc := a2b_lister_external_proc;
+  mn_environment.ext_proc := @a2b_lister_external_proc;
   mn_setting.topic_len := 3;
   mn_setting.cycle_moves := FALSE;
 
@@ -2685,7 +2686,7 @@ _jmp1:
       If NOT loadBankPossible then
         mn_setting.terminate_keys[5] := 0; // ^ENTER possible only in Arpeggio/Vibrato Macro Editor
 
-      mn_environment.ext_proc := a2w_macro_lister_external_proc;
+      mn_environment.ext_proc := @a2w_macro_lister_external_proc;
       mn_setting.topic_len := 5;
       mn_setting.cycle_moves := FALSE;
       mn_setting.topic_mask_chr := [#179,#186];
@@ -3085,7 +3086,7 @@ _jmp2:
       If NOT loadBankPossible then
         mn_setting.terminate_keys[5] := 0; // ^ENTER possible only in Instrument Control
 
-      mn_environment.ext_proc := a2w_lister_external_proc;
+      mn_environment.ext_proc := @a2w_lister_external_proc;
       mn_setting.topic_len := 3;
       mn_setting.cycle_moves := FALSE;
       mn_setting.frame_enabled := FALSE;
@@ -3807,7 +3808,9 @@ begin { bnk_file_loader }
   nm_valid := 0;
   bnk_skip := 0;
 
-  For index := 1 to max(header.total_entries,MAX_TIMBRES) do
+  //For index := 1 to max(header.total_entries,MAX_TIMBRES) do
+  index := 1;
+  while index <= max(header.total_entries,MAX_TIMBRES) do // ACHTUNG
     begin
       If (ticklooper = 0) then
         If keypressed and (index > 1) then
@@ -3926,6 +3929,7 @@ begin { bnk_file_loader }
           bnk_queue[3+index-bnk_skip] :=
             bnk_queue[3+index-bnk_skip]+'???';
       end;
+      Inc(index);
     end;
 
   CloseF(f);
@@ -3951,7 +3955,7 @@ begin { bnk_file_loader }
   old_external_proc := mn_environment.ext_proc;
   old_topic_len := mn_setting.topic_len;
   old_cycle_moves := mn_setting.cycle_moves;
-  mn_environment.ext_proc := bnk_lister_external_proc;
+  mn_environment.ext_proc := @bnk_lister_external_proc;
   mn_setting.topic_len := 3;
   mn_setting.cycle_moves := FALSE;
 
@@ -4077,7 +4081,9 @@ begin { fib_file_loader }
   nm_valid := 0;
   bnk_skip := 0;
 
-  For index := 1 to max(header.nmins,MAX_TIMBRES) do
+  //For index := 1 to max(header.nmins,MAX_TIMBRES) do
+  index := 1;
+  while index <= max(header.nmins,MAX_TIMBRES) do // ACHTUNG
     begin
       If (ticklooper = 0) then
         If keypressed and (index > 1) then
@@ -4150,6 +4156,7 @@ begin { fib_file_loader }
           bnk_queue[3+index-bnk_skip] :=
             bnk_queue[3+index-bnk_skip]+byte2hex(FEEDBACK_FM)+'  ';
         end;
+      Inc(index);
     end;
 
   SeekF(f,SizeOf(header)+header.nmins*SizeOf(instrument_data));
@@ -4197,7 +4204,7 @@ begin { fib_file_loader }
   old_external_proc := mn_environment.ext_proc;
   old_topic_len := mn_setting.topic_len;
   old_cycle_moves := mn_setting.cycle_moves;
-  mn_environment.ext_proc := fib_lister_external_proc;
+  mn_environment.ext_proc := @fib_lister_external_proc;
   mn_setting.topic_len := 3;
   mn_setting.cycle_moves := FALSE;
 
@@ -4331,7 +4338,9 @@ begin { ibk_file_loader }
   nm_valid := 0;
   ibk_skip := 0;
 
-  For index := 1 to 128 do
+  //For index := 1 to 128 do
+  index := 1;
+  while index <= 128 do // ACHTUNG
     begin
       If (ticklooper = 0) then
         If keypressed and (index > 1) then
@@ -4435,6 +4444,7 @@ begin { ibk_file_loader }
           ibk_queue[3+index-ibk_skip] :=
             ibk_queue[3+index-ibk_skip]+byte2hex(FEEDBACK_FM)+'  ';
         end;
+      Inc(index);
     end;
 
   CloseF(f);
@@ -4459,7 +4469,7 @@ begin { ibk_file_loader }
   old_external_proc := mn_environment.ext_proc;
   old_topic_len := mn_setting.topic_len;
   old_cycle_moves := mn_setting.cycle_moves;
-  mn_environment.ext_proc := ibk_lister_external_proc;
+  mn_environment.ext_proc := @ibk_lister_external_proc;
   mn_setting.topic_len := 3;
   mn_setting.cycle_moves := FALSE;
 

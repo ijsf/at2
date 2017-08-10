@@ -86,6 +86,7 @@ unit SDL;
 {$IFDEF LINUX}
   {$LINKLIB pthread}
 {$ENDIF}
+  {$LINKLIB sdl}
   function SDL_Init(flags:Uint32):longint;cdecl;external 'SDL';
 
   function SDL_InitSubSystem(flags:Uint32):longint;cdecl;external 'SDL';

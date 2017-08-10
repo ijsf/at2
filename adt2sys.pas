@@ -3,6 +3,10 @@ unit AdT2sys;
 {$PACKRECORDS 1}
 interface
 
+procedure draw_SDL_screen_720x480;
+procedure draw_SDL_screen_960x800;
+procedure draw_SDL_screen_1440x960;
+
 const
   virtual_screen__first_row: Longint = 0;
   virtual_cur_shape: Word = 0;

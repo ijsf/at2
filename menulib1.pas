@@ -410,7 +410,7 @@ begin { MenuLib1_Menu }
       If (spos > count) then spos := count;
 
       mnu_len2 := len2;
-      MenuLib1_mn_environment.refresh := refresh;
+      MenuLib1_mn_environment.refresh := @refresh;
 
       first := 1;
       last := count;

@@ -1,6 +1,8 @@
 unit AdT2ext3;
 {$S-,Q-,R-,V-,B-,X+}
 {$PACKRECORDS 1}
+{$MODESWITCH NESTEDCOMMENTS-}
+{$i asmport.inc}
 interface
 
 procedure a2m_file_loader;
@@ -28,6 +30,8 @@ procedure import_standard_instrument_alt(var data);
 procedure test_instrument_alt(chan: Byte; fkey: Word; loadMacros: Boolean; bankSelector: Boolean; loadArpVib: Boolean;
                               test_ins1,test_ins2: Byte);
 procedure test_instrument_alt2(chan: Byte; fkey: Word);
+
+function _sar(op1,op2: Word): Byte;
 
 implementation
 

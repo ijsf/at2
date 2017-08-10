@@ -283,11 +283,9 @@ var
                    play_status: tPLAY_STATUS;
                  end;
 
-function  nFreq(note: Byte): Word;
 procedure change_freq(chan: Byte; freq: Word);
 function  calc_pattern_pos(pattern: Byte): Byte;
 function  concw(lo,hi: Byte): Word;
-function  ins_parameter(ins,param: Byte): Byte;
 function  is_chan_adsr_data_empty(chan: Byte): Boolean;
 function  is_ins_adsr_data_empty(ins: Byte): Boolean;
 function  scale_volume(volume,scale_factor: Byte): Byte;
@@ -330,17 +328,9 @@ function  vscroll_bar(x,y: Byte; size: Byte; len1,len2,pos: Word;
 procedure centered_frame(var xstart,ystart: Byte; hsize,vsize: Byte;
                          name: String; atr1,atr2: Byte; border: String);
 
-procedure get_chunk(pattern,line,channel: Byte; var chunk: tCHUNK);
-procedure put_chunk(pattern,line,channel: Byte; chunk: tCHUNK);
-
-function  get_chanpos(var data; channels,scancode: Byte): Byte;
-function  get_chanpos2(var data; channels,scancode: Byte): Byte;
-function  count_channel(hpos: Byte): Byte;
-function  count_pos(hpos: Byte): Byte;
 function  calc_max_speedup(tempo: Byte): Word;
 function  calc_order_jump: Integer;
 function  calc_following_order(order: Byte): Integer;
-function  is_4op_chan(chan: Byte): Boolean;
 
 procedure count_order(var entries: Byte);
 procedure count_patterns(var patterns: Byte);
@@ -402,6 +392,21 @@ procedure add_bank_position(bank_name: String; bank_size: Longint; bank_position
 const
   ___UNIT_DATA_END___: Dword = 0;
 {$ENDIF}
+
+function nFreq(note: Byte): Word;
+function calc_freq_shift_up(freq,shift: Word): Word;
+function calc_freq_shift_down(freq,shift: Word): Word;
+function calc_vibtrem_shift(chan: Byte; var table_data): Word;
+procedure change_freq_asm(chan: Byte; freq: Word);
+function  ins_parameter(ins,param: Byte): Byte;
+function is_data_empty(var buf; size: Longint): Boolean;
+procedure get_chunk(pattern,line,channel: Byte; var chunk: tCHUNK);
+procedure put_chunk(pattern,line,channel: Byte; chunk: tCHUNK);
+function  get_chanpos(var data; channels,scancode: Byte): Byte;
+function  get_chanpos2(var data; channels,scancode: Byte): Byte;
+function  count_channel(hpos: Byte): Byte;
+function  count_pos(hpos: Byte): Byte;
+function  is_4op_chan(chan: Byte): Boolean;
 
 implementation
 
@@ -4469,16 +4474,6 @@ procedure TimerDone;
 begin
 end;
 
-procedure TimerInstallHandler(handler: Pointer);
-begin
-  @timer_handler := handler;
-end;
-
-procedure TimerRemoveHandler;
-begin
-  @timer_handler := NIL;
-end;
-
 {$ENDIF}
 
 procedure init_timer_proc;
@@ -4492,7 +4487,7 @@ begin
   If timer_initialized then EXIT;
   timer_initialized := TRUE;
 {$IFNDEF GO32V2}
-  TimerInstallHandler(@timer_poll_proc);
+  timer_handler := @timer_poll_proc;
 {$ENDIF}
   TimerSetup(50);
 end;
@@ -4506,7 +4501,7 @@ begin
   If NOT timer_initialized then EXIT;
   timer_initialized := FALSE;
   TimerDone;
-  TimerRemoveHandler;
+  timer_handler := NIL;
 end;
 
 {$i realtime.inc}
@@ -5428,12 +5423,17 @@ begin
           end;
       end
   else
-    For fade_out_volume := 1 to 255 do
-      If fade_screen then
-        begin
-          vid_FadeOut;
-          SDL_Delay(1);
-        end;
+    //For fade_out_volume := 1 to 255 do
+    fade_out_volume := 1;
+    while fade_out_volume <= 254 do // ACHTUNG
+      begin
+        If fade_screen then
+          begin
+            vid_FadeOut;
+            SDL_Delay(1);
+          end;
+        Inc(fade_out_volume);
+      end;
 
 {$ENDIF}
 

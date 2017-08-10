@@ -68,11 +68,12 @@ var
   is_environment: tINPUT_STR_ENVIRONMENT;
 
 function InputStr(s: String; x,y,ln,ln1: Byte; atr1,atr2: Byte): String;
-function SameName(str1,str2: String): Boolean;
 function PathOnly(path: String): String;
 function NameOnly(path: String): String;
 function BaseNameOnly(path: String): String;
 function ExtOnly(path: String): String;
+
+function SameName(str1,str2: String): Boolean;
 
 procedure StringIO_Init;
 

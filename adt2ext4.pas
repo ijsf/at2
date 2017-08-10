@@ -1,6 +1,7 @@
 unit AdT2ext4;
 {$S-,Q-,R-,V-,B-,X+}
 {$PACKRECORDS 1}
+{$i asmport.inc}
 interface
 
 const
@@ -2048,35 +2049,35 @@ begin
   _dec := value;
 end;
 
-procedure _set_operator_flag(operator: Byte; toggle: Boolean);
+procedure _set_operator_flag(oper: Byte; toggle: Boolean);
 
 var
   _temp_operator_enabled: array[1..4] of Boolean;
 
 begin
   If (songdata.instr_data[instr].perc_voice in [2..5]) or
-     (NOT (get_4op_to_test <> 0) and NOT (operator in [1..2])) or
-     (NOT (operator in [1..4])) then
+     (NOT (get_4op_to_test <> 0) and NOT (oper in [1..2])) or
+     (NOT (oper in [1..4])) then
     EXIT;
 
   If NOT toggle then
     begin
       FillChar(_operator_enabled,SizeOf(_operator_enabled),FALSE);
-      _operator_enabled[operator] := TRUE;
+      _operator_enabled[oper] := TRUE;
       EXIT;
     end;
 
   Move(_operator_enabled,_temp_operator_enabled,SizeOf(_temp_operator_enabled));
-  If NOT (get_4op_to_test <> 0) and (operator in [1,2]) then
+  If NOT (get_4op_to_test <> 0) and (oper in [1,2]) then
     begin
-      _temp_operator_enabled[operator] := NOT _temp_operator_enabled[operator];
+      _temp_operator_enabled[oper] := NOT _temp_operator_enabled[oper];
       If NOT ((_temp_operator_enabled[1] = FALSE) and
               (_temp_operator_enabled[2] = FALSE)) then
         Move(_temp_operator_enabled,_operator_enabled,SizeOf(_operator_enabled));
     end
-  else If (get_4op_to_test <> 0) and (operator in [1,2,3,4]) then
+  else If (get_4op_to_test <> 0) and (oper in [1,2,3,4]) then
          begin
-           _temp_operator_enabled[operator] := NOT _temp_operator_enabled[operator];
+           _temp_operator_enabled[oper] := NOT _temp_operator_enabled[oper];
            If NOT ((_temp_operator_enabled[1] = FALSE) and
                    (_temp_operator_enabled[2] = FALSE) and
                    (_temp_operator_enabled[3] = FALSE) and
@@ -5132,7 +5133,7 @@ _jmp2:
             end
           else For temp := 1 to 20 do keyoff_loop[temp] := _pip_loop;
 
-          macro_preview_indic_proc := _preview_indic_proc;
+          macro_preview_indic_proc := @_preview_indic_proc;
           is_environment.keystroke := WORD_NULL;
 
           If NOT _force_program_quit then

@@ -260,7 +260,7 @@ _jmp1:
   mn_setting.cycle_moves   := FALSE;
   mn_environment.edit_pos  := 11;
   mn_setting.edit_contents := TRUE;
-  mn_environment.ext_proc  := pattern_list__proc;
+  mn_environment.ext_proc  := @pattern_list__proc;
   mn_setting.terminate_keys[3] := kF1;
   mn_environment.hlight_chrs := 1;
   pattern_list__page := Menu(songdata.pattern_names,0,0,page,42,MAX_PATTERN_ROWS+4,max_patterns,' PATTERN LiST ');
@@ -356,7 +356,7 @@ _jmp1:
 
   mn_setting.center_box    := TRUE;
   mn_setting.cycle_moves   := FALSE;
-  mn_environment.ext_proc  := pattern_list__proc;
+  mn_environment.ext_proc  := @pattern_list__proc;
   mn_setting.terminate_keys[3] := kF1;
   pattern_list__page := Menu(songdata.pattern_names,0,0,page,42,22,max_patterns,
                              ' PATTERN LiST | PASTE "'+obj_name[clipboard.object_type]+'" ');

@@ -1,6 +1,7 @@
 unit AdT2data;
 {$S-,Q-,R-,V-,B-,X+}
 {$PACKRECORDS 1}
+{$i asmport.inc}
 interface
 
 const

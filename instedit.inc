@@ -1904,35 +1904,35 @@ begin
       end;
 end;
 
-procedure _set_operator_flag(operator: Byte; toggle: Boolean);
+procedure _set_operator_flag(oper: Byte; toggle: Boolean);
 
 var
   _temp_operator_enabled: array[1..4] of Boolean;
 
 begin
   If (inst^.perc_voice in [2..5]) or
-     (NOT (get_4op_to_test <> 0) and NOT (operator in [1..2])) or
-     (NOT (operator in [1..4])) then
+     (NOT (get_4op_to_test <> 0) and NOT (oper in [1..2])) or
+     (NOT (oper in [1..4])) then
     EXIT;
 
   If NOT toggle then
     begin
       FillChar(_operator_enabled,SizeOf(_operator_enabled),FALSE);
-      _operator_enabled[operator] := TRUE;
+      _operator_enabled[oper] := TRUE;
       EXIT;
     end;
 
   Move(_operator_enabled,_temp_operator_enabled,SizeOf(_temp_operator_enabled));
-  If NOT (get_4op_to_test <> 0) and (operator in [1,2]) then
+  If NOT (get_4op_to_test <> 0) and (oper in [1,2]) then
     begin
-      _temp_operator_enabled[operator] := NOT _temp_operator_enabled[operator];
+      _temp_operator_enabled[oper] := NOT _temp_operator_enabled[oper];
       If NOT ((_temp_operator_enabled[1] = FALSE) and
               (_temp_operator_enabled[2] = FALSE)) then
         Move(_temp_operator_enabled,_operator_enabled,SizeOf(_operator_enabled));
     end
-  else If (get_4op_to_test <> 0) and (operator in [1,2,3,4]) then
+  else If (get_4op_to_test <> 0) and (oper in [1,2,3,4]) then
          begin
-           _temp_operator_enabled[operator] := NOT _temp_operator_enabled[operator];
+           _temp_operator_enabled[oper] := NOT _temp_operator_enabled[oper];
            If NOT ((_temp_operator_enabled[1] = FALSE) and
                    (_temp_operator_enabled[2] = FALSE) and
                    (_temp_operator_enabled[3] = FALSE) and
@@ -3422,8 +3422,8 @@ begin
   mn_setting.center_box := FALSE;
   mn_setting.cycle_moves := FALSE;
   mn_environment.edit_pos := 9;
-  mn_environment.ext_proc := instr_control_proc;
-  mn_environment.ext_proc_rt := instr_control_ai;
+  mn_environment.ext_proc := @instr_control_proc;
+  mn_environment.ext_proc_rt := @instr_control_ai;
   mn_environment.context := ' TAB '#196#16' EDiTOR ';
 
   Move(mn_setting.terminate_keys,old_keys,SizeOf(old_keys));
@@ -3654,8 +3654,8 @@ begin
 
   mn_setting.center_box := FALSE;
   mn_setting.cycle_moves := FALSE;
-  mn_environment.ext_proc := instr_control_proc_alt;
-  mn_environment.ext_proc_rt := instr_control_ai;
+  mn_environment.ext_proc := @instr_control_proc_alt;
+  mn_environment.ext_proc_rt := @instr_control_ai;
 
   Frame(ptr_temp_screen,INSCTRL_xshift+07,INSCTRL_yshift+05,
         INSCTRL_xshift+83,INSCTRL_yshift+26,

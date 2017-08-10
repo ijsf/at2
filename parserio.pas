@@ -3,14 +3,19 @@ unit ParserIO;
 {$PACKRECORDS 1}
 interface
 
+function SensitiveScan(var buf; skip,size: Longint; str: String): Longint;
+function Compare(var buf1,buf2; size: Longint): Boolean;
+function Empty(var buf; size: Longint): Boolean;
+function Update16(var buf; size: Longint; crc: Word): Word;
+function Update32(var buf; size: Longint; crc: Longint): Longint;
+
 implementation
 
 uses
   StringIO;
 
-var
-  CRC16_table: array[BYTE] of Word; extern; cvar;
-  CRC32_table: array[BYTE] of Longint; extern; cvar;
+var CRC16_table: array[BYTE] of Word;
+var CRC32_table: array[BYTE] of Longint;
 
 procedure make_table_16bit;
 

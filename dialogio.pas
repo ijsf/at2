@@ -927,7 +927,7 @@ begin { Menu }
       If (spos < 1) then spos := 1;
       If (spos > count) then spos := count;
 
-      mn_environment.refresh := refresh;
+      mn_environment.refresh := @refresh;
 
       first := 1;
       last := count;
@@ -1652,7 +1652,7 @@ _jmp1:
 {$ENDIF}
     mn_setting.terminate_keys[5] := kF1;
     old_fselect_external_proc := mn_environment.ext_proc;
-    mn_environment.ext_proc := new_fselect_external_proc;
+    mn_environment.ext_proc := @new_fselect_external_proc;
 
     temp := 1;
     While (temp < fstream.count) and (SYSTEM.Pos('[UP-DiR]',descr[temp]) = 0) do Inc(temp);

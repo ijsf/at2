@@ -1,6 +1,7 @@
 program AdLib_Tracker_2;
 {$S-,Q-,R-,V-,B-,X+}
 {$PACKRECORDS 1}
+{$i asmport.inc}
 {$IFDEF WINDOWS}
 {$APPTYPE GUI}
 {$R adtrack2.res}

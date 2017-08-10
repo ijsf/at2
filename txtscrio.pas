@@ -89,26 +89,25 @@ const
   LGray   = $07;  White    = $0f;
   Blink   = $80;
 
+procedure show_str(xpos,ypos: Byte; str: String; color: Byte);
+procedure show_cstr(xpos,ypos: Byte; str: String; attr1,attr2: Byte);
+procedure show_cstr_alt(xpos,ypos: Byte; str: String; attr1,attr2: Byte);
+procedure show_vstr(xpos,ypos: Byte; str: String; color: Byte);
+procedure show_vcstr(xpos,ypos: Byte; str: String; attr1,attr2: Byte);
 procedure ShowStr(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; attr: Byte);
 procedure ShowVStr(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; attr: Byte);
 procedure ShowCStr(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; atr1,atr2: Byte);
 procedure ShowCStr2(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; atr1,atr2: Byte);
 procedure ShowVCStr(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; atr1,atr2: Byte);
 procedure ShowC3Str(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; atr1,atr2,atr3: Byte);
-procedure ShowVC3Str(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; atr1,atr2,atr3: Byte);
 procedure ShowC4Str(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; atr1,atr2,atr3,atr4: Byte);
-procedure show_str(xpos,ypos: Byte; str: String; color: Byte);
-procedure show_cstr(xpos,ypos: Byte; str: String; attr1,attr2: Byte);
-procedure show_cstr_alt(xpos,ypos: Byte; str: String; attr1,attr2: Byte);
-procedure show_vstr(xpos,ypos: Byte; str: String; color: Byte);
-procedure show_vcstr(xpos,ypos: Byte; str: String; attr1,attr2: Byte);
-
+procedure ShowVC3Str(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; atr1,atr2,atr3: Byte);
 function  CStrLen(str: String): Byte;
 function  C3StrLen(str: String): Byte;
-
 procedure ScreenMemCopy(source,dest: tSCREEN_MEM_PTR);
-procedure move2screen;
 procedure move2screen_alt;
+
+procedure move2screen;
 procedure TxtScrIO_Init;
 function  is_default_screen_mode: Boolean;
 {$IFDEF GO32V2}
@@ -1812,7 +1811,7 @@ begin
 
   FillWord(screen_ptr^,MAX_SCREEN_MEM_SIZE DIV 2,$0700);
   SCREEN_MEM_SIZE := (SCREEN_RES_X DIV scr_font_width)*MAX_ROWS*2;
-  move_to_screen_routine := move2screen;
+  move_to_screen_routine := @move2screen;
 
   If (command_typing = 0) then _pattedit_lastpos := 4*MAX_TRACKS
   else _pattedit_lastpos := 10*MAX_TRACKS;

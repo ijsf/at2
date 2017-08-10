@@ -16,7 +16,7 @@ type
   tOPL3OUT_proc = procedure(reg,data: Word);
 
 const
-  opl3out: tOPL3OUT_proc = opl3out_proc;
+  opl3out: tOPL3OUT_proc = @opl3out_proc;
 
 {$IFDEF GO32V2}
 
@@ -596,7 +596,7 @@ begin
   sdl_audio_spec.format := AUDIO_S16;
   sdl_audio_spec.channels := 2;
   sdl_audio_spec.samples := sdl_sample_buffer;
-  @sdl_audio_spec.callback := @playcallback;
+  sdl_audio_spec.callback := @playcallback;
   sdl_audio_spec.userdata := NIL;
 
   If (SDL_Openaudio(@sdl_audio_spec,NIL) < 0) then
