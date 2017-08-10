@@ -9,7 +9,7 @@ CRC16_table
 CRC32_table
 */
 
-int PARSERIO____SENSITIVESCAN_formal_LONGINT_LONGINT_SHORTSTRING__LONGINT(unsigned char *str, int size, int skip, unsigned char *buf)
+int PARSERIO____SENSITIVESCAN_formal_LONGINT_LONGINT_SHORTSTRING__LONGINT(unsigned char *buf, int skip, int size, unsigned char *str)
 {
   _BYTE *v4; // edi@1
   unsigned int v5; // ecx@1
@@ -108,7 +108,7 @@ LABEL_21:
   return v16 - 1;
 }
 
-char PARSERIO____COMPARE_formal_formal_LONGINT__BOOLEAN(unsigned int a1, unsigned char *a2, unsigned char *a3)
+char PARSERIO____COMPARE_formal_formal_LONGINT__BOOLEAN(unsigned char *a3, unsigned char *a2, unsigned int a1)
 {
   bool v3; // zf@1
   bool v4; // zf@2
@@ -185,7 +185,7 @@ LABEL_24:
   return v13;
 }
 
-char PARSERIO____EMPTY_formal_LONGINT__BOOLEAN(unsigned int a1, unsigned char *a2)
+char PARSERIO____EMPTY_formal_LONGINT__BOOLEAN(unsigned char *a2, unsigned int a1)
 {
   unsigned int v2; // ecx@2
   _DWORD *v3; // edi@3
@@ -257,7 +257,7 @@ LABEL_24:
   return v10;
 }
 
-short PARSERIO____UPDATE16_formal_LONGINT_WORD__WORD(short a1, int a2, char *a3)
+short PARSERIO____UPDATE16_formal_LONGINT_WORD__WORD(char *a3, int a2, short a1)
 {
   char *v3; // esi@1
   __int16 v4; // bx@1
@@ -274,7 +274,7 @@ short PARSERIO____UPDATE16_formal_LONGINT_WORD__WORD(short a1, int a2, char *a3)
   return v4;
 }
 
-unsigned int PARSERIO____UPDATE32_formal_LONGINT_LONGINT__LONGINT(unsigned int a1, int a2, unsigned char *a3)
+unsigned int PARSERIO____UPDATE32_formal_LONGINT_LONGINT__LONGINT(unsigned char *a3, int a2, unsigned int a1)
 {
   _BYTE *v3; // esi@1
   unsigned int v4; // ebx@1

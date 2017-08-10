@@ -5,7 +5,7 @@
 /*
 */
 
-char ADT2KEYB____LOOKUPKEY_WORD_formal_BYTE__BOOLEAN(unsigned char a1, short *a2, short a3)
+char ADT2KEYB____LOOKUPKEY_WORD_formal_BYTE__BOOLEAN(short a3, short *a2, unsigned char a1)
 {
   __int16 *v3; // esi@1
   int v4; // ecx@1

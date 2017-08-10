@@ -30,7 +30,7 @@ Local vars:
 var_absolute_pos
 */
 
-char TXTSCRIO____SHOW_STR_BYTE_BYTE_SHORTSTRING_BYTE(char a1, unsigned char *a2, unsigned char a3, char a4)
+char TXTSCRIO____SHOW_STR_BYTE_BYTE_SHORTSTRING_BYTE(char a4, unsigned char a3, unsigned char *a2, char a1)
 {
   int v4; // ebx@1
   char *v5; // edx@1
@@ -95,7 +95,7 @@ char TXTSCRIO____SHOW_STR_BYTE_BYTE_SHORTSTRING_BYTE(char a1, unsigned char *a2,
   return v6;
 }
 
-char TXTSCRIO____SHOW_CSTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE(char a1, char a2, unsigned char *a3, unsigned char a4, char a5)
+char TXTSCRIO____SHOW_CSTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE(char a5, unsigned char a4, unsigned char *a3, char a2, char a1)
 {
   int v5; // ebx@1
   char *v6; // edx@1
@@ -212,7 +212,7 @@ char TXTSCRIO____SHOW_CSTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE(char a1, char a2, uns
   return v7;
 }
 
-char TXTSCRIO____SHOW_CSTR_ALT_BYTE_BYTE_SHORTSTRING_BYTE_BYTE(char a1, char a2, unsigned char *a3, unsigned char a4, char a5)
+char TXTSCRIO____SHOW_CSTR_ALT_BYTE_BYTE_SHORTSTRING_BYTE_BYTE(char a5, unsigned char a4, unsigned char *a3, char a2, char a1)
 {
   int v5; // ebx@1
   char *v6; // edx@1
@@ -329,7 +329,7 @@ char TXTSCRIO____SHOW_CSTR_ALT_BYTE_BYTE_SHORTSTRING_BYTE_BYTE(char a1, char a2,
   return v7;
 }
 
-char TXTSCRIO____SHOW_VSTR_BYTE_BYTE_SHORTSTRING_BYTE(char a1, unsigned char *a2, char a3, unsigned char a4)
+char TXTSCRIO____SHOW_VSTR_BYTE_BYTE_SHORTSTRING_BYTE(unsigned char a4, char a3, unsigned char *a2, char a1)
 {
   int v4; // ebx@1
   char *v5; // edx@1
@@ -394,7 +394,7 @@ char TXTSCRIO____SHOW_VSTR_BYTE_BYTE_SHORTSTRING_BYTE(char a1, unsigned char *a2
   return v6;
 }
 
-char TXTSCRIO____SHOW_VCSTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE(char a1, char a2, unsigned char *a3, char a4, unsigned char a5)
+char TXTSCRIO____SHOW_VCSTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE(unsigned char a5, char a4, unsigned char *a3, char a2, char a1)
 {
   int v5; // ebx@1
   char *v6; // edx@1
@@ -545,7 +545,7 @@ long long TXTSCRIO____DUPCHAR(long long a1, int a2, int a3)
   return v8;
 }
 
-char TXTSCRIO____SHOWSTR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE(char a1, unsigned char *a2, char a3, char a4, int a5)
+char TXTSCRIO____SHOWSTR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE(int a5, char a4, char a3, unsigned char *a2, char a1)
 {
   __int64 v5; // rax@1
   __int16 v6; // ax@1
@@ -579,7 +579,7 @@ char TXTSCRIO____SHOWSTR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE(char a1, uns
   return v6;
 }
 
-char TXTSCRIO____SHOWVSTR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE(char a1, unsigned char *a2, char a3, char a4, int a5)
+char TXTSCRIO____SHOWVSTR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE(int a5, char a4, char a3, unsigned char *a2, char a1)
 {
   __int64 v5; // rax@1
   int v6; // ebx@1
@@ -759,7 +759,7 @@ char TXTSCRIO____SHOWVCSTR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE(char 
   return v7;
 }
 
-char TXTSCRIO____SHOWC3STR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE_BYTE(char a1, char a2, char a3, unsigned char *a4, char a5, char a6, int a7)
+char TXTSCRIO____SHOWC3STR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE_BYTE(int a7, char a6, char a5, unsigned char *a4, char a3, char a2, char a1)
 {
   __int64 v7; // rax@1
   _BYTE *v8; // esi@1
@@ -819,7 +819,7 @@ char TXTSCRIO____SHOWC3STR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE_BYTE(
   return v7;
 }
 
-char TXTSCRIO____SHOWC4STR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE_BYTE_BYTE(char a1, char a2, char a3, char a4, unsigned char *a5, char a6, char a7, int a8)
+char TXTSCRIO____SHOWC4STR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE_BYTE_BYTE(int a8, char a7, char a6, unsigned char *a5, char a4, char a3, char a2, char a1)
 {
   __int64 v8; // rax@1
   _BYTE *v9; // esi@1
@@ -891,7 +891,7 @@ char TXTSCRIO____SHOWC4STR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE_BYTE_
   return v8;
 }
 
-char TXTSCRIO____SHOWVC3STR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE_BYTE(char a1, char a2, char a3, unsigned char *a4, char a5, char a6, int a7)
+char TXTSCRIO____SHOWVC3STR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE_BYTE(int a7, char a6, char a5, unsigned char *a4, char a3, char a2, char a1)
 {
   unsigned __int16 v7; // bx@1
   __int64 v8; // rax@1
@@ -1027,7 +1027,7 @@ char TXTSCRIO____C3STRLEN_SHORTSTRING__BYTE(unsigned char *a1)
   return v2;
 }
 
-unsigned int TXTSCRIO____SCREENMEMCOPY_TSCREEN_MEM_PTR_TSCREEN_MEM_PTR(void *a1, const void *a2)
+unsigned int TXTSCRIO____SCREENMEMCOPY_TSCREEN_MEM_PTR_TSCREEN_MEM_PTR(const void *a2, void *a1)
 {
   unsigned int result; // eax@1
   unsigned int v3; // edx@2
@@ -1049,7 +1049,7 @@ unsigned int TXTSCRIO____SCREENMEMCOPY_TSCREEN_MEM_PTR_TSCREEN_MEM_PTR(void *a1,
   return result;
 }
 
-char TXTSCRIO____FRAME_crc0EA7F576(unsigned char *a1, char a2, unsigned char *a3, char a4, char a5, char a6, char a7, char a8, int a9)
+char TXTSCRIO____FRAME_crc0EA7F576(int a9, char a8, char a7, char a6, char a5, char a4, unsigned char *a3, char a2, unsigned char *a1)
 {
   __int64 v9; // rax@1
   char v10; // bh@3

@@ -186,7 +186,7 @@ int DEPACKIO____RDC_DECODE()
   return result;
 }
 
-short DEPACKIO____RDC_DECOMPRESS_formal_formal_WORD__WORD(short a1, unsigned char *a2, unsigned char *a3)
+short DEPACKIO____RDC_DECOMPRESS_formal_formal_WORD__WORD(unsigned char *a3, unsigned char *a2, short a1)
 {
   var_input_ptr = a3;
   var_output_ptr = a2;
@@ -278,7 +278,7 @@ unsigned char DEPACKIO____LZSS_DECODE()
   return result;
 }
 
-short DEPACKIO____LZSS_DECOMPRESS_formal_formal_WORD__WORD(short a1, unsigned char *a2, unsigned char *a3)
+short DEPACKIO____LZSS_DECOMPRESS_formal_formal_WORD__WORD(unsigned char *a3, unsigned char *a2, short a1)
 {
   var_input_ptr = a3;
   var_output_ptr = a2;
@@ -426,7 +426,7 @@ short DEPACKIO____LZW_DECODE__WORD()
   return result;
 }
 
-short DEPACKIO____LZW_DECOMPRESS_formal_formal__WORD(unsigned char *a2, unsigned char *a3)
+short DEPACKIO____LZW_DECOMPRESS_formal_formal__WORD(unsigned char *a3, unsigned char *a2)
 {
   var_input_ptr = a3;
   var_output_ptr = a2;
@@ -760,7 +760,7 @@ short DEPACKIO____SIXPACK_DECODE()
   return result;
 }
 
-short DEPACKIO____SIXPACK_DECOMPRESS_formal_formal_WORD__WORD(short a1, unsigned char *a2, unsigned char *a3)
+short DEPACKIO____SIXPACK_DECOMPRESS_formal_formal_WORD__WORD(unsigned char *a3, unsigned char *a2, short a1)
 {
   var_input_ptr = a3;
   var_output_ptr = a2;
@@ -770,7 +770,7 @@ short DEPACKIO____SIXPACK_DECOMPRESS_formal_formal_WORD__WORD(short a1, unsigned
   return var_output_size;
 }
 
-int DEPACKIO____APACK_DECOMPRESS_formal_formal__LONGWORD(unsigned char *a1, char *a2)
+int DEPACKIO____APACK_DECOMPRESS_formal_formal__LONGWORD(char *a2, unsigned char *a1)
 {
   char *v2; // esi@1
   _BYTE *v3; // edi@1

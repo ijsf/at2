@@ -7,7 +7,7 @@ TC__TXTSCRIO____MAXCOL
 TC__ADT2UNIT____FX_DIGITS
 */
 
-char ADT2EXTN___REMAP_OVERRIDE_FRAME_crc9EF426E9____OVERRIDE_ATTR_TSCREEN_MEM_PTR_BYTE_BYTE_BYTE_BYTE(unsigned char attr, unsigned char len, unsigned char y, unsigned char x, void *dest)
+char ADT2EXTN___REMAP_OVERRIDE_FRAME_crc9EF426E9____OVERRIDE_ATTR_TSCREEN_MEM_PTR_BYTE_BYTE_BYTE_BYTE(void *dest, unsigned char x, unsigned char y, unsigned char len, unsigned char attr)
 {
   int v5; // eax@0
   int v6; // ebx@1

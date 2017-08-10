@@ -6,7 +6,7 @@
 FPC_SHORTSTR_TO_SHORTSTR
 */
 
-char STRINGIO____SAMENAME_SHORTSTRING_SHORTSTRING__BOOLEAN(unsigned char *a1, unsigned char *a2)
+char STRINGIO____SAMENAME_SHORTSTRING_SHORTSTRING__BOOLEAN(unsigned char *a2, unsigned char *a1)
 {
   __int16 v2; // dx@1
   char *v3; // esi@1

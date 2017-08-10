@@ -46,7 +46,7 @@ signed short ADT2UNIT____NFREQ_BYTE__WORD(unsigned char a1)
   return result;
 }
 
-short ADT2UNIT____CALC_FREQ_SHIFT_UP_WORD_WORD__WORD(short a1, short a2)
+short ADT2UNIT____CALC_FREQ_SHIFT_UP_WORD_WORD__WORD(short a2, short a1)
 {
   signed __int16 v2; // bx@1
   __int16 v3; // dx@1
@@ -68,7 +68,7 @@ short ADT2UNIT____CALC_FREQ_SHIFT_UP_WORD_WORD__WORD(short a1, short a2)
   return v2 + (v3 << 10) + (a2 & 0xE000);
 }
 
-short ADT2UNIT____CALC_FREQ_SHIFT_DOWN_WORD_WORD__WORD(short a1, short a2)
+short ADT2UNIT____CALC_FREQ_SHIFT_DOWN_WORD_WORD__WORD(short a2, short a1)
 {
   signed __int16 v2; // bx@1
   __int16 v3; // dx@1
@@ -90,7 +90,7 @@ short ADT2UNIT____CALC_FREQ_SHIFT_DOWN_WORD_WORD__WORD(short a1, short a2)
   return v2 + (v3 << 10) + (a2 & 0xE000);
 }
 
-short ADT2UNIT____CALC_VIBTREM_SHIFT_BYTE_formal__WORD(unsigned char *a1, unsigned char a2)
+short ADT2UNIT____CALC_VIBTREM_SHIFT_BYTE_formal__WORD(unsigned char a2, unsigned char *a1)
 {
   unsigned __int8 v2; // dh@1
   __int16 v3; // ax@1
@@ -110,7 +110,7 @@ short ADT2UNIT____CALC_VIBTREM_SHIFT_BYTE_formal__WORD(unsigned char *a1, unsign
   return result;
 }
 
-int ADT2UNIT____CHANGE_FREQ_BYTE_WORD(short a1, char a2)
+int ADT2UNIT____CHANGE_FREQ_BYTE_WORD(char a2, short a1)
 {
   int v2; // ebx@5
   __int16 v3; // ax@5
@@ -163,7 +163,7 @@ int ADT2UNIT____CHANGE_FREQ_BYTE_WORD(short a1, char a2)
   return result;
 }
 
-char ADT2UNIT____INS_PARAMETER_BYTE_BYTE__BYTE(char a1, unsigned char a2)
+char ADT2UNIT____INS_PARAMETER_BYTE_BYTE__BYTE(unsigned char a2, char a1)
 {
   int v2; // ebx@1
   int v3; // eax@1
@@ -174,7 +174,7 @@ char ADT2UNIT____INS_PARAMETER_BYTE_BYTE__BYTE(char a1, unsigned char a2)
   return *(&var_songdata___instr_data[v3] + v2);
 }
 
-char ADT2UNIT____IS_DATA_EMPTY_formal_LONGINT__BOOLEAN(unsigned int a1, unsigned char *a2)
+char ADT2UNIT____IS_DATA_EMPTY_formal_LONGINT__BOOLEAN(unsigned char *a2, unsigned int a1)
 {
   unsigned int v2; // ecx@2
   _DWORD *v3; // edi@3
@@ -246,7 +246,7 @@ LABEL_24:
   return v10;
 }
 
-char ADT2UNIT____GET_CHUNK_BYTE_BYTE_BYTE_TCHUNK(void *a1, unsigned char a2, unsigned char a3, unsigned char a4)
+char ADT2UNIT____GET_CHUNK_BYTE_BYTE_BYTE_TCHUNK(unsigned char a4, unsigned char a3, unsigned char a2, unsigned char *a1)
 {
   int v4; // eax@2
   unsigned __int64 v5; // rtt@3
@@ -266,7 +266,7 @@ char ADT2UNIT____GET_CHUNK_BYTE_BYTE_BYTE_TCHUNK(void *a1, unsigned char a2, uns
   return v4;
 }
 
-char ADT2UNIT____PUT_CHUNK_BYTE_BYTE_BYTE_TCHUNK(unsigned char *a1, unsigned char a2, unsigned char a3, unsigned char a4)
+char ADT2UNIT____PUT_CHUNK_BYTE_BYTE_BYTE_TCHUNK(unsigned char a4, unsigned char a3, unsigned char a2, unsigned char *a1)
 {
   int v4; // eax@1
   unsigned __int64 v5; // rtt@3
@@ -291,7 +291,7 @@ char ADT2UNIT____PUT_CHUNK_BYTE_BYTE_BYTE_TCHUNK(unsigned char *a1, unsigned cha
   return v4;
 }
 
-int ADT2UNIT____GET_CHANPOS_formal_BYTE_BYTE__BYTE(char a1, unsigned char a2, unsigned char *a3)
+int ADT2UNIT____GET_CHANPOS_formal_BYTE_BYTE__BYTE(unsigned char *a3, unsigned char a2, char a1)
 {
   int i; // ebx@1
   _BYTE *v4; // edi@2
@@ -321,7 +321,7 @@ int ADT2UNIT____GET_CHANPOS_formal_BYTE_BYTE__BYTE(char a1, unsigned char a2, un
   return result;
 }
 
-int ADT2UNIT____GET_CHANPOS2_formal_BYTE_BYTE__BYTE(char a1, unsigned char a2, unsigned char *a3)
+int ADT2UNIT____GET_CHANPOS2_formal_BYTE_BYTE__BYTE(unsigned char *a3, unsigned char a2, char a1)
 {
   _BYTE *v3; // edi@1
   bool v4; // zf@1
