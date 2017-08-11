@@ -164,39 +164,46 @@ short DEPACKIO____RDC_DECOMPRESS_formal_formal_WORD__WORD(unsigned char *a3, uns
   return var_output_size;
 }
 
-char DEPACKIO____GETCHAR(int a1)
+unsigned char DEPACKIO____GETCHAR(char *result)
 {
-  char result = 0; // al@2
+  unsigned int a1;
+  unsigned char cf; // ACHTUNG
+  
+  *result = 0; // al@2 // ACHTUNG
 
   LOWORD(a1) = var_ibufCount;
   if ( (unsigned __int16)var_ibufCount < (unsigned __int16)var_ibufSize )
   {
-    result = *(_BYTE *)(var_input_ptr + a1);
+    *result = *(_BYTE *)(var_input_ptr + a1); // ACHTUNG
     ++var_ibufCount;
+    cf = 1; // ACHTUNG
   }
-  return result;
+  cf = 0; // ACHTUNG
+  return cf;
 }
 
-char DEPACKIO____PUTCHAR(char result, int a2)
+char DEPACKIO____PUTCHAR(char result)
 {
+  unsigned int a2;
+
   LOWORD(a2) = var_output_size;
   *(_BYTE *)(var_output_ptr + a2) = result;
   var_output_size = a2 + 1;
   return result;
 }
 
-unsigned char DEPACKIO____LZSS_DECODE()
+void DEPACKIO____LZSS_DECODE()
 {
-  int v0; // ebx@1
+  unsigned int v0; // ebx@1
   unsigned __int16 v1; // dx@1
   int v2; // edi@1
   __int16 v3; // dx@2
-  unsigned __int8 result; // al@3
-  char v5; // cf@3
   char v6; // ch@9
   int v7; // ebx@11
   char v8; // al@11
   char v9; // cl@11
+  
+  char charresult; // ACHTUNG
 
   var_ibufCount = 0;
   var_ibufSize = var_input_size;
@@ -211,40 +218,37 @@ unsigned char DEPACKIO____LZSS_DECODE()
       v3 = v1 >> 1;
       if ( !HIBYTE(v3) )
       {
-        result = DEPACKIO____GETCHAR(v0);
-        if ( v5 )
-          return result;
-        LOBYTE(v3) = result;
+        if ( DEPACKIO____GETCHAR(&charresult) ) // ACHTUNG
+          return;
+        LOBYTE(v3) = charresult;
       }
       if ( !(v3 & 1) )
         break;
-      result = DEPACKIO____GETCHAR(v0);
-      if ( v5 )
-        return result;
-      *(_BYTE *)(v2 + var_work_ptr) = result;
+      if ( DEPACKIO____GETCHAR(&charresult) ) // ACHTUNG
+        return;
+      *(_BYTE *)(v2 + var_work_ptr) = charresult;
       v2 = ((_WORD)v2 + 1) & 0xFFF;
-      DEPACKIO____PUTCHAR(result, v0);
+      DEPACKIO____PUTCHAR(charresult);
     }
-    result = DEPACKIO____GETCHAR(v0);
-    if ( v5 )
+    if ( DEPACKIO____GETCHAR(&charresult) )  // ACHTUNG
       break;
-    result = DEPACKIO____GETCHAR(v0);
-    if ( v5 )
+    v6 = charresult; // ACHTUNG
+    if ( DEPACKIO____GETCHAR(&charresult) )  // ACHTUNG
       break;
-    BYTE1(v0) = result >> 4;
+    HIBYTE(v0) = charresult >> 4;
     LOBYTE(v0) = v6;
+    v9 = charresult & 0xF + 2 + 1; // ACHTUNG
     do
     {
       v7 = v0 & 0xFFF;
       v8 = *(_BYTE *)(var_work_ptr + v7);
       *(_BYTE *)(v2 + var_work_ptr) = v8;
       v2 = ((_WORD)v2 + 1) & 0xFFF;
-      DEPACKIO____PUTCHAR(v8, v7);
+      DEPACKIO____PUTCHAR(v8);
       v0 = v7 + 1;
     }
     while ( v9 != 1 );
   }
-  return result;
 }
 
 short DEPACKIO____LZSS_DECOMPRESS_formal_formal_WORD__WORD(unsigned char *a3, unsigned char *a2, short a1)
@@ -258,12 +262,15 @@ short DEPACKIO____LZSS_DECOMPRESS_formal_formal_WORD__WORD(unsigned char *a3, un
   return var_output_size;
 }
 
-short DEPACKIO____NEXTCODE(int a1, int a2)
+short DEPACKIO____NEXTCODE()
 {
+  unsigned int a2; // bx // ACHTUNG
+  unsigned int a1; // cx // ACHTUNG
+  
   __int16 v2; // ax@1
   unsigned __int16 v3; // ax@1
   __int16 v4; // t2@1
-  char v5; // cf@1
+  //char v5; // cf@1 // ACHTUNG
   __int16 v6; // ax@1
   unsigned __int8 v7; // dl@1
 
@@ -328,7 +335,7 @@ short DEPACKIO____LZW_DECODE__WORD()
   int v2; // ecx@1
   _BYTE *v3; // edi@1
   __int16 result; // ax@2
-  int v5; // ecx@2
+  //int v5; // ecx@2
   char v6; // al@8
   char v7; // al@9
   unsigned char *v8; // ST00_4@11
@@ -355,7 +362,7 @@ short DEPACKIO____LZW_DECODE__WORD()
   var_le7a_8 = 0x1FFF;
   while ( 1 )
   {
-    result = DEPACKIO____NEXTCODE(v2, v1);
+    result = DEPACKIO____NEXTCODE();
     if ( result == 257 )
       break;
     if ( result == 256 )
@@ -363,7 +370,7 @@ short DEPACKIO____LZW_DECODE__WORD()
       var_le78 = 9;
       var_le74 = 512;
       var_le70 = 258;
-      var_le6a = DEPACKIO____NEXTCODE(v5, v1);
+      var_le6a = DEPACKIO____NEXTCODE();
       var_le6c = var_le6a;
       var_le77 = var_le6a;
       var_le76 = var_le6a;
@@ -653,7 +660,8 @@ short DEPACKIO____UNCOMPRESS__WORD()
     }
     else
     {
-      if ( (_WORD)v3 == -1 )
+      //if ( (_WORD)v3 == -1 )
+      if ( v3 == -1 ) // ACHTUNG
         LOWORD(v3) = 0;
       LOWORD(v3) = 2 * v3;
       v2 = *(_WORD *)(v3 + var_input_ptr);

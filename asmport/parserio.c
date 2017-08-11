@@ -291,7 +291,7 @@ unsigned int PARSERIO____UPDATE32_formal_LONGINT_LONGINT__LONGINT(unsigned char 
   for ( i = a2; i; --i )
   {
     v6 = *v3++;
-    v4 = (unsigned int)0x00ffffff & ((v6 ^ v4) >> 8) ^ CRC32_table[(v6 ^ v4) & 0xFF];
+    v4 = ((unsigned int)0x00ffffff & ((v6 ^ v4) >> 8)) ^ CRC32_table[(v6 ^ v4) & 0xFF];
   }
   return v4;
 }

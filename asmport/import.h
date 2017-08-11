@@ -80,7 +80,7 @@ extern unsigned int TC__ADT2SYS_____CURSOR_BLINK_FACTOR;
 extern unsigned char TC__ADT2SYS____CURSOR_SYNC;
 
 // _FrameBuffer: Pointer = NIL;
-extern unsigned char *TC__ADT2SYS_____FRAMEBUFFER;
+extern unsigned char **TC__ADT2SYS_____FRAMEBUFFER;
 
 // virtual_cur_pos: Word = 0;
 extern short TC__ADT2SYS____VIRTUAL_CUR_POS;
@@ -102,7 +102,7 @@ extern unsigned char TC__TXTSCRIO____MAX_TRACKS;
 extern unsigned int TC__TXTSCRIO____SCREEN_MEM_SIZE;
 
 // screen_ptr:          Pointer = Addr(text_screen_shadow);
-extern unsigned char *TC__TXTSCRIO____SCREEN_PTR;
+extern unsigned char **TC__TXTSCRIO____SCREEN_PTR;
 
 // area_x1: Byte = 0;
 extern unsigned char TC__TXTSCRIO____AREA_X1;
@@ -123,10 +123,10 @@ extern unsigned char TC__TXTSCRIO____MAXCOL;
 extern unsigned char TC__TXTSCRIO____MAXLN;
 
 // move_to_screen_data: Pointer = NIL;
-extern unsigned char *TC__TXTSCRIO____MOVE_TO_SCREEN_DATA;
+extern unsigned char **TC__TXTSCRIO____MOVE_TO_SCREEN_DATA;
 
 // ptr_temp_screen2:    Pointer = Addr(temp_screen2);
-extern unsigned char *TC__TXTSCRIO____PTR_TEMP_SCREEN2;
+extern unsigned char **TC__TXTSCRIO____PTR_TEMP_SCREEN2;
 
 // type
 //   tFRAME_SETTING = Record

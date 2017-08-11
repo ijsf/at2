@@ -131,6 +131,6 @@ char TXTSCRIO____CSTRLEN_SHORTSTRING__BYTE(unsigned char *a1);
 char TXTSCRIO____C3STRLEN_SHORTSTRING__BYTE(unsigned char *a1);
 unsigned int TXTSCRIO____SCREENMEMCOPY_TSCREEN_MEM_PTR_TSCREEN_MEM_PTR(const void *a2, void *a1);
 char TXTSCRIO____FRAME_crc0EA7F576(unsigned char *a9, char a8, char a7, char a6, char a5, char a4, unsigned char *a3, char a2, unsigned char *a1);
-short TXTSCRIO____MOVE2SCREEN_ALT();
+void TXTSCRIO____MOVE2SCREEN_ALT();
 
 };

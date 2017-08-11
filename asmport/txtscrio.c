@@ -55,7 +55,7 @@ char TXTSCRIO____SHOW_STR_BYTE_BYTE_SHORTSTRING_BYTE(char a4, unsigned char a3, 
   FPC_SHORTSTR_TO_SHORTSTR((unsigned char *)str, 0xFFu, a2);
 
   HIWORD(v4) = 0;
-  v5 = (char *)TC__TXTSCRIO____SCREEN_PTR;
+  v5 = (char *)*TC__TXTSCRIO____SCREEN_PTR;
   LOBYTE(v6) = str[0];
   v7 = (char *)&str[1];
   v8 = str[0];
@@ -134,7 +134,7 @@ char TXTSCRIO____SHOW_CSTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE(char a5, unsigned cha
   v20 = a2;
   v19 = a1;
   HIWORD(v5) = 0;
-  v6 = (char *)TC__TXTSCRIO____SCREEN_PTR;
+  v6 = (char *)*TC__TXTSCRIO____SCREEN_PTR;
   LOBYTE(v7) = str[0];
   v8 = &str[1];
   v9 = str[0];
@@ -255,7 +255,7 @@ char TXTSCRIO____SHOW_CSTR_ALT_BYTE_BYTE_SHORTSTRING_BYTE_BYTE(char a5, unsigned
   v20 = a2;
   v19 = a1;
   HIWORD(v5) = 0;
-  v6 = (char *)TC__TXTSCRIO____SCREEN_PTR;
+  v6 = (char *)*TC__TXTSCRIO____SCREEN_PTR;
   LOBYTE(v7) = str[0];
   v8 = &str[1];
   v9 = str[0];
@@ -366,7 +366,7 @@ char TXTSCRIO____SHOW_VSTR_BYTE_BYTE_SHORTSTRING_BYTE(unsigned char a4, char a3,
   FPC_SHORTSTR_TO_SHORTSTR(str, 0xFFu, a2);
   
   HIWORD(v4) = 0;
-  v5 = (char *)TC__TXTSCRIO____SCREEN_PTR;
+  v5 = (char *)*TC__TXTSCRIO____SCREEN_PTR;
   LOBYTE(v6) = str[0];
   v7 = (char *)&str[1];
   v8 = str[0];
@@ -445,7 +445,7 @@ char TXTSCRIO____SHOW_VCSTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE(unsigned char a5, ch
   v20 = a2;
   v19 = a1;
   HIWORD(v5) = 0;
-  v6 = (char *)TC__TXTSCRIO____SCREEN_PTR;
+  v6 = (char *)*TC__TXTSCRIO____SCREEN_PTR;
   LOBYTE(v7) = str[0];
   v8 = &str[1];
   v9 = str[0];
@@ -1157,7 +1157,8 @@ char TXTSCRIO____FRAME_crc0EA7F576(unsigned char *a9, char a8, char a7, char a6,
     BYTE1(v9) = a7 - 1;
     BYTE4(v9) = 32;
     BYTE5(v9) = a4;
-    v12 = TXTSCRIO____DUPCHAR(v9, (unsigned __int8)(a6 - a8 + 7), a9);
+    v13 = (unsigned __int8)(a6 - a8 + 7); // ACHTUNG
+    v12 = TXTSCRIO____DUPCHAR(v9, v13, a9);
     BYTE1(v12) = a5 + 1;
     v9 = TXTSCRIO____DUPCHAR(v12, v13, a9);
     v14 = a7;
@@ -1290,21 +1291,21 @@ char TXTSCRIO____FRAME_crc0EA7F576(unsigned char *a9, char a8, char a7, char a6,
   return v27;
 }
 
-short TXTSCRIO____MOVE2SCREEN_ALT()
+void TXTSCRIO____MOVE2SCREEN_ALT()
 {
   __int64 v0; // rax@0
-  int v1; // esi@2
+  unsigned char *v1; // esi@2
   char *v2; // edi@2
   char v3; // cl@2
   char v4; // cl@3
   char v5; // ST10_1@4
   char v7; // [sp+Ch] [bp-8h]@3
 
-  if ( TC__TXTSCRIO____MOVE_TO_SCREEN_DATA )
+  if ( *TC__TXTSCRIO____MOVE_TO_SCREEN_DATA )
   {
-    qmemcpy(&U__TXTSCRIO____TEMP_SCREEN2, TC__TXTSCRIO____SCREEN_PTR, TC__TXTSCRIO____SCREEN_MEM_SIZE);
+    qmemcpy(&U__TXTSCRIO____TEMP_SCREEN2, *TC__TXTSCRIO____SCREEN_PTR, TC__TXTSCRIO____SCREEN_MEM_SIZE);
     v1 = *TC__TXTSCRIO____MOVE_TO_SCREEN_DATA;
-    v2 = (char *)TC__TXTSCRIO____PTR_TEMP_SCREEN2;
+    v2 = (char *)*TC__TXTSCRIO____PTR_TEMP_SCREEN2;
     v3 = *TC__TXTSCRIO____MOVE_TO_SCREEN_AREA___PLUS1;
     do
     {
@@ -1324,7 +1325,6 @@ short TXTSCRIO____MOVE2SCREEN_ALT()
       v3 = v7 + 1;
     }
     while ( (unsigned __int8)(v7 + 1) <= (unsigned __int8)*TC__TXTSCRIO____MOVE_TO_SCREEN_AREA___PLUS3 );
-    qmemcpy(TC__TXTSCRIO____SCREEN_PTR, &U__TXTSCRIO____TEMP_SCREEN2, TC__TXTSCRIO____SCREEN_MEM_SIZE);
+    qmemcpy(*TC__TXTSCRIO____SCREEN_PTR, &U__TXTSCRIO____TEMP_SCREEN2, TC__TXTSCRIO____SCREEN_MEM_SIZE);
   }
-  return v0;
 }
