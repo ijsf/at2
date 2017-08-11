@@ -8,7 +8,7 @@ const
   SCREEN_RES_y: Word = 480;
   MAX_COLUMNS: Byte = 90;
   MAX_ROWS: Byte = 40;
-  MAX_TRACKS: Byte = 5;
+  MAX_TRACKS: Byte = 5; export name '_TC__TXTSCRIO____MAX_TRACKS';
   MAX_ORDER_COLS: Byte = 9;
   MAX_PATTERN_ROWS: Byte = 18;
   INSCTRL_xshift: Byte = 0;
@@ -19,7 +19,7 @@ const
 
 const
   MAX_SCREEN_MEM_SIZE = 180*60*2;
-  SCREEN_MEM_SIZE: Longint = MAX_SCREEN_MEM_SIZE;
+  SCREEN_MEM_SIZE: Longint = MAX_SCREEN_MEM_SIZE; export name '_TC__TXTSCRIO____SCREEN_MEM_SIZE';
 
 type
   tSCREEN_MEM = array[0..PRED(MAX_SCREEN_MEM_SIZE)] of Byte;
@@ -27,7 +27,7 @@ type
 
 var
   temp_screen:          tSCREEN_MEM;
-  temp_screen2:         tSCREEN_MEM;
+  temp_screen2:         tSCREEN_MEM; export name '_U__TXTSCRIO____TEMP_SCREEN2';
   screen_backup:        tSCREEN_MEM;
   scr_backup:           tSCREEN_MEM;
   scr_backup2:          tSCREEN_MEM;
@@ -37,9 +37,9 @@ var
   text_screen_shadow:   tSCREEN_MEM;
 
 const
-  screen_ptr:          Pointer = Addr(text_screen_shadow);
+  screen_ptr:          Pointer = Addr(text_screen_shadow); export name '_TC__TXTSCRIO____SCREEN_PTR';
   ptr_temp_screen:     Pointer = Addr(temp_screen);
-  ptr_temp_screen2:    Pointer = Addr(temp_screen2);
+  ptr_temp_screen2:    Pointer = Addr(temp_screen2); export name '_TC__TXTSCRIO____PTR_TEMP_SCREEN2';
   ptr_screen_backup:   Pointer = Addr(screen_backup);
   ptr_scr_backup:      Pointer = Addr(scr_backup);
   ptr_scr_backup2:     Pointer = Addr(scr_backup2);
@@ -47,16 +47,16 @@ const
   ptr_screen_emulator: Pointer = Addr(screen_emulator);
 
 const
-  move_to_screen_data: Pointer = NIL;
-  move_to_screen_area: array[1..4] of Byte = (0,0,0,0);
+  move_to_screen_data: Pointer = NIL; export name '_TC__TXTSCRIO____MOVE_TO_SCREEN_DATA';
+  move_to_screen_area: array[1..4] of Byte = (0,0,0,0); export name '_TC__TXTSCRIO____MOVE_TO_SCREEN_AREA';
   move_to_screen_routine: procedure = NIL;
 
 const
   program_screen_mode: Byte = 0;
 
 const
-  MaxLn: Byte = 0;
-  MaxCol: Byte = 0;
+  MaxLn: Byte = 0; export name '_TC__TXTSCRIO____MAXLN';
+  MaxCol: Byte = 0; export name '_TC__TXTSCRIO____MAXCOL';
   hard_maxcol: Byte = 0;
   hard_maxln:  Byte = 0;
   work_maxcol: Byte = 0;
@@ -65,10 +65,10 @@ const
   scr_font_height: Byte = 0;
 
 const
-  area_x1: Byte = 0;
-  area_y1: Byte = 0;
-  area_x2: Byte = 0;
-  area_y2: Byte = 0;
+  area_x1: Byte = 0; export name '_TC__TXTSCRIO____AREA_X1';
+  area_y1: Byte = 0; export name '_TC__TXTSCRIO____AREA_Y1';
+  area_x2: Byte = 0; export name '_TC__TXTSCRIO____AREA_X2';
+  area_y2: Byte = 0; export name '_TC__TXTSCRIO____AREA_Y2';
   scroll_pos0: Byte = BYTE(NOT 0);
   scroll_pos1: Byte = BYTE(NOT 0);
   scroll_pos2: Byte = BYTE(NOT 0);
@@ -89,23 +89,23 @@ const
   LGray   = $07;  White    = $0f;
   Blink   = $80;
 
-procedure show_str(xpos,ypos: Byte; str: String; color: Byte);
-procedure show_cstr(xpos,ypos: Byte; str: String; attr1,attr2: Byte);
-procedure show_cstr_alt(xpos,ypos: Byte; str: String; attr1,attr2: Byte);
-procedure show_vstr(xpos,ypos: Byte; str: String; color: Byte);
-procedure show_vcstr(xpos,ypos: Byte; str: String; attr1,attr2: Byte);
-procedure ShowStr(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; attr: Byte);
-procedure ShowVStr(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; attr: Byte);
-procedure ShowCStr(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; atr1,atr2: Byte);
-procedure ShowCStr2(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; atr1,atr2: Byte);
-procedure ShowVCStr(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; atr1,atr2: Byte);
-procedure ShowC3Str(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; atr1,atr2,atr3: Byte);
-procedure ShowC4Str(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; atr1,atr2,atr3,atr4: Byte);
-procedure ShowVC3Str(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; atr1,atr2,atr3: Byte);
-function  CStrLen(str: String): Byte;
-function  C3StrLen(str: String): Byte;
-procedure ScreenMemCopy(source,dest: tSCREEN_MEM_PTR);
-procedure move2screen_alt;
+procedure show_str(xpos,ypos: Byte; str: String; color: Byte); external name '_TXTSCRIO____SHOW_STR_BYTE_BYTE_SHORTSTRING_BYTE';
+procedure show_cstr(xpos,ypos: Byte; str: String; attr1,attr2: Byte); external name '_TXTSCRIO____SHOW_CSTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE';
+procedure show_cstr_alt(xpos,ypos: Byte; str: String; attr1,attr2: Byte); external name '_TXTSCRIO____SHOW_CSTR_ALT_BYTE_BYTE_SHORTSTRING_BYTE_BYTE';
+procedure show_vstr(xpos,ypos: Byte; str: String; color: Byte); external name '_TXTSCRIO____SHOW_VSTR_BYTE_BYTE_SHORTSTRING_BYTE';
+procedure show_vcstr(xpos,ypos: Byte; str: String; attr1,attr2: Byte); external name '_TXTSCRIO____SHOW_VCSTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE';
+procedure ShowStr(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; attr: Byte); external name '_TXTSCRIO____SHOWSTR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE';
+procedure ShowVStr(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; attr: Byte); external name '_TXTSCRIO____SHOWVSTR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE';
+procedure ShowCStr(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; atr1,atr2: Byte); external name '_TXTSCRIO____SHOWCSTR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE';
+procedure ShowCStr2(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; atr1,atr2: Byte); external name '_TXTSCRIO____SHOWCSTR2_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE';
+procedure ShowVCStr(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; atr1,atr2: Byte); external name '_TXTSCRIO____SHOWVCSTR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE';
+procedure ShowC3Str(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; atr1,atr2,atr3: Byte); external name '_TXTSCRIO____SHOWC3STR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE_BYTE';
+procedure ShowC4Str(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; atr1,atr2,atr3,atr4: Byte); external name '_TXTSCRIO____SHOWC4STR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE_BYTE_BYTE';
+procedure ShowVC3Str(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; atr1,atr2,atr3: Byte); external name '_TXTSCRIO____SHOWVC3STR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE_BYTE';
+function  CStrLen(str: String): Byte; external name '_TXTSCRIO____CSTRLEN_SHORTSTRING__BYTE';
+function  C3StrLen(str: String): Byte; external name '_TXTSCRIO____C3STRLEN_SHORTSTRING__BYTE';
+procedure ScreenMemCopy(source,dest: tSCREEN_MEM_PTR); external name '_TXTSCRIO____SCREENMEMCOPY_TSCREEN_MEM_PTR_TSCREEN_MEM_PTR';
+procedure move2screen_alt; external name '_TXTSCRIO____MOVE2SCREEN_ALT';
 
 procedure move2screen;
 procedure TxtScrIO_Init;
@@ -130,8 +130,12 @@ const
      zooming_enabled: FALSE;
      update_area:     TRUE);
 
+var c_fr_setting_shadow_enabled:Pointer = @fr_setting.shadow_enabled; export name '_TC__TXTSCRIO____FR_SETTING';
+var c_fr_setting_wide_range_type:Pointer = @fr_setting.wide_range_type; export name '_TC__TXTSCRIO____FR_SETTING___UPDATE_AREA';
+var c_fr_setting_update_area:Pointer = @fr_setting.update_area; export name '_TC__TXTSCRIO____FR_SETTING___WIDE_RANGE_TYPE';
+
 procedure Frame(dest: tSCREEN_MEM_PTR; x1,y1,x2,y2,atr1: Byte;
-                title: String; atr2: Byte; border: String);
+                title: String; atr2: Byte; border: String); external name '_TXTSCRIO____FRAME_crc0EA7F576';
 
 function WhereX: Byte;
 function WhereY: Byte;

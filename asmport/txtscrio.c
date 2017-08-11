@@ -1136,17 +1136,17 @@ char TXTSCRIO____FRAME_crc0EA7F576(unsigned char *a9, char a8, char a7, char a6,
   unsigned char str2[255];
   LODWORD(v9) = FPC_SHORTSTR_TO_SHORTSTR(str2, 0xFFu, a1);
 
-  if ( TC__TXTSCRIO____FR_SETTING___UPDATE_AREA == 1 )
+  if ( *TC__TXTSCRIO____FR_SETTING___UPDATE_AREA == 1 )
   {
     TC__TXTSCRIO____AREA_X1 = a8;
     TC__TXTSCRIO____AREA_Y1 = a7;
     TC__TXTSCRIO____AREA_X2 = a6;
     TC__TXTSCRIO____AREA_Y2 = a5;
   }
-  v10 = TC__TXTSCRIO____FR_SETTING;
+  v10 = *TC__TXTSCRIO____FR_SETTING;
   v11 = (_WORD *)a9;
   v49 = a9;
-  if ( TC__TXTSCRIO____FR_SETTING___WIDE_RANGE_TYPE )
+  if ( *TC__TXTSCRIO____FR_SETTING___WIDE_RANGE_TYPE )
   {
     v54 = 4;
     v53 = -1;

@@ -73,7 +73,7 @@ function NameOnly(path: String): String;
 function BaseNameOnly(path: String): String;
 function ExtOnly(path: String): String;
 
-function SameName(str1,str2: String): Boolean;
+function SameName(str1,str2: String): Boolean; external name '_STRINGIO____SAMENAME_SHORTSTRING_SHORTSTRING__BOOLEAN';
 
 procedure StringIO_Init;
 

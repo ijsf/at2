@@ -35,21 +35,21 @@ const
   no_status_refresh: Boolean   = FALSE;
   do_synchronize:    Boolean   = FALSE;
   space_pressed:     Boolean   = FALSE;
-  module_archived:   Boolean   = FALSE;
+  module_archived:   Boolean   = FALSE; export name '_TC__ADT2UNIT____MODULE_ARCHIVED';
   force_scrollbars:  Boolean   = FALSE;
   no_sync_playing:   Boolean   = FALSE;
   no_step_debugging: Boolean   = FALSE;
   play_single_patt:  Boolean   = FALSE;
   no_trace_pattord:  Boolean   = FALSE;
   skip_macro_flag:   Boolean   = FALSE;
-  max_patterns:      Byte      = 128;
+  max_patterns:      Byte      = 128; export name '_TC__ADT2UNIT____MAX_PATTERNS';
   jump_mark_mode:    Boolean   = FALSE;
   force_macro_keyon: Boolean   = FALSE;
   ins_trailing_flag: Boolean   = FALSE;
 
 const
   def_vibtrem_speed_factor: Byte = 1;
-  def_vibtrem_table_size: Byte = 32;
+  def_vibtrem_table_size: Byte = 32; export name '_U__ADT2UNIT____VIBTREM_TABLE_SIZE';
   def_vibtrem_table: array[0..255] of Byte = (
     0,24,49,74,97,120,141,161,180,197,212,224,235,244,250,253,255,
     253,250,244,235,224,212,197,180,161,141,120,97,74,49,24,
@@ -66,7 +66,7 @@ const
     0,24,49,74,97,120,141,161,180,197,212,224,235,244,250,253,255,
     253,250,244,235,224,212,197,180,161,141,120,97,74,49,24,
     0,24,49,74,97,120,141,161,180,197,212,224,235,244,250,253,255,
-    253,250,244,235,224,212,197,180,161,141,120,97,74,49,24);
+    253,250,244,235,224,212,197,180,161,141,120,97,74,49,24); export name '_U__ADT2UNIT____VIBTREM_TABLE';
 
 var
   vibtrem_speed_factor: Byte;
@@ -112,10 +112,10 @@ var
   carrier_vol:   array[1..20] of Byte;
   decay_bar:     array[1..20] of tDECAY_BAR;
   volum_bar:     array[1..20] of tVOLUM_BAR;
-  channel_flag:  array[1..20] of Boolean;
+  channel_flag:  array[1..20] of Boolean; export name '_U__ADT2UNIT____CHANNEL_FLAG';
   event_table:   array[1..20] of tCHUNK;
   voice_table:   array[1..20] of Byte;
-  freq_table:    array[1..20] of Word;
+  freq_table:    array[1..20] of Word; export name '_U__ADT2UNIT____FREQ_TABLE';
   zero_fq_table: array[1..20] of Word;
   effect_table:  array[1..20] of Word;
   effect_table2: array[1..20] of Word;
@@ -137,7 +137,7 @@ var
   last_effect2:  array[1..20] of Word;
   volslide_type: array[1..20] of Byte;
   event_new:     array[1..20] of Boolean;
-  freqtable2:    array[1..20] of Word;
+  freqtable2:    array[1..20] of Word; export name '_U__ADT2UNIT____FREQTABLE2';
   notedel_table: array[1..20] of Byte;
   notecut_table: array[1..20] of Byte;
   ftune_table:   array[1..20] of Shortint;
@@ -162,7 +162,7 @@ const
   global_volume: Byte = 63;
   fade_out_volume: Byte = 63;
   play_status: tPLAY_STATUS = isStopped;
-  chan_pos: Byte = 1;
+  chan_pos: Byte = 1; export name '_TC__ADT2UNIT____CHAN_POS';
   chpos: Byte = 1;
   transpos: Byte = 1;
   track_chan_start: Byte = 1;
@@ -204,7 +204,7 @@ var
   pattord_page,pattord_hpos,pattord_vpos: Byte;
   instrum_page: Byte;
   pattern_patt,pattern_page,pattern_hpos: Byte;
-  limit_exceeded: Boolean;
+  limit_exceeded: Boolean; export name '_U__ADT2UNIT____LIMIT_EXCEEDED';
   load_flag,load_flag_alt: Byte;
   reset_chan: array[1..20] of Boolean;
   reset_adsrw: array[1..20] of Boolean;
@@ -225,7 +225,7 @@ var
   buf4: array[WORD] of Byte;
 
 const
-  pattdata: ^tPATTERN_DATA = NIL;
+  pattdata: ^tPATTERN_DATA = NIL; export name '_TC__ADT2UNIT____PATTDATA';
 
 var
   old_hash_buffer: tOLD_VARIABLE_DATA1;
@@ -238,6 +238,9 @@ var
   songdata_bak:  tFIXED_SONGDATA;
   temp_songdata: tFIXED_SONGDATA;
   clipboard:     tCLIPBOARD;
+
+  c_songdata_flag_4op: Pointer = @songdata.flag_4op; export name '_var_songdata__flag_4op'; // ACHTUNG
+  c_songdata_instr_data: Pointer = @songdata.instr_data; export name '_var_songdata__instr_data'; // ACHTUNG
 
 const
   ptr_songdata:      Pointer = Addr(songdata);
@@ -393,20 +396,20 @@ const
   ___UNIT_DATA_END___: Dword = 0;
 {$ENDIF}
 
-function nFreq(note: Byte): Word;
-function calc_freq_shift_up(freq,shift: Word): Word;
-function calc_freq_shift_down(freq,shift: Word): Word;
-function calc_vibtrem_shift(chan: Byte; var table_data): Word;
-procedure change_freq_asm(chan: Byte; freq: Word);
-function  ins_parameter(ins,param: Byte): Byte;
-function is_data_empty(var buf; size: Longint): Boolean;
-procedure get_chunk(pattern,line,channel: Byte; var chunk: tCHUNK);
-procedure put_chunk(pattern,line,channel: Byte; chunk: tCHUNK);
-function  get_chanpos(var data; channels,scancode: Byte): Byte;
-function  get_chanpos2(var data; channels,scancode: Byte): Byte;
-function  count_channel(hpos: Byte): Byte;
-function  count_pos(hpos: Byte): Byte;
-function  is_4op_chan(chan: Byte): Boolean;
+function nFreq(note: Byte): Word; external name '_ADT2UNIT____NFREQ_BYTE__WORD';
+function calc_freq_shift_up(freq,shift: Word): Word; external name '_ADT2UNIT____CALC_FREQ_SHIFT_UP_WORD_WORD__WORD';
+function calc_freq_shift_down(freq,shift: Word): Word; external name '_ADT2UNIT____CALC_FREQ_SHIFT_DOWN_WORD_WORD__WORD';
+function calc_vibtrem_shift(chan: Byte; var table_data): Word; external name '_ADT2UNIT____CALC_VIBTREM_SHIFT_BYTE_formal__WORD';
+procedure change_freq_asm(chan: Byte; freq: Word); external name '_ADT2UNIT____CHANGE_FREQ_BYTE_WORD_ASM';
+function  ins_parameter(ins,param: Byte): Byte; external name '_ADT2UNIT____INS_PARAMETER_BYTE_BYTE__BYTE';
+function is_data_empty(var buf; size: Longint): Boolean; external name '_ADT2UNIT____IS_DATA_EMPTY_formal_LONGINT__BOOLEAN';
+procedure get_chunk(pattern,line,channel: Byte; var chunk: tCHUNK); external name '_ADT2UNIT____GET_CHUNK_BYTE_BYTE_BYTE_TCHUNK';
+procedure put_chunk(pattern,line,channel: Byte; chunk: tCHUNK); external name '_ADT2UNIT____PUT_CHUNK_BYTE_BYTE_BYTE_TCHUNK';
+function  get_chanpos(var data; channels,scancode: Byte): Byte; external name '_ADT2UNIT____GET_CHANPOS_formal_BYTE_BYTE__BYTE';
+function  get_chanpos2(var data; channels,scancode: Byte): Byte; external name '_ADT2UNIT____GET_CHANPOS2_formal_BYTE_BYTE__BYTE';
+function  count_channel(hpos: Byte): Byte; external name '_ADT2UNIT____COUNT_CHANNEL_BYTE__BYTE';
+function  count_pos(hpos: Byte): Byte; external name '_ADT2UNIT____COUNT_POS_BYTE__BYTE';
+function  is_4op_chan(chan: Byte): Boolean; external name '_ADT2UNIT____IS_4OP_CHAN_BYTE__BOOLEAN';
 
 implementation
 

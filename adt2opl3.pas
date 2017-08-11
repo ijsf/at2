@@ -8,6 +8,8 @@ const
   ___OPL3OUT_UNIT_DATA_START___: Dword = 0;
 {$ENDIF}
 
+procedure opl3out_c(reg,data: Word); cdecl;
+
 procedure opl2out(reg,data: Word);
 procedure opl3out_proc(reg,data: Word);
 procedure opl3exp(data: Word);
@@ -433,6 +435,11 @@ end;
 procedure opl2out(reg,data: Word);
 begin
   // relevant only for DOS version -> option opl_latency=1
+  opl3out_proc(reg,data);
+end;
+
+procedure opl3out_c(reg,data: Word); cdecl; export; [ Alias: '_TC__ADT2OPL3____OPL3OUT'];
+begin
   opl3out_proc(reg,data);
 end;
 

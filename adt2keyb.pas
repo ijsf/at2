@@ -30,7 +30,7 @@ function  right_shift_pressed: Boolean;
 function  alt_pressed: Boolean;
 function  ctrl_pressed: Boolean;
 function  ctrl_tab_pressed: Boolean;
-function  LookUpKey(key: Word; var table; size: Byte): Boolean;
+function  LookUpKey(key: Word; var table; size: Byte): Boolean; external name '_ADT2KEYB____LOOKUPKEY_WORD_formal_BYTE__BOOLEAN';
 procedure screen_saver;
 
 {$IFDEF GO32V2}

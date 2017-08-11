@@ -5,23 +5,23 @@ interface
 
 // Compression algorithm: RDC
 // Algorithm developed by Ed Ross
-function RDC_decompress(var source,dest; size: Word): Word;
+function RDC_decompress(var source,dest; size: Word): Word; external name '_DEPACKIO____RDC_DECOMPRESS_formal_formal_WORD__WORD';
 
 // Compression algorithm: LZSS
 // Algorithm developed by Lempel-Ziv-Storer-Szymanski
-function LZSS_decompress(var source,dest; size: Word): Word;
+function LZSS_decompress(var source,dest; size: Word): Word; external name '_DEPACKIO____LZSS_DECOMPRESS_formal_formal_WORD__WORD';
 
 // Compression algorithm: LZW
 // Algorithm developed by Lempel-Ziv-Welch
-function LZW_decompress(var source,dest): Word;
+function LZW_decompress(var source,dest): Word; external name '_DEPACKIO____LZW_DECOMPRESS_formal_formal__WORD';
 
 // Compression algorithm: SixPack
 // Algorithm developed by Philip G. Gage
-function SIXPACK_decompress(var source,dest; size: Word): Word;
+function SIXPACK_decompress(var source,dest; size: Word): Word; external name '_DEPACKIO____SIXPACK_DECOMPRESS_formal_formal_WORD__WORD';
 
 // Compression algorithm: aPack
 // Algorithm developed by Joergen Ibsen
-function APACK_decompress(var source,dest): Dword;
+function APACK_decompress(var source,dest): Dword; external name '_DEPACKIO____APACK_DECOMPRESS_formal_formal__LONGWORD';
 
 implementation
 

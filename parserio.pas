@@ -3,19 +3,19 @@ unit ParserIO;
 {$PACKRECORDS 1}
 interface
 
-function SensitiveScan(var buf; skip,size: Longint; str: String): Longint;
-function Compare(var buf1,buf2; size: Longint): Boolean;
-function Empty(var buf; size: Longint): Boolean;
-function Update16(var buf; size: Longint; crc: Word): Word;
-function Update32(var buf; size: Longint; crc: Longint): Longint;
+function SensitiveScan(var buf; skip,size: Longint; str: String): Longint; external name '_PARSERIO____SENSITIVESCAN_formal_LONGINT_LONGINT_SHORTSTRING__LONGINT';
+function Compare(var buf1,buf2; size: Longint): Boolean; external name '_PARSERIO____COMPARE_formal_formal_LONGINT__BOOLEAN';
+function Empty(var buf; size: Longint): Boolean; external name '_PARSERIO____EMPTY_formal_LONGINT__BOOLEAN';
+function Update16(var buf; size: Longint; crc: Word): Word; external name '_PARSERIO____UPDATE16_formal_LONGINT_WORD__WORD';
+function Update32(var buf; size: Longint; crc: Longint): Longint; external name '_PARSERIO____UPDATE32_formal_LONGINT_LONGINT__LONGINT';
 
 implementation
 
 uses
   StringIO;
 
-var CRC16_table: array[BYTE] of Word;
-var CRC32_table: array[BYTE] of Longint;
+var CRC16_table: array[BYTE] of Word; export name '_CRC16_table';
+var CRC32_table: array[BYTE] of Longint; export name '_CRC32_table';
 
 procedure make_table_16bit;
 

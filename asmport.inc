@@ -1,0 +1,10 @@
+{$link ./asmport/adt2ext3_iloaders.o}
+{$link ./asmport/adt2extn.o}
+{$link ./asmport/adt2keyb.o}
+{$link ./asmport/adt2sys.o}
+{$link ./asmport/adt2unit.o}
+{$link ./asmport/depackio.o}
+{$link ./asmport/fpc.o}
+{$link ./asmport/parserio.o}
+{$link ./asmport/stringio.o}
+{$link ./asmport/txtscrio.o}
