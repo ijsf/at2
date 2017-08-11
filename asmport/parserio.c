@@ -262,12 +262,12 @@ LABEL_24:
   return v10;
 }
 
-short PARSERIO____UPDATE16_formal_LONGINT_WORD__WORD(char *a3, int a2, short a1)
+short PARSERIO____UPDATE16_formal_LONGINT_WORD__WORD(unsigned char *a3, int a2, short a1)
 {
-  char *v3; // esi@1
+  unsigned char *v3; // esi@1
   __int16 v4; // bx@1
   int i; // ecx@1
-  char v6; // al@2
+  unsigned char v6; // al@2
 
   v3 = a3;
   v4 = a1;

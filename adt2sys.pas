@@ -3,14 +3,14 @@ unit AdT2sys;
 {$PACKRECORDS 1}
 interface
 
-procedure draw_SDL_screen_720x480; external name '_ADT2SYS____DRAW_SDL_SCREEN_720X480';
-procedure draw_SDL_screen_960x800; external name '_ADT2SYS____DRAW_SDL_SCREEN_960X800';
-procedure draw_SDL_screen_1440x960; external name '_ADT2SYS____DRAW_SDL_SCREEN_1440X960';
+procedure draw_SDL_screen_720x480; external name 'ADT2SYS____DRAW_SDL_SCREEN_720X480';
+procedure draw_SDL_screen_960x800; external name 'ADT2SYS____DRAW_SDL_SCREEN_960X800';
+procedure draw_SDL_screen_1440x960; external name 'ADT2SYS____DRAW_SDL_SCREEN_1440X960';
 
 const
-  virtual_screen__first_row: Longint = 0; export name '_TC__ADT2SYS____VIRTUAL_SCREEN__FIRST_ROW';
-  virtual_cur_shape: Word = 0; export name '_TC__ADT2SYS____VIRTUAL_CUR_SHAPE';
-  virtual_cur_pos: Word = 0; export name '_TC__ADT2SYS____VIRTUAL_CUR_POS';
+  virtual_screen__first_row: Longint = 0; export name 'TC__ADT2SYS____VIRTUAL_SCREEN__FIRST_ROW';
+  virtual_cur_shape: Word = 0; export name 'TC__ADT2SYS____VIRTUAL_CUR_SHAPE';
+  virtual_cur_pos: Word = 0; export name 'TC__ADT2SYS____VIRTUAL_CUR_POS';
   slide_ticks: Longint = 0;
   reset_slide_ticks: Boolean = FALSE;
 {$IFDEF GO32V2}
@@ -21,7 +21,7 @@ const
 {$ENDIF}
   blink_ticks: Longint = 0;
   blink_flag: Boolean = FALSE;
-  cursor_sync: Boolean = FALSE; export name '_TC__ADT2SYS____CURSOR_SYNC';
+  cursor_sync: Boolean = FALSE; export name 'TC__ADT2SYS____CURSOR_SYNC';
 {$IFDEF GO32V2}
   _draw_screen_without_vsync: Boolean = FALSE;
   _draw_screen_without_delay: Boolean = FALSE;
@@ -32,8 +32,8 @@ const
   _name_scrl_shift: Byte = 0;
   _name_scrl_pending_frames: Longint = 0;
 {$ENDIF}
-  _cursor_blink_factor: Longint = 13; export name '_TC__ADT2SYS_____CURSOR_BLINK_FACTOR';
-  _cursor_blink_pending_frames: Longint = 0; export name '_TC__ADT2SYS_____CURSOR_BLINK_PENDING_FRAMES';
+  _cursor_blink_factor: Longint = 13; export name 'TC__ADT2SYS_____CURSOR_BLINK_FACTOR';
+  _cursor_blink_pending_frames: Longint = 0; export name 'TC__ADT2SYS_____CURSOR_BLINK_PENDING_FRAMES';
   _generic_blink_event_flag: Boolean = FALSE;
   _realtime_gfx_no_update: Boolean = FALSE;
 {$IFDEF GO32V2}
@@ -66,7 +66,7 @@ const
   _traceprc_last_order: Byte = 0;
   _traceprc_last_pattern: Byte = 0;
   _traceprc_last_line: Byte = 0;
-  _pattedit_lastpos: Byte = 0; export name '_TC__ADT2SYS_____PATTEDIT_LASTPOS';
+  _pattedit_lastpos: Byte = 0; export name 'TC__ADT2SYS_____PATTEDIT_LASTPOS';
 
 procedure sys_init;
 procedure sys_done;
@@ -75,7 +75,7 @@ procedure draw_screen;
 {$IFNDEF GO32V2}
 
 const
-  _FrameBuffer: Pointer = NIL; export name '_TC__ADT2SYS_____FRAMEBUFFER';
+  _FrameBuffer: Pointer = NIL; export name 'TC__ADT2SYS_____FRAMEBUFFER';
 
 procedure vid_Init;
 procedure vid_Deinit;

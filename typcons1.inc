@@ -477,7 +477,7 @@ const
     $10,$03,$11,$04,$12,$13,$06,$14,$07,$15,$08,$16,$17,$0a,$18,$0b,$19);
 
 const
-  fx_digits: array[0..47] of Char = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ&%!@=#$~^`><'; export name '_TC__ADT2UNIT____FX_DIGITS';
+  fx_digits: array[0..47] of Char = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ&%!@=#$~^`><'; export name 'TC__ADT2UNIT____FX_DIGITS';
   NM_FX_DIGITS = SizeOf(fx_digits);
 
 const
@@ -567,7 +567,7 @@ const
   _perc_sim_chan: array[19..20] of Byte = (18,17);
 
 var
-  _chan_n: tTRACK_ADDR; export name '_U__ADT2UNIT_____CHAN_N';
+  _chan_n: tTRACK_ADDR; export name 'U__ADT2UNIT_____CHAN_N';
   _chan_m: tTRACK_ADDR;
   _chan_c: tTRACK_ADDR;
   _ch_tmp: tTRACK_ADDR;

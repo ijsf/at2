@@ -438,7 +438,7 @@ begin
   opl3out_proc(reg,data);
 end;
 
-procedure opl3out_c(reg,data: Word); cdecl; export; [ Alias: '_TC__ADT2OPL3____OPL3OUT'];
+procedure opl3out_c(reg,data: Word); cdecl; export; [ Alias: 'TC__ADT2OPL3____OPL3OUT'];
 begin
   opl3out_proc(reg,data);
 end;

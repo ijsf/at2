@@ -92,8 +92,8 @@ procedure MESSAGE_BOARD;
 procedure QUIT_request;
 procedure show_progress(value: Longint);
 
-procedure override_attr(dest: tSCREEN_MEM_PTR; x,y: Byte; len: Byte; attr: Byte); external name '_ADT2EXTN___REMAP_OVERRIDE_FRAME_crc9EF426E9____OVERRIDE_ATTR_TSCREEN_MEM_PTR_BYTE_BYTE_BYTE_BYTE';
-function _find_fx(fx_str: Char): Byte; external name '_ADT2EXTN___REPLACE_____FIND_FX_CHAR__BYTE';
+procedure override_attr(dest: tSCREEN_MEM_PTR; x,y: Byte; len: Byte; attr: Byte); external name 'ADT2EXTN___REMAP_OVERRIDE_FRAME_crc9EF426E9____OVERRIDE_ATTR_TSCREEN_MEM_PTR_BYTE_BYTE_BYTE_BYTE';
+function _find_fx(fx_str: Char): Byte; external name 'ADT2EXTN___REPLACE_____FIND_FX_CHAR__BYTE';
 
 implementation
 
