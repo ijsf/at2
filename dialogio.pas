@@ -1432,7 +1432,7 @@ var
 procedure new_fselect_external_proc;
 begin
   mn_environment.curr_item := fstream.stuff[mn_environment.curr_pos].name;
-  If (@old_fselect_external_proc <> NIL) then old_fselect_external_proc;
+  If (old_fselect_external_proc <> NIL) then old_fselect_external_proc;
 end;
 
 function Fselect(mask: String): String;

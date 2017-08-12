@@ -4308,7 +4308,7 @@ begin
 
   Inc(blink_ticks);
   If ((fast_forward or rewind or (space_pressed and debugging) or
-       (@macro_preview_indic_proc <> NIL)) and
+       (macro_preview_indic_proc <> NIL)) and
       (blink_ticks > 50)) or (blink_ticks > 50) then
     begin
       _generic_blink_event_flag := NOT _generic_blink_event_flag;
@@ -5466,7 +5466,7 @@ begin
           If NOT debugging then status_layout[isPlaying][9] := #16
           else status_layout[isPlaying][9] := #9;
           status_layout[isPaused][8] := #8;
-          If (@macro_preview_indic_proc <> NIL) then
+          If (macro_preview_indic_proc <> NIL) then
             macro_preview_indic_proc(1);
         end
       else
@@ -5474,7 +5474,7 @@ begin
           status_layout[isPlaying][9] := ' ';
           status_layout[isPaused] [8] := ' ';
           status_layout[isStopped][9] := ' ';
-          If (@macro_preview_indic_proc <> NIL) then
+          If (macro_preview_indic_proc <> NIL) then
             macro_preview_indic_proc(2);
         end;
 
@@ -5493,7 +5493,7 @@ begin
       reset_gfx_ticks := TRUE;
 {$ENDIF}
       trace_update_proc;
-      If (@mn_environment.ext_proc_rt <> NIL) then
+      If (mn_environment.ext_proc_rt <> NIL) then
         mn_environment.ext_proc_rt;
 {$IFDEF GO32V2}
     end;

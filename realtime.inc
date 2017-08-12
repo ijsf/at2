@@ -191,7 +191,7 @@ begin
   temps := status_layout[play_status];
   show_str(14,06,ExpStrR(temps,10,' '),
            status_background+status_play_state);
-  If (@mn_environment.ext_proc_rt <> NIL) and is_default_screen_mode then
+  If (mn_environment.ext_proc_rt <> NIL) and is_default_screen_mode then
     show_str(02,01,' '+ExpStrR(temps,10,' '),
              main_background+main_border)
   else
@@ -251,7 +251,7 @@ begin
             status_background+status_text_dis,
             status_background+status_border);
 
-  If (@mn_environment.ext_proc_rt <> NIL) and is_default_screen_mode then
+  If (mn_environment.ext_proc_rt <> NIL) and is_default_screen_mode then
     show_cstr(16,01,temps,
               main_background+main_border,
               main_background+main_border)
@@ -304,7 +304,7 @@ begin
     wav_indicator_attr[TRUE] := (main_behavior SHL 4) AND $0f0
   else wav_indicator_attr[TRUE] := main_background+main_behavior;
 
-  If is_default_screen_mode and (@mn_environment.ext_proc_rt <> NIL) then
+  If is_default_screen_mode and (mn_environment.ext_proc_rt <> NIL) then
     If (sdl_opl3_emulator <> 0) then
       show_str(13,01,'WAV',wav_indicator_attr[_generic_blink_event_flag])
     else show_str(13,01,#196#196#196,main_background+main_border)
