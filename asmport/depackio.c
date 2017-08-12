@@ -237,7 +237,7 @@ void DEPACKIO____LZSS_DECODE()
       break;
     HIBYTE(v0) = charresult >> 4;
     LOBYTE(v0) = v6;
-    v9 = charresult & 0xF + 2 + 1; // ACHTUNG
+    v9 = (charresult & 0xF) + 2 + 1; // ACHTUNG
     do
     {
       v7 = v0 & 0xFFF;

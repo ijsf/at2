@@ -16,8 +16,7 @@ extern unsigned int CRC32_table[255];
 extern void TC__ADT2OPL3____OPL3OUT(short reg, short data);  // ACHTUNG: reversed params?
 
 // const font8x16: array[0..1023] of Dword = (...)
-//extern unsigned int TC__ADT2DATA____FONT8X16[1024];
-extern unsigned char TC__ADT2DATA____FONT8X16[1024 * 4];
+extern unsigned char TC__ADT2DATA____FONT8X16[];
 
 // fx_digits: array[0..47] of Char = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ&%!@=#$~^`><';
 extern unsigned char TC__ADT2UNIT____FX_DIGITS[48];
@@ -66,7 +65,7 @@ extern unsigned char TC__ADT2UNIT____MAX_PATTERNS;
 //                  array[0..$0ff] of tCHUNK;
 // tPATTERN_DATA = array[0..15] of tVARIABLE_DATA;
 // pattdata: ^tPATTERN_DATA = NIL;
-extern unsigned char TC__ADT2UNIT____PATTDATA[16*8*20*256*6]; // ACHTUNG
+extern unsigned char TC__ADT2UNIT____PATTDATA[];
 
 // module_archived:   Boolean   = FALSE;
 extern unsigned char TC__ADT2UNIT____MODULE_ARCHIVED;
