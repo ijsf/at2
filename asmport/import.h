@@ -16,7 +16,8 @@ extern unsigned int CRC32_table[255];
 extern void TC__ADT2OPL3____OPL3OUT(short reg, short data);  // ACHTUNG: reversed params?
 
 // const font8x16: array[0..1023] of Dword = (...)
-extern unsigned int TC__ADT2DATA____FONT8X16[1024];
+//extern unsigned int TC__ADT2DATA____FONT8X16[1024];
+extern unsigned char TC__ADT2DATA____FONT8X16[1024 * 4];
 
 // fx_digits: array[0..47] of Char = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ&%!@=#$~^`><';
 extern unsigned char TC__ADT2UNIT____FX_DIGITS[48];
