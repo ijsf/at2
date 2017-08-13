@@ -130,9 +130,10 @@ const
      zooming_enabled: FALSE;
      update_area:     TRUE);
 
-var c_fr_setting_shadow_enabled:Pointer = @fr_setting.shadow_enabled; export name 'TC__TXTSCRIO____FR_SETTING';
-var c_fr_setting_wide_range_type:Pointer = @fr_setting.wide_range_type; export name 'TC__TXTSCRIO____FR_SETTING___UPDATE_AREA';
-var c_fr_setting_update_area:Pointer = @fr_setting.update_area; export name 'TC__TXTSCRIO____FR_SETTING___WIDE_RANGE_TYPE';
+function get_fr_setting_shadow_enabled: Boolean; cdecl; export;
+function get_fr_setting_wide_range_type: Boolean; cdecl; export;
+function get_fr_setting_zooming_enabled: Boolean; cdecl; export;
+function get_fr_setting_update_area: Boolean; cdecl; export;
 
 procedure Frame(dest: tSCREEN_MEM_PTR; x1,y1,x2,y2,atr1: Byte;
                 title: String; atr2: Byte; border: String); cdecl; external name 'TXTSCRIO____FRAME_crc0EA7F576';
@@ -1831,6 +1832,23 @@ begin
   patt_win[3] := patt_win_tracks[temp][3];
   patt_win[4] := patt_win_tracks[temp][4];
   patt_win[5] := patt_win_tracks[temp][5];
+end;
+
+function get_fr_setting_shadow_enabled: Boolean; cdecl; //[ Alias: 'get_fr_setting_shadow_enabled' ];
+begin
+  get_fr_setting_shadow_enabled := fr_setting.shadow_enabled;
+end;
+function get_fr_setting_wide_range_type: Boolean; cdecl; //[ Alias: 'get_fr_setting_wide_range_type' ];
+begin
+  get_fr_setting_wide_range_type := fr_setting.wide_range_type;
+end;
+function get_fr_setting_zooming_enabled: Boolean; cdecl; //[ Alias: 'get_fr_setting_zooming_enabled' ];
+begin
+  get_fr_setting_zooming_enabled := fr_setting.zooming_enabled;
+end;
+function get_fr_setting_update_area: Boolean; cdecl; //[ Alias: 'get_fr_setting_update_area' ];
+begin
+  get_fr_setting_update_area := fr_setting.update_area;
 end;
 
 end.

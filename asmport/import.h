@@ -143,9 +143,10 @@ extern unsigned char *TC__TXTSCRIO____PTR_TEMP_SCREEN2;
 //     wide_range_type: FALSE;
 //     zooming_enabled: FALSE;
 //     update_area:     TRUE);
-extern unsigned char *TC__TXTSCRIO____FR_SETTING;  // shadow_enabled
-extern unsigned char *TC__TXTSCRIO____FR_SETTING___UPDATE_AREA;
-extern unsigned char *TC__TXTSCRIO____FR_SETTING___WIDE_RANGE_TYPE;
+extern unsigned char get_fr_setting_shadow_enabled();
+extern unsigned char get_fr_setting_wide_range_type();
+extern unsigned char get_fr_setting_zooming_enabled();
+extern unsigned char get_fr_setting_update_area();
 
 // move_to_screen_area: array[1..4] of Byte = (0,0,0,0);
 extern unsigned char TC__TXTSCRIO____MOVE_TO_SCREEN_AREA[4];

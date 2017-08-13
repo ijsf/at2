@@ -85,8 +85,8 @@ int DEPACKIO____APACK_DECOMPRESS_formal_formal__LONGWORD(char *a2, unsigned char
 int PARSERIO____SENSITIVESCAN_formal_LONGINT_LONGINT_SHORTSTRING__LONGINT(unsigned char *buf, int skip, int size, unsigned char *str);
 char PARSERIO____COMPARE_formal_formal_LONGINT__BOOLEAN(unsigned char *a3, unsigned char *a2, unsigned int a1);
 char PARSERIO____EMPTY_formal_LONGINT__BOOLEAN(unsigned char *a2, unsigned int a1);
-short PARSERIO____UPDATE16_formal_LONGINT_WORD__WORD(unsigned char *a3, int a2, short a1);
-unsigned int PARSERIO____UPDATE32_formal_LONGINT_LONGINT__LONGINT(unsigned char *a3, int a2, unsigned int a1);
+unsigned short PARSERIO____UPDATE16_formal_LONGINT_WORD__WORD(unsigned char *a3, int a2, unsigned short a1);
+int PARSERIO____UPDATE32_formal_LONGINT_LONGINT__LONGINT(unsigned char *a3, int a2, int a1);
 
 // stringio
 //

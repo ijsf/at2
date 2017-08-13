@@ -1025,17 +1025,17 @@ char TXTSCRIO____FRAME_crc0EA7F576(unsigned char *dest, char x1, char y1, char x
   unsigned char border_[255];
   FPC_SHORTSTR_TO_SHORTSTR(border_, 0xFFu, border);
 
-  if ( *TC__TXTSCRIO____FR_SETTING___UPDATE_AREA == 1 )
+  if ( get_fr_setting_update_area() )
   {
     TC__TXTSCRIO____AREA_X1 = x1;
     TC__TXTSCRIO____AREA_Y1 = y1;
     TC__TXTSCRIO____AREA_X2 = x2;
     TC__TXTSCRIO____AREA_Y2 = y2;
   }
-  v10 = *TC__TXTSCRIO____FR_SETTING;
+  v10 = get_fr_setting_shadow_enabled();
   v11 = (_WORD *)dest;
   v49 = dest;
-  if ( *TC__TXTSCRIO____FR_SETTING___WIDE_RANGE_TYPE )
+  if ( get_fr_setting_wide_range_type() )
   {
     v54 = 4;
     v53 = -1;
@@ -1109,12 +1109,12 @@ char TXTSCRIO____FRAME_crc0EA7F576(unsigned char *dest, char x1, char y1, char x
       *v32 = 7;
       v32 += 2;
       *v32 = 7;
-      v11 = (unsigned short *)v32 + 1;
-      if ( (unsigned __int8)TC__TXTSCRIO____MAXCOL > 0xB4u )
+      v11 = (unsigned short *)(v32 + 1);
+      if ( (unsigned __int8)TC__TXTSCRIO____MAXCOL > 180 )
       {
         v33 = (unsigned char *)((char *)v11 + 1);
         *v33 = 7;
-        v11 = (unsigned short *)v33 + 1;  // ACHTUNG
+        v11 = (unsigned short *)(v33 + 1);  // ACHTUNG
       }
     }
     while ( v31 <= y2 );
@@ -1122,7 +1122,7 @@ char TXTSCRIO____FRAME_crc0EA7F576(unsigned char *dest, char x1, char y1, char x
     v35 = (_BYTE *)((unsigned __int16)var_absolute_pos + v49 + 1);
     LOBYTE(v27) = 7;
     v36 = v52 + x2 - x1;
-    if ( (unsigned __int8)TC__TXTSCRIO____MAXLN >= 0x3Cu )
+    if ( (unsigned __int8)TC__TXTSCRIO____MAXLN >= 60 )
       v36 = v36 - 1;
     do
     {
