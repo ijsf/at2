@@ -396,20 +396,20 @@ const
   ___UNIT_DATA_END___: Dword = 0;
 {$ENDIF}
 
-function nFreq(note: Byte): Word; external name 'ADT2UNIT____NFREQ_BYTE__WORD';
-function calc_freq_shift_up(freq,shift: Word): Word; external name 'ADT2UNIT____CALC_FREQ_SHIFT_UP_WORD_WORD__WORD';
-function calc_freq_shift_down(freq,shift: Word): Word; external name 'ADT2UNIT____CALC_FREQ_SHIFT_DOWN_WORD_WORD__WORD';
-function calc_vibtrem_shift(chan: Byte; var table_data): Word; external name 'ADT2UNIT____CALC_VIBTREM_SHIFT_BYTE_formal__WORD';
-procedure change_freq_asm(chan: Byte; freq: Word); external name 'ADT2UNIT____CHANGE_FREQ_BYTE_WORD_ASM';
-function  ins_parameter(ins,param: Byte): Byte; external name 'ADT2UNIT____INS_PARAMETER_BYTE_BYTE__BYTE';
-function is_data_empty(var buf; size: Longint): Boolean; external name 'ADT2UNIT____IS_DATA_EMPTY_formal_LONGINT__BOOLEAN';
-procedure get_chunk(pattern,line,channel: Byte; var chunk: tCHUNK); external name 'ADT2UNIT____GET_CHUNK_BYTE_BYTE_BYTE_TCHUNK';
-procedure put_chunk(pattern,line,channel: Byte; chunk: tCHUNK); external name 'ADT2UNIT____PUT_CHUNK_BYTE_BYTE_BYTE_TCHUNK';
-function  get_chanpos(var data; channels,scancode: Byte): Byte; external name 'ADT2UNIT____GET_CHANPOS_formal_BYTE_BYTE__BYTE';
-function  get_chanpos2(var data; channels,scancode: Byte): Byte; external name 'ADT2UNIT____GET_CHANPOS2_formal_BYTE_BYTE__BYTE';
-function  count_channel(hpos: Byte): Byte; external name 'ADT2UNIT____COUNT_CHANNEL_BYTE__BYTE';
-function  count_pos(hpos: Byte): Byte; external name 'ADT2UNIT____COUNT_POS_BYTE__BYTE';
-function  is_4op_chan(chan: Byte): Boolean; external name 'ADT2UNIT____IS_4OP_CHAN_BYTE__BOOLEAN';
+function nFreq(note: Byte): Word; cdecl; external name 'ADT2UNIT____NFREQ_BYTE__WORD';
+function calc_freq_shift_up(freq,shift: Word): Word; cdecl; external name 'ADT2UNIT____CALC_FREQ_SHIFT_UP_WORD_WORD__WORD';
+function calc_freq_shift_down(freq,shift: Word): Word; cdecl; external name 'ADT2UNIT____CALC_FREQ_SHIFT_DOWN_WORD_WORD__WORD';
+function calc_vibtrem_shift(chan: Byte; var table_data): Word; cdecl; external name 'ADT2UNIT____CALC_VIBTREM_SHIFT_BYTE_formal__WORD';
+procedure change_freq_asm(chan: Byte; freq: Word); cdecl; external name 'ADT2UNIT____CHANGE_FREQ_BYTE_WORD_ASM';
+function  ins_parameter(ins,param: Byte): Byte; cdecl; external name 'ADT2UNIT____INS_PARAMETER_BYTE_BYTE__BYTE';
+function is_data_empty(var buf; size: Longint): Boolean; cdecl; external name 'ADT2UNIT____IS_DATA_EMPTY_formal_LONGINT__BOOLEAN';
+procedure get_chunk(pattern,line,channel: Byte; var chunk: tCHUNK); cdecl; external name 'ADT2UNIT____GET_CHUNK_BYTE_BYTE_BYTE_TCHUNK';
+procedure put_chunk(pattern,line,channel: Byte; chunk: tCHUNK); cdecl; external name 'ADT2UNIT____PUT_CHUNK_BYTE_BYTE_BYTE_TCHUNK';
+function  get_chanpos(var data; channels,scancode: Byte): Byte; cdecl; external name 'ADT2UNIT____GET_CHANPOS_formal_BYTE_BYTE__BYTE';
+function  get_chanpos2(var data; channels,scancode: Byte): Byte; cdecl; external name 'ADT2UNIT____GET_CHANPOS2_formal_BYTE_BYTE__BYTE';
+function  count_channel(hpos: Byte): Byte; cdecl; external name 'ADT2UNIT____COUNT_CHANNEL_BYTE__BYTE';
+function  count_pos(hpos: Byte): Byte; cdecl; external name 'ADT2UNIT____COUNT_POS_BYTE__BYTE';
+function  is_4op_chan(chan: Byte): Boolean; cdecl; external name 'ADT2UNIT____IS_4OP_CHAN_BYTE__BOOLEAN';
 
 implementation
 

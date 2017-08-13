@@ -89,23 +89,23 @@ const
   LGray   = $07;  White    = $0f;
   Blink   = $80;
 
-procedure show_str(xpos,ypos: Byte; str: String; color: Byte); external name 'TXTSCRIO____SHOW_STR_BYTE_BYTE_SHORTSTRING_BYTE';
-procedure show_cstr(xpos,ypos: Byte; str: String; attr1,attr2: Byte); external name 'TXTSCRIO____SHOW_CSTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE';
-procedure show_cstr_alt(xpos,ypos: Byte; str: String; attr1,attr2: Byte); external name 'TXTSCRIO____SHOW_CSTR_ALT_BYTE_BYTE_SHORTSTRING_BYTE_BYTE';
-procedure show_vstr(xpos,ypos: Byte; str: String; color: Byte); external name 'TXTSCRIO____SHOW_VSTR_BYTE_BYTE_SHORTSTRING_BYTE';
-procedure show_vcstr(xpos,ypos: Byte; str: String; attr1,attr2: Byte); external name 'TXTSCRIO____SHOW_VCSTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE';
-procedure ShowStr(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; attr: Byte); external name 'TXTSCRIO____SHOWSTR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE';
-procedure ShowVStr(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; attr: Byte); external name 'TXTSCRIO____SHOWVSTR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE';
-procedure ShowCStr(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; atr1,atr2: Byte); external name 'TXTSCRIO____SHOWCSTR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE';
-procedure ShowCStr2(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; atr1,atr2: Byte); external name 'TXTSCRIO____SHOWCSTR2_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE';
-procedure ShowVCStr(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; atr1,atr2: Byte); external name 'TXTSCRIO____SHOWVCSTR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE';
-procedure ShowC3Str(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; atr1,atr2,atr3: Byte); external name 'TXTSCRIO____SHOWC3STR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE_BYTE';
-procedure ShowC4Str(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; atr1,atr2,atr3,atr4: Byte); external name 'TXTSCRIO____SHOWC4STR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE_BYTE_BYTE';
-procedure ShowVC3Str(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; atr1,atr2,atr3: Byte); external name 'TXTSCRIO____SHOWVC3STR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE_BYTE';
-function  CStrLen(str: String): Byte; external name 'TXTSCRIO____CSTRLEN_SHORTSTRING__BYTE';
-function  C3StrLen(str: String): Byte; external name 'TXTSCRIO____C3STRLEN_SHORTSTRING__BYTE';
-procedure ScreenMemCopy(source,dest: tSCREEN_MEM_PTR); external name 'TXTSCRIO____SCREENMEMCOPY_TSCREEN_MEM_PTR_TSCREEN_MEM_PTR';
-procedure move2screen_alt; external name 'TXTSCRIO____MOVE2SCREEN_ALT';
+procedure show_str(xpos,ypos: Byte; str: String; color: Byte); cdecl; external name 'TXTSCRIO____SHOW_STR_BYTE_BYTE_SHORTSTRING_BYTE';
+procedure show_cstr(xpos,ypos: Byte; str: String; attr1,attr2: Byte); cdecl; external name 'TXTSCRIO____SHOW_CSTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE';
+procedure show_cstr_alt(xpos,ypos: Byte; str: String; attr1,attr2: Byte); cdecl; external name 'TXTSCRIO____SHOW_CSTR_ALT_BYTE_BYTE_SHORTSTRING_BYTE_BYTE';
+procedure show_vstr(xpos,ypos: Byte; str: String; color: Byte); cdecl; external name 'TXTSCRIO____SHOW_VSTR_BYTE_BYTE_SHORTSTRING_BYTE';
+procedure show_vcstr(xpos,ypos: Byte; str: String; attr1,attr2: Byte); cdecl; external name 'TXTSCRIO____SHOW_VCSTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE';
+procedure ShowStr(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; attr: Byte); cdecl; external name 'TXTSCRIO____SHOWSTR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE';
+procedure ShowVStr(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; attr: Byte); cdecl; external name 'TXTSCRIO____SHOWVSTR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE';
+procedure ShowCStr(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; atr1,atr2: Byte); cdecl; external name 'TXTSCRIO____SHOWCSTR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE';
+procedure ShowCStr2(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; atr1,atr2: Byte); cdecl; external name 'TXTSCRIO____SHOWCSTR2_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE';
+procedure ShowVCStr(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; atr1,atr2: Byte); cdecl; external name 'TXTSCRIO____SHOWVCSTR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE';
+procedure ShowC3Str(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; atr1,atr2,atr3: Byte); cdecl; external name 'TXTSCRIO____SHOWC3STR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE_BYTE';
+procedure ShowC4Str(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; atr1,atr2,atr3,atr4: Byte); cdecl; external name 'TXTSCRIO____SHOWC4STR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE_BYTE_BYTE';
+procedure ShowVC3Str(dest: tSCREEN_MEM_PTR; x,y: Byte; str: String; atr1,atr2,atr3: Byte); cdecl; external name 'TXTSCRIO____SHOWVC3STR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE_BYTE';
+function  CStrLen(str: String): Byte; cdecl; external name 'TXTSCRIO____CSTRLEN_SHORTSTRING__BYTE';
+function  C3StrLen(str: String): Byte; cdecl; external name 'TXTSCRIO____C3STRLEN_SHORTSTRING__BYTE';
+procedure ScreenMemCopy(source,dest: tSCREEN_MEM_PTR); cdecl; external name 'TXTSCRIO____SCREENMEMCOPY_TSCREEN_MEM_PTR_TSCREEN_MEM_PTR';
+procedure move2screen_alt; cdecl; external name 'TXTSCRIO____MOVE2SCREEN_ALT';
 
 procedure move2screen;
 procedure TxtScrIO_Init;
@@ -135,7 +135,7 @@ var c_fr_setting_wide_range_type:Pointer = @fr_setting.wide_range_type; export n
 var c_fr_setting_update_area:Pointer = @fr_setting.update_area; export name 'TC__TXTSCRIO____FR_SETTING___WIDE_RANGE_TYPE';
 
 procedure Frame(dest: tSCREEN_MEM_PTR; x1,y1,x2,y2,atr1: Byte;
-                title: String; atr2: Byte; border: String); external name 'TXTSCRIO____FRAME_crc0EA7F576';
+                title: String; atr2: Byte; border: String); cdecl; external name 'TXTSCRIO____FRAME_crc0EA7F576';
 
 function WhereX: Byte;
 function WhereY: Byte;

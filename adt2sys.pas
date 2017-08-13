@@ -3,9 +3,9 @@ unit AdT2sys;
 {$PACKRECORDS 1}
 interface
 
-procedure draw_SDL_screen_720x480; external name 'ADT2SYS____DRAW_SDL_SCREEN_720X480';
-procedure draw_SDL_screen_960x800; external name 'ADT2SYS____DRAW_SDL_SCREEN_960X800';
-procedure draw_SDL_screen_1440x960; external name 'ADT2SYS____DRAW_SDL_SCREEN_1440X960';
+procedure draw_SDL_screen_720x480; cdecl; external name 'ADT2SYS____DRAW_SDL_SCREEN_720X480';
+procedure draw_SDL_screen_960x800; cdecl; external name 'ADT2SYS____DRAW_SDL_SCREEN_960X800';
+procedure draw_SDL_screen_1440x960; cdecl; external name 'ADT2SYS____DRAW_SDL_SCREEN_1440X960';
 
 const
   virtual_screen__first_row: Longint = 0; export name 'TC__ADT2SYS____VIRTUAL_SCREEN__FIRST_ROW';

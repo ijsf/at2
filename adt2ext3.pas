@@ -31,7 +31,7 @@ procedure test_instrument_alt(chan: Byte; fkey: Word; loadMacros: Boolean; bankS
                               test_ins1,test_ins2: Byte);
 procedure test_instrument_alt2(chan: Byte; fkey: Word);
 
-function _sar(op1,op2: Word): Byte; external name 'ADT2EXT3_____SAR_WORD_WORD__BYTE';
+function _sar(op1,op2: Word): Byte; cdecl; external name 'ADT2EXT3_____SAR_WORD_WORD__BYTE';
 
 implementation
 
