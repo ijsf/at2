@@ -42,35 +42,35 @@ SYSTEM____FILLCHAR_formal_LONGINT_BYTE
 // var ibuf_idx,ibuf_end,obuf_idx,obuf_src: Pointer;
 unsigned char *var_ibuf_idx, *var_ibuf_end, *var_obuf_idx, *var_obuf_src;
 // var ctrl_bits,ctrl_mask,command,count,offs: Word;
-short var_ctrl_bits, var_ctrl_mask, var_command, var_count, var_offs;
+unsigned short var_ctrl_bits, var_ctrl_mask, var_command, var_count, var_offs;
 
 // var work_mem: array[0..PRED(WORKMEM_SIZE)] of Byte;
 unsigned char var_work_mem[WORKMEM_SIZE];
 // var ibufCount,ibufSize: Word;
-short var_ibufCount, var_ibufSize;
+unsigned short var_ibufCount, var_ibufSize;
 // var input_size,output_size: Word;
-short var_input_size, var_output_size;
+unsigned short var_input_size, var_output_size;
 // var input_ptr,output_ptr,work_ptr: Pointer;
 unsigned char *var_input_ptr, *var_output_ptr, *var_work_ptr;
 
 // var le76,le77: Byte;
 unsigned char var_le76, var_le77;
 // var le6a,le6c,le6e,le70,le72,le74,le78,le7a_0,le7a_2,le7a_4,le7a_6,le7a_8,le82a,le82b: Word;
-short var_le6a, var_le6c, var_le6e, var_le70, var_le72, var_le74, var_le78, var_le7a_0, var_le7a_2, var_le7a_4, var_le7a_6, var_le7a_8, var_le82a, var_le82b;
+unsigned short var_le6a, var_le6c, var_le6e, var_le70, var_le72, var_le74, var_le78, var_le7a_0, var_le7a_2, var_le7a_4, var_le7a_6, var_le7a_8, var_le82a, var_le82b;
 
 // BitValue: array[1..14] of Word = (1,2,4,8,16,32,64,128,256,512,1024,2048,4096,8192);
-short var_BitValue[] = {1,2,4,8,16,32,64,128,256,512,1024,2048,4096,8192};
+unsigned short var_BitValue[] = {1,2,4,8,16,32,64,128,256,512,1024,2048,4096,8192};
 // CopyBits: array[0..PRED(COPYRANGES)] of Word = (4,6,8,10,12,14);
-short var_CopyBits[] = {4,6,8,10,12,14};
+unsigned short var_CopyBits[] = {4,6,8,10,12,14};
 // CopyMin:  array[0..PRED(COPYRANGES)] of Word = (0,16,80,336,1360,5456);
-short var_CopyMin[] = {0,16,80,336,1360,5456};
+unsigned short var_CopyMin[] = {0,16,80,336,1360,5456};
 
 // var leftC,rghtC: array[0..MAXCHAR] of Word;
-short var_leftC[MAXCHAR+1], var_rghtC[MAXCHAR+1];
+unsigned short var_leftC[MAXCHAR+1], var_rghtC[MAXCHAR+1];
 // var dad,frq: array[0..TWICEMAX] of Word;
-short var_dad[TWICEMAX+1], var_frq[TWICEMAX+1];
+unsigned short var_dad[TWICEMAX+1], var_frq[TWICEMAX+1];
 // var index,ibitCount,ibitBuffer,obufCount: Word;
-short var_index, var_ibitCount, var_ibitBuffer, var_obufCount;
+unsigned short var_index, var_ibitCount, var_ibitBuffer, var_obufCount;
 
 int DEPACKIO____RDC_DECODE()
 {
@@ -164,17 +164,15 @@ short DEPACKIO____RDC_DECOMPRESS_formal_formal_WORD__WORD(unsigned char *a3, uns
   return var_output_size;
 }
 
-unsigned char DEPACKIO____GETCHAR(char *result)
+unsigned char DEPACKIO____GETCHAR(unsigned char *result)
 {
-  unsigned int a1;
   unsigned char cf; // ACHTUNG
   
   *result = 0; // al@2 // ACHTUNG
 
-  LOWORD(a1) = var_ibufCount;
-  if ( (unsigned __int16)var_ibufCount < (unsigned __int16)var_ibufSize )
+  if ( var_ibufCount < var_ibufSize )
   {
-    *result = *(_BYTE *)(var_input_ptr + a1); // ACHTUNG
+    *result = *(_BYTE *)(var_input_ptr + var_ibufCount); // ACHTUNG
     ++var_ibufCount;
     cf = 1; // ACHTUNG
   }
@@ -203,7 +201,7 @@ void DEPACKIO____LZSS_DECODE()
   char v8; // al@11
   char v9; // cl@11
   
-  char charresult; // ACHTUNG
+  unsigned char charresult; // ACHTUNG
 
   var_ibufCount = 0;
   var_ibufSize = var_input_size;
@@ -479,8 +477,8 @@ void DEPACKIO____UPDATEFREQ_WORD_WORD(short a1, short a2)
   __int16 v5; // bx@2
   __int16 v6; // dx@2
   __int16 v7; // ax@3
-  __int16 *v8; // edi@8
-  __int16 *v9; // esi@8
+  unsigned short *v8; // edi@8
+  unsigned short *v9; // esi@8
   unsigned __int16 v10; // ax@9
 
   HIWORD(v2) = 0;
@@ -646,12 +644,12 @@ short DEPACKIO____UNCOMPRESS__WORD()
   signed int v0; // ebx@1
   signed __int16 v1; // dx@1
   __int16 v2; // cx@1
-  int v3; // eax@1
+  unsigned short v3; // eax@1
 
   v0 = 1;
   v1 = var_ibitCount;
   v2 = var_ibitBuffer;
-  v3 = (unsigned __int16)var_ibufCount;
+  v3 = var_ibufCount;
   do
   {
     if ( v1 )
@@ -660,12 +658,12 @@ short DEPACKIO____UNCOMPRESS__WORD()
     }
     else
     {
-      //if ( (_WORD)v3 == -1 )
-      if ( v3 == -1 ) // ACHTUNG
-        LOWORD(v3) = 0;
-      LOWORD(v3) = 2 * v3;
+      if ( v3 == MAXBUF ) {
+        v3 = 0;
+      }
+      v3 = 2 * v3;
       v2 = *(_WORD *)(v3 + var_input_ptr);
-      LOWORD(v3) = ((unsigned __int16)v3 >> 1) + 1;
+      v3 = (v3 >> 1) + 1;
       v1 = 15;
     }
     if ( (unsigned __int16)v2 <= 0x7FFFu )
