@@ -72,14 +72,14 @@ unsigned short var_dad[TWICEMAX+1], var_frq[TWICEMAX+1];
 // var index,ibitCount,ibitBuffer,obufCount: Word;
 unsigned short var_index, var_ibitCount, var_ibitBuffer, var_obufCount;
 
-int DEPACKIO____RDC_DECODE()
+unsigned int DEPACKIO____RDC_DECODE()
 {
   unsigned int v0; // ecx@2
   unsigned __int8 v1; // al@12
   const void *v2; // esi@12
   unsigned __int8 v3; // al@13
   const void *v4; // esi@13
-  int result; // eax@14
+  unsigned int result; // eax@14
 
   var_ctrl_mask = 0;
   var_ibuf_end = (unsigned __int16)var_input_size + var_input_ptr;
@@ -95,7 +95,7 @@ int DEPACKIO____RDC_DECODE()
     {
       var_ctrl_bits = *(_WORD *)var_ibuf_idx;
       var_ibuf_idx += 2;
-      var_ctrl_mask = -32768;
+      var_ctrl_mask = 0x8000;
     }
     if ( (unsigned __int16)var_ctrl_mask & (unsigned __int16)var_ctrl_bits )
     {
@@ -155,7 +155,7 @@ int DEPACKIO____RDC_DECODE()
   return result;
 }
 
-short DEPACKIO____RDC_DECOMPRESS_formal_formal_WORD__WORD(unsigned char *a3, unsigned char *a2, short a1)
+unsigned short DEPACKIO____RDC_DECOMPRESS_formal_formal_WORD__WORD(unsigned char *a3, unsigned char *a2, unsigned short a1)
 {
   var_input_ptr = a3;
   var_output_ptr = a2;
@@ -180,13 +180,10 @@ unsigned char DEPACKIO____GETCHAR(unsigned char *result)
   return cf;
 }
 
-char DEPACKIO____PUTCHAR(char result)
+unsigned char DEPACKIO____PUTCHAR(unsigned char result)
 {
-  unsigned int a2;
-
-  LOWORD(a2) = var_output_size;
-  *(_BYTE *)(var_output_ptr + a2) = result;
-  var_output_size = a2 + 1;
+  *(_BYTE *)(var_output_ptr + var_output_size) = result;
+  var_output_size++;
   return result;
 }
 
@@ -195,11 +192,11 @@ void DEPACKIO____LZSS_DECODE()
   unsigned int v0; // ebx@1
   unsigned __int16 v1; // dx@1
   int v2; // edi@1
-  __int16 v3; // dx@2
-  char v6; // ch@9
+  unsigned short v3; // dx@2
+  unsigned char v6; // ch@9
   int v7; // ebx@11
-  char v8; // al@11
-  char v9; // cl@11
+  unsigned char v8; // al@11
+  unsigned char v9; // cl@11
   
   unsigned char charresult; // ACHTUNG
 
@@ -249,7 +246,7 @@ void DEPACKIO____LZSS_DECODE()
   }
 }
 
-short DEPACKIO____LZSS_DECOMPRESS_formal_formal_WORD__WORD(unsigned char *a3, unsigned char *a2, short a1)
+unsigned short DEPACKIO____LZSS_DECOMPRESS_formal_formal_WORD__WORD(unsigned char *a3, unsigned char *a2, unsigned short a1)
 {
   var_input_ptr = a3;
   var_output_ptr = a2;
@@ -260,7 +257,7 @@ short DEPACKIO____LZSS_DECOMPRESS_formal_formal_WORD__WORD(unsigned char *a3, un
   return var_output_size;
 }
 
-short DEPACKIO____NEXTCODE()
+unsigned short DEPACKIO____NEXTCODE()
 {
   unsigned int a2; // bx // ACHTUNG
   unsigned int a1; // cx // ACHTUNG
@@ -323,16 +320,16 @@ short DEPACKIO____NEXTCODE()
     while ( a1 );
   }
   LOWORD(a2) = 2 * (var_le78 - 9);
-  return *(__int16 *)((char *)&var_le7a_0 + a2) & v6;
+  return *(__int16 *)((unsigned char *)&var_le7a_0 + a2) & v6;
 }
 
-short DEPACKIO____LZW_DECODE__WORD()
+unsigned short DEPACKIO____LZW_DECODE__WORD()
 {
   unsigned char *a1;
   int v1; // ebx@1
   int v2; // ecx@1
   _BYTE *v3; // edi@1
-  __int16 result; // ax@2
+  unsigned short result; // ax@2
   //int v5; // ecx@2
   char v6; // al@8
   char v7; // al@9
@@ -425,7 +422,7 @@ short DEPACKIO____LZW_DECODE__WORD()
   return result;
 }
 
-short DEPACKIO____LZW_DECOMPRESS_formal_formal__WORD(unsigned char *a3, unsigned char *a2)
+unsigned short DEPACKIO____LZW_DECOMPRESS_formal_formal__WORD(unsigned char *a3, unsigned char *a2)
 {
   var_input_ptr = a3;
   var_output_ptr = a2;
@@ -434,13 +431,13 @@ short DEPACKIO____LZW_DECOMPRESS_formal_formal__WORD(unsigned char *a3, unsigned
   return var_output_size;
 }
 
-short DEPACKIO____INITTREE()
+unsigned short DEPACKIO____INITTREE()
 {
   signed int v0; // edi@1
   __int16 v1; // ax@2
   signed int v2; // ST00_4@2
   signed int v3; // ST00_4@4
-  __int16 result; // ax@4
+  unsigned short result; // ax@4
 
   v0 = 2;
   do
@@ -448,8 +445,8 @@ short DEPACKIO____INITTREE()
     v1 = (unsigned __int16)v0 / 2u;
     v2 = v0;
     LOWORD(v0) = 2 * v0;
-    *(__int16 *)((char *)var_dad + v0) = v1;
-    *(__int16 *)((char *)var_frq + v0) = 1;
+    *(__int16 *)((unsigned char *)var_dad + v0) = v1;
+    *(__int16 *)((unsigned char *)var_frq + v0) = 1;
     HIWORD(v0) = HIWORD(v2);
     LOWORD(v0) = v2 + 1;
   }
@@ -459,9 +456,9 @@ short DEPACKIO____INITTREE()
   {
     v3 = v0;
     LOWORD(v0) = 2 * v0;
-    *(__int16 *)((char *)var_leftC + v0) = v0;
+    *(__int16 *)((unsigned char *)var_leftC + v0) = v0;
     result = v0 + 1;
-    *(__int16 *)((char *)var_rghtC + v0) = v0 + 1;
+    *(__int16 *)((unsigned char *)var_rghtC + v0) = v0 + 1;
     HIWORD(v0) = HIWORD(v3);
     LOWORD(v0) = v3 + 1;
   }
@@ -469,7 +466,7 @@ short DEPACKIO____INITTREE()
   return result;
 }
 
-void DEPACKIO____UPDATEFREQ_WORD_WORD(short a1, short a2)
+void DEPACKIO____UPDATEFREQ_WORD_WORD(unsigned short a1, unsigned short a2)
 {
   int v2; // ecx@1
   int v3; // edi@1
@@ -486,35 +483,35 @@ void DEPACKIO____UPDATEFREQ_WORD_WORD(short a1, short a2)
   do
   {
     LOWORD(v3) = 2 * a2;
-    v4 = *(__int16 *)((char *)var_frq + v3);
+    v4 = *(__int16 *)((unsigned char *)var_frq + v3);
     LOWORD(v3) = 2 * a1;
-    v5 = *(__int16 *)((char *)var_frq + v3) + v4;
+    v5 = *(__int16 *)((unsigned char *)var_frq + v3) + v4;
     LOWORD(v3) = 2 * a2;
-    v6 = *(__int16 *)((char *)var_dad + v3);
-    LOWORD(v3) = 2 * *(__int16 *)((char *)var_dad + v3);
-    *(__int16 *)((char *)var_frq + v3) = v5;
+    v6 = *(__int16 *)((unsigned char *)var_dad + v3);
+    LOWORD(v3) = 2 * *(__int16 *)((unsigned char *)var_dad + v3);
+    *(__int16 *)((unsigned char *)var_frq + v3) = v5;
     a2 = v6;
     if ( v6 != 1 )
     {
       LOWORD(v3) = 2 * v6;
-      LOWORD(v3) = *(__int16 *)((char *)var_dad + v3);
+      LOWORD(v3) = *(__int16 *)((unsigned char *)var_dad + v3);
       v7 = v3;
       LOWORD(v3) = 2 * v3;
-      if ( v6 == *(__int16 *)((char *)var_leftC + v3) )
+      if ( v6 == *(__int16 *)((unsigned char *)var_leftC + v3) )
       {
         LOWORD(v3) = 2 * v7;
-        a1 = *(__int16 *)((char *)var_rghtC + v3);
+        a1 = *(__int16 *)((unsigned char *)var_rghtC + v3);
       }
       else
       {
         LOWORD(v3) = 2 * v7;
-        a1 = *(__int16 *)((char *)var_leftC + v3);
+        a1 = *(__int16 *)((unsigned char *)var_leftC + v3);
       }
     }
   }
   while ( v6 != 1 );
   LOWORD(v3) = 2;
-  if ( *(__int16 *)((char *)var_frq + v3) == 2000 )
+  if ( *(__int16 *)((unsigned char *)var_frq + v3) == 2000 )
   {
     LOWORD(v2) = 3549;
     v9 = var_frq + 1;
@@ -531,10 +528,10 @@ void DEPACKIO____UPDATEFREQ_WORD_WORD(short a1, short a2)
   }
 }
 
-void DEPACKIO____UPDATEMODEL_WORD(short a1)
+void DEPACKIO____UPDATEMODEL_WORD(unsigned short a1)
 {
   int v1; // ecx@1
-  __int16 v2; // bx@1
+  unsigned short v2; // bx@1
   int v3; // edi@1
   __int16 v4; // dx@2
   __int16 v5; // si@2
@@ -550,67 +547,67 @@ void DEPACKIO____UPDATEMODEL_WORD(short a1)
 
   HIWORD(v1) = 0;
   v2 = a1 + 1775;
-  ++*(__int16 *)((char *)var_frq + (unsigned __int16)(2 * (a1 + 1775)));
+  ++*(__int16 *)((unsigned char *)var_frq + (unsigned __int16)(2 * (a1 + 1775)));
   v3 = (unsigned __int16)(2 * (a1 + 1775));
-  if ( *(__int16 *)((char *)var_dad + (unsigned __int16)v3) != 1 )
+  if ( *(__int16 *)((unsigned char *)var_dad + (unsigned __int16)v3) != 1 )
   {
-    v4 = *(__int16 *)((char *)var_dad + v3);
+    v4 = *(__int16 *)((unsigned char *)var_dad + v3);
     LOWORD(v1) = 2 * v4;
-    v5 = *(__int16 *)((char *)var_leftC + v1);
+    v5 = *(__int16 *)((unsigned char *)var_leftC + v1);
     if ( v5 == v2 )
     {
       LOWORD(v3) = 2 * v4;
-      v5 = *(__int16 *)((char *)var_rghtC + v3);
+      v5 = *(__int16 *)((unsigned char *)var_rghtC + v3);
     }
     v6 = v4;
     DEPACKIO____UPDATEFREQ_WORD_WORD(v5, v2);
     v7 = v6;
     do
     {
-      v8 = *(__int16 *)((char *)var_dad + (unsigned __int16)(2 * v7));
-      v9 = (unsigned __int16)(2 * *(__int16 *)((char *)var_dad + (unsigned __int16)(2 * v7)));
-      if ( *(__int16 *)((char *)var_leftC + (unsigned __int16)v9) == v7 )
-        v10 = *(__int16 *)((char *)var_rghtC + v9);
+      v8 = *(__int16 *)((unsigned char *)var_dad + (unsigned __int16)(2 * v7));
+      v9 = (unsigned __int16)(2 * *(__int16 *)((unsigned char *)var_dad + (unsigned __int16)(2 * v7)));
+      if ( *(__int16 *)((unsigned char *)var_leftC + (unsigned __int16)v9) == v7 )
+        v10 = *(__int16 *)((unsigned char *)var_rghtC + v9);
       else
-        v10 = *(__int16 *)((char *)var_leftC + v9);
+        v10 = *(__int16 *)((unsigned char *)var_leftC + v9);
       HIWORD(v11) = 0;
-      if ( *(unsigned __int16 *)((char *)var_frq + (unsigned __int16)(2 * v2)) > *(unsigned __int16 *)((char *)var_frq + (unsigned __int16)(2 * v10)) )
+      if ( *(unsigned __int16 *)((unsigned char *)var_frq + (unsigned __int16)(2 * v2)) > *(unsigned __int16 *)((unsigned char *)var_frq + (unsigned __int16)(2 * v10)) )
       {
         LOWORD(v11) = 2 * v8;
-        if ( *(__int16 *)((char *)var_leftC + v11) == v7 )
+        if ( *(__int16 *)((unsigned char *)var_leftC + v11) == v7 )
         {
           LOWORD(v11) = 2 * v8;
-          *(__int16 *)((char *)var_rghtC + v11) = v2;
+          *(__int16 *)((unsigned char *)var_rghtC + v11) = v2;
         }
         else
         {
-          *(__int16 *)((char *)var_leftC + (unsigned __int16)(2 * v8)) = v2;
+          *(__int16 *)((unsigned char *)var_leftC + (unsigned __int16)(2 * v8)) = v2;
         }
         v12 = 2 * v7;
-        if ( *(__int16 *)((char *)var_leftC + (unsigned __int16)(2 * v7)) == v2 )
+        if ( *(__int16 *)((unsigned char *)var_leftC + (unsigned __int16)(2 * v7)) == v2 )
         {
-          *(__int16 *)((char *)var_leftC + v12) = v10;
-          v13 = *(__int16 *)((char *)var_rghtC + v12);
+          *(__int16 *)((unsigned char *)var_leftC + v12) = v10;
+          v13 = *(__int16 *)((unsigned char *)var_rghtC + v12);
         }
         else
         {
-          *(__int16 *)((char *)var_rghtC + v12) = v10;
-          v13 = *(__int16 *)((char *)var_leftC + v12);
+          *(__int16 *)((unsigned char *)var_rghtC + v12) = v10;
+          v13 = *(__int16 *)((unsigned char *)var_leftC + v12);
         }
-        *(__int16 *)((char *)var_dad + (unsigned __int16)(2 * v10)) = v7;
-        *(__int16 *)((char *)var_dad + (unsigned __int16)(2 * v2)) = v8;
+        *(__int16 *)((unsigned char *)var_dad + (unsigned __int16)(2 * v10)) = v7;
+        *(__int16 *)((unsigned char *)var_dad + (unsigned __int16)(2 * v2)) = v8;
         DEPACKIO____UPDATEFREQ_WORD_WORD(v13, v10);
         v2 = v10;
       }
       v14 = 2 * v2;
-      v2 = *(__int16 *)((char *)var_dad + (unsigned __int16)(2 * v2));
-      v7 = *(__int16 *)((char *)var_dad + (unsigned __int16)(2 * *(__int16 *)((char *)var_dad + v14)));
+      v2 = *(__int16 *)((unsigned char *)var_dad + (unsigned __int16)(2 * v2));
+      v7 = *(__int16 *)((unsigned char *)var_dad + (unsigned __int16)(2 * *(__int16 *)((unsigned char *)var_dad + v14)));
     }
     while ( v7 != 1 );
   }
 }
 
-short DEPACKIO____INPUTCODE_WORD__WORD(unsigned short a1)
+unsigned short DEPACKIO____INPUTCODE_WORD__WORD(unsigned short a1)
 {
   __int16 v1; // bx@1
   unsigned __int16 v2; // cx@1
@@ -631,7 +628,7 @@ short DEPACKIO____INPUTCODE_WORD__WORD(unsigned short a1)
       var_ibitCount = 15;
     }
     if ( (unsigned __int16)var_ibitBuffer > 0x7FFFu )
-      v1 |= *(__int16 *)((char *)var_BitValue + (unsigned __int16)(2 * (v2 - 1)));
+      v1 |= *(__int16 *)((unsigned char *)var_BitValue + (unsigned __int16)(2 * (v2 - 1)));
     var_ibitBuffer *= 2;
     ++v2;
   }
@@ -639,7 +636,7 @@ short DEPACKIO____INPUTCODE_WORD__WORD(unsigned short a1)
   return v1;
 }
 
-short DEPACKIO____UNCOMPRESS__WORD()
+unsigned short DEPACKIO____UNCOMPRESS__WORD()
 {
   signed int v0; // ebx@1
   signed __int16 v1; // dx@1
@@ -681,7 +678,7 @@ short DEPACKIO____UNCOMPRESS__WORD()
   return v0;
 }
 
-short DEPACKIO____SIXPACK_DECODE()
+unsigned short DEPACKIO____SIXPACK_DECODE()
 {
   int v0; // ebx@1
   __int16 result; // ax@1
@@ -707,9 +704,9 @@ short DEPACKIO____SIXPACK_DECODE()
       v2 = result - 257;
       var_index = v2 / 0xFDu;
       v3 = v2 + 3 - 253 * (v2 / 0xFDu);
-      v4 = *(__int16 *)((char *)var_CopyMin + (unsigned __int16)(2 * (v2 / 0xFDu)))
+      v4 = *(__int16 *)((unsigned char *)var_CopyMin + (unsigned __int16)(2 * (v2 / 0xFDu)))
          + v3
-         + DEPACKIO____INPUTCODE_WORD__WORD(*(__int16 *)((char *)var_CopyBits + (unsigned __int16)(2 * (v2 / 0xFDu))));
+         + DEPACKIO____INPUTCODE_WORD__WORD(*(__int16 *)((unsigned char *)var_CopyBits + (unsigned __int16)(2 * (v2 / 0xFDu))));
       LOWORD(v0) = var_count;
       LOWORD(v5) = var_count - v4;
       if ( (unsigned __int16)var_count < v4 )
@@ -760,7 +757,7 @@ short DEPACKIO____SIXPACK_DECODE()
   return result;
 }
 
-short DEPACKIO____SIXPACK_DECOMPRESS_formal_formal_WORD__WORD(unsigned char *a3, unsigned char *a2, short a1)
+unsigned short DEPACKIO____SIXPACK_DECOMPRESS_formal_formal_WORD__WORD(unsigned char *a3, unsigned char *a2, unsigned short a1)
 {
   var_input_ptr = a3;
   var_output_ptr = a2;
@@ -770,58 +767,58 @@ short DEPACKIO____SIXPACK_DECOMPRESS_formal_formal_WORD__WORD(unsigned char *a3,
   return var_output_size;
 }
 
-int DEPACKIO____APACK_DECOMPRESS_formal_formal__LONGWORD(char *a2, unsigned char *a1)
+unsigned int DEPACKIO____APACK_DECOMPRESS_formal_formal__LONGWORD(unsigned char *a2, unsigned char *a1)
 {
   unsigned int swap;
 
-  char *v2; // esi@1
+  unsigned char *v2; // esi@1
   _BYTE *v3; // edi@1
-  char v4; // dl@1
+  unsigned char v4; // dl@1
   unsigned __int8 v5; // cf@3
-  char v6; // dl@4
-  char v7; // tt@4
+  unsigned char v6; // dl@4
+  unsigned char v7; // tt@4
   unsigned __int8 v8; // cf@6
-  char v9; // dl@7
-  char v10; // tt@7
+  unsigned char v9; // dl@7
+  unsigned char v10; // tt@7
   unsigned int v11; // eax@9
   unsigned __int8 v12; // cf@9
-  char v13; // dl@10
-  char v14; // tt@10
+  unsigned char v13; // dl@10
+  unsigned char v14; // tt@10
   unsigned int v15; // ecx@12
   unsigned __int8 v16; // cf@13
-  char v17; // dl@14
-  char v18; // tt@14
-  char v19; // tt@15
+  unsigned char v17; // dl@14
+  unsigned char v18; // tt@14
+  unsigned char v19; // tt@15
   signed int v20; // ecx@18
   unsigned __int8 v21; // cf@19
-  char v22; // dl@19
-  char v23; // dl@20
-  char v24; // tt@20
+  unsigned char v22; // dl@19
+  unsigned char v23; // dl@20
+  unsigned char v24; // tt@20
   unsigned __int8 v25; // cf@21
-  char v26; // dl@22
-  char v27; // tt@22
+  unsigned char v26; // dl@22
+  unsigned char v27; // tt@22
   int v28; // ecx@24
   unsigned __int8 v29; // cf@26
-  char v30; // dl@26
-  char v31; // dl@27
-  char v32; // tt@27
+  unsigned char v30; // dl@26
+  unsigned char v31; // dl@27
+  unsigned char v32; // tt@27
   unsigned __int8 v33; // cf@28
-  char v34; // dl@29
-  char v35; // tt@29
+  unsigned char v34; // dl@29
+  unsigned char v35; // tt@29
   unsigned __int8 v36; // cf@32
   unsigned __int32 v37; // eax@32
   unsigned __int8 v38; // cf@35
-  char v39; // dl@35
-  char v40; // dl@36
-  char v41; // tt@36
+  unsigned char v39; // dl@35
+  unsigned char v40; // dl@36
+  unsigned char v41; // tt@36
   unsigned __int8 v42; // cf@37
-  char v43; // dl@38
-  char v44; // tt@38
+  unsigned char v43; // dl@38
+  unsigned char v44; // tt@38
   unsigned int v46; // [sp+10h] [bp-8h]@45
 
   v2 = a2;
   v3 = a1;
-  v4 = -128;
+  v4 = 0x80;
 LABEL_2:
   *v3++ = *v2++;
   while ( 1 )

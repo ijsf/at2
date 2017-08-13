@@ -3,12 +3,12 @@
 #include "import.h"
 #include "fpc.h"
 
-char ADT2KEYB____LOOKUPKEY_WORD_formal_BYTE__BOOLEAN(short a3, short *a2, unsigned char a1)
+unsigned char ADT2KEYB____LOOKUPKEY_WORD_formal_BYTE__BOOLEAN(unsigned short a3, unsigned short *a2, unsigned char a1)
 {
-  __int16 *v3; // esi@1
+  unsigned short *v3; // esi@1
   int v4; // ecx@1
-  __int16 v5; // ax@2
-  char v7; // [sp+Ch] [bp-8h]@1
+  unsigned short v5; // ax@2
+  unsigned char v7; // [sp+Ch] [bp-8h]@1
 
   v3 = a2;
   v4 = a1;

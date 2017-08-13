@@ -15,10 +15,10 @@ TC__ADT2SYS____VIRTUAL_SCREEN__FIRST_ROW
 TC__TXTSCRIO____SCREEN_PTR
 */
 
-char ADT2SYS____DRAW_SDL_SCREEN_720X480()
+void ADT2SYS____DRAW_SDL_SCREEN_720X480()
 {
   _BYTE *v0; // edi@3
-  char *v1; // ebx@3
+  unsigned char *v1; // ebx@3
   int v2; // eax@6
   signed int v4; // [sp+Ch] [bp-28h]@6
   signed int v5; // [sp+10h] [bp-24h]@5
@@ -26,8 +26,8 @@ char ADT2SYS____DRAW_SDL_SCREEN_720X480()
   signed int v7; // [sp+18h] [bp-1Ch]@3
   unsigned char *v8; // [sp+1Ch] [bp-18h]@3
   int v9; // [sp+20h] [bp-14h]@3
-  char v10; // [sp+24h] [bp-10h]@3
-  char v11; // [sp+28h] [bp-Ch]@5
+  unsigned char v10; // [sp+24h] [bp-10h]@3
+  unsigned char v11; // [sp+28h] [bp-Ch]@5
   unsigned __int8 v12; // [sp+2Ch] [bp-8h]@6
   unsigned __int8 v13; // [sp+30h] [bp-4h]@4
 
@@ -38,7 +38,7 @@ char ADT2SYS____DRAW_SDL_SCREEN_720X480()
   }
   v0 = (_BYTE *)TC__ADT2SYS_____FRAMEBUFFER;
   v8 = TC__ADT2SYS_____FRAMEBUFFER + 345600;
-  v1 = (char *)TC__TXTSCRIO____SCREEN_PTR;
+  v1 = (unsigned char *)TC__TXTSCRIO____SCREEN_PTR;
   v9 = TC__ADT2SYS____VIRTUAL_SCREEN__FIRST_ROW;
   v7 = 40;
   v10 = 1;
@@ -104,20 +104,19 @@ char ADT2SYS____DRAW_SDL_SCREEN_720X480()
     --v7;
   }
   while ( v7 );
-  return v2;
 }
 
-char ADT2SYS____DRAW_SDL_SCREEN_960X800()
+void ADT2SYS____DRAW_SDL_SCREEN_960X800()
 {
   _BYTE *v0; // edi@3
-  char *v1; // ebx@3
-  char result; // al@12
+  unsigned char *v1; // ebx@3
+  unsigned char result; // al@12
   signed int v3; // [sp+Ch] [bp-20h]@6
   signed int v4; // [sp+10h] [bp-1Ch]@5
   signed int v5; // [sp+14h] [bp-18h]@4
   signed int v6; // [sp+18h] [bp-14h]@3
-  char v7; // [sp+1Ch] [bp-10h]@3
-  char v8; // [sp+20h] [bp-Ch]@5
+  unsigned char v7; // [sp+1Ch] [bp-10h]@3
+  unsigned char v8; // [sp+20h] [bp-Ch]@5
   unsigned __int8 v9; // [sp+24h] [bp-8h]@6
   unsigned __int8 v10; // [sp+28h] [bp-4h]@4
 
@@ -127,7 +126,7 @@ char ADT2SYS____DRAW_SDL_SCREEN_960X800()
     TC__ADT2SYS____CURSOR_SYNC ^= 1u;
   }
   v0 = (_BYTE *)TC__ADT2SYS_____FRAMEBUFFER;
-  v1 = (char *)TC__TXTSCRIO____SCREEN_PTR;
+  v1 = (unsigned char *)TC__TXTSCRIO____SCREEN_PTR;
   v6 = 50;
   v7 = 1;
   do
@@ -184,20 +183,19 @@ char ADT2SYS____DRAW_SDL_SCREEN_960X800()
     --v6;
   }
   while ( v6 );
-  return result;
 }
 
-char ADT2SYS____DRAW_SDL_SCREEN_1440X960()
+void ADT2SYS____DRAW_SDL_SCREEN_1440X960()
 {
   _BYTE *v0; // edi@3
-  char *v1; // ebx@3
-  char result; // al@12
+  unsigned char *v1; // ebx@3
+  unsigned char result; // al@12
   signed int v3; // [sp+Ch] [bp-20h]@6
   signed int v4; // [sp+10h] [bp-1Ch]@5
   signed int v5; // [sp+14h] [bp-18h]@4
   signed int v6; // [sp+18h] [bp-14h]@3
-  char v7; // [sp+1Ch] [bp-10h]@3
-  char v8; // [sp+20h] [bp-Ch]@5
+  unsigned char v7; // [sp+1Ch] [bp-10h]@3
+  unsigned char v8; // [sp+20h] [bp-Ch]@5
   unsigned __int8 v9; // [sp+24h] [bp-8h]@6
   unsigned __int8 v10; // [sp+28h] [bp-4h]@4
 
@@ -207,7 +205,7 @@ char ADT2SYS____DRAW_SDL_SCREEN_1440X960()
     TC__ADT2SYS____CURSOR_SYNC ^= 1u;
   }
   v0 = (_BYTE *)TC__ADT2SYS_____FRAMEBUFFER;
-  v1 = (char *)TC__TXTSCRIO____SCREEN_PTR;
+  v1 = (unsigned char *)TC__TXTSCRIO____SCREEN_PTR;
   v6 = 60;
   v7 = 1;
   do
@@ -264,5 +262,4 @@ char ADT2SYS____DRAW_SDL_SCREEN_1440X960()
     --v6;
   }
   while ( v6 );
-  return result;
 }

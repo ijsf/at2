@@ -2,9 +2,12 @@
 
 /*
   PASCAL      C
+
   Longint     int
   Smallint    short
   Shortint    char
+  Dword       unsigned int
+  Longword    unsigned int
   Word        unsigned short
   Byte        unsigned char
 */
@@ -47,31 +50,11 @@ extern unsigned char U__ADT2UNIT____CHANNEL_FLAG[20];
 // _chan_n: tTRACK_ADDR;
 extern unsigned short U__ADT2UNIT_____CHAN_N[20];
 
-// limit_exceeded: Boolean;
-extern unsigned char U__ADT2UNIT____LIMIT_EXCEEDED;
-
 // chan_pos: Byte = 1;
 extern unsigned char TC__ADT2UNIT____CHAN_POS;
 
 // max_patterns:      Byte      = 128;
 extern unsigned char TC__ADT2UNIT____MAX_PATTERNS;
-
-// tCHUNK = Record
-//            note:        Byte;
-//            instr_def:   Byte;
-//            effect_def:  Byte;
-//            effect:      Byte;
-//            effect_def2: Byte;
-//            effect2:     Byte;
-//          end;
-// tVARIABLE_DATA = array[0..7]    of array[1..20] of
-//                  array[0..$0ff] of tCHUNK;
-// tPATTERN_DATA = array[0..15] of tVARIABLE_DATA;
-// pattdata: ^tPATTERN_DATA = NIL;
-extern unsigned char *TC__ADT2UNIT____PATTDATA;
-
-// module_archived:   Boolean   = FALSE;
-extern unsigned char TC__ADT2UNIT____MODULE_ARCHIVED;
 
 // _pattedit_lastpos: Byte = 0;
 extern unsigned char TC__ADT2SYS_____PATTEDIT_LASTPOS;

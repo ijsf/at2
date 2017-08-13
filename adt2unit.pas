@@ -35,7 +35,7 @@ const
   no_status_refresh: Boolean   = FALSE;
   do_synchronize:    Boolean   = FALSE;
   space_pressed:     Boolean   = FALSE;
-  module_archived:   Boolean   = FALSE; export name 'TC__ADT2UNIT____MODULE_ARCHIVED';
+  module_archived:   Boolean   = FALSE;
   force_scrollbars:  Boolean   = FALSE;
   no_sync_playing:   Boolean   = FALSE;
   no_step_debugging: Boolean   = FALSE;
@@ -204,7 +204,7 @@ var
   pattord_page,pattord_hpos,pattord_vpos: Byte;
   instrum_page: Byte;
   pattern_patt,pattern_page,pattern_hpos: Byte;
-  limit_exceeded: Boolean; export name 'U__ADT2UNIT____LIMIT_EXCEEDED';
+  limit_exceeded: Boolean;
   load_flag,load_flag_alt: Byte;
   reset_chan: array[1..20] of Boolean;
   reset_adsrw: array[1..20] of Boolean;
@@ -225,7 +225,7 @@ var
   buf4: array[WORD] of Byte;
 
 const
-  pattdata: ^tPATTERN_DATA = NIL; export name 'TC__ADT2UNIT____PATTDATA';
+  pattdata: ^tPATTERN_DATA = NIL;
 
 var
   old_hash_buffer: tOLD_VARIABLE_DATA1;
@@ -403,8 +403,8 @@ function calc_vibtrem_shift(chan: Byte; var table_data): Word; cdecl; external n
 procedure change_freq_asm(chan: Byte; freq: Word); cdecl; cdecl; external name 'ADT2UNIT____CHANGE_FREQ_BYTE_WORD_ASM';
 function  ins_parameter(ins,param: Byte): Byte; cdecl; external name 'ADT2UNIT____INS_PARAMETER_BYTE_BYTE__BYTE';
 function is_data_empty(var buf; size: Longint): Boolean; cdecl; external name 'ADT2UNIT____IS_DATA_EMPTY_formal_LONGINT__BOOLEAN';
-procedure get_chunk(pattern,line,channel: Byte; var chunk: tCHUNK); cdecl; external name 'ADT2UNIT____GET_CHUNK_BYTE_BYTE_BYTE_TCHUNK';
-procedure put_chunk(pattern,line,channel: Byte; var chunk: tCHUNK); cdecl; external name 'ADT2UNIT____PUT_CHUNK_BYTE_BYTE_BYTE_TCHUNK';
+procedure get_chunk(pattern,line,channel: Byte; var chunk: tCHUNK);
+procedure put_chunk(pattern,line,channel: Byte; chunk: tCHUNK);
 function  get_chanpos(var data; channels,scancode: Byte): Byte; cdecl; external name 'ADT2UNIT____GET_CHANPOS_formal_BYTE_BYTE__BYTE';
 function  get_chanpos2(var data; channels,scancode: Byte): Byte; cdecl; external name 'ADT2UNIT____GET_CHANPOS2_formal_BYTE_BYTE__BYTE';
 function  count_channel(hpos: Byte): Byte; cdecl; external name 'ADT2UNIT____COUNT_CHANNEL_BYTE__BYTE';
@@ -5606,6 +5606,32 @@ begin
       freqtable2[PRED(chan)] := freqtable2[chan];
     end;
 end;
+
+procedure get_chunk(pattern,line,channel: Byte; var chunk: tCHUNK);
+begin
+  if pattern < max_patterns then
+    begin
+      Move(pattdata^[pattern DIV 8][pattern MOD 8][channel][line], chunk, CHUNK_SIZE);
+    end
+  else
+    begin
+      FillByte(chunk, CHUNK_SIZE, 0);
+    end;
+end;
+
+procedure put_chunk(pattern,line,channel: Byte; chunk: tCHUNK);
+begin
+  if pattern < max_patterns then
+    begin
+      Move(chunk, pattdata^[pattern DIV 8][pattern MOD 8][channel][line], CHUNK_SIZE);
+      module_archived := FALSE;
+    end
+  else
+    begin
+      limit_exceeded := TRUE;
+    end;
+end;
+
 
 begin
   c_songdata_flag_4op := Addr(songdata.flag_4op);

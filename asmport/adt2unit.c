@@ -72,7 +72,7 @@ unsigned short ADT2UNIT____CALC_VIBTREM_SHIFT_BYTE_formal__WORD(unsigned char a2
   unsigned __int8 v2; // dh@1
   unsigned short v3; // ax@1
   unsigned short result; // ax@1
-  char v5; // [sp+14h] [bp-Ch]@1
+  unsigned char v5; // [sp+14h] [bp-Ch]@1
 
   v2 = *(_BYTE *)(a1 + 5 * a2 - 5);
   v3 = __ROL2__(
@@ -87,7 +87,7 @@ unsigned short ADT2UNIT____CALC_VIBTREM_SHIFT_BYTE_formal__WORD(unsigned char a2
   return result;
 }
 
-void ADT2UNIT____CHANGE_FREQ_BYTE_WORD_ASM(char a2, unsigned short a1)
+void ADT2UNIT____CHANGE_FREQ_BYTE_WORD_ASM(unsigned char a2, unsigned short a1)
 {
   int v2; // ebx@5
   unsigned short v3; // ax@5
@@ -121,7 +121,7 @@ unsigned char ADT2UNIT____INS_PARAMETER_BYTE_BYTE__BYTE(unsigned char a2, unsign
   return var_songdata__instr_data[(a2 - 1) * INSTRUMENT_SIZE + a1];
 }
 
-char ADT2UNIT____IS_DATA_EMPTY_formal_LONGINT__BOOLEAN(unsigned char *a2, unsigned int a1)
+unsigned char ADT2UNIT____IS_DATA_EMPTY_formal_LONGINT__BOOLEAN(unsigned char *a2, unsigned int a1)
 {
   unsigned int v2; // ecx@2
   _DWORD *v3; // edi@3
@@ -130,7 +130,7 @@ char ADT2UNIT____IS_DATA_EMPTY_formal_LONGINT__BOOLEAN(unsigned char *a2, unsign
   unsigned int v6; // ecx@13
   _BYTE *v7; // edi@14
   bool v8; // zf@14
-  char v10; // [sp+Ch] [bp-8h]@11
+  unsigned char v10; // [sp+Ch] [bp-8h]@11
 
   if ( a1 < 0x10 )
   {
@@ -179,7 +179,7 @@ LABEL_23:
       if ( !v5 )
         break;
       v4 = *(_BYTE *)v3 == 0;
-      v3 = (_DWORD *)((char *)v3 + 1);
+      v3 = (_DWORD *)((unsigned char *)v3 + 1);
       --v5;
     }
     while ( v4 );
@@ -193,52 +193,7 @@ LABEL_24:
   return v10;
 }
 
-#define CHUNK_SIZE 6
-
-void ADT2UNIT____GET_CHUNK_BYTE_BYTE_BYTE_TCHUNK(unsigned char pattern, unsigned char line, unsigned char channel, unsigned char *chunk)
-{
-  if ( (pattern + 1) <= TC__ADT2UNIT____MAX_PATTERNS )
-  {
-    qmemcpy(
-      chunk,
-      (const void *)(
-        TC__ADT2UNIT____PATTDATA
-        + (8 * 20 * 256 * CHUNK_SIZE) * (pattern / 8)
-        + ((20 * 256 * CHUNK_SIZE) * (pattern % 8))
-        + ((256 * CHUNK_SIZE) * (channel - 1))
-        + (CHUNK_SIZE * line)
-      ),
-      CHUNK_SIZE);
-  }
-  else
-  {
-    memset(chunk, 0, 6u);
-  }
-}
-
-void ADT2UNIT____PUT_CHUNK_BYTE_BYTE_BYTE_TCHUNK(unsigned char pattern, unsigned char line, unsigned char channel, unsigned char *chunk)
-{
-  if ( (pattern + 1) <= TC__ADT2UNIT____MAX_PATTERNS )
-  {
-    qmemcpy(
-      (void *)(
-        TC__ADT2UNIT____PATTDATA
-          + (8 * 20 * 256 * CHUNK_SIZE) * (pattern / 8)
-          + ((20 * 256 * CHUNK_SIZE) * (pattern % 8))
-          + ((256 * CHUNK_SIZE) * (channel - 1))
-          + (CHUNK_SIZE * line)
-      ),
-      chunk,
-      CHUNK_SIZE);
-    TC__ADT2UNIT____MODULE_ARCHIVED = 0;
-  }
-  else
-  {
-    U__ADT2UNIT____LIMIT_EXCEEDED = 1;
-  }
-}
-
-int ADT2UNIT____GET_CHANPOS_formal_BYTE_BYTE__BYTE(unsigned char *a3, unsigned char a2, char a1)
+unsigned char ADT2UNIT____GET_CHANPOS_formal_BYTE_BYTE__BYTE(unsigned char *a3, unsigned char a2, unsigned char a1)
 {
   int i; // ebx@1
   _BYTE *v4; // edi@2
@@ -268,7 +223,7 @@ int ADT2UNIT____GET_CHANPOS_formal_BYTE_BYTE__BYTE(unsigned char *a3, unsigned c
   return result;
 }
 
-int ADT2UNIT____GET_CHANPOS2_formal_BYTE_BYTE__BYTE(unsigned char *a3, unsigned char a2, char a1)
+unsigned char ADT2UNIT____GET_CHANPOS2_formal_BYTE_BYTE__BYTE(unsigned char *a3, unsigned char a2, unsigned char a1)
 {
   _BYTE *v3; // edi@1
   bool v4; // zf@1
@@ -293,10 +248,10 @@ int ADT2UNIT____GET_CHANPOS2_formal_BYTE_BYTE__BYTE(unsigned char *a3, unsigned 
   return result;
 }
 
-char ADT2UNIT____COUNT_CHANNEL_BYTE__BYTE(unsigned char a1)
+unsigned char ADT2UNIT____COUNT_CHANNEL_BYTE__BYTE(unsigned char a1)
 {
-  char v1; // al@1
-  char result; // al@2
+  unsigned char v1; // al@1
+  unsigned char result; // al@2
 
   v1 = a1
      / (unsigned __int8)((unsigned __int8)TC__ADT2SYS_____PATTEDIT_LASTPOS / (unsigned __int8)TC__TXTSCRIO____MAX_TRACKS);
@@ -312,10 +267,10 @@ char ADT2UNIT____COUNT_CHANNEL_BYTE__BYTE(unsigned char a1)
   return result;
 }
 
-char ADT2UNIT____COUNT_POS_BYTE__BYTE(unsigned char a1)
+unsigned char ADT2UNIT____COUNT_POS_BYTE__BYTE(unsigned char a1)
 {
-  char v1; // ah@1
-  char result; // al@1
+  unsigned char v1; // ah@1
+  unsigned char result; // al@1
 
   v1 = a1
      % (unsigned __int8)((unsigned __int8)TC__ADT2SYS_____PATTEDIT_LASTPOS / (unsigned __int8)TC__TXTSCRIO____MAX_TRACKS);
