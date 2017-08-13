@@ -6,12 +6,6 @@ extern "C" {
 extern unsigned char *var_songdata__instr_data;
 extern unsigned char *var_songdata__flag_4op;
 
-// CRC16_table: array[BYTE] of Word; extern; cvar;
-extern short CRC16_table[255];
-
-// CRC32_table: array[BYTE] of Longint; extern; cvar;
-extern unsigned int CRC32_table[255];
-
 // const opl3out: tOPL3OUT_proc = opl3out_proc; export; cvar;
 extern void TC__ADT2OPL3____OPL3OUT(short reg, short data);  // ACHTUNG: reversed params?
 
@@ -65,7 +59,7 @@ extern unsigned char TC__ADT2UNIT____MAX_PATTERNS;
 //                  array[0..$0ff] of tCHUNK;
 // tPATTERN_DATA = array[0..15] of tVARIABLE_DATA;
 // pattdata: ^tPATTERN_DATA = NIL;
-extern unsigned char TC__ADT2UNIT____PATTDATA[];
+extern unsigned char *TC__ADT2UNIT____PATTDATA;
 
 // module_archived:   Boolean   = FALSE;
 extern unsigned char TC__ADT2UNIT____MODULE_ARCHIVED;

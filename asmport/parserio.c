@@ -5,12 +5,50 @@
 
 /*
 FPC_SHORTSTR_TO_SHORTSTR
-
-CRC16_table
-CRC32_table
 */
 
-int PARSERIO____SENSITIVESCAN_formal_LONGINT_LONGINT_SHORTSTRING__LONGINT(unsigned char *buf, int skip, int size, unsigned char *strin)
+// CRC16_table: array[BYTE] of Word;
+unsigned short CRC16_table[256] = {0};
+
+// CRC32_table: array[BYTE] of Longint;
+unsigned int CRC32_table[256] = {0};
+
+#define ODD(x) ((x&1)==1)
+#define EVEN(x) ((x&1)==1)
+
+void PARSERIO____MAKE_TABLE_16BIT()
+{
+  for(int i = 0; i < 256; ++i) {
+    short crc = i;
+    for(int n = 0; n < 8; ++n) {
+      if (ODD(crc)) {
+        crc = (crc >> 1) ^ 0x0A001;
+      }
+      else {
+        crc = (crc >> 1);
+      }
+      CRC16_table[i] = crc;
+    }
+  }
+}
+
+void PARSERIO____MAKE_TABLE_32BIT()
+{
+  for(int i = 0; i < 256; ++i) {
+    unsigned int crc = i;
+    for(int n = 0; n < 8; ++n) {
+      if (ODD(crc)) {
+        crc = (crc >> 1) ^ 0x0EDB88320;
+      }
+      else {
+        crc = (crc >> 1);
+      }
+      CRC32_table[i] = crc;
+    }
+  }
+}
+
+int PARSERIO____SENSITIVESCAN_formal_LONGINT_LONGINT_SHORTSTRING__LONGINT(unsigned char *buf, unsigned int skip, unsigned int size, unsigned char *strin)
 {
   _BYTE *v4; // edi@1
   unsigned int v5; // ecx@1
@@ -279,12 +317,12 @@ unsigned short PARSERIO____UPDATE16_formal_LONGINT_WORD__WORD(unsigned char *a3,
   return v4;
 }
 
-int PARSERIO____UPDATE32_formal_LONGINT_LONGINT__LONGINT(unsigned char *a3, int a2, int a1)
+unsigned int PARSERIO____UPDATE32_formal_LONGINT_LONGINT__LONGINT(unsigned char *a3, int a2, unsigned int a1)
 {
   _BYTE *v3; // esi@1
-  int v4; // ebx@1
+  unsigned int v4; // ebx@1
   int i; // ecx@1
-  int v6; // eax@2
+  unsigned int v6; // eax@2
 
   v3 = a3;
   v4 = a1;

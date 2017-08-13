@@ -54,8 +54,8 @@ short ADT2UNIT____CALC_VIBTREM_SHIFT_BYTE_formal__WORD(unsigned char a2, unsigne
 void ADT2UNIT____CHANGE_FREQ_BYTE_WORD_ASM(char a2, short a1);
 unsigned char ADT2UNIT____INS_PARAMETER_BYTE_BYTE__BYTE(unsigned char a2, unsigned char a1);
 char ADT2UNIT____IS_DATA_EMPTY_formal_LONGINT__BOOLEAN(unsigned char *a2, unsigned int a1);
-char ADT2UNIT____GET_CHUNK_BYTE_BYTE_BYTE_TCHUNK(unsigned char a4, unsigned char a3, unsigned char a2, unsigned char *a1);
-char ADT2UNIT____PUT_CHUNK_BYTE_BYTE_BYTE_TCHUNK(unsigned char a4, unsigned char a3, unsigned char a2, unsigned char *a1);
+void ADT2UNIT____GET_CHUNK_BYTE_BYTE_BYTE_TCHUNK(unsigned char a4, unsigned char a3, unsigned char a2, unsigned char *a1);
+void ADT2UNIT____PUT_CHUNK_BYTE_BYTE_BYTE_TCHUNK(unsigned char a4, unsigned char a3, unsigned char a2, unsigned char *a1);
 int ADT2UNIT____GET_CHANPOS_formal_BYTE_BYTE__BYTE(unsigned char *a3, unsigned char a2, char a1);
 int ADT2UNIT____GET_CHANPOS2_formal_BYTE_BYTE__BYTE(unsigned char *a3, unsigned char a2, char a1);
 char ADT2UNIT____COUNT_CHANNEL_BYTE__BYTE(unsigned char a1);
@@ -82,11 +82,15 @@ int DEPACKIO____APACK_DECOMPRESS_formal_formal__LONGWORD(char *a2, unsigned char
 // V function Empty(var buf; size: Longint): Boolean;
 // V function Update16(var buf; size: Longint; crc: Word): Word;
 // V function Update32(var buf; size: Longint; crc: Longint): Longint;
-int PARSERIO____SENSITIVESCAN_formal_LONGINT_LONGINT_SHORTSTRING__LONGINT(unsigned char *buf, int skip, int size, unsigned char *str);
+// procedure make_table_16bit;
+// procedure make_table_32bit;
+int PARSERIO____SENSITIVESCAN_formal_LONGINT_LONGINT_SHORTSTRING__LONGINT(unsigned char *buf, unsigned int skip, unsigned int size, unsigned char *str);
 char PARSERIO____COMPARE_formal_formal_LONGINT__BOOLEAN(unsigned char *a3, unsigned char *a2, unsigned int a1);
 char PARSERIO____EMPTY_formal_LONGINT__BOOLEAN(unsigned char *a2, unsigned int a1);
 unsigned short PARSERIO____UPDATE16_formal_LONGINT_WORD__WORD(unsigned char *a3, int a2, unsigned short a1);
-int PARSERIO____UPDATE32_formal_LONGINT_LONGINT__LONGINT(unsigned char *a3, int a2, int a1);
+unsigned int PARSERIO____UPDATE32_formal_LONGINT_LONGINT__LONGINT(unsigned char *a3, int a2, unsigned int a1);
+void PARSERIO____MAKE_TABLE_16BIT();
+void PARSERIO____MAKE_TABLE_32BIT();
 
 // stringio
 //

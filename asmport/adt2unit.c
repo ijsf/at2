@@ -195,36 +195,39 @@ LABEL_24:
 
 #define CHUNK_SIZE 6
 
-char ADT2UNIT____GET_CHUNK_BYTE_BYTE_BYTE_TCHUNK(unsigned char pattern, unsigned char line, unsigned char channel, unsigned char *chunk)
+void ADT2UNIT____GET_CHUNK_BYTE_BYTE_BYTE_TCHUNK(unsigned char pattern, unsigned char line, unsigned char channel, unsigned char *chunk)
 {
-  unsigned int v4; // eax@2
-
   if ( (pattern + 1) <= TC__ADT2UNIT____MAX_PATTERNS )
   {
-    v4 = (8 * 20 * 256 * CHUNK_SIZE) * (pattern / 8);
     qmemcpy(
       chunk,
-      (const void *)(v4 + ((20 * 256 * CHUNK_SIZE) * (pattern % 8u)) + ((256 * CHUNK_SIZE) * (channel - 1)) + (CHUNK_SIZE * line) + TC__ADT2UNIT____PATTDATA),
+      (const void *)(
+        TC__ADT2UNIT____PATTDATA
+        + (8 * 20 * 256 * CHUNK_SIZE) * (pattern / 8)
+        + ((20 * 256 * CHUNK_SIZE) * (pattern % 8))
+        + ((256 * CHUNK_SIZE) * (channel - 1))
+        + (CHUNK_SIZE * line)
+      ),
       CHUNK_SIZE);
   }
   else
   {
-    v4 = 0;
     memset(chunk, 0, 6u);
   }
-  return v4;
 }
 
-char ADT2UNIT____PUT_CHUNK_BYTE_BYTE_BYTE_TCHUNK(unsigned char pattern, unsigned char line, unsigned char channel, unsigned char *chunk)
+void ADT2UNIT____PUT_CHUNK_BYTE_BYTE_BYTE_TCHUNK(unsigned char pattern, unsigned char line, unsigned char channel, unsigned char *chunk)
 {
-  unsigned int v4; // eax@1
-
-  v4 = pattern + 1;
-  if ( (unsigned __int8)(pattern + 1) <= (unsigned __int8)TC__ADT2UNIT____MAX_PATTERNS )
+  if ( (pattern + 1) <= TC__ADT2UNIT____MAX_PATTERNS )
   {
-    v4 = (8 * 20 * 256 * CHUNK_SIZE) * (pattern / 8);
     qmemcpy(
-      (void *)(v4 + (20 * 256 * CHUNK_SIZE) * (pattern % 8) + (CHUNK_SIZE * 256) * (channel - 1) + 6 * line + TC__ADT2UNIT____PATTDATA),
+      (void *)(
+        TC__ADT2UNIT____PATTDATA
+          + (8 * 20 * 256 * CHUNK_SIZE) * (pattern / 8)
+          + ((20 * 256 * CHUNK_SIZE) * (pattern % 8))
+          + ((256 * CHUNK_SIZE) * (channel - 1))
+          + (CHUNK_SIZE * line)
+      ),
       chunk,
       CHUNK_SIZE);
     TC__ADT2UNIT____MODULE_ARCHIVED = 0;
@@ -233,7 +236,6 @@ char ADT2UNIT____PUT_CHUNK_BYTE_BYTE_BYTE_TCHUNK(unsigned char pattern, unsigned
   {
     U__ADT2UNIT____LIMIT_EXCEEDED = 1;
   }
-  return v4;
 }
 
 int ADT2UNIT____GET_CHANPOS_formal_BYTE_BYTE__BYTE(unsigned char *a3, unsigned char a2, char a1)
