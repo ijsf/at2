@@ -71,7 +71,7 @@ unsigned short DEPACKIO____RDC_DECOMPRESS_formal_formal_WORD__WORD(unsigned char
 unsigned short DEPACKIO____LZSS_DECOMPRESS_formal_formal_WORD__WORD(unsigned char *a3, unsigned char *a2, unsigned short a1);
 unsigned short DEPACKIO____LZW_DECOMPRESS_formal_formal__WORD(unsigned char *a3, unsigned char *a2);
 unsigned short DEPACKIO____SIXPACK_DECOMPRESS_formal_formal_WORD__WORD(unsigned char *a3, unsigned char *a2, unsigned short a1);
-unsigned int DEPACKIO____APACK_DECOMPRESS_formal_formal__LONGWORD(unsigned char *a2, unsigned char *a1);
+unsigned int DEPACKIO____APACK_DECOMPRESS_formal_formal__LONGWORD(unsigned char *source, unsigned char *dest);
 
 // parserio
 //

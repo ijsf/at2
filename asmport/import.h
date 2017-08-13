@@ -1,5 +1,3 @@
-#define MAX_SCREEN_MEM_SIZE 180*60*2
-
 /*
   PASCAL      C
 
@@ -11,6 +9,8 @@
   Word        unsigned short
   Byte        unsigned char
 */
+
+#define MAX_SCREEN_MEM_SIZE 180*60*2
 
 extern "C" {
 

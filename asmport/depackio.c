@@ -767,234 +767,158 @@ unsigned short DEPACKIO____SIXPACK_DECOMPRESS_formal_formal_WORD__WORD(unsigned 
   return var_output_size;
 }
 
-unsigned int DEPACKIO____APACK_DECOMPRESS_formal_formal__LONGWORD(unsigned char *a2, unsigned char *a1)
+//// APACK
+
+static unsigned char cf = 0;
+
+uint8 add2_8(uint8 val)
 {
-  unsigned int swap;
+  uint16 c = val + val;
+  cf = (c & 0x100) > 0 ? 1 : 0;
+  return (uint8)c;
+}
 
-  unsigned char *v2; // esi@1
-  _BYTE *v3; // edi@1
-  unsigned char v4; // dl@1
-  unsigned __int8 v5; // cf@3
-  unsigned char v6; // dl@4
-  unsigned char v7; // tt@4
-  unsigned __int8 v8; // cf@6
-  unsigned char v9; // dl@7
-  unsigned char v10; // tt@7
-  unsigned int v11; // eax@9
-  unsigned __int8 v12; // cf@9
-  unsigned char v13; // dl@10
-  unsigned char v14; // tt@10
-  unsigned int v15; // ecx@12
-  unsigned __int8 v16; // cf@13
-  unsigned char v17; // dl@14
-  unsigned char v18; // tt@14
-  unsigned char v19; // tt@15
-  signed int v20; // ecx@18
-  unsigned __int8 v21; // cf@19
-  unsigned char v22; // dl@19
-  unsigned char v23; // dl@20
-  unsigned char v24; // tt@20
-  unsigned __int8 v25; // cf@21
-  unsigned char v26; // dl@22
-  unsigned char v27; // tt@22
-  int v28; // ecx@24
-  unsigned __int8 v29; // cf@26
-  unsigned char v30; // dl@26
-  unsigned char v31; // dl@27
-  unsigned char v32; // tt@27
-  unsigned __int8 v33; // cf@28
-  unsigned char v34; // dl@29
-  unsigned char v35; // tt@29
-  unsigned __int8 v36; // cf@32
-  unsigned __int32 v37; // eax@32
-  unsigned __int8 v38; // cf@35
-  unsigned char v39; // dl@35
-  unsigned char v40; // dl@36
-  unsigned char v41; // tt@36
-  unsigned __int8 v42; // cf@37
-  unsigned char v43; // dl@38
-  unsigned char v44; // tt@38
-  unsigned int v46; // [sp+10h] [bp-8h]@45
+uint8 adc2_8(uint8 val)
+{
+  uint16 c = val + val + cf;
+  cf = (c & 0x100) > 0 ? 1 : 0;
+  return (uint8)c;
+}
 
-  v2 = a2;
-  v3 = a1;
-  v4 = 0x80;
-LABEL_2:
-  *v3++ = *v2++;
-  while ( 1 )
-  {
-    v5 = __CFADD__(v4, v4);
-    v4 *= 2;
-    if ( !v4 )
-    {
-      v6 = *v2++;
-      v7 = v5 + v6;
-      v5 = __CFADD__(v5, v6) | __CFADD__(v6, v5 + v6);
-      v4 = v6 + v7;
-    }
-    if ( !v5 )
-      goto LABEL_2;
-    v8 = __CFADD__(v4, v4);
-    v4 *= 2;
-    if ( !v4 )
-    {
-      v9 = *v2++;
-      v10 = v8 + v9;
-      v8 = __CFADD__(v8, v9) | __CFADD__(v9, v8 + v9);
-      v4 = v9 + v10;
-    }
-    if ( !v8 )
-    {
-      v20 = 1;
-      do
-      {
-        v21 = __CFADD__(v4, v4);
-        v22 = 2 * v4;
-        if ( !v22 )
-        {
-          v23 = *v2++;
-          v24 = v21 + v23;
-          v21 = __CFADD__(v21, v23) | __CFADD__(v23, v21 + v23);
-          v22 = v23 + v24;
-        }
-        v20 += v21 + v20;
-        v25 = __CFADD__(v22, v22);
-        v4 = 2 * v22;
-        if ( !v4 )
-        {
-          v26 = *v2++;
-          v27 = v25 + v26;
-          v25 = __CFADD__(v25, v26) | __CFADD__(v26, v25 + v26);
-          v4 = v26 + v27;
-        }
-      }
-      while ( v25 );
-      v28 = v20 - 2;
-      if ( !v28 )
-      {
-        v15 = 1;
-        do
-        {
-          v29 = __CFADD__(v4, v4);
-          v30 = 2 * v4;
-          if ( !v30 )
-          {
-            v31 = *v2++;
-            v32 = v29 + v31;
-            v29 = __CFADD__(v29, v31) | __CFADD__(v31, v29 + v31);
-            v30 = v31 + v32;
-          }
-          v15 += v29 + v15;
-          v33 = __CFADD__(v30, v30);
-          v4 = 2 * v30;
-          if ( !v4 )
-          {
-            v34 = *v2++;
-            v35 = v33 + v34;
-            v33 = __CFADD__(v33, v34) | __CFADD__(v34, v33 + v34);
-            v4 = v34 + v35;
-          }
-        }
-        while ( v33 );
-        goto LABEL_46;
-      }
-      v37 = (v28 - 1) << 8;
-      LOBYTE(v37) = *v2++;
-      v15 = 1;
-      do
-      {
-        v38 = __CFADD__(v4, v4);
-        v39 = 2 * v4;
-        if ( !v39 )
-        {
-          v40 = *v2++;
-          v41 = v38 + v40;
-          v38 = __CFADD__(v38, v40) | __CFADD__(v40, v38 + v40);
-          v39 = v40 + v41;
-        }
-        v15 += v38 + v15;
-        v42 = __CFADD__(v39, v39);
-        v4 = 2 * v39;
-        if ( !v4 )
-        {
-          v43 = *v2++;
-          v44 = v42 + v43;
-          v42 = __CFADD__(v42, v43) | __CFADD__(v43, v42 + v43);
-          v4 = v43 + v44;
-        }
-      }
-      while ( v42 );
-      if ( v37 < 0x7D00 )
-      {
-        if ( BYTE1(v37) >= 5u )
-        {
-LABEL_44:
-          ++v15;
-          goto LABEL_45;
-        }
-        if ( v37 > 0x7F )
-        {
-LABEL_45:
-          swap = v37;
-          v37 = v46;
-          v46 = swap;
-LABEL_46:
-          v11 = v46;
-          goto LABEL_47;
-        }
-      }
-LABEL_43:
-      ++v15;
-      goto LABEL_44;
-    }
-    v11 = 0;
-    v12 = __CFADD__(v4, v4);
-    v4 *= 2;
-    if ( !v4 )
-    {
-      v13 = *v2++;
-      v14 = v12 + v13;
-      v12 = __CFADD__(v12, v13) | __CFADD__(v13, v12 + v13);
-      v4 = v13 + v14;
-    }
-    if ( !v12 )
-      break;
-    v15 = 1;
-    LOBYTE(v11) = 16;
-    do
-    {
-      v16 = __CFADD__(v4, v4);
-      v4 *= 2;
-      if ( !v4 )
-      {
-        v17 = *v2++;
-        v18 = v16 + v17;
-        v16 = __CFADD__(v16, v17) | __CFADD__(v17, v16 + v17);
-        v4 = v17 + v18;
-      }
-      v19 = v16 + v11;
-      v5 = __CFADD__(v16, (_BYTE)v11) | __CFADD__((_BYTE)v11, v16 + v11);
-      LOBYTE(v11) = v11 + v19;
-    }
-    while ( !v5 );
-    if ( (_BYTE)v11 )
-    {
-LABEL_47:
-      qmemcpy(v3, &v3[-v11], v15);
-      v3 += v15;
-    }
-    else
-    {
-      *v3++ = 0;
-    }
+uint32 adc2_32(uint32 val)
+{
+  uint64 c = val + val + cf;
+  cf = (c & 0x100000000) > 0 ? 1 : 0;
+  return (uint32)c;
+}
+
+void xchg(uint32 &d, uint32 &s)
+{
+  uint32 t;
+  t = d;
+  d = s;
+  s = t;
+}
+
+void shl(uint32 &v, uint8 c)
+{
+  cf = __MKCSHL__(v, c);
+  v = v << c;
+}
+
+void shr1(uint32 &v)
+{
+  cf = v & 1;
+  v = v >> 1;
+}
+
+unsigned int DEPACKIO____APACK_DECOMPRESS_formal_formal__LONGWORD(unsigned char *_source, unsigned char *_dest)
+{
+  uint32 temp;
+  uint32 eax = 0;
+  uint32 ecx = 0;
+  uint8 dl = 0x80;
+
+  uint8 *source = _source;
+  uint8 *dest = _dest;
+
+L1:
+  *dest = *source; ++dest; ++source;
+L2:
+  dl = add2_8(dl); if (dl == 0) { dl = *source; ++source; dl = adc2_8(dl); }
+  if(!cf) {
+    goto L1;
   }
-  LOBYTE(v11) = *v2++;
-  v36 = v11 & 1;
-  v37 = v11 >> 1;
-  if ( v37 )
-  {
-    v15 = v36;
-    goto LABEL_43;
+  
+  ecx = 0;
+  
+  dl = add2_8(dl); if (dl == 0) { dl = *source; ++source; dl = adc2_8(dl); }
+  if (!cf) {
+    goto L8;
   }
-  return v3 - a1;
+  
+  eax = 0;
+  
+  dl = add2_8(dl); if (dl == 0) { dl = *source; ++source; dl = adc2_8(dl); }
+  if (!cf) {
+    goto L15;
+  }
+  
+  ++ecx;
+  LOBYTE(eax) = 0x10;
+  
+L6:
+  dl = add2_8(dl); if (dl == 0) { dl = *source; ++source; dl = adc2_8(dl); }
+  LOBYTE(eax) = adc2_8(LOBYTE(eax));
+  if (!cf) {
+    goto L6;
+  }
+  if (LOBYTE(eax) != 0) {
+    goto L24;
+  }
+  *dest = LOBYTE(eax); ++dest;
+  goto L2;
+  
+L8:
+  ++ecx;
+L9:
+  dl = add2_8(dl); if (dl == 0) { dl = *source; ++source; dl = adc2_8(dl); }
+  ecx = adc2_32(ecx);
+  dl = add2_8(dl); if (dl == 0) { dl = *source; ++source; dl = adc2_8(dl); }
+  if (cf) {
+    goto L9;
+  }
+  --ecx;
+  --ecx; if(ecx != 0) { goto L16; }
+  
+  ecx = 0;
+  ++ecx;
+L12:
+  dl = add2_8(dl); if (dl == 0) { dl = *source; ++source; dl = adc2_8(dl); }
+  ecx = adc2_32(ecx);
+  dl = add2_8(dl); if (dl == 0) { dl = *source; ++source; dl = adc2_8(dl); }
+  if (cf) {
+    goto L12;
+  }
+  goto L23;
+L15:
+  LOBYTE(eax) = *source; ++source;
+  shr1(eax);
+  if (eax == 0) { goto L25; }
+  ecx = adc2_32(ecx);
+  goto L20;
+  
+L16:
+  xchg(eax, ecx);
+  --eax;
+  shl(eax, 8);
+  LOBYTE(eax) = *source; ++source;
+  
+  ecx = 0;
+  ++ecx;
+  
+L17:
+  dl = add2_8(dl); if (dl == 0) { dl = *source; ++source; dl = adc2_8(dl); }
+  ecx = adc2_32(ecx);
+  dl = add2_8(dl); if (dl == 0) { dl = *source; ++source; dl = adc2_8(dl); }
+  if(cf) {
+    goto L17;
+  }
+  
+  if(eax >= 32000) { goto L20; }
+  if(eax >= 0x500) { goto L21; }
+  if(eax > 0x7F) { goto L22; }
+L20:
+  ++ecx;
+L21:
+  ++ecx;
+L22:
+  xchg(eax, temp);
+L23:
+  eax = temp;
+L24:
+  memmove(dest, dest - eax, ecx); dest += ecx;
+  goto L2;
+L25:
+  return (dest - _dest);
 }
