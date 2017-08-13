@@ -10,7 +10,7 @@ TC__ADT2UNIT____FX_DIGITS
 
 char ADT2EXTN___REMAP_OVERRIDE_FRAME_crc9EF426E9____OVERRIDE_ATTR_TSCREEN_MEM_PTR_BYTE_BYTE_BYTE_BYTE(void *dest, unsigned char x, unsigned char y, unsigned char len, unsigned char attr)
 {
-  int v5; // eax@0
+  unsigned __int8 v5; // eax@0
   int v6; // ebx@1
   int v7; // edx@1
   char result; // al@1
@@ -19,7 +19,7 @@ char ADT2EXTN___REMAP_OVERRIDE_FRAME_crc9EF426E9____OVERRIDE_ATTR_TSCREEN_MEM_PT
   unsigned __int8 *v11; // edi@3
 
   v6 = (unsigned __int16)(2 * (unsigned __int8)(TC__TXTSCRIO____MAXCOL - 1));
-  LOWORD(v5) = (unsigned __int8)(y - 1) * (unsigned __int8)TC__TXTSCRIO____MAXCOL;
+  v5 = (unsigned __int8)(y - 1) * (unsigned __int8)TC__TXTSCRIO____MAXCOL;
   v7 = 2 * ((unsigned __int8)(x - 1) + v5);
   result = x;
   v9 = len;

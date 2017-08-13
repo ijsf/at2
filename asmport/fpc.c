@@ -4,7 +4,7 @@
 int C_FPC_SHORTSTR_TO_SHORTSTR(unsigned char *a1, unsigned int a2, unsigned char *a3)
 {
   _BYTE *v3; // edi@1
-  int result; // eax@1
+  unsigned int result; // eax@1
   char *v5; // esi@1
   unsigned char *v6; // edi@3
   size_t v7; // ecx@4

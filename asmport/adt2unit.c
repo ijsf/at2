@@ -3,45 +3,22 @@
 #include "import.h"
 #include "fpc.h"
 
-/*
-TC__ADT2OPL3____OPL3OUT
-
-TC__ADT2UNIT_____4OP_TRACKS_HI
-U__ADT2UNIT____VIBTREM_TABLE
-U__ADT2UNIT____VIBTREM_TABLE_SIZE
-U__ADT2UNIT____FREQ_TABLE
-U__ADT2UNIT____FREQTABLE2
-U__ADT2UNIT____CHANNEL_FLAG
-TC__ADT2UNIT____CHAN_POS
-U__ADT2UNIT_____CHAN_N
-TC__ADT2UNIT____MAX_PATTERNS
-TC__ADT2UNIT____PATTDATA
-TC__ADT2UNIT____MODULE_ARCHIVED
-U__ADT2UNIT____LIMIT_EXCEEDED
-TC__ADT2SYS_____PATTEDIT_LASTPOS
-TC__TXTSCRIO____MAX_TRACKS
-
-var_songdata__instr_data
-var_songdata__flag_4op
-*/
-
 // var_fnum // Fnum: array[0..11] of Word = ($157,$16b,$181,$198,$1b0,$1ca,$1e5,$202,$220,$241,$263,$287);
 short var_fnum[] = {0x157,0x16b,0x181,0x198,0x1b0,0x1ca,0x1e5,0x202,0x220,0x241,0x263,0x287};
 
 signed short ADT2UNIT____NFREQ_BYTE__WORD(unsigned char a1)
 {
-  int v1; // ebx@1
+  int v1 = 0; // ebx@1
   signed __int16 result; // ax@2
 
-  HIWORD(v1) = 0;
   if ( a1 >= 0x60u )
   {
     result = 7854;
   }
   else
   {
-    LOWORD(v1) = 2 * (a1 % 0xCu);
-    result = *(__int16 *)((char *)&var_fnum + v1) + (a1 / 0xCu << 10);
+    v1 = 2 * (a1 % 0xCu);
+    result = var_fnum[v1] + (a1 / 0xCu << 10);
   }
   return result;
 }
@@ -137,15 +114,11 @@ void ADT2UNIT____CHANGE_FREQ_BYTE_WORD_ASM(char a2, short a1)
   }
 }
 
-char ADT2UNIT____INS_PARAMETER_BYTE_BYTE__BYTE(unsigned char a2, char a1)
-{
-  int v2; // ebx@1
-  int v3; // eax@1
+#define INSTRUMENT_SIZE 14
 
-  v2 = a2 - 1;
-  v3 = 14 * v2;
-  LOBYTE(v2) = a1;
-  return *(&var_songdata__instr_data[v3] + v2); // ACHTUNG
+unsigned char ADT2UNIT____INS_PARAMETER_BYTE_BYTE__BYTE(unsigned char a2, unsigned char a1)
+{
+  return var_songdata__instr_data[(a2 - 1) * INSTRUMENT_SIZE + a1];
 }
 
 char ADT2UNIT____IS_DATA_EMPTY_formal_LONGINT__BOOLEAN(unsigned char *a2, unsigned int a1)
@@ -220,42 +193,40 @@ LABEL_24:
   return v10;
 }
 
-char ADT2UNIT____GET_CHUNK_BYTE_BYTE_BYTE_TCHUNK(unsigned char a4, unsigned char a3, unsigned char a2, unsigned char *a1)
-{
-  int v4; // eax@2
-  unsigned __int64 v5; // rtt@3
+#define CHUNK_SIZE 6
 
-  if ( (unsigned __int8)(a4 + 1) <= (unsigned __int8)TC__ADT2UNIT____MAX_PATTERNS )
+char ADT2UNIT____GET_CHUNK_BYTE_BYTE_BYTE_TCHUNK(unsigned char pattern, unsigned char line, unsigned char channel, unsigned char *chunk)
+{
+  unsigned int v4; // eax@2
+
+  if ( (pattern + 1) <= TC__ADT2UNIT____MAX_PATTERNS )
   {
-    LODWORD(v5) = a4;
-    HIDWORD(v5) = 1536 * (unsigned __int64)((unsigned int)a2 - 1) >> 32;
-    v4 = 245760 * (v5 / 8);
-    qmemcpy(a1, (const void *)(v4 + 30720 * (a4 % 8u) + 1536 * (a2 - 1) + 6 * a3 + TC__ADT2UNIT____PATTDATA), 6u);
+    v4 = (8 * 20 * 256 * CHUNK_SIZE) * (pattern / 8);
+    qmemcpy(
+      chunk,
+      (const void *)(v4 + ((20 * 256 * CHUNK_SIZE) * (pattern % 8u)) + ((256 * CHUNK_SIZE) * (channel - 1)) + (CHUNK_SIZE * line) + TC__ADT2UNIT____PATTDATA),
+      CHUNK_SIZE);
   }
   else
   {
-    LOBYTE(v4) = 0;
-    memset(a1, 0, 6u);
+    v4 = 0;
+    memset(chunk, 0, 6u);
   }
   return v4;
 }
 
-char ADT2UNIT____PUT_CHUNK_BYTE_BYTE_BYTE_TCHUNK(unsigned char a4, unsigned char a3, unsigned char a2, unsigned char *a1)
+char ADT2UNIT____PUT_CHUNK_BYTE_BYTE_BYTE_TCHUNK(unsigned char pattern, unsigned char line, unsigned char channel, unsigned char *chunk)
 {
-  int v4; // eax@1
-  unsigned __int64 v5; // rtt@3
-  int v7; // [sp+Ch] [bp-8h]@1
-  __int16 v8; // [sp+10h] [bp-4h]@1
+  unsigned int v4; // eax@1
 
-  v7 = *(_DWORD *)a1;
-  v8 = *(_WORD *)(a1 + 4);
-  LOBYTE(v4) = a4 + 1;
-  if ( (unsigned __int8)(a4 + 1) <= (unsigned __int8)TC__ADT2UNIT____MAX_PATTERNS )
+  v4 = pattern + 1;
+  if ( (unsigned __int8)(pattern + 1) <= (unsigned __int8)TC__ADT2UNIT____MAX_PATTERNS )
   {
-    LODWORD(v5) = a4;
-    HIDWORD(v5) = 1536 * (unsigned __int64)((unsigned int)a2 - 1) >> 32;
-    v4 = 245760 * (v5 / 8);
-    qmemcpy((void *)(v4 + 30720 * (a4 % 8u) + 1536 * (a2 - 1) + 6 * a3 + TC__ADT2UNIT____PATTDATA), &v7, 6u);
+    v4 = (8 * 20 * 256 * CHUNK_SIZE) * (pattern / 8);
+    qmemcpy(
+      (void *)(v4 + (20 * 256 * CHUNK_SIZE) * (pattern % 8) + (CHUNK_SIZE * 256) * (channel - 1) + 6 * line + TC__ADT2UNIT____PATTDATA),
+      chunk,
+      CHUNK_SIZE);
     TC__ADT2UNIT____MODULE_ARCHIVED = 0;
   }
   else

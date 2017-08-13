@@ -3,7 +3,6 @@ extern "C" {
 //
 // S: string funcs
 // V: var (reference) funcs
-// __int64?
 //
 
 // adt2ext3_iloaders
@@ -53,7 +52,7 @@ short ADT2UNIT____CALC_FREQ_SHIFT_UP_WORD_WORD__WORD(short a2, short a1);
 short ADT2UNIT____CALC_FREQ_SHIFT_DOWN_WORD_WORD__WORD(short a2, short a1);
 short ADT2UNIT____CALC_VIBTREM_SHIFT_BYTE_formal__WORD(unsigned char a2, unsigned char *a1);
 void ADT2UNIT____CHANGE_FREQ_BYTE_WORD_ASM(char a2, short a1);
-char ADT2UNIT____INS_PARAMETER_BYTE_BYTE__BYTE(unsigned char a2, char a1);
+unsigned char ADT2UNIT____INS_PARAMETER_BYTE_BYTE__BYTE(unsigned char a2, unsigned char a1);
 char ADT2UNIT____IS_DATA_EMPTY_formal_LONGINT__BOOLEAN(unsigned char *a2, unsigned int a1);
 char ADT2UNIT____GET_CHUNK_BYTE_BYTE_BYTE_TCHUNK(unsigned char a4, unsigned char a3, unsigned char a2, unsigned char *a1);
 char ADT2UNIT____PUT_CHUNK_BYTE_BYTE_BYTE_TCHUNK(unsigned char a4, unsigned char a3, unsigned char a2, unsigned char *a1);
@@ -129,8 +128,8 @@ char TXTSCRIO____SHOWC4STR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE_BYTE_
 char TXTSCRIO____SHOWVC3STR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE_BYTE(unsigned char *a7, char a6, char a5, unsigned char *a4, char a3, char a2, char a1);
 char TXTSCRIO____CSTRLEN_SHORTSTRING__BYTE(unsigned char *a1);
 char TXTSCRIO____C3STRLEN_SHORTSTRING__BYTE(unsigned char *a1);
-unsigned int TXTSCRIO____SCREENMEMCOPY_TSCREEN_MEM_PTR_TSCREEN_MEM_PTR(const void *a2, void *a1);
-char TXTSCRIO____FRAME_crc0EA7F576(unsigned char *a9, char a8, char a7, char a6, char a5, char a4, unsigned char *a3, char a2, unsigned char *a1);
+void TXTSCRIO____SCREENMEMCOPY_TSCREEN_MEM_PTR_TSCREEN_MEM_PTR(const void *a2, void *a1);
+char TXTSCRIO____FRAME_crc0EA7F576(unsigned char *dest, char x1, char y1, char x2, char y2, char atr1, unsigned char *title, char atr2, unsigned char *border);
 void TXTSCRIO____MOVE2SCREEN_ALT();
 
 };

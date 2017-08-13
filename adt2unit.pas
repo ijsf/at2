@@ -400,7 +400,7 @@ function nFreq(note: Byte): Word; external name 'ADT2UNIT____NFREQ_BYTE__WORD';
 function calc_freq_shift_up(freq,shift: Word): Word; external name 'ADT2UNIT____CALC_FREQ_SHIFT_UP_WORD_WORD__WORD';
 function calc_freq_shift_down(freq,shift: Word): Word; external name 'ADT2UNIT____CALC_FREQ_SHIFT_DOWN_WORD_WORD__WORD';
 function calc_vibtrem_shift(chan: Byte; var table_data): Word; external name 'ADT2UNIT____CALC_VIBTREM_SHIFT_BYTE_formal__WORD';
-procedure change_freq_asm(chan: Byte; freq: Word); cdecl; external name 'ADT2UNIT____CHANGE_FREQ_BYTE_WORD_ASM';
+procedure change_freq_asm(chan: Byte; freq: Word); external name 'ADT2UNIT____CHANGE_FREQ_BYTE_WORD_ASM';
 function  ins_parameter(ins,param: Byte): Byte; external name 'ADT2UNIT____INS_PARAMETER_BYTE_BYTE__BYTE';
 function is_data_empty(var buf; size: Longint): Boolean; external name 'ADT2UNIT____IS_DATA_EMPTY_formal_LONGINT__BOOLEAN';
 procedure get_chunk(pattern,line,channel: Byte; var chunk: tCHUNK); external name 'ADT2UNIT____GET_CHUNK_BYTE_BYTE_BYTE_TCHUNK';
