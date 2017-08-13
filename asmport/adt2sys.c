@@ -31,7 +31,7 @@ char ADT2SYS____DRAW_SDL_SCREEN_720X480()
   unsigned __int8 v12; // [sp+2Ch] [bp-8h]@6
   unsigned __int8 v13; // [sp+30h] [bp-4h]@4
 
-  if ( TC__ADT2SYS_____CURSOR_BLINK_PENDING_FRAMES >= (unsigned int)TC__ADT2SYS_____CURSOR_BLINK_FACTOR )
+  if ( TC__ADT2SYS_____CURSOR_BLINK_PENDING_FRAMES >= TC__ADT2SYS_____CURSOR_BLINK_FACTOR )
   {
     TC__ADT2SYS_____CURSOR_BLINK_PENDING_FRAMES = 0;
     TC__ADT2SYS____CURSOR_SYNC ^= 1u;
@@ -121,7 +121,7 @@ char ADT2SYS____DRAW_SDL_SCREEN_960X800()
   unsigned __int8 v9; // [sp+24h] [bp-8h]@6
   unsigned __int8 v10; // [sp+28h] [bp-4h]@4
 
-  if ( TC__ADT2SYS_____CURSOR_BLINK_PENDING_FRAMES >= (unsigned int)TC__ADT2SYS_____CURSOR_BLINK_FACTOR )
+  if ( TC__ADT2SYS_____CURSOR_BLINK_PENDING_FRAMES >= TC__ADT2SYS_____CURSOR_BLINK_FACTOR )
   {
     TC__ADT2SYS_____CURSOR_BLINK_PENDING_FRAMES = 0;
     TC__ADT2SYS____CURSOR_SYNC ^= 1u;
@@ -201,7 +201,7 @@ char ADT2SYS____DRAW_SDL_SCREEN_1440X960()
   unsigned __int8 v9; // [sp+24h] [bp-8h]@6
   unsigned __int8 v10; // [sp+28h] [bp-4h]@4
 
-  if ( TC__ADT2SYS_____CURSOR_BLINK_PENDING_FRAMES >= (unsigned int)TC__ADT2SYS_____CURSOR_BLINK_FACTOR )
+  if ( TC__ADT2SYS_____CURSOR_BLINK_PENDING_FRAMES >= TC__ADT2SYS_____CURSOR_BLINK_FACTOR )
   {
     TC__ADT2SYS_____CURSOR_BLINK_PENDING_FRAMES = 0;
     TC__ADT2SYS____CURSOR_SYNC ^= 1u;

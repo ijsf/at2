@@ -4,12 +4,12 @@
 #include "fpc.h"
 
 // var_fnum // Fnum: array[0..11] of Word = ($157,$16b,$181,$198,$1b0,$1ca,$1e5,$202,$220,$241,$263,$287);
-short var_fnum[] = {0x157,0x16b,0x181,0x198,0x1b0,0x1ca,0x1e5,0x202,0x220,0x241,0x263,0x287};
+unsigned short var_fnum[] = {0x157,0x16b,0x181,0x198,0x1b0,0x1ca,0x1e5,0x202,0x220,0x241,0x263,0x287};
 
-signed short ADT2UNIT____NFREQ_BYTE__WORD(unsigned char a1)
+unsigned short ADT2UNIT____NFREQ_BYTE__WORD(unsigned char a1)
 {
   int v1 = 0; // ebx@1
-  signed __int16 result; // ax@2
+  unsigned short result; // ax@2
 
   if ( a1 >= 0x60u )
   {
@@ -23,10 +23,10 @@ signed short ADT2UNIT____NFREQ_BYTE__WORD(unsigned char a1)
   return result;
 }
 
-short ADT2UNIT____CALC_FREQ_SHIFT_UP_WORD_WORD__WORD(short a2, short a1)
+unsigned short ADT2UNIT____CALC_FREQ_SHIFT_UP_WORD_WORD__WORD(unsigned short a2, unsigned short a1)
 {
-  signed __int16 v2; // bx@1
-  __int16 v3; // dx@1
+  unsigned short v2; // bx@1
+  unsigned short v3; // dx@1
 
   v2 = a1 + (a2 & 0x3FF);
   v3 = (unsigned __int16)(a2 & 0x1C00) >> 10;
@@ -45,14 +45,14 @@ short ADT2UNIT____CALC_FREQ_SHIFT_UP_WORD_WORD__WORD(short a2, short a1)
   return v2 + (v3 << 10) + (a2 & 0xE000);
 }
 
-short ADT2UNIT____CALC_FREQ_SHIFT_DOWN_WORD_WORD__WORD(short a2, short a1)
+unsigned short ADT2UNIT____CALC_FREQ_SHIFT_DOWN_WORD_WORD__WORD(unsigned short a2, unsigned short a1)
 {
-  signed __int16 v2; // bx@1
-  __int16 v3; // dx@1
+  unsigned short v2; // bx@1
+  unsigned short v3; // dx@1
 
   v2 = (a2 & 0x3FF) - a1;
-  v3 = (unsigned __int16)(a2 & 0x1C00) >> 10;
-  if ( (unsigned __int16)v2 <= 0x156u )
+  v3 = (a2 & 0x1C00) >> 10;
+  if ( v2 <= 0x156u )
   {
     if ( v3 )
     {
@@ -67,11 +67,11 @@ short ADT2UNIT____CALC_FREQ_SHIFT_DOWN_WORD_WORD__WORD(short a2, short a1)
   return v2 + (v3 << 10) + (a2 & 0xE000);
 }
 
-short ADT2UNIT____CALC_VIBTREM_SHIFT_BYTE_formal__WORD(unsigned char a2, unsigned char *a1)
+unsigned short ADT2UNIT____CALC_VIBTREM_SHIFT_BYTE_formal__WORD(unsigned char a2, unsigned char *a1)
 {
   unsigned __int8 v2; // dh@1
-  __int16 v3; // ax@1
-  __int16 result; // ax@1
+  unsigned short v3; // ax@1
+  unsigned short result; // ax@1
   char v5; // [sp+14h] [bp-Ch]@1
 
   v2 = *(_BYTE *)(a1 + 5 * a2 - 5);
@@ -87,10 +87,10 @@ short ADT2UNIT____CALC_VIBTREM_SHIFT_BYTE_formal__WORD(unsigned char a2, unsigne
   return result;
 }
 
-void ADT2UNIT____CHANGE_FREQ_BYTE_WORD_ASM(char a2, short a1)
+void ADT2UNIT____CHANGE_FREQ_BYTE_WORD_ASM(char a2, unsigned short a1)
 {
   int v2; // ebx@5
-  __int16 v3; // ax@5
+  unsigned short v3; // ax@5
   unsigned int v4; // ebx@5
   unsigned int v5; // ebx@6
   int v6; // ST0C_4@6

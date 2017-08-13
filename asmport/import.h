@@ -1,5 +1,14 @@
 #define MAX_SCREEN_MEM_SIZE 180*60*2
 
+/*
+  PASCAL      C
+  Longint     int
+  Smallint    short
+  Shortint    char
+  Word        unsigned short
+  Byte        unsigned char
+*/
+
 extern "C" {
 
 // (at2unit) songdata:      tFIXED_SONGDATA;
@@ -26,17 +35,17 @@ extern unsigned char U__ADT2UNIT____VIBTREM_TABLE[256];
 extern unsigned char U__ADT2UNIT____VIBTREM_TABLE_SIZE;
 
 // freq_table:    array[1..20] of Word;
-extern short U__ADT2UNIT____FREQ_TABLE[20];
+extern unsigned short U__ADT2UNIT____FREQ_TABLE[20];
 
 // freqtable2:    array[1..20] of Word;
-extern short U__ADT2UNIT____FREQTABLE2[20];
+extern unsigned short U__ADT2UNIT____FREQTABLE2[20];
 
 // channel_flag:  array[1..20] of Boolean;
 extern unsigned char U__ADT2UNIT____CHANNEL_FLAG[20];
 
 // tTRACK_ADDR = array[1..20] of Word;
 // _chan_n: tTRACK_ADDR;
-extern short U__ADT2UNIT_____CHAN_N[20];
+extern unsigned short U__ADT2UNIT_____CHAN_N[20];
 
 // limit_exceeded: Boolean;
 extern unsigned char U__ADT2UNIT____LIMIT_EXCEEDED;
@@ -68,10 +77,10 @@ extern unsigned char TC__ADT2UNIT____MODULE_ARCHIVED;
 extern unsigned char TC__ADT2SYS_____PATTEDIT_LASTPOS;
 
 // _cursor_blink_pending_frames: Longint = 0;
-extern unsigned int TC__ADT2SYS_____CURSOR_BLINK_PENDING_FRAMES;
+extern int TC__ADT2SYS_____CURSOR_BLINK_PENDING_FRAMES;
 
 // _cursor_blink_factor: Longint = 13;
-extern unsigned int TC__ADT2SYS_____CURSOR_BLINK_FACTOR;
+extern int TC__ADT2SYS_____CURSOR_BLINK_FACTOR;
 
 // cursor_sync: Boolean = FALSE;
 extern unsigned char TC__ADT2SYS____CURSOR_SYNC;
@@ -80,13 +89,13 @@ extern unsigned char TC__ADT2SYS____CURSOR_SYNC;
 extern unsigned char *TC__ADT2SYS_____FRAMEBUFFER;
 
 // virtual_cur_pos: Word = 0;
-extern short TC__ADT2SYS____VIRTUAL_CUR_POS;
+extern unsigned short TC__ADT2SYS____VIRTUAL_CUR_POS;
 
 // virtual_cur_shape: Word = 0;
-extern short TC__ADT2SYS____VIRTUAL_CUR_SHAPE;
+extern unsigned short TC__ADT2SYS____VIRTUAL_CUR_SHAPE;
 
 // virtual_screen__first_row: Longint = 0;
-extern unsigned int TC__ADT2SYS____VIRTUAL_SCREEN__FIRST_ROW;
+extern int TC__ADT2SYS____VIRTUAL_SCREEN__FIRST_ROW;
 
 // tSCREEN_MEM = array[0..PRED(MAX_SCREEN_MEM_SIZE)] of Byte;
 // temp_screen2:         tSCREEN_MEM;
@@ -96,7 +105,7 @@ extern unsigned char U__TXTSCRIO____TEMP_SCREEN2[MAX_SCREEN_MEM_SIZE];
 extern unsigned char TC__TXTSCRIO____MAX_TRACKS;
 
 // SCREEN_MEM_SIZE: Longint = MAX_SCREEN_MEM_SIZE;
-extern unsigned int TC__TXTSCRIO____SCREEN_MEM_SIZE;
+extern int TC__TXTSCRIO____SCREEN_MEM_SIZE;
 
 // screen_ptr:          Pointer = Addr(text_screen_shadow);
 extern unsigned char *TC__TXTSCRIO____SCREEN_PTR;
