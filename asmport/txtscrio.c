@@ -515,7 +515,7 @@ void TXTSCRIO____SHOW_VCSTR_BYTE_BYTE_SHORTSTRING_BYTE_BYTE(unsigned char a5, un
 
 void dupchar(unsigned char column, unsigned char line, unsigned char c, unsigned char attr, int count, unsigned char *ptr)
 {
-  unsigned int pos = ((column-1) + ((line-1) * TC__TXTSCRIO____MAXCOL)) * 2;
+  unsigned short pos = ((column-1) + ((line-1) * TC__TXTSCRIO____MAXCOL)) * 2;
   for(int i = 0; i < count; ++i) {
     unsigned char *w = (ptr + pos + i*2);
     *(w+0) = c;
@@ -544,7 +544,7 @@ void TXTSCRIO____SHOWSTR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE(unsigned cha
   v8 = str[0];
   if ( v8 )
   {
-    v9 = (_WORD *)((unsigned __int16)var_absolute_pos + a5);
+    v9 = (_WORD *)(a5 + var_absolute_pos);
     do
     {
       LOBYTE(v6) = *v7++;
@@ -560,24 +560,23 @@ void TXTSCRIO____SHOWSTR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE(unsigned cha
 void TXTSCRIO____SHOWVSTR_TSCREEN_MEM_PTR_BYTE_BYTE_SHORTSTRING_BYTE(unsigned char *a5, unsigned char a4, unsigned char a3, unsigned char *a2, unsigned char a1)
 {
   //__int64 v5; // rax@1
-  int v6; // ebx@1
+  unsigned int v6; // ebx@1
   unsigned short v7; // ax@1
   _BYTE *v8; // esi@1
-  int v9; // ecx@1
+  unsigned int v9; // ecx@1
   unsigned char *v10; // edi@2
-  unsigned short v11; // ax@2
 
   unsigned char str[255];
   FPC_SHORTSTR_TO_SHORTSTR(str, 0xFFu, a2);
 
-  v6 = (unsigned __int16)(2 * (unsigned __int8)(TC__TXTSCRIO____MAXCOL - 1));
+  v6 = 2 * (TC__TXTSCRIO____MAXCOL - 1);
   dupchar(a4,a3,0,0,0,a5);
   v8 = &str[1];
   v9 = str[0];
   if ( v9 )
   {
     v10 = (unsigned char *)((unsigned __int16)var_absolute_pos + a5);
-    HIBYTE(v11) = a1;
+    HIBYTE(v7) = a1;
     do
     {
       LOBYTE(v7) = *v8++;
