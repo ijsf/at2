@@ -110,8 +110,8 @@ void ADT2UNIT____CHANGE_FREQ_BYTE_WORD_ASM(unsigned char a2, unsigned short a1)
     v7 = (unsigned __int8)v3;
     v8 = (unsigned __int8)v3;
     LOWORD(v7) = U__ADT2UNIT_____CHAN_N[v5] + 176;
-    TC__ADT2OPL3____OPL3OUT(HIBYTE(v3), v7);
-    TC__ADT2OPL3____OPL3OUT(v8, v6);
+    TC__ADT2OPL3____OPL3OUT(v7, HIBYTE(v3));
+    TC__ADT2OPL3____OPL3OUT(v6, v8);
   }
 }
 

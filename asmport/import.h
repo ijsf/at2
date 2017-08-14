@@ -19,7 +19,7 @@ extern unsigned char *var_songdata__instr_data;
 extern unsigned char *var_songdata__flag_4op;
 
 // const opl3out: tOPL3OUT_proc = opl3out_proc; export; cvar;
-extern void TC__ADT2OPL3____OPL3OUT(unsigned short reg, unsigned short data);  // ACHTUNG: reversed params?
+extern void TC__ADT2OPL3____OPL3OUT(unsigned short reg, unsigned short data);
 
 // const font8x16: array[0..1023] of Dword = (...)
 extern unsigned char TC__ADT2DATA____FONT8X16[];
