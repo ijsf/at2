@@ -166,17 +166,16 @@ unsigned short DEPACKIO____RDC_DECOMPRESS_formal_formal_WORD__WORD(unsigned char
 
 unsigned char DEPACKIO____GETCHAR(unsigned char *result)
 {
-  unsigned char cf; // ACHTUNG
-  
-  *result = 0; // al@2 // ACHTUNG
+  unsigned char cf;
+  *result = 0;
 
   if ( var_ibufCount < var_ibufSize )
   {
-    *result = *(_BYTE *)(var_input_ptr + var_ibufCount); // ACHTUNG
+    *result = *(_BYTE *)(var_input_ptr + var_ibufCount);
     ++var_ibufCount;
-    cf = 1; // ACHTUNG
+    cf = 1;
   }
-  cf = 0; // ACHTUNG
+  cf = 0;
   return cf;
 }
 
@@ -198,7 +197,7 @@ void DEPACKIO____LZSS_DECODE()
   unsigned char v8; // al@11
   unsigned char v9; // cl@11
   
-  unsigned char charresult; // ACHTUNG
+  unsigned char charresult;
 
   var_ibufCount = 0;
   var_ibufSize = var_input_size;
@@ -213,26 +212,26 @@ void DEPACKIO____LZSS_DECODE()
       v3 = v1 >> 1;
       if ( !HIBYTE(v3) )
       {
-        if ( DEPACKIO____GETCHAR(&charresult) ) // ACHTUNG
+        if ( DEPACKIO____GETCHAR(&charresult) )
           return;
         LOBYTE(v3) = charresult;
       }
       if ( !(v3 & 1) )
         break;
-      if ( DEPACKIO____GETCHAR(&charresult) ) // ACHTUNG
+      if ( DEPACKIO____GETCHAR(&charresult) )
         return;
       *(_BYTE *)(v2 + var_work_ptr) = charresult;
       v2 = ((_WORD)v2 + 1) & 0xFFF;
       DEPACKIO____PUTCHAR(charresult);
     }
-    if ( DEPACKIO____GETCHAR(&charresult) )  // ACHTUNG
+    if ( DEPACKIO____GETCHAR(&charresult) ) 
       break;
-    v6 = charresult; // ACHTUNG
-    if ( DEPACKIO____GETCHAR(&charresult) )  // ACHTUNG
+    v6 = charresult;
+    if ( DEPACKIO____GETCHAR(&charresult) ) 
       break;
     HIBYTE(v0) = charresult >> 4;
     LOBYTE(v0) = v6;
-    v9 = (charresult & 0xF) + 2 + 1; // ACHTUNG
+    v9 = (charresult & 0xF) + 2 + 1;
     do
     {
       v7 = v0 & 0xFFF;
@@ -259,13 +258,12 @@ unsigned short DEPACKIO____LZSS_DECOMPRESS_formal_formal_WORD__WORD(unsigned cha
 
 unsigned short DEPACKIO____NEXTCODE()
 {
-  unsigned int a2; // bx // ACHTUNG
-  unsigned int a1; // cx // ACHTUNG
+  unsigned int a2; // bx
+  unsigned int a1; // cx
   
   __int16 v2; // ax@1
   unsigned __int16 v3; // ax@1
   __int16 v4; // t2@1
-  //char v5; // cf@1 // ACHTUNG
   __int16 v6; // ax@1
   unsigned __int8 v7; // dl@1
 
@@ -277,7 +275,6 @@ unsigned short DEPACKIO____NEXTCODE()
   var_le82b = v4;
   LOWORD(a1) = a2 & 7;
 
-  // ACHTUNG
   unsigned short ax = v3;
   unsigned short bx = LOWORD(a2);
   bx = (bx >> 1) | ((ax & 1) << 15);
@@ -289,32 +286,14 @@ unsigned short DEPACKIO____NEXTCODE()
   v3 = ax;
   LOWORD(a2) = bx;
   
-  /*
-  v5 = v3 & 1;
-  v3 >>= 1;
-  LOWORD(a2) = __RCR__(a2, v5);
-  LOWORD(a2) = __RCR__(a2, v3 & 1);
-  LOWORD(a2) = __RCR__(a2, (v3 >> 1) & 1);
-  */
-  
   v6 = *(_WORD *)(a2 + var_input_ptr);
   v7 = *(_BYTE *)(a2 + var_input_ptr + 2);
   if ( (_WORD)a1 )
   {
     do
     {
-      // ACHTUNG
-      // dl = v7;
-      // ax = v6;
       v6 = (v6 >> 1) | ((v7 & 1) << 15);
       v7 >>= 1;
-      
-      /*
-      v5 = v7 & 1;
-      v7 >>= 1;
-      v6 = __RCR__(v6, v5);
-      */
-      
       --a1;
     }
     while ( a1 );
@@ -330,8 +309,6 @@ unsigned short DEPACKIO____LZW_DECODE__WORD()
   int v2; // ecx@1
   _BYTE *v3; // edi@1
   unsigned short result; // ax@2
-  //int v5; // ecx@2
-  char v6; // al@8
   char v7; // al@9
   unsigned char *v8; // ST00_4@11
   unsigned char *v9; // esi@11
@@ -384,7 +361,6 @@ unsigned short DEPACKIO____LZW_DECODE__WORD()
       {
         a1 = var_work_ptr;
         LOWORD(v1) = 3 * var_le6a;
-        v6 = *(_BYTE *)(v1 + var_work_ptr + 2);
         ++var_le72;
         var_le6a = *(_WORD *)(v1 + var_work_ptr);
       }
@@ -771,28 +747,28 @@ unsigned short DEPACKIO____SIXPACK_DECOMPRESS_formal_formal_WORD__WORD(unsigned 
 
 static unsigned char cf;
 
-void add2_8(uint8 &val)
+inline void add2_8(uint8 &val)
 {
   uint16 c = val + val;
   cf = c >= 0x100;
   val = (uint8)c;
 }
 
-void adc2_8(uint8 &val)
+inline void adc2_8(uint8 &val)
 {
   uint16 c = val + val + cf;
   cf = c >= 0x100;
   val = (uint8)c;
 }
 
-void adc2_32(uint32 &val)
+inline void adc2_32(uint32 &val)
 {
   uint64 c = val + val + cf;
   cf = c >= 0x100000000ull;
   val = (uint32)c;
 }
 
-void xchg(uint32 &d, uint32 &s)
+inline void xchg(uint32 &d, uint32 &s)
 {
   uint32 t;
   t = d;
@@ -800,12 +776,12 @@ void xchg(uint32 &d, uint32 &s)
   s = t;
 }
 
-void shl8(uint32 &v)
+inline void shl8(uint32 &v)
 {
   v = v << 8;
 }
 
-void shr1_c(uint32 &v)
+inline void shr1_c(uint32 &v)
 {
   cf = (v & 1);
   v = v >> 1;

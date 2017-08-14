@@ -239,8 +239,8 @@ var
   temp_songdata: tFIXED_SONGDATA;
   clipboard:     tCLIPBOARD;
 
-  c_songdata_flag_4op: Pointer; export name 'var_songdata__flag_4op'; // ACHTUNG
-  c_songdata_instr_data: Pointer; export name 'var_songdata__instr_data'; // ACHTUNG
+  c_songdata_flag_4op: Pointer; export name 'var_songdata__flag_4op';
+  c_songdata_instr_data: Pointer; export name 'var_songdata__instr_data';
 
 const
   ptr_songdata:      Pointer = Addr(songdata);
