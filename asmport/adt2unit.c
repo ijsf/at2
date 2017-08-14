@@ -8,17 +8,16 @@ unsigned short var_fnum[] = {0x157,0x16b,0x181,0x198,0x1b0,0x1ca,0x1e5,0x202,0x2
 
 unsigned short ADT2UNIT____NFREQ_BYTE__WORD(unsigned char a1)
 {
-  int v1 = 0; // ebx@1
   unsigned short result; // ax@2
 
-  if ( a1 >= 0x60u )
+  if ( a1 >= 0x60 )
   {
-    result = 7854;
+    result = (7 << 10) + 686;
   }
   else
   {
-    v1 = 2 * (a1 % 0xCu);
-    result = var_fnum[v1] + (a1 / 0xCu << 10);
+    unsigned int v1 = 2 * (a1 % 12);
+    result = var_fnum[v1] + ((a1 / 12) << 10);
   }
   return result;
 }
@@ -52,7 +51,7 @@ unsigned short ADT2UNIT____CALC_FREQ_SHIFT_DOWN_WORD_WORD__WORD(unsigned short a
 
   v2 = (a2 & 0x3FF) - a1;
   v3 = (a2 & 0x1C00) >> 10;
-  if ( v2 <= 0x156u )
+  if ( v2 <= 0x156 )
   {
     if ( v3 )
     {
@@ -82,20 +81,22 @@ unsigned short ADT2UNIT____CALC_VIBTREM_SHIFT_BYTE_formal__WORD(unsigned char a2
   result = __PAIR__(v3, HIBYTE(v3)) & 0x1FF;
   v5 = 1;
   if ( !((unsigned __int8)U__ADT2UNIT____VIBTREM_TABLE_SIZE & v2) )
+  {
     v5 = 0;
+  }
   *(_BYTE *)(a1 + 5 * a2 - 4) = v5;
   return result;
 }
 
 void ADT2UNIT____CHANGE_FREQ_BYTE_WORD_ASM(unsigned char a2, unsigned short a1)
 {
-  int v2; // ebx@5
+  unsigned int v2; // ebx@5
   unsigned short v3; // ax@5
   unsigned int v4; // ebx@5
   unsigned int v5; // ebx@6
-  int v6; // ST0C_4@6
-  int v7; // edx@6
-  int v8; // ST08_4@6
+  unsigned int v6; // ST0C_4@6
+  unsigned int v7; // edx@6
+  unsigned int v8; // ST08_4@6
 
   v2 = (unsigned __int8)a2 - 1;
   v3 = (U__ADT2UNIT____FREQ_TABLE[v2] & 0xE000) + (a1 & 0x1FFF);
@@ -195,11 +196,11 @@ LABEL_24:
 
 unsigned char ADT2UNIT____GET_CHANPOS_formal_BYTE_BYTE__BYTE(unsigned char *a3, unsigned char a2, unsigned char a1)
 {
-  int i; // ebx@1
+  unsigned int i; // ebx@1
   _BYTE *v4; // edi@2
   bool v5; // zf@2
-  int v6; // ecx@2
-  int result; // eax@6
+  unsigned int v6; // ecx@2
+  unsigned int result; // eax@6
 
   for ( i = 0; ; ++i )
   {
@@ -227,8 +228,8 @@ unsigned char ADT2UNIT____GET_CHANPOS2_formal_BYTE_BYTE__BYTE(unsigned char *a3,
 {
   _BYTE *v3; // edi@1
   bool v4; // zf@1
-  int v5; // ecx@1
-  int result; // eax@5
+  unsigned int v5; // ecx@1
+  unsigned int result; // eax@5
 
   v3 = a3;
   v4 = 1;
