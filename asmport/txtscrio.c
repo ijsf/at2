@@ -3,6 +3,8 @@
 #include "import.h"
 #include "fpc.h"
 
+// ACHTUNG: still something broken
+
 /*
 FPC_SHORTSTR_TO_SHORTSTR
 

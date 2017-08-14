@@ -814,6 +814,8 @@ void shr1(uint32 &v)
 
 unsigned int DEPACKIO____APACK_DECOMPRESS_formal_formal__LONGWORD(unsigned char *_source, unsigned char *_dest)
 {
+  // ACHTUNG: still something broken
+  
   uint32 temp;
   uint32 eax = 0;
   uint32 ecx = 0;
