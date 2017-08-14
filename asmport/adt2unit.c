@@ -16,8 +16,7 @@ unsigned short ADT2UNIT____NFREQ_BYTE__WORD(unsigned char a1)
   }
   else
   {
-    unsigned int v1 = 2 * (a1 % 12);
-    result = var_fnum[v1] + ((a1 / 12) << 10);
+    result = var_fnum[a1 % 12] + ((a1 / 12) << 10);
   }
   return result;
 }
