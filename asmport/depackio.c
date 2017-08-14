@@ -769,27 +769,27 @@ unsigned short DEPACKIO____SIXPACK_DECOMPRESS_formal_formal_WORD__WORD(unsigned 
 
 //// APACK
 
-static unsigned char cf = 0;
+static unsigned char cf;
 
-uint8 add2_8(uint8 val)
+void add2_8(uint8 &val)
 {
   uint16 c = val + val;
-  cf = (c & 0x100) > 0 ? 1 : 0;
-  return (uint8)c;
+  cf = c >= 0x100;
+  val = (uint8)c;
 }
 
-uint8 adc2_8(uint8 val)
+void adc2_8(uint8 &val)
 {
   uint16 c = val + val + cf;
-  cf = (c & 0x100) > 0 ? 1 : 0;
-  return (uint8)c;
+  cf = c >= 0x100;
+  val = (uint8)c;
 }
 
-uint32 adc2_32(uint32 val)
+void adc2_32(uint32 &val)
 {
   uint64 c = val + val + cf;
-  cf = (c & 0x100000000) > 0 ? 1 : 0;
-  return (uint32)c;
+  cf = c >= 0x100000000ull;
+  val = (uint32)c;
 }
 
 void xchg(uint32 &d, uint32 &s)
@@ -800,112 +800,83 @@ void xchg(uint32 &d, uint32 &s)
   s = t;
 }
 
-void shl(uint32 &v, uint8 c)
+void shl8(uint32 &v)
 {
-  cf = __MKCSHL__(v, c);
-  v = v << c;
+  v = v << 8;
 }
 
-void shr1(uint32 &v)
+void shr1_c(uint32 &v)
 {
-  cf = v & 1;
+  cf = (v & 1);
   v = v >> 1;
 }
 
-unsigned int DEPACKIO____APACK_DECOMPRESS_formal_formal__LONGWORD(unsigned char *_source, unsigned char *_dest)
+unsigned int DEPACKIO____APACK_DECOMPRESS_formal_formal__LONGWORD(unsigned char *source, unsigned char *dest)
 {
-  // ACHTUNG: still something broken
-  
   uint32 temp;
-  uint32 eax = 0;
-  uint32 ecx = 0;
+  uint32 eax;
+  uint32 ecx;
   uint8 dl = 0x80;
 
-  uint8 *source = _source;
-  uint8 *dest = _dest;
+  uint8 *esi = source;
+  uint8 *edi = dest;
 
 L1:
-  *dest = *source; ++dest; ++source;
+  *edi++ = *esi++;
 L2:
-  dl = add2_8(dl); if (dl == 0) { dl = *source; ++source; dl = adc2_8(dl); }
-  if(!cf) {
-    goto L1;
-  }
-  
+  add2_8(dl); if (dl == 0) { dl = *esi++; adc2_8(dl); }
+  if (cf == 0) { goto L1; }
   ecx = 0;
-  
-  dl = add2_8(dl); if (dl == 0) { dl = *source; ++source; dl = adc2_8(dl); }
-  if (!cf) {
-    goto L8;
-  }
-  
+  add2_8(dl); if (dl == 0) { dl = *esi++; adc2_8(dl); }
+  if (cf == 0) { goto L8; }
   eax = 0;
-  
-  dl = add2_8(dl); if (dl == 0) { dl = *source; ++source; dl = adc2_8(dl); }
-  if (!cf) {
-    goto L15;
-  }
-  
+  add2_8(dl); if (dl == 0) { dl = *esi++; adc2_8(dl); }
+  if (cf == 0) { goto L15; }
   ++ecx;
   LOBYTE(eax) = 0x10;
-  
 L6:
-  dl = add2_8(dl); if (dl == 0) { dl = *source; ++source; dl = adc2_8(dl); }
-  LOBYTE(eax) = adc2_8(LOBYTE(eax));
-  if (!cf) {
-    goto L6;
-  }
-  if (LOBYTE(eax) != 0) {
-    goto L24;
-  }
-  *dest = LOBYTE(eax); ++dest;
+  add2_8(dl); if (dl == 0) { dl = *esi++; adc2_8(dl); }
+  adc2_8(LOBYTE(eax));
+  if (cf == 0) { goto L6; }
+  if (LOBYTE(eax) != 0) { goto L24; }
+  *edi++ = LOBYTE(eax);
   goto L2;
-  
 L8:
   ++ecx;
 L9:
-  dl = add2_8(dl); if (dl == 0) { dl = *source; ++source; dl = adc2_8(dl); }
-  ecx = adc2_32(ecx);
-  dl = add2_8(dl); if (dl == 0) { dl = *source; ++source; dl = adc2_8(dl); }
-  if (cf) {
-    goto L9;
-  }
+  add2_8(dl); if (dl == 0) { dl = *esi++; adc2_8(dl); }
+  adc2_32(ecx);
+  add2_8(dl); if (dl == 0) { dl = *esi++; adc2_8(dl); }
+  if (cf == 1) { goto L9; }
   --ecx;
   --ecx; if(ecx != 0) { goto L16; }
   
   ecx = 0;
   ++ecx;
 L12:
-  dl = add2_8(dl); if (dl == 0) { dl = *source; ++source; dl = adc2_8(dl); }
-  ecx = adc2_32(ecx);
-  dl = add2_8(dl); if (dl == 0) { dl = *source; ++source; dl = adc2_8(dl); }
-  if (cf) {
-    goto L12;
-  }
+  add2_8(dl); if (dl == 0) { dl = *esi++; adc2_8(dl); }
+  adc2_32(ecx);
+  add2_8(dl); if (dl == 0) { dl = *esi++; adc2_8(dl); }
+  if (cf == 1) { goto L12; }
   goto L23;
 L15:
-  LOBYTE(eax) = *source; ++source;
-  shr1(eax);
+  LOBYTE(eax) = *esi++;
+  shr1_c(eax);
   if (eax == 0) { goto L25; }
-  ecx = adc2_32(ecx);
+  adc2_32(ecx);
   goto L20;
-  
 L16:
   xchg(eax, ecx);
   --eax;
-  shl(eax, 8);
-  LOBYTE(eax) = *source; ++source;
-  
+  shl8(eax);
+  LOBYTE(eax) = *esi++;
   ecx = 0;
   ++ecx;
-  
 L17:
-  dl = add2_8(dl); if (dl == 0) { dl = *source; ++source; dl = adc2_8(dl); }
-  ecx = adc2_32(ecx);
-  dl = add2_8(dl); if (dl == 0) { dl = *source; ++source; dl = adc2_8(dl); }
-  if(cf) {
-    goto L17;
-  }
+  add2_8(dl); if (dl == 0) { dl = *esi++; adc2_8(dl); }
+  adc2_32(ecx);
+  add2_8(dl); if (dl == 0) { dl = *esi++; adc2_8(dl); }
+  if(cf == 1) { goto L17; }
   
   if(eax >= 32000) { goto L20; }
   if(eax >= 0x500) { goto L21; }
@@ -919,8 +890,11 @@ L22:
 L23:
   eax = temp;
 L24:
-  memmove(dest, dest - eax, ecx); dest += ecx;
+  for(;ecx > 0; --ecx) {
+    *edi = *(edi - eax);
+    ++edi;
+  }
   goto L2;
 L25:
-  return (dest - _dest);
+  return (edi - dest);
 }
