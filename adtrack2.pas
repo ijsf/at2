@@ -72,7 +72,7 @@ var
 
 procedure new_exit_proc;
 begin
-  ExitProc := @old_exit_proc;
+  ExitProc := old_exit_proc;
 
   If mouse_active then
     asm
@@ -115,7 +115,7 @@ begin
   sys_done;
   If (pattdata <> NIL) then
     FreeMem(pattdata,PATTERN_SIZE*max_patterns);
-  ExitProc := @old_exit_proc;
+  ExitProc := old_exit_proc;
   If (dos_dir <> '') then ChDir(dos_dir);
   HALT(exitcode);
 end;
@@ -135,7 +135,7 @@ var
 begin { MAIN }
 {$IFDEF GO32V2}
 
-  @old_exit_proc := ExitProc;
+  old_exit_proc := ExitProc;
   ExitProc := @new_exit_proc;
   {$i-}
   GetDir(0,dos_dir);
@@ -655,7 +655,7 @@ begin { MAIN }
   { terminating program (phase:3) }
   sys_done;
   FreeMem(pattdata,PATTERN_SIZE*max_patterns);
-  ExitProc := @old_exit_proc;
+  ExitProc := old_exit_proc;
   If (dos_dir <> '') then ChDir(dos_dir);
 
 {$ELSE}

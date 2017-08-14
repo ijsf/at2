@@ -4456,7 +4456,7 @@ const
 
 function TimerCallback(interval: Uint32; param: Pointer):Uint32; cdecl;
 begin
-  If (@timer_handler <> NIL) then timer_handler;
+  If (timer_handler <> NIL) then timer_handler;
   TimerCallback := _interval; // trick to alter delay rate on the fly
 end;
 
@@ -5577,14 +5577,14 @@ begin
   Unlock_Data(___UNIT_DATA_START___,DWORD(Addr(___UNIT_DATA_END___))-DWORD(Addr(___UNIT_DATA_START___)));
   Unlock_Data(___IRQ_DATA_START___,DWORD(Addr(___IRQ_DATA_END___))-DWORD(Addr(___IRQ_DATA_START___)));
   Unlock_Code(@___IRQ_CODE_START___,DWORD(@___IRQ_CODE_END___)-DWORD(@___IRQ_CODE_START___));
-  ExitProc := @old_exit_proc;
+  ExitProc := old_exit_proc;
 end;
 
 begin
   Lock_Data(___UNIT_DATA_START___,DWORD(Addr(___UNIT_DATA_END___))-DWORD(Addr(___UNIT_DATA_START___)));
   Lock_Data(___IRQ_DATA_START___,DWORD(Addr(___IRQ_DATA_END___))-DWORD(Addr(___IRQ_DATA_START___)));
   Lock_Code(@___IRQ_CODE_START___,DWORD(@___IRQ_CODE_END___)-DWORD(@___IRQ_CODE_START___));
-  @old_exit_proc := ExitProc;
+  old_exit_proc := ExitProc;
   ExitProc := @new_exit_proc;
 
 {$ENDIF}

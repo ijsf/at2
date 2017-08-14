@@ -645,14 +645,14 @@ procedure new_exit_proc;
 begin
   Lock_Data(___OPL3OUT_UNIT_DATA_START___,DWORD(Addr(___OPL3OUT_UNIT_DATA_END___))-DWORD(Addr(___OPL3OUT_UNIT_DATA_START___)));
   Lock_Code(@___OPL3OUT_IRQ_CODE_START___,DWORD(@___OPL3OUT_IRQ_CODE_END___)-DWORD(@___OPL3OUT_IRQ_CODE_START___));
-  ExitProc := @old_exit_proc;
+  ExitProc := old_exit_proc;
 end;
 
 begin
   FillWord(_opl_regs_cache,SizeOf(_opl_regs_cache) DIV SizeOf(WORD),NOT 0);
   Lock_Data(___OPL3OUT_UNIT_DATA_START___,DWORD(Addr(___OPL3OUT_UNIT_DATA_END___))-DWORD(Addr(___OPL3OUT_UNIT_DATA_START___)));
   Lock_Code(@___OPL3OUT_IRQ_CODE_START___,DWORD(@___OPL3OUT_IRQ_CODE_END___)-DWORD(@___OPL3OUT_IRQ_CODE_START___));
-  @old_exit_proc := ExitProc;
+  old_exit_proc := ExitProc;
   ExitProc := @new_exit_proc;
 
 {$ENDIF}

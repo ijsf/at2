@@ -529,7 +529,7 @@ begin
       dl_environment.keystroke := key;
     end;
 
-  If Addr(move_to_screen_routine) <> NIL then
+  If move_to_screen_routine <> NIL then
     begin
       move_to_screen_data := ptr_scr_backup;
       move_to_screen_area[1] := xstart;
@@ -1082,7 +1082,7 @@ begin { Menu }
 
   If mn_environment.winshade and NOT mn_environment.unpolite then
     begin
-      If (Addr(move_to_screen_routine) <> NIL) then
+      If (move_to_screen_routine <> NIL) then
         begin
           move_to_screen_data := ptr_scr_backup2;
           move_to_screen_area[1] := x;
