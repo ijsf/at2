@@ -561,7 +561,7 @@ begin
   _debug_str_ := 'DIALOGIO.PAS:pstr';
 {$ENDIF}
   If (item <= mnu_count) then
-    Move(POINTER(Ptr(0,Ofs(mnu_data^)+(item-1)*(mnu_len+1)))^,temp,mnu_len+1)
+    Move(POINTER((Ofs(mnu_data^)+(item-1)*(mnu_len+1)))^,temp,mnu_len+1)
   else temp := '';
   If NOT solid then pstr := ExpStrR(temp,mnu_len-2,' ')
   else pstr := ExpStrR(temp,mnu_len,' ');
@@ -575,7 +575,7 @@ var
 
 begin
   If (item <= mnu_count) then
-    Move(POINTER(Ptr(0,Ofs(mnu_data^)+(item-1)*(mnu_len+1)))^,temp,mnu_len+1)
+    Move(POINTER((Ofs(mnu_data^)+(item-1)*(mnu_len+1)))^,temp,mnu_len+1)
   else temp := '';
   If NOT solid then temp := ExpStrR(temp,mnu_len-2,' ')
   else temp := ExpStrR(temp,mnu_len,' ');
@@ -601,7 +601,7 @@ begin
   _debug_str_ := 'DIALOGIO.PAS:pdes';
 {$ENDIF}
   If (mn_environment.descr <> NIL) and (item <= mnu_count) then
-    Move(POINTER(Ptr(0,Ofs(mn_environment.descr^)+
+    Move(POINTER((Ofs(mn_environment.descr^)+
       (item-1)*(mn_environment.descr_len+1)))^,temp,mn_environment.descr_len+1)
   else temp := '';
   pdes := ExpStrR(temp,mn_environment.descr_len,' ');
@@ -829,7 +829,7 @@ begin
         temp := Copy(item_str,1,mn_environment.edit_pos)+temp
       else
         temp := CutStr(temp);
-      Move(temp,POINTER(Ptr(0,Ofs(data)+(item-1)*(len+1)))^,len+1);
+      Move(temp,POINTER((Ofs(data)+(item-1)*(len+1)))^,len+1);
     end;
 
   mn_environment.do_refresh := TRUE;

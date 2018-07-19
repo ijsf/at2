@@ -134,7 +134,7 @@ begin
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'MENULIB2.PAS:pstr';
 {$ENDIF}
-  Move(POINTER(Ptr(0,Ofs(mnu_data^)+(item-1)*(mnu_len+1)))^,temp,mnu_len+1);
+  Move(POINTER((Ofs(mnu_data^)+(item-1)*(mnu_len+1)))^,temp,mnu_len+1);
   If NOT solid then pstr := ExpStrR(temp,mnu_len-2,' ')
   else pstr := ExpStrR(temp,mnu_len,' ');
 end;
@@ -150,7 +150,7 @@ begin
   _debug_str_ := 'MENULIB2.PAS:pdes';
 {$ENDIF}
   If (mn_environment.descr <> NIL) then
-    Move(POINTER(Ptr(0,Ofs(mn_environment.descr^)+
+    Move(POINTER((Ofs(mn_environment.descr^)+
       (item-1)*(mn_environment.descr_len+1)))^,temp,mn_environment.descr_len+1)
   else temp := '';
   pdes := ExpStrR(temp,mn_environment.descr_len,' ');
@@ -325,7 +325,7 @@ begin
         temp := Copy(pstr(item),1,MenuLib2_mn_environment.edit_pos)+temp
       else
         temp := CutStr(temp);
-      Move(temp,POINTER(Ptr(0,Ofs(data)+(item-1)*(len+1)))^,len+1);
+      Move(temp,POINTER((Ofs(data)+(item-1)*(len+1)))^,len+1);
     end;
 
   ShowCStr(MenuLib2_mn_environment.v_dest,x+1,y+idx2,
