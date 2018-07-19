@@ -593,6 +593,8 @@ var
   idx: Byte;
 
 begin
+  SetExceptionMask([exInvalidOp, exDenormalized, exZeroDivide, exOverflow, exUnderflow, exPrecision]);
+  
   GetMem(opl3_sample_buffer_ptr,sdl_sample_buffer*4);
   For idx := 1 to 18 do GetMem(opl3_sample_buffer_chan_ptr[idx],sdl_sample_buffer*4);
   sample_frame_size := ROUND(sdl_sample_rate/50*(1+sdl_timer_slowdown/100));;
