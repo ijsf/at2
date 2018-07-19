@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := all
 
-CFLAGS = -Wall -Wno-unused-local-typedef -Wno-unused-local-typedefs -ggdb
+CFLAGS = -Wall -Wno-unused-local-typedef -Wno-unused-local-typedefs -ggdb -mmacosx-version-min=10.5
 
 # Should be equivalent to your list of C files, if you don't build selectively
 SRC=$(wildcard *.c)

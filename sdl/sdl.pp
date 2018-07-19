@@ -1,3 +1,5 @@
+{$linklib SDLmain}
+
 unit SDL;
 
 {  Automatically converted by H2PAS.EXE from SDL.h
