@@ -12,7 +12,7 @@ unit SDL_types;
 
   { C default packing is dword }
 
-{$PACKRECORDS 4}
+{$PACKRECORDS C}
   {
       SDL - Simple DirectMedia Layer
       Copyright (C) 1997, 1998, 1999, 2000, 2001  Sam Lantinga

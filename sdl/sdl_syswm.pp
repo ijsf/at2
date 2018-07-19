@@ -11,7 +11,7 @@ unit SDL_syswm;
 
   { C default packing is dword }
 
-{$PACKRECORDS 4}
+{$PACKRECORDS C}
 
   {
       SDL - Simple DirectMedia Layer

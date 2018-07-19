@@ -13,7 +13,7 @@ unit SDL_cdrom;
 
   { C default packing is dword }
 
-{$PACKRECORDS 4}
+{$PACKRECORDS C}
 
  { Pointers to basic pascal types, inserted by h2pas conversion program.}
   Type

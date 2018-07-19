@@ -13,7 +13,7 @@ unit SDL_events;
     uses SDL_types, SDL_syswm, SDL_keyboard;
   { C default packing is dword }
 
-{$PACKRECORDS 4}
+{$PACKRECORDS C}
 
   {
       SDL - Simple DirectMedia Layer
