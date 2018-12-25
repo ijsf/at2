@@ -1,0 +1,530 @@
+```
++====================-                      -=+
+|                                             |
+|   /|DLiB TR/|CK3R ][ SDL Revision History   |
+|                                             |
++=-                   -=======================+
+
+
+For complete AT2 revision history refer to:
+http://www.adlibtracker.net/files/revision.htm
+
+
+* version 2.4.24
+  released: 12/24/2018
+
+  . fixed version check for Reality ADlib Tracker modules
+  . fixed instrument preview bug in Arpeggio/Vibrato Macro Browser window
+  . fixed C-9 note replacement bug on invalid flat-sharp conversion
+  . fixed linefeed option not being evaluated for some actions and added possibility
+    to disable it for MidiBoard (refer to option 'lf_in_mboard_mode' in config file)
+  . fixed broken Global Freq. Slide Up/Down effect command
+  . implemented native BPM handling:
+    - implemented BPM calculation (predicted according to rows per beat
+      taken from Line Marking Setup window)
+    - added possibility to manually control playback speed (hotkey: [Ctrl]{Shift} Up,Down)
+      and controlling it during using effect commands (refer to extended command 'ZE7');
+    - added overview of current BPM and playback speed shift in Hz
+  . changes in Song Variables window:
+    - changed cursor movement to be more predictable/convenient
+    - added key shortcut for each option
+    - added preview and prediction of BPM speed
+    - added access to quick setup of rows per beat (hotkey: ^Enter)
+  . improved behavior of temporary song status in the upper left corner
+  . optimized window arrangement in case of enlarged screen size
+  . improved string input (quick change of decimal and hexadecimal values with +/-)
+
+
+* version 2.4.23
+  released: 07/27/2016
+
+  . fixed typing behavior bugs in Message Board window
+  . fixed pattern names not being read from A2M file
+  . fixed typing with Alt-codes; changed alternative hotkey
+    for adjusting volume of sound output (new hotkey: [Alt][Shift] Up,Down)
+  . fixed ADSR preview being shown for KSR instead of Envelope type
+  . fixed incorrect pitch calculation in instrument preview
+  . fixed bug when preview of non-macro instrument in File Selector
+    overwritten macro data of current instrument
+  . fixed interface bug occurring on instrument preview in File Selector
+  . fixed replace function for Key-Off notes
+  . added back and improved 'per instrument' positional memory
+  . improved functionality of Pattern List window
+  . added operator preview functionality to Instrument and Macro Editor
+  . added automatic 4OP track volume manipulation (4OP+) for much more
+    convenient work with volume for some volume-based commands
+    and added command switches for toggling old (2OP) handling (for more
+    information, refer to documentation of extended command 'ZE5/ZE6')
+  . fixed 'Bxx' command not being evaluated correctly in 2nd effect column
+  . fixed mistyped frequency multiplier values
+  . added 'reset envelope' and 'ZERO frequency' triggers to FM-macro table
+  . added short keys for copying data between carrier/modulator column
+    in Macro Editor window and copying data between carrier/modulator slot
+    in Instrument Editor window
+  . added possibility to apply table indexes to current instrument
+    in Arpeggio/Vibrato Macro Editor window
+  . completely redesigned handling of notes within 4OP channels
+    and improved user interface
+  . fixed slow reading of instrument bank files
+  . fixed preview of empty instrument with FM-register macro
+  . slightly fixed channel ON/OFF for percussion tracks SD/TT/TC/HH
+  . added possibility to slow down SDL timer so playback speed is more accurate
+    to real hardware (refer to option 'sdl_timer_slowdown' in config file)
+  . implemented new (improved) OPL3 emulator
+
+
+* version 2.4.22
+  released: 09/20/2015 (* 12/17/2015)
+
+  . changes/improvements in Instrument Editor window:
+    - added operator connection graphics
+    - added browsing through all 4 operators with Enter and Tab/Shift+Tab keys
+    - added status hints for current operator/instrument/4OP track
+    - rearranged carrier/modulator/general settings
+    - improved browsing through radio button sections
+    - added separate color for percussive instruments
+    - added section hotkeys for quick navigation
+    - removed 'per instrument' positional memory (obsolete now)
+  . improved speed of user interface in Macro Editor window
+  . improved changing current instrument when 4OP instrument is selected
+  . changed behaviour after releasing MBoard keys in instrument preview mode
+    to Key-Off trailing
+  . fixed Key-Off phase preview with 4OP instruments
+  . improved functionality of Macro Browser under different conditions of use
+  . fixed unintentional setting of octave while forcing KeyOff trailing
+    with Ctrl key upon instrument preview
+  . fixed interface bug in Macro Editor window when changing current instrument
+    upon macro preview
+  . fixed interface bug when loading complete content from A2B/A2W files
+  . fixed macro restart with 4OP tracks upon note retrigger
+  . changed compression algorithm to LZH / new file format versions
+  . added fast-forward / rewind multiplication factor options (refer to
+    options "fforward_factor" and "rewind_facotr" in config file)
+  . updated file system and overall improved manipulation for more
+    convenience when working with 4OP instruments
+  . added new effect commands for restarting envelope (refer to "ZEx")
+  . fixed non-functional hotkey for operation Paste object
+    from clipboard to more patterns (new hotkey: [Alt][Shift] P)
+  . added one step undo operation in Pattern Editor window (hotkey: ^Z)
+  . added hotkey to delete complete note/instrument columns of track group
+    when in when in Note Recorder mode (hotkey: ^Backspace)
+  . fixed program freeze upon reaching last marked line when jump to next
+    marked line was activated while cycle pattern was disabled
+  . added option to keep track position (column) when jumping over tracks
+    with Tab/Shift+Tab keys (refer to option "keep_track_pos" in config file)
+  . improved seeking to pattern / position when song is played without trace
+  . fixed several bugs in OPL3 recording;
+    invoke of recording mode 'per channel' is now ignored when recording
+    to single file is set by user configuration
+  . pretty much improved internal logic for preview of 4OP instruments
+  . added key shortcut for Instrument Editor window (hotkey: ^E);
+    changed hotkey for Arpeggio/Vibrato Macro Editor window (new hotkey: ^G)
+  . added Message Board window (hotkey: ^B)
+  . (LINUX) fixed case sensitivity issue for filename extension
+  * fixed bug that may lead to program crash when previewing TT/HH instrument
+  * fixed cursor behavior on typing instrument name and in Message Board window 
+  * upgraded SDL to version 1.2.15
+
+
+* version 2.4.21
+  released: 04/12/2015 (* 05/11/2015)
+
+  . fixed/improved precision of playback calibration with pattern jumps
+  . fixed typing in effect columns with NUMPAD keys
+  . added alternative key combo for setting volume level of sound output
+    on keyboards without NUMPAD keys (hotkey: [Alt] Up,Down)
+  . fixed reading RGB color palette settings from config file
+  . fixed occasional playback mute issue with F7 key in MBoard mode
+  . fixed occasional messy behavior of +/- keys in Macro Editor window
+  . fixed/improved fast-forward/rewind speed
+  . added 'per instrument' positional memory to Instrument Editor window
+  . improved track data processing during playback
+  * fixed interface bug (misplaced cursor) in Instrument Editor window
+  * added option to turn off positional memory for Instrument Editor (refer to
+    option 'remember_ins_pos' in config file)
+  * fixed sound glitch in OPL3 emulation for channels with null ADSR data
+  * fixed some bugs in Macro Arpeggio / Vibrato performer
+
+
+* version 2.4.20
+  released: 12/23/2014 (* 01/08/2015)
+
+   . changed hotkey for toggle of typing modes (hotkey: F11)
+   . added toggle of line feed (hotkey: F12)
+   . added toggle of jump to marked line (hotkey: [Shift] F12)
+   . added back quick file load for modules (hotkey: [Shift] F3)
+   . enhanced MBoard and Note Recorder with jump to marked line option
+   . fixed stuck keyboard issues in MBoard mode
+   . fixed fade in WAV recording with impossible start of playback
+   . added possibility to remove song trace and continue playing
+     while cursor position is maintained (hotkey: [Shift] Esc)
+   . changes in Note Recorder mode:
+     - fixed quick reset last group of tracks action
+     - fixed behavior of some keys for mode exit
+     - added row correction parameter
+   . changes in Macro Browser:
+     - fixed return to browser after selecting arp/vib table
+     - improved arpeggio/vibrato table selection and indication
+   . added Global Freq. Slide Up/Down commands and added command switches
+     for Fine resp. Extra Fine variant (refer to new commands "<xx",">xx"
+     and enhanced functionality of old "ZFD","ZFE" commands)
+   . fixed processing of new effects in Debug Info window
+   . fixed some typing check bugs in Replace window
+   . fixed bug when after swapping instruments one name was incomplete
+   . fixed cursor key navigation within Remap and Replace window
+   . removed sdl_sample_rate and sdl_sample_buffer options
+   . added Rearrange Tracks function (hotkey: ^X)
+   . added automatic activation of debug mode and switchover from offline
+     to normal debug mode with Space when in Debug Info window
+   . fixed/improved precision of fast-forward/rewind pattern function
+   . added navigation to program home directory in File Browser window
+     with Shift+Backspace key (refer also to option "home_dir_path")
+   . added quick selection for muting track numbers above 9 with Shift key
+   . fixed treating of all +/- combos for keyboards without NUMPAD
+   . fixed player calibration issue with pattern break command
+   * fixed interface bugs in Instrument Editor window
+   * fixed fast-forward/rewind outside Pattern Editor window;
+     added functionality to Instrument Control panel
+   * fixed interface bug with ~xy effect command in 2nd effect column
+   * fixed bug when entering notes for 4OP tracks in midiboard mode
+     caused putting wrong instrument in left track of the pair
+   * fixed rearrange function (faulty reordering of tracks)
+
+
+* version 2.4.19
+  released: 10/27/2014 (* 11/04/2014)
+
+   . fixed switchover from offline to normal Debug mode with ^Enter
+   . fixed not working instrument selection with no 4OP track extension
+   . fixed position bugs in File Selector and updated layout for Linux
+   . fixed lately introduced bug in Tone Portamento (arrgh)
+   . fixed Tone Portamento with offline Debug mode and Note Recorder
+   . fixed usage of non-NUMPAD asterisk (*) key for track ON/OFF flags
+   . fixed/improved Replace function and added new shortkey functions
+   . fixed pattern/order editor refresh bug occuring with small song speeds
+   . added synchronized instrument/command processing for selected tracks
+     when Note Recorder mode is armed
+   . added quick reset of track group selection (hotkey: [Alt] Q)
+   . improved layout in Instrument Control panel
+   * fixed interface bug in Remap window occuring with sdl_screen_mode=2
+
+
+* version 2.4.18
+  released: 09/05/2014
+
+   . changes in Note Recorder feature:
+     - fixed bug when deleting notes was operating in wrong track
+       if current track view on screen was moved by user;
+       fixed precision with high song speeds (all notes are deleted now :)
+     - added possibility to switch between using custom instrument
+       and using present instruments in tracks (hotkey: Space / [Alt] Space)
+     - improved keyboard reference on Help screen
+
+
+* version 2.4.17
+  released: 07/28/2014 (* 07/30/2014)
+
+   . fixed ADSR preview update with enhanced screen modes
+   . added Note Recorder feature (hotkey: ^Space)
+   . changed file cache buffer for OPL3 recording to 512kb
+   . added startup files for HQ-modes to program package
+   * fixed some missing usage of non-NUMPAD +/- keys
+
+
+* version 2.4.16
+  released: 07/14/2014
+
+   . fixed cursor blink speed for non-default sdl_frame_rate value
+   . improved current track movement in Debug Info window
+   . added macro details section to Debug Info window
+   . added flipped paste block feature (hotkey: Alt+Shift+V)
+   . fixed/improved File Browser and Replace window
+   . enhanced cursor movement in File Browser and Replace window
+   . fixed in MAME OPL3 emulator:
+       - experimental treatment of ADSR envelope restart
+         for instruments with Attack Rate = 0
+   . enhanced Help screen navigation for effect columns
+   . added FX volume information processing in marked block
+   . small changes in user interface
+
+
+* version 2.4.15
+  released: 06/13/2014
+
+   . added 'Set Custom Speed Table' effect command (`xx)
+   . fixed speed of decay bars for different sdl_frame_rate values;
+     also minimum sdl_frame_rate value was limitied to 50
+     due to key processing issues with too low values
+   . fixed conversion of FMK files
+   . fixed listing of modules with '.' in filename within File Selector
+   . fixed Tone Portamento in KeyOff-ed channel
+   . fixed processing of Force instrument volume effect
+     for 'AM' connections
+   . fixed bug in processing of Arpeggio effect
+   . fixed non-responding keyboard issue (hopefully :-)
+   . small fixes in Arpeggio import from S3M files
+   . fixed/improved/enhanced ADSR preview feature
+   . optimized/enhanced color scheme options in config file
+   . added possibility to control config file options
+     with command line (refer to tip #25 in program documentation)
+   . fixed handling of ON/OFF flags for 4-OP track pair
+   . added positional memory for Song variables and Replace window
+   . majorly improved Debug Info window functionality (hotkey: ^D)
+   . fixed worse keyboard responsiveness upon instrument preview
+
+
+* SDL/Linux version 2.4.14
+  released: 04/24/2014
+
+  . Linux port made from SDL/Win32 2.4.14 sources
+
+
+* SDL/Win32 version 2.4.14
+  released: 04/09/2014
+
+   . fixed current instrument control in Macro Browser window
+   . fixed macro speed manipulation and Song Variables value update
+   . fixed filename sorting/filtering in File Selector window
+   . fixed macro table preview bug with positive/negative columns
+   . added macro speed control to Instrument Editor window
+   . added FM-register macro table preview to Instrument Macro Browser
+   . fixed FM-register table interface bug occurring with enhanced screen
+     modes in Macro Editor window
+   . improved layout in Arpeggio/Vibrato Macro Editor window
+   . improved positional memory logic
+   . major fixes/cleanups/optimizations of source code
+   . updated incomplete key reference information in Help and .mht file
+   . fixed waiting for key release when putting notes with MidiBoard
+   . fixed non-blinking track flag and file overwrite bug 
+     in ‘per track’ recording mode
+   . reverted back to “FT” as default typing mode
+
+
+* SDL/Linux version 2.4.13
+  released: 03/17/2014
+
+  . Linux port made from SDL/Win32 2.4.13 sources
+
+
+* SDL/Win32 version 2.4.13
+  released: 03/14/2014
+
+   . fixed faulty behavior of save-required notification with A2W files
+   . fixed wrong instrument naming when loading complete A2W bank
+   . fixed position behavior of instrument selection for load/paste
+     register data operation in Macro Editor window;
+     fixed interface bug in Instrument Control panel occurring upon
+     these operations with enhanced screen
+   . fixed arpeggio/vibrato macro table pointer in Macro Editor window
+
+
+* SDL/Win32 version 2.4.12
+  released: 03/11/2014
+
+   . added “per track” mode to WAV recorder (alter key: [Ctrl])  
+   . added fully-featured macro browser
+   . added bank browser for A2B and A2W files (finally :)   
+   . added file-dependent positional memory to all bank browsers
+   . added positional memory to Macro Editor window
+   . fixed command typing bug in arpeggio macro table
+   . fixed not showing save-required notification
+   . fixed sorting of filenames, filtered extra filename characters
+     and optimized layout in File Selector window
+   . switched back from MPRESS executable packer to UPX (due to reported
+     malware alerts with some antivirus software)
+   . improved paste operation in more places of the tracker
+   . improved navigation system in Macro Editor window
+   . improved layout of Macro Editor window
+   . overall major improvements in macro data exchange and user handling
+
+
+* SDL/Linux version 2.4.11
+  released: 03/04/2014
+
+  . fixed case-sensitiveness problem when saving files
+  . file issue fixed in more places (2.4.11.2)
+
+
+* SDL/Win32 version 2.4.11
+  released: 02/21/2014
+
+   . fixed cursor and decay bar speed to match DOS version parameters
+   . fixed occasionally appearing interface bug in Pattern Editor window
+   . improved CPU saving feature (refer to option “sdl_frame_rate”)
+   . improved screen rendering routine (back to pure assembler roots :)
+   . added Fade in/out feature for WAV recorder (alter key: [Shift])
+   . added new modules from Diode Milliampere
+   . removed emergency unfreeze flash screen confirmation and changed
+     key combo (Ctrl+Tab does the job now)
+   . fixed in MAME OPL3 emulator:
+       - rollback of current (experimental) changes for treating
+         4-OP channel volume attenuation
+       - completely rewritten (according YMF262 specification) parts
+         of code responsible for setting and changing total output level
+         for 4-OP channels
+
+
+* SDL/Linux version 2.4.10
+  released: 02/14/2014
+
+   . first Linux port by Florian Jung
+
+
+* SDL/Win32 version 2.4.10
+  released: 02/13/2014
+
+   . fixed drive list being not shown in File Selector window
+   . removed DBOPL emulation core (no more necessary I think :)
+   . added WAV recording feature (hotkey: [Alt] F11/F12);
+     check out config file and comments around option “sdl_wav_directory”
+     for more information about how to setup output files
+
+
+* SDL/Win32 version 2.4.09
+  released: 02/12/2014
+
+   . fixed bug in playback calibration (macros were not processed)
+   . fixed interface bug with long filenames in Status window
+   . fixed not working block marking to left/right
+   . fixed some false recognized key presses
+   . fixed bad keyboard responsiveness when testing instrument
+     in Instrument Editor window
+   . fixed back treating of maximum macro speedup value (IRQ at 1000Hz
+     with SDL works surprisingly without issues now :)
+   . added emergency unfreeze command (hotkey: Ctrl+Shift+F10)
+   . added command typing behavior mode handling in Macro Editor window
+   . added instrument type indicators in Macro Editor window
+   . added instrument type indicators and possibility to change current
+     instrument in Instrument Editor window
+   . added some new modules (Madbrain’s awesome A2M collection is
+     hopefully complete now :) and a bit put to order some old ones
+   . changed length of filename in File Selector to 23 chars
+   . changed handling of F2/F3 related actions over instrument data
+   . added wide enhanced screen mode (option “sdl_screen_mode=2”);
+     extended screen content to 180/60 chars at 1440x960 pixels
+   . fixed cursor position in Pattern Order with wide enhanced screen
+
+
+* SDL/Win32 version 2.4.08
+  released: 02/06/2014
+
+   . fixed interface bugs in Transpose and Pattern List window
+   . fixed some non-functional keyboard combinations
+   . changed F2/F3 related key combos:
+       - some quick-load functionality was disabled for safety reasons;
+         only single instruments and patterns can be quick loaded now
+       - all quick-save functionality disabled except for saving A2M file
+         in Pattern Editor / Pattern Order window
+       - hot key for saving instrument bank w/ macros ([Shift] ^F2)
+         in Instrument Control panel was simplified to [Shift] F2
+   . changed loading process of A2W files:
+       - only FM-register / FM-register Macro Table instrument data
+         is loaded within Instrument Control panel
+       - only Arpeggio/Vibrato Macro Table data is loaded within
+         Arpeggio/Vibrato Macro Table Editor window
+   . fixed in MAME OPL3 emulator:
+       - increased volume level by 50% for 4OP instruments with AM-AM,
+         FM-AM and AM-FM connection (experimental)
+   . improved playback rewind with low song speed values
+   . improved enhanced screen mode;
+     extended screen content to 120/50 chars at screen resolution 960x800
+     (check yourself with setting “sdl_screen_mode=1” :)
+
+
+* SDL/Win32 version 2.4.07
+  released: 01/30/2014
+
+   . fixed division by zero bug in playback fade out routine
+   . added some modules from OxygenStar, a.o. to Modules directory
+   . added new “AT” command typing behavior mode (like FT but without
+     cycling pattern moves) (hotkey: Shift+F11);
+     if not overriden by config file, this mode is set by default
+   . removed console window (here you go Mikkel :)
+   . added window icon and activated window close button functionality
+   . fixed wrong position of bye-bye screen under some circumstances
+   . fixed in MAME OPL3 emulator:
+       - increased volume attenuation level in rhythm mode for all
+         percussion channels except BD (experimental)
+
+
+* SDL/Win32 version 2.4.06
+  released: 01/26/2014
+
+   . fixed bug in replay routine (playback never advanced to order #7f)
+   . fixed Status window update during playback calibration
+   . fixed bug in treating KSL by MAME emulator (lucky at 4th attempt :);
+     rollback of all previous changes to KSL – this trivial bug caused
+     all the annoying discrepancies in sound compared to DBOPL emulator
+   . fixed some serious interface bugs in Macro Editor and Remap
+     Instrument window, which raised during portation to Free Pascal
+     (btw, those ‘wtf’ table pointers had their meaning, Dmitry :)
+   . added quick access key for Macro Editor window (^Q)
+   . added macro-preview mode for Arpeggio/Vibrato Macro Editor window
+   . added possibility to change current instrument directly within
+     Macro Editor window (new key combo: Ctrl+[])
+   . added possibility to change current instrument and octave while
+     macro-preview mode is activated
+   . fixed treating of macro speedup (if unsafe, forced to lower value);
+     SDL seems to have max. usable timer frequency at 650Hz, while DOS
+     has been working just fine all the way up to 1000Hz ? 
+
+
+* SDL/Win32 version 2.4.05
+  released: 01/22/2014
+
+   . fixed bug in replay routine (frequency data output for 4OP channels)
+   . fixed bug with channel calculation in 4OP binding mode
+   . added ADSR preview indication to Instrument Control panel
+   . fixed first bugfix of KSL in MAME emulator ?
+
+
+* SDL/Win32 version 2.4.04
+  released: 01/20/2014
+
+   . fixed drive listing in File Selector (no more ‘insert disk’ messages
+     without accesing drive :)
+   . fixed calculation of KSL table in MAME OPL3 emulator (leads in those
+     arcade-like Benjamin Gerardin’s songs sound finally correct :)
+
+
+* SDL/Win32 version 2.4.03
+  released: 01/17/2013
+
+   . fixed track binding not being displayed without panning lock on
+     in Song Variables window
+   . fixed binding of two 4OP instruments in Instrument Control panel
+   . fixed toggle of ADSR preview (new key combo: Ctrl+LShift/RShift)
+   . improved program exit procedure (it’s more DOS-like again :)
+   . MAME OPL3 emulator:
+       - updated according latest modifications from MAME (0.148u1)
+       - fixed bug with setting KSL on 4OP channels
+   . DOSBox OPL3 emulator:
+       - added DBOPL emulator from DOSBox 0.74
+       - fixed stereo panning bug on percussion channels
+   . added key combo for switching over OPL3 emulators ([Alt] F11/F12);
+     current OPL3 emulator is always indicated by flag “MME” resp. “DBE”
+     in Status window
+   . added options to config file:
+       - set sampling rate (sdl_sample_rate)
+       - set sample buffer size (sdl_sample_buffer)
+       - set default OPL3 emulator core (sdl_opl3_emulator)
+   . complete conversion and update of program documentation (mht,htm)
+
+
+* SDL/Win32 version 2.4.02
+  released: 12/23/2013
+
+   . fixed program freeze with marking block at 4OP channel
+   . fixed quick setting of octave and some other keyboard related issues
+
+
+* SDL/Win32 version 2.4.01
+  released: 12/18/2013
+
+   . code cleanup
+   . removed MPU-401 code (not functional within SDL Win32)
+   . removed some obsolete options from config file
+   . fixed song timer / refresh rate decay bars
+   . upgraded SDL to version 1.2.14.0
+```
+
