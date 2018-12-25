@@ -9,6 +9,31 @@ For complete AT2 revision history refer to:
 http://www.adlibtracker.net/files/revision.htm
 
 
+* version 2.4.24
+  released: 12/24/2018
+
+  . fixed version check for Reality ADlib Tracker modules
+  . fixed instrument preview bug in Arpeggio/Vibrato Macro Browser window
+  . fixed C-9 note replacement bug on invalid flat-sharp conversion
+  . fixed linefeed option not being evaluated for some actions and added possibility
+    to disable it for MidiBoard (refer to option 'lf_in_mboard_mode' in config file)
+  . fixed broken Global Freq. Slide Up/Down effect command
+  . implemented native BPM handling:
+    - implemented BPM calculation (predicted according to rows per beat
+      taken from Line Marking Setup window)
+    - added possibility to manually control playback speed (hotkey: [Ctrl]{Shift} Up,Down)
+      and controlling it during using effect commands (refer to extended command 'ZE7');
+    - added overview of current BPM and playback speed shift in Hz
+  . changes in Song Variables window:
+    - changed cursor movement to be more predictable/convenient
+    - added key shortcut for each option
+    - added preview and prediction of BPM speed
+    - added access to quick setup of rows per beat (hotkey: ^Enter)
+  . improved behavior of temporary song status in the upper left corner
+  . optimized window arrangement in case of enlarged screen size
+  . improved string input (quick change of decimal and hexadecimal values with +/-)
+
+
 * version 2.4.23
   released: 07/27/2016
 

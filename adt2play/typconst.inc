@@ -1,3 +1,18 @@
+//  This file is part of Adlib Tracker II (AT2).
+//
+//  AT2 is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU General Public License as published by
+//  the Free Software Foundation, either version 3 of the License, or
+//  (at your option) any later version.
+//
+//  AT2 is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU General Public License for more details.
+//
+//  You should have received a copy of the GNU General Public License
+//  along with AT2.  If not, see <http://www.gnu.org/licenses/>.
+
 const
   NULL = $0ffffffff;
   BYTE_NULL = BYTE(NULL);
@@ -5,8 +20,8 @@ const
   DWORD_NULL = LONGINT(NULL);
 
 const
-  FFVER_A2M = 13;
-  FFVER_A2T = 13;
+  FFVER_A2M = 14;
+  FFVER_A2T = 14;
   FFVER_A2I = 10;
   FFVER_A2F = 2;
   FFVER_A2P = 11;
@@ -149,6 +164,10 @@ type
                       dis_fmreg_col: array[1..255] of tDIS_FMREG_COL;
                       ins_4op_flags: tINS_4OP_FLAGS;
                       reserved_data: array[0..PRED(1024)] of Byte;
+                      bpm_data:      Record
+                                       rows_per_beat: Byte;
+                                       tempo_finetune: Integer;
+                                     end;
                     end;
 type
   tOLD_CHUNK = Record
@@ -268,6 +287,7 @@ const
   ef_ex_cmd_RestartEnv  = 4;
   ef_ex_cmd_4opVlockOff = 5;
   ef_ex_cmd_4opVlockOn  = 6;
+  ef_ex_cmd_ForceBpmSld = 7;
   ef_ex_ExtendedCmd2    = 15;
   ef_ex_cmd2_RSS        = 0;
   ef_ex_cmd2_ResetVol   = 1;

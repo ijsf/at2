@@ -1,15 +1,35 @@
+//  This file is part of Adlib Tracker II (AT2).
+//
+//  AT2 is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU General Public License as published by
+//  the Free Software Foundation, either version 3 of the License, or
+//  (at your option) any later version.
+//
+//  AT2 is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU General Public License for more details.
+//
+//  You should have received a copy of the GNU General Public License
+//  along with AT2.  If not, see <http://www.gnu.org/licenses/>.
+
+//{$DEFINE BETA}
 unit AdT2text;
 {$S-,Q-,R-,V-,B-,X+}
 {$PACKRECORDS 1}
 interface
 
 const
-{__AT2VER__}at2ver  = '2.3.56';
-{__AT2DAT__}at2date = '07-01-2017';
-{__AT2LNK__}at2link = '1:03pm';
+{__AT2VER__}at2ver  = '2.4.24';
+{__AT2DAT__}at2date = '12-24-2018';
+{__AT2LNK__}at2link = '9:23am';
 
 const
+{$IFNDEF BETA}
   _ADT2_TITLE_STRING_ = '/ดDLiB TR/ดCK3R ][';
+{$ELSE}
+  _ADT2_TITLE_STRING_ = '/ดDLiB TR/ดCK3R ][ BETA VERSiON';
+{$ENDIF}
 {$IFDEF GO32V2}
   _PLATFORM_STR_ = 'DOS';
 {$ELSE}
@@ -18,9 +38,9 @@ const
 
 const
 {$IFDEF GO32V2}
-  HELP_LINES = 1129;
+  HELP_LINES = 1135;
 {$ELSE}
-  HELP_LINES = 1157;
+  HELP_LINES = 1163;
 {$ENDIF}
 
 {$IFDEF GO32V2}
@@ -154,6 +174,8 @@ const
     '~^Enter~                   Play next pattern according to order',
     '~[Ctrl]  ()~             Rewind current pattern (with Trace)',
     '~[Ctrl] '#26' ()~             Fast-Forward (with Trace)',
+    '~[Ctrl]{Shift} ,~        Change playback speed up/down `{fine stepping}`',
+    '~[Ctrl]{Shift} []~       Reset playback speed `{default speed}`',
     '~[Ctrl][Alt] <hold down>~  Temporarily show Debug Info window',
     '~^B~                       Toggle Message Board window',
     '~^D~                       Toggle Debug Info window',
@@ -591,9 +613,11 @@ const
     ' บ `SONG VARiABLES WiNDOW KEY REFERENCE` บ',
     'อสอออออออออออออออออออออออออออออออออออออสออออออออออออออออออออออออออออออออออ',
     '~,,,'#26'~                  Cursor navigation',
+    '~[Alt] <section hotkey>~   Jump to section',
     '~Tab (Enter)~              Jump to next variable field',
     '~[Shift] Tab~              Jump to previous variable field',
     '~Space~                    Select item',
+    '~^Enter~                   Setup rows per beat for BPM calculation',
     '~Esc~                      Return to Pattern Editor or Pattern Order',
     '',
     '@topic:file_browser',
@@ -643,6 +667,7 @@ const
     '~^K~                       Delete characters to end',
     '~^Y~                       Delete string',
     '~Insert~                   Toggle input and overwrite mode',
+    '~+,-~                      Increment/decrement decimal or hexadecimal value',
     '',
     '@topic:midiboard',
     'อหอออออออออออออออออออออออออหอ',
@@ -964,9 +989,9 @@ const
     '             ศออออผ',
     '',
     '',
-    '~(*)~ `REMARK ABOUT  CONNECTiONS`',
-    'Please note, that since order of  tracks in the tracker is ๕ and ๔,',
-    'these non-symmetrical instrument connections are reversed.',
+    '~(*)~ `REMARK ABOUT  CONNECTiONS FM/AM AND AM/FM`',
+    'Please note, that since order of  channels is (hardware-wise) ๕ and ๔,',
+    'these two instrument connections are swapped.',
     'The preview diagrams in the Instrument Editor window show actual order,',
     'but here this information is kept in conformity with the official',
     'Yamaha YMF262 data specification to prevent further confusion.',
@@ -1139,6 +1164,7 @@ const
     '     `2`/`3` DiSABLE/ENABLE RESTART ENVELOPE WiTH TONE PORTAMENTO',
     '     `4`   PERFORM RESTART ENVELOPE',
     '     `5`/`6` DiSABLE/ENABLE '#4#3' TRACK VOLUME LOCK',
+    '     `7`   PERFORM ~BPM SLiDE~ USiNG `~>~`~xx~ AND `~<~`~xx~ COMMANDS',
     '',
     '`ZF`?  `0`   RELEASE SUSTAiNiNG SOUND',
     '     `1`   RESET iNSTRUMENT VOLUME',
@@ -1275,7 +1301,7 @@ const
     '',
     '`Greetz fly to the following people:`',
     'Dragan Espenschied (drx/Bodenstandig 2000), Carl Peczynski (OxygenStar),',
-    'Hubert Lamontagne (Madbrain), Jason Karl Warren (Televicious),',
+    'Hubert Lamontagne (Madbrain), Jason Karl Warren (Televicious), kvee,',
     'Vojta Nedved (nula), and all members of AT2 user group on Facebook');
 
 procedure HELP(topic: String);
@@ -1284,6 +1310,7 @@ procedure ShowStartMessage;
 implementation
 
 uses
+  StrUtils,
   AdT2unit,AdT2sys,AdT2keyb,AdT2data,
   TxtScrIO,StringIO,DialogIO,ParserIO;
 
@@ -1348,7 +1375,7 @@ begin
                      atr1,atr2,atr3);
            ShowStr(dest,x+mpos-1,y,mchr,atr3);
          end
-       else If (temp_pos_atr1 <> 0) and SameName('@@attr:??,??,??@@',Copy(str,temp_pos_atr1,17)) then
+       else If (temp_pos_atr1 <> 0) and IsWild(Copy(str,temp_pos_atr1,17),'@@attr:??,??,??@@',FALSE) then
               begin
                 new_atr1 := Str2num(Copy(str,temp_pos_atr1+7,2),16);
                 If (new_atr1 = 0) then new_atr1 := atr1;
@@ -1361,7 +1388,7 @@ begin
                           ExpStrR(str,74+Length(str)-C3StrLen(str),' '),
                           new_atr1,new_atr2,new_atr3);
               end
-            else If (temp_pos_atr2 <> 0) and SameName('@@spec_attr:??@@',Copy(str,temp_pos_atr2,16)) then
+            else If (temp_pos_atr2 <> 0) and IsWild(Copy(str,temp_pos_atr2,16),'@@spec_attr:??@@',FALSE) then
               begin
                 temp2 := Str2num(Copy(str,temp_pos_atr2+12,2),16);
                 If (temp2 = 0) or (spec_attr_table[temp2] = 0) then new_atr3 := atr3
@@ -1391,13 +1418,13 @@ begin
   spec_attr_table[2] := main_hi_stat_line SHL 4 AND $0f0;
 
   HideCursor;
-  page_len := MAX_PATTERN_ROWS+6;
+  page_len := work_MaxLn-5;
   centered_frame(xstart,ystart,77,page_len+2,' HELP ',
                  help_background+help_border,
                  help_background+help_title,
                  frame_double);
   page := 1;
-  While (page <= HELP_LINES-24) and ((Copy(help_data[page],1,6) <> '@topic') or
+  While (page <= HELP_LINES-page_len) and ((Copy(help_data[page],1,6) <> '@topic') or
         (Copy(help_data[page],8,Length(help_data[page])-7) <> topic)) do
     Inc(page);
 

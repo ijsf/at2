@@ -1,4 +1,19 @@
-program AdLib_Tracker_2;
+//  This file is part of Adlib Tracker II (AT2).
+//
+//  AT2 is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU General Public License as published by
+//  the Free Software Foundation, either version 3 of the License, or
+//  (at your option) any later version.
+//
+//  AT2 is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU General Public License for more details.
+//
+//  You should have received a copy of the GNU General Public License
+//  along with AT2.  If not, see <http://www.gnu.org/licenses/>.
+
+program AdLib_Tracker_II;
 {$S-,Q-,R-,V-,B-,X+}
 {$PACKRECORDS 1}
 {$IFDEF WINDOWS}
@@ -143,11 +158,6 @@ begin { MAIN }
   If (IOresult <> 0) then dos_dir := '';
   ShowStartMessage;
 
-//  WriteLn('******************************************');
-//  WriteLn('**  TEST VERSION -- DO NOT DISTRIBUTE!  **');
-//  WriteLn('******************************************');
-//  WriteLn;
-
   { init system things }
   sys_init;
 
@@ -170,11 +180,11 @@ begin { MAIN }
       halt_startup(1);
     end;
 
-  If _debug_ then WriteLn('--- detecting available linear frame buffer');
+  If _debug_ then WriteLn('--- detecting total available memory');
   Get_MemInfo(mem_info);
   free_mem := mem_info.available_memory;
 
-  If _debug_ then WriteLn('--- ## ',free_mem/1024/1000:0:2,'MB lfb found');
+  If _debug_ then WriteLn('--- ## ',free_mem/1024/1000:0:2,'MB found');
   If NOT (free_mem DIV 1024 > 5*1024) then
     begin
       WriteLn('ERROR(1) - Insufficient memory!');

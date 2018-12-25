@@ -1,3 +1,18 @@
+//  This file is part of Adlib Tracker II (AT2).
+//
+//  AT2 is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU General Public License as published by
+//  the Free Software Foundation, either version 3 of the License, or
+//  (at your option) any later version.
+//
+//  AT2 is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU General Public License for more details.
+//
+//  You should have received a copy of the GNU General Public License
+//  along with AT2.  If not, see <http://www.gnu.org/licenses/>.
+
 unit AdT2keyb;
 {$S-,Q-,R-,V-,B-,X+}
 {$PACKRECORDS 1}
@@ -282,29 +297,23 @@ end;
 
 procedure keyboard_reset_buffer;
 begin
-{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2KEYB.PAS:keyboard_reset_buffer';
-{$ENDIF}
   MEMW[0:$041c] := MEMW[0:$041a];
 end;
 
 procedure keyboard_reset_buffer_alt;
 begin
-{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2KEYB.PAS:keyboard_reset_buffer_alt';
-{$ENDIF}
   If (MEMW[0:$041c]-MEMW[0:$041a] > 5) then
     MEMW[0:$041c] := MEMW[0:$041a];
 end;
 
 procedure wait_until_F11_F12_released;
 begin
-{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2KEYB.PAS:wait_until_key_released';
-{$ENDIF}
   Repeat
     realtime_gfx_poll_proc;
     draw_screen;
@@ -338,10 +347,8 @@ begin
 end;
 
 begin
-{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2KEYB.PAS:screen_saver:fadeout';
-{$ENDIF}
   For depth := 1 to 32 do
     begin
       For index := 1 to 255 do
@@ -367,10 +374,8 @@ var
 
 
 begin
-{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2KEYB.PAS:screen_saver:fadein';
-{$ENDIF}
   For depth := 32 downto 1 do
     begin
       For index := 1 to 255 do
@@ -385,10 +390,8 @@ begin
 end;
 
 begin
-{$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2KEYB.PAS:screen_saver';
-{$ENDIF}
   If (ssaver_time = 0) then EXIT;
   fadeout;
   Repeat
@@ -793,25 +796,17 @@ end;
 function LookUpKey(key: Word; var table; size: Byte): Boolean;
 
 var
-  result: Boolean;
+  idx: Byte;
 
 begin
-  asm
-        mov     esi,[table]
-        xor     ecx,ecx
-        mov     cl,size
-        mov     result,TRUE
-        jecxz   @@3
-@@1:    lodsw
-        cmp     ax,key
-        jz      @@2
-        loop    @@1
-@@2:    mov     result,FALSE
-        jecxz   @@3
-        mov     result,TRUE
-@@3:
-  end;
-  LookUpKey := result;
+  LookUpKey := FALSE;
+  If (size <> 0) then
+    For idx := 0 to PRED(size) do
+      If (pWord(@table)[idx] = key) then
+        begin
+          LookUpKey := TRUE;
+          BREAK;
+        end;
 end;
 
 end.

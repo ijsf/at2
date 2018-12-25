@@ -1,3 +1,18 @@
+//  This file is part of Adlib Tracker II (AT2).
+//
+//  AT2 is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU General Public License as published by
+//  the Free Software Foundation, either version 3 of the License, or
+//  (at your option) any later version.
+//
+//  AT2 is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU General Public License for more details.
+//
+//  You should have received a copy of the GNU General Public License
+//  along with AT2.  If not, see <http://www.gnu.org/licenses/>.
+
 unit MenuLib1;
 {$S-,Q-,R-,V-,B-,X+}
 {$PACKRECORDS 1}
@@ -134,7 +149,7 @@ begin
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'MENULIB1.PAS:pstr';
 {$ENDIF}
-  Move(POINTER(Ptr(0,Ofs(mnu_data^)+(item-1)*(mnu_len+1)))^,temp,mnu_len+1);
+  Move(pBYTE(mnu_data)[(item-1)*(mnu_len+1)],temp,mnu_len+1);
   If NOT solid then pstr := ExpStrR(temp,mnu_len-2,' ')
   else pstr := ExpStrR(temp,mnu_len,' ');
 end;
@@ -150,8 +165,7 @@ begin
   _debug_str_ := 'MENULIB1.PAS:pdes';
 {$ENDIF}
   If (mn_environment.descr <> NIL) then
-    Move(POINTER(Ptr(0,Ofs(mn_environment.descr^)+
-      (item-1)*(mn_environment.descr_len+1)))^,temp,mn_environment.descr_len+1)
+    Move(pBYTE(mn_environment.descr)[(item-1)*(mn_environment.descr_len+1)],temp,mn_environment.descr_len+1)
   else temp := '';
   pdes := ExpStrR(temp,mn_environment.descr_len,' ');
 end;
@@ -325,7 +339,7 @@ begin
         temp := Copy(pstr(item),1,MenuLib1_mn_environment.edit_pos)+temp
       else
         temp := CutStr(temp);
-      Move(temp,POINTER(Ptr(0,Ofs(data)+(item-1)*(len+1)))^,len+1);
+      Move(temp,pBYTE(data)[(item-1)*(len+1)],len+1);
     end;
 
   ShowCStr(MenuLib1_mn_environment.v_dest,x+1,y+idx2,

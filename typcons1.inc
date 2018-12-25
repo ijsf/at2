@@ -1,3 +1,18 @@
+//  This file is part of Adlib Tracker II (AT2).
+//
+//  AT2 is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU General Public License as published by
+//  the Free Software Foundation, either version 3 of the License, or
+//  (at your option) any later version.
+//
+//  AT2 is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU General Public License for more details.
+//
+//  You should have received a copy of the GNU General Public License
+//  along with AT2.  If not, see <http://www.gnu.org/licenses/>.
+
 const
   NULL = $0ffffffff;
   BYTE_NULL = BYTE(NULL);
@@ -5,8 +20,8 @@ const
   DWORD_NULL = LONGINT(NULL);
 
 const
-  FFVER_A2M = 13;
-  FFVER_A2T = 13;
+  FFVER_A2M = 14;
+  FFVER_A2T = 14;
   FFVER_A2I = 10;
   FFVER_A2F = 2;
   FFVER_A2P = 11;
@@ -156,6 +171,10 @@ type
                       dis_fmreg_col: array[1..255] of tDIS_FMREG_COL;
                       ins_4op_flags: tINS_4OP_FLAGS;
                       reserved_data: array[0..PRED(1024)] of Byte;
+                      bpm_data:      Record
+                                       rows_per_beat: Byte;
+                                       tempo_finetune: Integer;
+                                     end;
                     end;
 type
   tOLD_CHUNK = Record
@@ -283,10 +302,10 @@ const
   kCtrlD  = $2004; kCtHOME = $7700; kAlt9   = $8000; kCtrlY  = $1519;
   kCtrlF  = $2106; kEND    = $4f00; kAlt0   = $8100; kAltE   = $1200;
   kCtrlI  = $1709; kNPEND  = $4f31; kAltB   = $3000; kAltZ   = $2c00;
-  kCtrlK  = $250b; kCtEND  = $7500; kAltC   = $2e00;
-  kCtrlM  = $320d; kINSERT = $5200; kAltD   = $2000;
-  kCtrlN  = $310e; kDELETE = $5300; kAltF   = $2100;
-  kCtrlO  = $180f; kCtrlL  = $260c; kAltK   = $2500;
+  kCtrlK  = $250b; kCtEND  = $7500; kAltC   = $2e00; kAltI   = $1700;
+  kCtrlM  = $320d; kINSERT = $5200; kAltD   = $2000; kAltH   = $2300;
+  kCtrlN  = $310e; kDELETE = $5300; kAltF   = $2100; kAltU   = $1600;
+  kCtrlO  = $180f; kCtrlL  = $260c; kAltK   = $2500; kAltG   = $2200;
   kCtrlV  = $2f16; kCtrlS  = $1f13; kAltM   = $3200;
   kCtrlX  = $2d18; kCtrlA  = $1e01; kAltN   = $3100;
   kCtrlZ  = $2c1a; kAltF2  = $6900; kAltO   = $1800;
@@ -658,6 +677,7 @@ const
   ef_ex_cmd_RestartEnv  = 4;
   ef_ex_cmd_4opVlockOff = 5;
   ef_ex_cmd_4opVlockOn  = 6;
+  ef_ex_cmd_ForceBpmSld = 7;
   ef_ex_ExtendedCmd2    = 15;
   ef_ex_cmd2_RSS        = 0;
   ef_ex_cmd2_ResetVol   = 1;
@@ -757,6 +777,7 @@ const
   highlight_controls: Boolean = TRUE;
   use_H_for_B:        Boolean = FALSE;
   linefeed:           Boolean = TRUE;
+  lf_in_mboard_mode:  Boolean = FALSE;
   update_ins:         Boolean = FALSE;
   cycle_pattern:      Boolean = TRUE;
   keep_track_pos:     Boolean = FALSE;
@@ -856,6 +877,7 @@ const
   debug_info_hi_car:  Byte    = $0b;
   debug_info_4op:     Byte    = $08;
   debug_info_perc:    Byte    = $08;
+  debug_info_bpm:     Byte    = $08;
   help_background:    Byte    = $040;
   help_title:         Byte    = $0b;
   help_border:        Byte    = $0f;
@@ -889,6 +911,7 @@ const
   dialog_hi_topic:    Byte    = $0e;
   dialog_mod_text:    Byte    = $0a;
   dialog_car_text:    Byte    = $0b;
+  dialog_misc_indic:  Byte    = $08;
   macro_background:   Byte    = $040;
   macro_title:        Byte    = $0b;
   macro_border:       Byte    = $0f;

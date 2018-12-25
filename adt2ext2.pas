@@ -1,3 +1,18 @@
+//  This file is part of Adlib Tracker II (AT2).
+//
+//  AT2 is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU General Public License as published by
+//  the Free Software Foundation, either version 3 of the License, or
+//  (at your option) any later version.
+//
+//  AT2 is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU General Public License for more details.
+//
+//  You should have received a copy of the GNU General Public License
+//  along with AT2.  If not, see <http://www.gnu.org/licenses/>.
+
 unit AdT2ext2;
 {$S-,Q-,R-,V-,B-,X+}
 {$PACKRECORDS 1}
@@ -60,6 +75,7 @@ uses
 {$ELSE}
   SDL_Timer,
 {$ENDIF}
+  StrUtils,
   AdT2opl3,AdT2unit,AdT2sys,AdT2extn,AdT2ext4,AdT2ext5,AdT2text,AdT2pack,AdT2keyb,
   TxtScrIO,StringIO,DialogIO,ParserIO;
 
@@ -371,6 +387,42 @@ begin
                end;
            end;
 
+  If ctrl_pressed and NOT alt_pressed and NOT scankey(SC_TAB) and
+     (scankey(SC_UP) or scankey(SC_DOWN)) then
+    begin
+      If scankey(SC_UP) and scankey(SC_DOWN) then
+        begin
+          _IRQ_freq_shift_reset_flag := TRUE;
+          If NOT shift_pressed then
+            IRQ_freq_shift := songdata.bpm_data.tempo_finetune
+          else IRQ_freq_shift := 0
+        end
+      else If scankey(SC_UP) and NOT scankey(SC_DOWN) and
+              (SUCC(IRQ_freq+IRQ_freq_shift+playback_speed_shift) <= MAX_IRQ_FREQ) then
+             If (NOT shift_pressed or (shift_pressed and NOT (_IRQFREQ_blink_flag and (_IRQFREQ_blink_ticks < 5)))) and
+                NOT (_IRQ_freq_shift_reset_flag and _IRQFREQ_blink_flag and (_IRQFREQ_blink_ticks < 5)) then
+               begin
+                 Inc(IRQ_freq_shift);
+                 _IRQ_freq_shift_reset_flag := FALSE;
+               end
+             else
+           else If NOT scankey(SC_UP) and scankey(SC_DOWN) and
+                   (PRED(IRQ_freq+IRQ_freq_shift+playback_speed_shift) >= MIN_IRQ_FREQ) then
+                  If (NOT shift_pressed or (shift_pressed and NOT (_IRQFREQ_blink_flag and (_IRQFREQ_blink_ticks < 5)))) and
+                     NOT (_IRQ_freq_shift_reset_flag and _IRQFREQ_blink_flag and (_IRQFREQ_blink_ticks < 5)) then
+                    begin
+                      Dec(IRQ_freq_shift);
+                      _IRQ_freq_shift_reset_flag := FALSE;
+                    end;
+      If (songdata.bpm_data.tempo_finetune <> IRQ_freq_shift) then
+        module_archived := FALSE;
+      _IRQFREQ_update_event := TRUE;
+      _IRQFREQ_blink_flag := TRUE;
+      _IRQFREQ_blink_ticks := 0;
+      TimerSetup(IRQ_freq+IRQ_freq_shift+playback_speed_shift);
+      keyboard_reset_buffer;
+    end;
+
 {$IFNDEF GO32V2}
 
   If scankey(SC_F11) and
@@ -510,6 +562,7 @@ begin
   ShowCStr(screen_ptr,03,04,'~ROW           ~',
            status_background+status_dynamic_txt,
            status_background+status_static_txt);
+
   ShowCStr(screen_ptr,03,05,'~SPEED/TEMPO   ~  /',
            status_background+status_dynamic_txt,
            status_background+status_static_txt);
@@ -559,7 +612,8 @@ begin
       temp2 := temp2 DIV 10;
     end;
 
-  If SameName(str+'='+ExpStrL('',temp,'?'),data) and (Length(data) < Length(str)+temp+2) then
+  If IsWild(data,str+'=*',FALSE) and
+     (Length(data) >= Length(str)+2) and (Length(data) < Length(str)+temp+2) then
     begin
       result := Str2num(Copy(data,Length(str)+2,temp),base);
       If (result >= limit1) and (result <= limit2) then
@@ -594,7 +648,8 @@ begin
       temp2 := temp2 DIV 10;
     end;
 
-  If SameName(str+'='+ExpStrL('',temp,'?'),data) and (Length(data) < Length(str)+temp+2) then
+  If IsWild(data,str+'=*',FALSE) and
+     (Length(data) >= Length(str)+2) and (Length(data) < Length(str)+temp+2) then
     begin
       num := Str2num(Copy(data,Length(str)+2,temp),base);
       If (num >= limit1) and (num <= limit2) then
@@ -616,7 +671,7 @@ var
 
 begin
   result := default;
-  If SameName(str+'='+ExpStrL('',3,'?'),data) and
+  If IsWild(data,str+'='+ExpStrL('',3,'?'),FALSE) and
      (Length(data) < Length(str)+5) then
     If (Str2num(Copy(data,Length(str)+2,3),base) in range) then
       result := Str2num(Copy(data,Length(str)+2,3),base);
@@ -634,7 +689,7 @@ begin
   _debug_str_ := 'ADT2EXT2.PAS:process_config_file:check_boolean';
 {$ENDIF}
   result := default;
-  If SameName(str+'=???',data) and
+  If IsWild(data,str+'=???',FALSE) and
      (Length(data) < Length(str)+5) then
     begin
       If (Copy(data,Length(str)+2,3) = 'on')  then result := TRUE;
@@ -653,7 +708,7 @@ begin
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2EXT2.PAS:process_config_file:check_rgb';
 {$ENDIF}
-  If SameName(str+'=??,??,??',data) and
+  If IsWild(data,str+'=??,??,??',FALSE) and
      (Length(data) < Length(str)+10) then
     begin
       result.r := Str2num(Copy(data,Length(str)+2,2),10);
@@ -887,6 +942,9 @@ begin
 
   linefeed :=
     check_boolean('linefeed',linefeed);
+
+  lf_in_mboard_mode :=
+    check_boolean('lf_in_mboard_mode',lf_in_mboard_mode);
 
   update_ins :=
     check_boolean('update_ins',update_ins);
@@ -1182,6 +1240,9 @@ begin
   debug_info_perc :=
     check_number('debug_info_perc',10,0,15,debug_info_perc);
 
+  debug_info_bpm :=
+    check_number('debug_info_bpm',10,0,15,debug_info_bpm);
+
   help_background :=
     check_number('help_background',10,0,15,help_background SHR 4) SHL 4;
 
@@ -1280,6 +1341,9 @@ begin
 
   dialog_car_text :=
     check_number('dialog_car_text',10,0,15,dialog_car_text);
+
+  dialog_misc_indic :=
+    check_number('dialog_misc_indic',10,0,15,dialog_misc_indic);
 
   macro_background :=
     check_number('macro_background',10,0,15,macro_background SHR 4) SHL 4;

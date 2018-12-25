@@ -1,3 +1,18 @@
+//  This file is part of Adlib Tracker II (AT2).
+//
+//  AT2 is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU General Public License as published by
+//  the Free Software Foundation, either version 3 of the License, or
+//  (at your option) any later version.
+//
+//  AT2 is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU General Public License for more details.
+//
+//  You should have received a copy of the GNU General Public License
+//  along with AT2.  If not, see <http://www.gnu.org/licenses/>.
+
 unit StringIO;
 {$S-,Q-,R-,V-,B-,X+}
 {$PACKRECORDS 1}
@@ -5,6 +20,10 @@ interface
 
 type
   tCHARSET = Set of Char;
+
+const
+  DEC_NUM_CHARSET = ['0'..'9'];
+  HEX_NUM_CHARSET = ['0'..'9','a'..'f','A'..'F'];
 
 function byte2hex(value: Byte): String;
 function byte2dec(value: Byte): String;
@@ -16,6 +35,11 @@ function RotStrL(str1,str2: String; shift: Byte): String;
 function RotStrR(str1,str2: String; shift: Byte): String;
 function ExpStrL(str: String; size: Byte; chr: Char): String;
 function ExpStrR(str: String; size: Byte; chr: Char): String;
+function ExpC2StrL(str: String; size: Byte; chr: Char): String;
+function ExpC2StrR(str: String; size: Byte; chr: Char): String;
+function ExpC3StrL(str: String; size: Byte; chr: Char): String;
+function ExpC3StrR(str: String; size: Byte; chr: Char): String;
+function CenterStr(str: String; size: Byte): String;
 function DietStr(str: String; size: Byte): String;
 function CutStr(str: String): String;
 function CutStrL(str: String; margin: Byte): String;
@@ -26,6 +50,7 @@ function FilterStr1(str: String; chr0: Char): String;
 function FilterStr2(str: String; chr0: tCHARSET; chr1: Char): String;
 function Num2str(num: Longint; base: Byte): String;
 function Str2num(str: String; base: Byte): Longint;
+function Bpm2str(bpm: Real): String;
 
 type
   tINPUT_STR_SETTING = Record
@@ -43,6 +68,10 @@ type
                              keystroke: Word;
                              locate_pos: Byte;
                              insert_mode: Boolean;
+                             min_num: Dword;
+                             max_num: Dword;
+                             cur_str: String;
+                             ext_proc: procedure;
                            end;
 const
   is_setting: tINPUT_STR_SETTING =
@@ -67,7 +96,6 @@ var
   is_environment: tINPUT_STR_ENVIRONMENT;
 
 function InputStr(s: String; x,y,ln,ln1: Byte; atr1,atr2: Byte): String;
-function SameName(str1,str2: String): Boolean;
 function PathOnly(path: String): String;
 function NameOnly(path: String): String;
 function BaseNameOnly(path: String): String;
@@ -79,6 +107,7 @@ implementation
 
 uses
   DOS,
+  StrUtils,
   AdT2unit,AdT2sys,AdT2keyb,
   TxtScrIO;
 
@@ -88,6 +117,7 @@ const
   data: array[0..15] of char = '0123456789ABCDEF';
 
 begin
+{$IFNDEF CPU64}
   asm
         mov     edi,@RESULT
         lea     ebx,[data]
@@ -103,6 +133,10 @@ begin
         xlat
         stosb
   end;
+{$ELSE}
+  byte2hex := data[value AND $0f0 SHR 4]+
+              data[value AND $0f];
+{$ENDIF}
 end;
 
 function byte2dec(value: Byte): String;
@@ -111,6 +145,7 @@ const
   data: array[0..9] of char = '0123456789';
 
 begin
+{$IFNDEF CPU64}
   asm
         mov     edi,@RESULT
         lea     ebx,[data]
@@ -141,6 +176,15 @@ begin
         xlat
         stosb
   end;
+{$ELSE}
+  If (value < 100) then
+    byte2dec := data[value DIV 10]+
+                data[value MOD 10]
+  else
+    byte2dec := data[value DIV 100]+
+                data[value MOD 100 DIV 10]+
+                data[value MOD 100 MOD 10];
+{$ENDIF}
 end;
 
 function Capitalize(str: String): String;
@@ -189,6 +233,7 @@ end;
 
 function Upper(str: String): String;
 begin
+{$IFNDEF CPU64}
   asm
         lea     esi,[str]
         mov     edi,@RESULT
@@ -211,10 +256,14 @@ begin
         loop    @@1
 @@3:
   end;
+{$ELSE}
+  Upper := UpCase(str);
+{$ENDIF}
 end;
 
 function Lower(str: String): String;
 begin
+{$IFNDEF CPU64}
   asm
         lea     esi,[str]
         mov     edi,@RESULT
@@ -237,8 +286,12 @@ begin
         loop    @@1
 @@3:
   end;
+{$ELSE}
+  Lower := LowerCase(str);
+{$ENDIF}
 end;
 
+{$IFNDEF CPU64}
 function iCase(str: String): String;
 begin
   asm
@@ -275,6 +328,12 @@ begin
 @@5:
   end;
 end;
+{$ELSE}
+function iCase(str: String): String;
+begin
+  iCase := ReplaceStr(Upper(str),'I','i');
+end;
+{$ENDIF}
 
 function RotStrL(str1,str2: String; shift: Byte): String;
 begin
@@ -290,6 +349,7 @@ end;
 
 function ExpStrL(str: String; size: Byte; chr: Char): String;
 begin
+{$IFNDEF CPU64}
   asm
         lea     esi,[str]
         mov     edi,@RESULT
@@ -314,10 +374,16 @@ begin
         rep     movsb
 @@2:
   end;
+{$ELSE}
+  While (Length(str) < size) do
+    str := chr+str;
+  ExpStrL := str;
+{$ENDIF}
 end;
 
 function ExpStrR(str: String; size: Byte; chr: Char): String;
 begin
+{$IFNDEF CPU64}
   asm
         lea     esi,[str]
         mov     edi,@RESULT
@@ -342,6 +408,56 @@ begin
         rep     movsb
 @@2:
   end;
+{$ELSE}
+  While (Length(str) < size) do
+    str := str+chr;
+  ExpStrR := str;
+{$ENDIF}
+end;
+
+function ExpC2StrL(str: String; size: Byte; chr: Char): String;
+begin
+  While (CStr2Len(str) < size) do
+    str := chr+str;
+  ExpC2StrL := str;
+end;
+
+function ExpC2StrR(str: String; size: Byte; chr: Char): String;
+begin
+  While (CStr2Len(str) < size) do
+    str := str+chr;
+  ExpC2StrR := str;
+end;
+
+function ExpC3StrL(str: String; size: Byte; chr: Char): String;
+begin
+  While (C3StrLen(str) < size) do
+    str := chr+str;
+  ExpC3StrL := str;
+end;
+
+function ExpC3StrR(str: String; size: Byte; chr: Char): String;
+begin
+  While (C3StrLen(str) < size) do
+    str := str+chr;
+  ExpC3StrR := str;
+end;
+
+function CenterStr(str: String; size: Byte): String;
+
+var
+  flag: Boolean;
+
+begin
+  flag := FALSE;
+  While (Length(str) < size) do
+    begin
+      If flag then
+        str := ' ' + str
+      else str := str + ' ';
+      flag := NOT flag;
+    end;
+  CenterStr := str;
 end;
 
 function DietStr(str: String; size: Byte): String;
@@ -401,6 +517,7 @@ begin
   CutStrR := str;
 end;
 
+{$IFNDEF CPU64}
 function FlipStr(str: String): String;
 begin
    asm
@@ -423,7 +540,22 @@ begin
 @@2:
   end;
 end;
+{$ELSE}
+function FlipStr(str: String): String;
 
+var
+  idx: Byte;
+  result: String;
+
+begin
+  result := '';
+  For idx := 1 to Length(str) do
+    result := str[idx]+result;
+  FlipStr := result;
+end;
+{$ENDIF}
+
+{$IFNDEF CPU64}
 function FilterStr(str: String; chr0,chr1: Char): String;
 begin
   asm
@@ -447,7 +579,21 @@ begin
 @@3:
   end;
 end;
+{$ELSE}
+function FilterStr(str: String; chr0,chr1: Char): String;
 
+var
+  idx: Byte;
+
+begin
+  For idx := 1 to Length(str) do
+    If (str[idx] = chr0) then
+      str[idx] := chr1;
+  FilterStr := str;
+end;
+{$ENDIF}
+
+{$IFNDEF CPU64}
 function FilterStr1(str: String; chr0: Char): String;
 begin
   asm
@@ -474,6 +620,21 @@ begin
         mov     [edi],al
   end;
 end;
+{$ELSE}
+function FilterStr1(str: String; chr0: Char): String;
+
+var
+  idx: Byte;
+  result: String;
+
+begin
+  result := '';
+  For idx := 1 to Length(str) do
+    If (str[idx] <> chr0) then
+      result := result+str[idx];
+  FilterStr1 := result;
+end;
+{$ENDIF}
 
 const
   _treat_char: array[$80..$a5] of Char =
@@ -494,6 +655,7 @@ begin
   FilterStr2 := str;
 end;
 
+{$IFNDEF CPU64}
 function Num2str(num: Longint; base: Byte): String;
 
 const
@@ -538,9 +700,30 @@ begin
 @@4:
   end;
 end;
+{$ELSE}
+function Num2str(num: Longint; base: Byte): String;
 
 const
-  digits: array[0..35] of Char = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  hexa: array[0..PRED(16)] of Char = '0123456789ABCDEF';
+
+var
+  result: String;
+
+begin
+  result := '';
+  If (base >= 2) and (base <= 16) then
+    While (num > 0) do
+      begin
+        result := hexa[num MOD base]+result;
+        num := num DIV base;
+      end;
+  If (result = '') then Num2str := '0'
+  else Num2str := result;
+end;
+{$ENDIF}
+
+const
+  digits: array[0..15] of Char = '0123456789ABCDEF';
 
 function Digit2index(digit: Char): Byte;
 
@@ -574,10 +757,19 @@ var
 
 begin
   value := 0;
-  For index := 1 to Length(str) do
-    Inc(value,Digit2index(str[index])*
-              position_value(Length(str)-index+1,base));
+  If (base in [2,10,16]) then
+    For index := 1 to Length(str) do
+      Inc(value,Digit2index(str[index])*
+                position_value(Length(str)-index+1,base));
   Str2num := value;
+end;
+
+function Bpm2str(bpm: Real): String;
+begin
+  If (bpm < 1000) then
+    Bpm2str := Num2str(Trunc(bpm),10)+'.'+Num2str(Trunc((bpm-Trunc(bpm))*10),10)
+  else
+    Bpm2str := Num2str(Round(bpm),10);
 end;
 
 function InputStr(s: String; x,y,ln,ln1: Byte; atr1,atr2: Byte): String;
@@ -664,6 +856,26 @@ begin { InputStr }
       Case key of
         kTAB: appn := TRUE;
 
+        kCHplus,
+        kNPplus: If (is_setting.character_set = DEC_NUM_CHARSET) then
+                   If (Length(Num2str(SUCC(Str2num(s,10)),10)) <= ln1) and
+                      (SUCC(Str2num(s,10)) <= is_environment.max_num) then
+                     s := Num2str(SUCC(Str2num(s,10)),10)
+                   else
+                 else If (is_setting.character_set = HEX_NUM_CHARSET) then
+                        If (Length(Num2str(SUCC(Str2num(s,16)),16)) <= ln1) and
+                           (SUCC(Str2num(s,16)) <= is_environment.max_num) then
+                          s := Num2str(SUCC(Str2num(s,16)),16);
+        kCHmins,
+        kNPmins: If (is_setting.character_set = DEC_NUM_CHARSET) then
+                   If (Str2num(s,10) > 0) and
+                      (PRED(Str2num(s,10)) >= is_environment.min_num) then
+                     s := Num2str(PRED(Str2num(s,10)),10)
+                   else
+                 else If (is_setting.character_set = HEX_NUM_CHARSET) then
+                        If (Str2num(s,16) > 0) and
+                           (PRED(Str2num(s,16)) >= is_environment.min_num) then
+                          s := Num2str(PRED(Str2num(s,16)),16);
         kCtrlY: begin
                   appn := TRUE;
                   s := '';
@@ -809,6 +1021,8 @@ begin { InputStr }
                end;
       end;
 _end:
+      is_environment.cur_str := s;
+      If (Addr(is_environment.ext_proc) <> NIL) then is_environment.ext_proc;
 {$IFDEF GO32V2}
       // draw_screen;
       keyboard_reset_buffer_alt;
@@ -823,135 +1037,6 @@ _end:
   is_environment.keystroke := key;
   is_environment.insert_mode := ins;
   InputStr := s;
-end;
-
-function SameName(str1,str2: String): Boolean;
-
-var
-  LastW: Word;
-  result: Boolean;
-
-begin
-  asm
-        mov     [LastW],0
-        xor     eax,eax
-        xor     ecx,ecx
-        xor     ebx,ebx
-        lea     esi,[str1]
-        lea     edi,[str2]
-        xor     ah,ah
-        mov     al,[esi]
-        inc     esi
-        mov     cx,ax
-        mov     al,[edi]
-        inc     edi
-        mov     bx,ax
-        or      cx,cx
-        jnz     @@1
-        or      bx,bx
-        jz      @@13
-        jmp     @@14
-        xor     dh,dh
-@@1:    mov     al,[esi]
-        inc     esi
-        cmp     al,'*'
-        jne     @@2
-        dec     cx
-        jz      @@13
-        mov     dh,1
-        mov     LastW,cx
-        jmp     @@1
-@@2:    cmp     al,'?'
-        jnz     @@3
-        inc     edi
-        or      bx,bx
-        je      @@12
-        dec     bx
-        jmp     @@12
-@@3:    or      bx,bx
-        je      @@14
-        cmp     al,'['
-        jne     @@11
-        cmp     word ptr [esi],']?'
-        je      @@9
-        mov     ah,byte ptr [edi]
-        xor     dl,dl
-        cmp     byte ptr [esi],'!'
-        jnz     @@4
-        inc     esi
-        dec     cx
-        jz      @@14
-        inc     dx
-@@4:    mov     al,[esi]
-        inc     esi
-        dec     cx
-        jz      @@14
-        cmp     al,']'
-        je      @@7
-        cmp     ah,al
-        je      @@6
-        cmp     byte ptr [esi],'-'
-        jne     @@4
-        inc     esi
-        dec     cx
-        jz      @@14
-        cmp     ah,al
-        jae     @@5
-        inc     esi
-        dec     cx
-        jz      @@14
-        jmp     @@4
-@@5:    mov     al,[esi]
-        inc     esi
-        dec     cx
-        jz      @@14
-        cmp     ah,al
-        ja      @@4
-@@6:    or      dl,dl
-        jnz     @@14
-        inc     dx
-@@7:    or      dl,dl
-        jz      @@14
-@@8:    cmp     al,']'
-        je      @@10
-@@9:    mov     al,[esi]
-        inc     esi
-        cmp     al,']'
-        loopne  @@9
-        jne     @@14
-@@10:   dec     bx
-        inc     edi
-        jmp     @@12
-@@11:   cmp     [edi],al
-        jne     @@14
-        inc     edi
-        dec     bx
-@@12:   xor     dh,dh
-        dec     cx
-        jnz     @@1
-        or      bx,bx
-        jnz     @@14
-@@13:   mov     result,TRUE
-        jmp     @@16
-@@14:   or      dh,dh
-        jz      @@15
-        jecxz   @@15
-        or      bx,bx
-        jz      @@15
-        inc     edi
-        dec     bx
-        jz      @@15
-        mov     ax,LastW
-        sub     ax,cx
-        add     cx,ax
-        movsx   eax,ax
-        sub     esi,eax
-        dec     esi
-        jmp     @@1
-@@15:   mov     result,FALSE
-@@16:
-  end;
-  SameName := result;
 end;
 
 var
@@ -989,6 +1074,10 @@ begin
   is_environment.locate_pos := 1;
   is_setting.char_filter := _valid_characters;
   is_setting.valid_chars := _valid_characters;
+  is_environment.min_num := 0;
+  is_environment.max_num := SizeOf(DWORD);
+  is_environment.cur_str := '';
+  is_environment.ext_proc := NIL;
 end;
 
 end.

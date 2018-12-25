@@ -1,3 +1,18 @@
+//  This file is part of Adlib Tracker II (AT2).
+//
+//  AT2 is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU General Public License as published by
+//  the Free Software Foundation, either version 3 of the License, or
+//  (at your option) any later version.
+//
+//  AT2 is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU General Public License for more details.
+//
+//  You should have received a copy of the GNU General Public License
+//  along with AT2.  If not, see <http://www.gnu.org/licenses/>.
+
 unit AdT2ext5;
 {$S-,Q-,R-,V-,B-,X+}
 {$PACKRECORDS 1}
@@ -1230,6 +1245,7 @@ begin
   arpvib_vibrato_table := vibrato_table_idx;
 
   _macro_preview_refresh;
+  mn_environment.curr_pos := current_inst;
   a2w_macro_lister_external_proc_callback;
 end;
 
@@ -1469,6 +1485,8 @@ begin
   _str1 := temp_str;
 end;
 
+{$IFNDEF CPU64}
+
 function _str2(str: String; len: Byte): String;
 begin
   asm
@@ -1500,6 +1518,30 @@ begin
         stosb
   end;
 end;
+
+{$ELSE}
+
+function _str2(str: String; len: Byte): String;
+
+var
+  idx,len2: Byte;
+  result: String;
+
+begin
+  result := '';
+  len2 := 0;
+  idx := 0;
+  While (idx < Length(str)) and (len > len2) do
+    begin
+      Inc(idx);
+      If (str[idx] <> '`') then
+        Inc(len2);
+      result := result+str[idx];
+    end;
+  _str2 := result;
+end;
+
+{$ENDIF}
 
 procedure fmreg_page_refresh(xpos,ypos: Byte; page: Word);
 
@@ -2201,7 +2243,7 @@ begin
           vib_tab_selected := songdata.instr_macros[current_inst].vibrato_table <> 0;
         end;
 
-      // init 4OP flags (no file bank)
+        // init 4OP flags (no file bank)
       temp_songdata.ins_4op_flags := songdata.ins_4op_flags;
       FillChar(_4op_flag_column,SizeOf(_4op_flag_column),0);
       For temp := 1 to PRED(255) do
@@ -2212,7 +2254,6 @@ begin
             If NOT (_4op_flag_column[SUCC(temp)] in _4op_flag_chars) then
               _4op_flag_column[SUCC(temp)] := _4op_flag_chr_end;
           end;
-
       If loadMacros then
         GOTO _jmp1 // Arpeggio/Vibrato Macro Browser
       else GOTO _jmp2; // Instrument Macro Browser
@@ -3853,7 +3894,7 @@ begin { bnk_file_loader }
           end;
 
       If (ticklooper = 0) then
-        show_progress(index);
+        show_progress(index,3);
 
       SeekF(f,header.name_offset+PRED(index)*SizeOf(name_record));
       If (IOresult <> 0) then
@@ -4123,7 +4164,7 @@ begin { fib_file_loader }
           end;
 
       If (ticklooper = 0) then
-        show_progress(index);
+        show_progress(index,3);
 
       BlockReadF(f,instrument_data,SizeOf(instrument_data),temp);
       If (temp <> SizeOf(instrument_data)) then
@@ -4208,7 +4249,7 @@ begin { fib_file_loader }
     end;
 
   CloseF(f);
-  show_progress(index);
+  show_progress(index,3);
   // delay for awhile to show progress bar
   {$IFDEF GO32V2}
   CRT.Delay(500);
@@ -4377,7 +4418,7 @@ begin { ibk_file_loader }
           end;
 
       If (ticklooper = 0) then
-        show_progress(index);
+        show_progress(index,3);
 
       SeekF(f,$004+PRED(index)*SizeOf(instrument_data));
       If (IOresult <> 0) then
@@ -4470,7 +4511,7 @@ begin { ibk_file_loader }
     end;
 
   CloseF(f);
-  show_progress(index);
+  show_progress(index,3);
   // delay for awhile to show progress bar
   {$IFDEF GO32V2}
   CRT.Delay(500);

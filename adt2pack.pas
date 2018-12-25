@@ -1,3 +1,18 @@
+//  This file is part of Adlib Tracker II (AT2).
+//
+//  AT2 is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU General Public License as published by
+//  the Free Software Foundation, either version 3 of the License, or
+//  (at your option) any later version.
+//
+//  AT2 is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU General Public License for more details.
+//
+//  You should have received a copy of the GNU General Public License
+//  along with AT2.  If not, see <http://www.gnu.org/licenses/>.
+
 unit AdT2pack;
 {$S-,Q-,R-,V-,B-,X+}
 {$PACKRECORDS 1}
@@ -85,7 +100,7 @@ begin
   Inc(input_buffer_idx,result);
   ReadDataBlock := result;
   If NOT really_no_status_refresh then
-    show_progress(input_buffer_idx);
+    show_progress(input_buffer_idx,3);
 end;
 
 procedure WriteDataBlock(ptr: Pointer; size: Word);
@@ -93,7 +108,7 @@ begin
   Move(ptr^,output_buffer^[output_buffer_idx],size);
   Inc(output_buffer_idx,size);
   If NOT really_no_status_refresh then
-    show_progress(output_buffer_idx);
+    show_progress(output_buffer_idx,3);
 end;
 
 procedure FillBitBuffer(bits: Integer);

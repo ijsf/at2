@@ -1,3 +1,18 @@
+//  This file is part of Adlib Tracker II (AT2).
+//
+//  AT2 is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU General Public License as published by
+//  the Free Software Foundation, either version 3 of the License, or
+//  (at your option) any later version.
+//
+//  AT2 is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU General Public License for more details.
+//
+//  You should have received a copy of the GNU General Public License
+//  along with AT2.  If not, see <http://www.gnu.org/licenses/>.
+
 unit AdT2extn;
 {$S-,Q-,R-,V-,B-,X+}
 {$PACKRECORDS 1}
@@ -78,7 +93,8 @@ function  FILE_open(masks: String; loadBankPossible: Boolean): Byte;
 procedure NUKE;
 procedure MESSAGE_BOARD;
 procedure QUIT_request;
-procedure show_progress(value: Longint);
+procedure show_progress(value: Longint); overload;
+procedure show_progress(value,refresh_dif: Longint); overload;
 
 implementation
 
@@ -89,8 +105,8 @@ uses
 {$IFNDEF GO32V2}
   SDL_Timer,
 {$ENDIF}
-  AdT2opl3,
-  AdT2sys,AdT2keyb,AdT2unit,AdT2ext2,AdT2ext3,AdT2ext4,AdT2ext5,AdT2text,AdT2pack,
+  StrUtils,
+  AdT2opl3,AdT2sys,AdT2keyb,AdT2unit,AdT2ext2,AdT2ext3,AdT2ext4,AdT2ext5,AdT2text,AdT2pack,
   StringIO,DialogIO,ParserIO,TxtScrIO,MenuLib1,MenuLib2;
 
 function _patts_marked: Byte;
@@ -955,7 +971,9 @@ end;
 
 procedure override_frame(dest: tSCREEN_MEM_PTR; x,y: Byte; frame: String; attr: Byte);
 
-procedure override_attr(dest: tSCREEN_MEM_PTR; x,y: Byte; len: Byte; attr: Byte);
+{$IFNDEF CPU64}
+
+procedure override_vscrollbar(dest: tSCREEN_MEM_PTR; x,y: Byte; len: Byte; attr: Byte);
 begin
   asm
         mov     al,MaxCol
@@ -996,11 +1014,26 @@ begin
   end;
 end;
 
+{$ELSE}
+
+procedure override_vscrollbar(dest: tSCREEN_MEM_PTR; x,y: Byte; len: Byte; attr: Byte);
+
+var
+  row: Byte;
+
+begin
+  If (len <> 0) then
+    For row := PRED(y) to PRED(y)+len do
+      dest^[SUCC((row*MaxCol+PRED(x))*2)] := attr;
+end;
+
+{$ENDIF}
+
 begin
   ShowStr(dest,x,y,frame[1]+ExpStrL('',32,frame[2])+frame[3],attr);
   ShowVStr(dest,x,y+1,ExpStrL('',MAX_PATTERN_ROWS,frame[4]),attr);
   ShowStr(dest,x,y+MAX_PATTERN_ROWS+1,frame[6]+ExpStrL('',32,frame[7])+frame[8],attr);
-  override_attr(dest,x+33,y+1,MAX_PATTERN_ROWS,attr);
+  override_vscrollbar(dest,x+33,y+1,MAX_PATTERN_ROWS,attr);
 end;
 
 var
@@ -1703,17 +1736,24 @@ begin
   move2screen;
 end;
 
-function _find_note(layout: String): Byte;
+function _find_note(layout: String; var flag: Boolean): Byte;
 
 var
   temp: Byte;
 
 begin
+  flag := FALSE;
   If (layout = note_keyoff_str[pattern_layout]) then temp := BYTE_NULL
   else For temp := 0 to 12*8+1 do
-         If SameName(note_layout[temp],layout) then BREAK;
+         If IsWild(layout,note_layout[temp],FALSE) then
+           begin
+             flag := TRUE;
+             BREAK;
+           end;
   _find_note := temp;
 end;
+
+{$IFNDEF CPU64}
 
 function _find_fx(fx_str: Char): Byte;
 
@@ -1734,6 +1774,22 @@ begin
   end;
   _find_fx := result;
 end;
+
+{$ELSE}
+
+function _find_fx(fx_str: Char): Byte;
+
+var
+  result: Byte;
+
+begin
+  result := SYSTEM.Pos(fx_str,fx_digits);
+  If (result <> 0) then
+    _find_fx := PRED(result)
+  else _find_fx := PRED(NM_FX_DIGITS);
+end;
+
+{$ENDIF}
 
 function _wildcard_str(wildcard,str: String): String;
 
@@ -2204,35 +2260,28 @@ _jmp1:
                 get_chunk(temp3,temp1,temp2,chunk);
                 old_chunk := chunk;
 
-                If SameName(event_to_find.inst,byte2hex(old_chunk.instr_def)) and
-                   SameName(event_to_find.fx_1,fx_digits[old_chunk.effect_def]+byte2hex(old_chunk.effect)) and
-                   SameName(event_to_find.fx_2,fx_digits[old_chunk.effect_def2]+byte2hex(old_chunk.effect2)) then
+                If IsWild(byte2hex(old_chunk.instr_def),event_to_find.inst,FALSE) and
+                   IsWild(fx_digits[old_chunk.effect_def]+byte2hex(old_chunk.effect),event_to_find.fx_1,FALSE) and
+                   IsWild(fx_digits[old_chunk.effect_def2]+byte2hex(old_chunk.effect2),event_to_find.fx_2,FALSE) then
                   begin
                     _valid_note := FALSE;
                     Case old_chunk.note of
                       0,
-                      1..12*8+1: If SameName(event_to_find.note,note_layout[old_chunk.note]) then
-                                   begin
-                                     temp_note := _find_note(_wildcard_str(new_event.note,note_layout[old_chunk.note]));
-                                     _valid_note := TRUE;
-                                   end;
+                      1..12*8+1: If IsWild(note_layout[old_chunk.note],event_to_find.note,FALSE) then
+                                   temp_note := _find_note(_wildcard_str(new_event.note,note_layout[old_chunk.note]),_valid_note);
 
                       fixed_note_flag+
                       1..
                       fixed_note_flag+
-                      12*8+1: If SameName(event_to_find.note,note_layout[old_chunk.note-fixed_note_flag]) then
+                      12*8+1: If IsWild(note_layout[old_chunk.note-fixed_note_flag],event_to_find.note,FALSE) then
                                 begin
                                   If NOT (FilterStr(replace_data.new_event.note,'?',#250) = note_keyoff_str[pattern_layout]) then
-                                    temp_note := fixed_note_flag+_find_note(_wildcard_str(new_event.note,note_layout[old_chunk.note-fixed_note_flag]))
-                                  else temp_note := _find_note(new_event.note);
-                                  _valid_note := TRUE;
+                                    temp_note := fixed_note_flag+_find_note(_wildcard_str(new_event.note,note_layout[old_chunk.note-fixed_note_flag]),_valid_note)
+                                  else temp_note := _find_note(new_event.note,_valid_note);
                                 end;
 
                       BYTE_NULL: If (replace_data.event_to_find.note = note_keyoff_str[pattern_layout]) then
-                                   begin
-                                     temp_note := _find_note(new_event.note);
-                                     _valid_note := TRUE;
-                                   end;
+                                   temp_note := _find_note(new_event.note,_valid_note);
                     end;
 
                     If _valid_note and (new_event.note <> '???') then
@@ -2436,6 +2485,7 @@ begin
             ef_ex_cmd_RestartEnv:  effect_str := 'RstrtEnv';
             ef_ex_cmd_4opVlockOff: effect_str := 'VLock'#4#3'-';
             ef_ex_cmd_4opVlockOn:  effect_str := 'VLock'#4#3'+';
+            ef_ex_cmd_ForceBpmSld: effect_str := 'BpmSlide';
           end;
 
         ef_ex_ExtendedCmd2:
@@ -2811,6 +2861,17 @@ _jmp1:
              debug_info_bckg+debug_info_txt,
              debug_info_bckg+debug_info_hi_txt);
 
+    temps := Bpm2str(calc_realtime_bpm_speed(tempo,speed,mark_line))+' BPM';
+    If (IRQ_freq_shift+playback_speed_shift > 0) then
+      temps := temps+' [+'+Num2str(IRQ_freq_shift+playback_speed_shift,10)+#174']'
+    else If (IRQ_freq_shift+playback_speed_shift < 0) then
+           temps := temps+' [-'+Num2str(Abs(IRQ_freq_shift+playback_speed_shift),10)+#174']';
+
+    ShowStr(screen_ptr,
+            xstart+62,ystart+songdata.nm_tracks+5,
+            ExpStrL(temps,20,' '),
+            debug_info_bckg+debug_info_bpm);
+
     current_track := count_channel(pattern_hpos);
     For temp := 1 to songdata.nm_tracks do
       begin
@@ -2912,7 +2973,7 @@ _jmp1:
         If NOT (is_4op_chan(temp) and (temp in _4op_tracks_hi)) then
           temps3 := ExpStrL(Num2str(freqtable2[temp],16),4,'0')
         else temps3 := '    ';
-        
+
         If NOT _details_flag then
           begin
             If pan_lock[temp] then
@@ -3431,17 +3492,35 @@ _jmp1:
       end;
 end;
 
+procedure _show_bpm_callback_LMS;
+begin
+  ShowC3Str(screen_ptr,dl_environment.xpos+2,dl_environment.ypos+dl_environment.ysize,
+            ExpC2StrL(' ~ '+Bpm2str(calc_bpm_speed(songdata.tempo,songdata.speed,dl_environment.cur_item))+' ~`BPM `',
+                      dl_environment.xsize-2,#205)+' ',
+            dialog_background+dialog_border,
+            dialog_def_bckg+dialog_input,
+            dialog_def_bckg+dialog_input);
+end;
+
 procedure LINE_MARKING_SETUP;
+
+var
+  old_bpm_proc: procedure;
+
 begin
 {$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2EXTN.PAS:LINE_MARKING_SETUP';
 {$ENDIF}
+  old_bpm_proc := _show_bpm_realtime_proc;
+  _show_bpm_realtime_proc := _show_bpm_callback_LMS;
   dl_setting.all_enabled := TRUE;
   mark_line := Dialog('USE CURSOR KEYS OR DiRECTLY PRESS ~HOTKEY~ TO SETUP COUNTER$',
                       '~1~$~2~$~3~$~4~$~5~$~6~$~7~$~8~$~9~$10$11$12$13$14$15$16$',
-                      ' LiNE MARKiNG SETUP ',mark_line);
+                      ' LiNE MARKiNG SETUP (ROWS PER BEAT) ',mark_line);
   dl_setting.all_enabled := FALSE;
+  _IRQFREQ_update_event := FALSE;
+  _show_bpm_realtime_proc := old_bpm_proc;
 end;
 
 procedure OCTAVE_CONTROL;
@@ -3456,22 +3535,121 @@ begin
                            ' OCTAVE CONTROL ',current_octave);
 end;
 
+var
+  _bpm_xstart: Byte;
+  _bpm_ystart: Byte;
+
+const
+  _song_variables_pos: Byte = 1;
+
+var
+  bpm_str,
+  bpm_inc_str,bpm_dec_str: String;
+  is_num: Byte;
+
+procedure _show_bpm_callback_SV;
+begin
+  Case _song_variables_pos of
+    3: begin
+         is_num := Str2num(is_environment.cur_str,10);
+         If is_num in [1..255] then
+           bpm_str := ExpStrL(Bpm2str(calc_bpm_speed(is_num,songdata.speed,mark_line))+' BPM',9,' ')
+         else bpm_str := ExpStrL(Bpm2str(calc_bpm_speed(songdata.tempo,songdata.speed,mark_line))+' BPM',9,' ');
+       end;
+    4: begin
+         is_num := Str2num(is_environment.cur_str,16);
+         If is_num in [1..255] then
+           bpm_str := ExpStrL(Bpm2str(calc_bpm_speed(songdata.tempo,is_num,mark_line))+' BPM',9,' ')
+         else bpm_str := ExpStrL(Bpm2str(calc_bpm_speed(songdata.tempo,songdata.speed,mark_line))+' BPM',9,' ');
+       end
+    else
+      bpm_str := ExpStrL(Bpm2str(calc_bpm_speed(songdata.tempo,songdata.speed,mark_line))+' BPM',9,' ');
+  end;
+  ShowStr(screen_ptr,_bpm_xstart,_bpm_ystart,
+          bpm_str,
+          dialog_background+dialog_misc_indic);
+end;
+
+procedure _show_current_bpm_with_hints;
+begin
+  Case _song_variables_pos of
+    3: begin
+         is_num := Str2num(is_environment.cur_str,10);
+         If (is_num in [1..254]) then
+           bpm_inc_str := '`(`~+~`)` '+ExpStrL(Bpm2str(calc_bpm_speed(is_num+1,songdata.speed,mark_line))+' `BPM`',11,' ')
+         else bpm_inc_str := ExpStrL('',13,' ');
+         If (is_num in [2..255]) then
+           bpm_dec_str := '`(`~-~`)` '+ExpStrL(Bpm2str(calc_bpm_speed(is_num-1,songdata.speed,mark_line))+' `BPM`',11,' ')
+         else bpm_dec_str := ExpStrL('',13,' ');
+       end;
+    4: begin
+         is_num := Str2num(is_environment.cur_str,16);
+         If (is_num in [1..254]) then
+           bpm_inc_str := '`(`~+~`)` '+ExpStrL(Bpm2str(calc_bpm_speed(songdata.tempo,is_num+1,mark_line))+' `BPM`',11,' ')
+         else bpm_inc_str := ExpStrL('',13,' ');
+         If (is_num in [2..255]) then
+           bpm_dec_str := '`(`~-~`)` '+ExpStrL(Bpm2str(calc_bpm_speed(songdata.tempo,is_num-1,mark_line))+' `BPM`',11,' ')
+         else bpm_dec_str := ExpStrL('',13,' ');
+       end;
+  end;
+
+  ShowC3Str(screen_ptr,_bpm_xstart-4,_bpm_ystart+1,
+            bpm_inc_str,
+            dialog_background+dialog_context_dis,
+            dialog_background+dialog_title,
+            dialog_background+dialog_contxt_dis2);
+
+  If (CutStr(bpm_inc_str) <> '') then
+    ShowC3Str(screen_ptr,_bpm_xstart-4,_bpm_ystart+2,
+              bpm_dec_str,
+              dialog_background+dialog_context_dis,
+              dialog_background+dialog_title,
+              dialog_background+dialog_contxt_dis2)
+  else
+    begin
+      ShowC3Str(screen_ptr,_bpm_xstart-4,_bpm_ystart+1,
+               bpm_dec_str,
+               dialog_background+dialog_context_dis,
+               dialog_background+dialog_title,
+               dialog_background+dialog_contxt_dis2);
+      ShowC3Str(screen_ptr,_bpm_xstart-4,_bpm_ystart+2,
+               bpm_inc_str,
+               dialog_background+dialog_context_dis,
+               dialog_background+dialog_title,
+               dialog_background+dialog_contxt_dis2);
+    end;
+end;
+
 procedure SONG_VARIABLES;
 
 const
-  new_keys: array[1..7] of Word = (kF1,kESC,kENTER,kTAB,kShTAB,kUP,kDOWN);
-
+  new_keys: array[1..29] of Word = (kF1,kESC,kENTER,kTAB,kShTAB,kUP,kDOWN,kCtENTR,
+                                    kAltN,kAltE,kAltT,kAltS,kAltR,kAltD,kAltO,kAltI,
+                                    kAltA,kAltL,kAltB,kAltH,kAltF,kAltX,kAltU,kAltK,
+                                    kAltG,kAltM,kAltC,kAltV,kAltP);
 var
   old_keys: array[1..7] of Word;
   pos,pos_4op,temp,temp1,temp2,temp3: Byte;
   temps: String;
   xstart,ystart: Byte;
-  attr: array[1..163] of Byte;
+  attr: array[1..163] of Word;
   status_backup: Record
                    replay_forbidden: Boolean;
                    play_status: tPLAY_STATUS;
                  end;
 const
+  RANGE_PAN_LO = 18;
+  RANGE_PAN_HI = 77;
+  RANGE_PAN: Set of Byte = [RANGE_PAN_LO..RANGE_PAN_HI];
+
+  RANGE_4OP_LO = 78;
+  RANGE_4OP_HI = 83;
+  RANGE_4OP: Set of Byte = [RANGE_4OP_LO..RANGE_4OP_HI];
+
+  RANGE_LCK_LO = 84;
+  RANGE_LCK_HI = 163;
+  RANGE_LCK: Set of Byte = [RANGE_LCK_LO..RANGE_LCK_HI];
+
   _on_off: array[0..1] of Char = #250#251;
   _4op_str: array[1..6] of String = ('1 '#241'2   ','3 '#241'4   ','5 '#241'6   ',
                                      '10'#241'11  ','12'#241'13  ','14'#241'15  ');
@@ -3560,90 +3738,6 @@ const
                                           157,158,159,0,  {19}
                                           161,162,163,1); {20}
 
-  _up_pos_pan: array[1..60] of Byte = (2, 2, 2,   {1}
-                                       18,19,20,  {2}
-                                       21,22,23,  {3}
-                                       24,25,26,  {4}
-                                       27,28,29,  {5}
-                                       30,31,32,  {6}
-                                       33,34,35,  {7}
-                                       36,37,38,  {8}
-                                       39,40,41,  {9}
-                                       42,43,44,  {10}
-                                       45,46,47,  {11}
-                                       48,49,50,  {12}
-                                       51,52,53,  {13}
-                                       54,55,56,  {14}
-                                       57,58,59,  {15}
-                                       60,61,62,  {16}
-                                       63,64,65,  {17}
-                                       66,67,68,  {18}
-                                       69,70,71,  {19}
-                                       72,73,74); {20}
-
-  _down_pos_pan: array[1..60] of Byte = (0,0,0,  {1}
-                                         0,0,0,  {2}
-                                         0,0,0,  {3}
-                                         0,0,0,  {4}
-                                         0,0,0,  {5}
-                                         0,0,0,  {6}
-                                         0,0,0,  {7}
-                                         0,0,0,  {8}
-                                         0,0,0,  {9}
-                                         0,0,0,  {10}
-                                         0,0,0,  {11}
-                                         0,0,0,  {12}
-                                         0,0,0,  {13}
-                                         0,0,0,  {14}
-                                         0,0,0,  {15}
-                                         0,0,0,  {16}
-                                         0,0,0,  {17}
-                                         0,0,0,  {18}
-                                         0,0,0,  {19}
-                                         1,1,1); {20}
-
-  _down_pos_lck: array[1..80] of Byte = (0,0,0,0,  {1}
-                                         0,0,0,0,  {2}
-                                         0,0,0,0,  {3}
-                                         0,0,0,0,  {4}
-                                         0,0,0,0,  {5}
-                                         0,0,0,0,  {6}
-                                         0,0,0,0,  {7}
-                                         0,0,0,0,  {8}
-                                         0,0,0,0,  {9}
-                                         0,0,0,0,  {10}
-                                         0,0,0,0,  {11}
-                                         0,0,0,0,  {12}
-                                         0,0,0,0,  {13}
-                                         0,0,0,0,  {14}
-                                         0,0,0,0,  {15}
-                                         0,0,0,0,  {16}
-                                         0,0,0,0,  {17}
-                                         0,0,0,0,  {18}
-                                         0,0,0,0,  {19}
-                                         1,1,1,1); {20}
-
-  _up_pos_lck: array[1..80] of Byte = (2,  2,  2,  2,    {1}
-                                       84, 85, 86, 87,   {2}
-                                       88, 89, 90, 91,   {3}
-                                       92, 93, 94, 95,   {4}
-                                       96, 97, 98, 99,   {5}
-                                       100,101,102,103,  {6}
-                                       104,105,106,107,  {7}
-                                       108,109,110,111,  {8}
-                                       112,113,114,115,  {9}
-                                       116,117,118,119,  {10}
-                                       120,121,122,123,  {11}
-                                       124,125,126,127,  {12}
-                                       128,129,130,131,  {13}
-                                       132,133,134,135,  {14}
-                                       136,137,138,139,  {15}
-                                       140,141,142,143,  {16}
-                                       144,145,146,147,  {17}
-                                       148,149,150,151,  {18}
-                                       152,153,154,155,  {19}
-                                       156,157,158,159); {20}
-
   _right_pos_lck_def: array[1..20-1] of Record
                                           variant1,
                                           variant2: Byte;
@@ -3668,56 +3762,6 @@ const
     (variant1: 15; variant2: 15),  {18}
     (variant1: 16; variant2: 16)); {19}
 
-  _down_pos_pan_def: array[1..20-1] of Record
-                                         variant1,
-                                         variant2: array[1..3] of Byte;
-                                       end = (
-
-    (variant1: (21,22,23); variant2: (3, 3, 3 )),  {1}
-    (variant1: (24,25,26); variant2: (3, 3, 3 )),  {2}
-    (variant1: (27,28,29); variant2: (3, 3, 3 )),  {3}
-    (variant1: (30,31,32); variant2: (4, 4, 4 )),  {4}
-    (variant1: (33,34,35); variant2: (17,17,17)),  {5}
-    (variant1: (36,37,38); variant2: (6, 6, 6 )),  {6}
-    (variant1: (39,40,41); variant2: (6, 6, 6 )),  {7}
-    (variant1: (42,43,44); variant2: (7, 7, 7 )),  {8}
-    (variant1: (45,46,47); variant2: (8, 8, 8 )),  {9}
-    (variant1: (48,49,50); variant2: (81,81,81)),  {10}
-    (variant1: (51,52,53); variant2: (82,82,82)),  {11}
-    (variant1: (54,55,56); variant2: (9, 9, 9 )),  {12}
-    (variant1: (57,58,59); variant2: (10,10,10)),  {13}
-    (variant1: (60,61,62); variant2: (13,13,13)),  {14}
-    (variant1: (63,64,65); variant2: (13,13,13)),  {15}
-    (variant1: (66,67,68); variant2: (14,14,14)),  {16}
-    (variant1: (69,70,71); variant2: (15,15,15)),  {17}
-    (variant1: (72,73,74); variant2: (15,15,15)),  {18}
-    (variant1: (75,76,77); variant2: (16,16,16))); {19}
-
-  _down_pos_lck_def: array[1..20-1] of Record
-                                         variant1,
-                                         variant2: array[1..4] of Byte;
-                                       end = (
-
-    (variant1: (88, 89, 90, 91);  variant2: (3, 3, 3, 3 )),  {1}
-    (variant1: (92, 93, 94, 95);  variant2: (3, 3, 3, 3 )),  {2}
-    (variant1: (96, 97, 98, 99);  variant2: (3, 3, 3, 3 )),  {3}
-    (variant1: (100,101,102,103); variant2: (4, 4, 4, 4 )),  {4}
-    (variant1: (104,105,106,107); variant2: (17,17,17,17)),  {5}
-    (variant1: (108,109,110,111); variant2: (6, 6, 6, 6 )),  {6}
-    (variant1: (112,113,114,115); variant2: (6, 6, 6, 6 )),  {7}
-    (variant1: (116,117,118,119); variant2: (7, 7, 7, 7 )),  {8}
-    (variant1: (120,121,122,123); variant2: (8, 8, 8, 8 )),  {9}
-    (variant1: (124,125,126,127); variant2: (81,81,81,81)),  {10}
-    (variant1: (128,129,130,131); variant2: (82,82,82,82)),  {11}
-    (variant1: (132,133,134,135); variant2: (9, 9, 9, 9 )),  {12}
-    (variant1: (136,137,138,139); variant2: (10,10,10,10)),  {13}
-    (variant1: (140,141,142,143); variant2: (13,13,13,13)),  {14}
-    (variant1: (144,145,146,147); variant2: (13,13,13,13)),  {15}
-    (variant1: (148,149,150,151); variant2: (14,14,14,14)),  {16}
-    (variant1: (152,153,154,155); variant2: (15,15,15,15)),  {17}
-    (variant1: (156,157,158,159); variant2: (15,15,15,15)),  {18}
-    (variant1: (160,161,152,163); variant2: (16,16,16,16))); {19}
-
   _left_pos_4op: array[1..6] of Byte = (6,7,8,0,0,11);
   _right_pos_4op: array[1..6] of Byte = (0,0,0,0,0,0);
   _up_pos_4op: array[1..6] of Byte = (0,78,79,80,81,82);
@@ -3733,11 +3777,67 @@ const
     (variant1: 51; variant2: 9),
     (variant1: 54; variant2: 10));
 
+
+  _old_pos_pan: Byte = RANGE_PAN_LO+1;
+  _old_pos_4op: Byte = RANGE_4OP_LO;
+  _old_pos_lck: Byte = RANGE_LCK_LO;
+
+var
+  old_bpm_proc: procedure;
+
 function truncate_string(str: String): String;
 begin
   While (Length(str) > 0) and (str[Length(str)] in [#0,#32,#255]) do
     Delete(str,Length(str),1);
   truncate_string := str;
+end;
+
+procedure _check_key_shortcuts;
+begin
+  If (pos in RANGE_PAN) then
+    begin
+      _old_pos_pan := RANGE_PAN_LO+1+(pos-RANGE_PAN_LO) DIV 3*3;
+      _old_pos_lck := RANGE_LCK_LO+(pos-RANGE_PAN_LO) DIV 3*4;
+    end
+  else If (pos in RANGE_4OP) then
+         _old_pos_4op := pos
+       else If (pos in RANGE_LCK) then
+              begin
+                _old_pos_pan := RANGE_PAN_LO+1+(pos-RANGE_LCK_LO) DIV 4*3;
+                _old_pos_lck := RANGE_LCK_LO+(pos MOD 4)+(pos-RANGE_LCK_LO) DIV 4*4;
+              end;
+  Case is_environment.keystroke of
+    kAltN: pos := 1;
+    kAltE: pos := 2;
+    kAltT: pos := 3;
+    kAltS: pos := 4;
+    kAltR: pos := 5;
+    kAltD: pos := 17;
+    kAltO: pos := 6;
+    kAltI: pos := 7;
+    kAltA: pos := 8;
+    kAltL: If (tremolo_depth = 0) then pos := 9 else pos := 10;
+    kAltB: If (vibrato_depth = 0) then pos := 11 else pos := 12;
+    kAltH: pos := 13;
+    kAltF: pos := 14;
+    kAltX: pos := 15;
+    kAltU: pos := 16;
+    kAltK: begin
+             If (_old_pos_4op in RANGE_4OP) then pos := _old_pos_4op
+             else pos := RANGE_4OP_LO;
+             pos_4op := 0;
+           end;
+    kAltG: If (_old_pos_pan in RANGE_PAN) then pos := _old_pos_pan
+           else pos := RANGE_PAN_LO+1;
+    kAltM: If (_old_pos_lck in RANGE_LCK) then pos := RANGE_LCK_LO+((_old_pos_lck-RANGE_LCK_LO) DIV 4)*4
+           else pos := RANGE_LCK_LO;
+    kAltC: If (_old_pos_lck in RANGE_LCK) then pos := RANGE_LCK_LO+1+((_old_pos_lck-RANGE_LCK_LO) DIV 4)*4
+           else pos := RANGE_LCK_LO+1;
+    kAltV: If (_old_pos_lck in RANGE_LCK) then pos := RANGE_LCK_LO+2+((_old_pos_lck-RANGE_LCK_LO) DIV 4)*4
+           else pos := RANGE_LCK_LO+2;
+    kAltP: If (_old_pos_lck in RANGE_LCK) then pos := RANGE_LCK_LO+3+((_old_pos_lck-RANGE_LCK_LO) DIV 4)*4
+           else pos := RANGE_LCK_LO+3;
+  end;
 end;
 
 label _jmp1,_end;
@@ -3754,7 +3854,11 @@ begin { SONG_VARIABLES }
   pos := min(get_bank_position('?song_variables_window?pos',-1),1);
   pos_4op := min(get_bank_position('?song_variables_window?pos_4op',-1),0);
   If (calc_max_speedup(songdata.tempo) < songdata.macro_speedup) then
-    songdata.macro_speedup := calc_max_speedup(songdata.tempo);
+    begin
+      songdata.macro_speedup := calc_max_speedup(songdata.tempo);
+      If (play_status = isStopped) then
+        macro_speedup := songdata.macro_speedup;
+    end;
 
 _jmp1:
   If _force_program_quit then EXIT;
@@ -3781,6 +3885,12 @@ _jmp1:
   move_to_screen_area[2] := ystart+1;
   move_to_screen_area[3] := xstart+78;
   move_to_screen_area[4] := ystart+25;
+
+  _bpm_xstart := xstart+39;
+  _bpm_ystart := ystart+7;
+
+  old_bpm_proc := _show_bpm_realtime_proc;
+  _show_bpm_realtime_proc := _show_bpm_callback_SV;
 
   ShowCStr(ptr_temp_screen,xstart+2,ystart+6,
            'iNSTRUMENTS: ~'+Num2str(temp3,10)+'/255~  ',
@@ -3831,30 +3941,10 @@ _jmp1:
           _right_pos_lck[(temp-1)*4+4] := _right_pos_lck_def[temp].variant2
         else _right_pos_lck[(temp-1)*4+4] := _right_pos_lck_def[temp].variant1;
 
-      For temp := 1 to 19 do
-        If (songdata.nm_tracks < temp+1) then
-          begin
-            _down_pos_pan[(temp-1)*3+1] := _down_pos_pan_def[temp].variant2[1];
-            _down_pos_pan[(temp-1)*3+2] := _down_pos_pan_def[temp].variant2[2];
-            _down_pos_pan[(temp-1)*3+3] := _down_pos_pan_def[temp].variant2[3];
-            _down_pos_lck[(temp-1)*4+1] := _down_pos_lck_def[temp].variant2[1];
-            _down_pos_lck[(temp-1)*4+2] := _down_pos_lck_def[temp].variant2[2];
-            _down_pos_lck[(temp-1)*4+3] := _down_pos_lck_def[temp].variant2[3];
-            _down_pos_lck[(temp-1)*4+4] := _down_pos_lck_def[temp].variant2[4];
-          end
-        else begin
-               _down_pos_pan[(temp-1)*3+1] := _down_pos_pan_def[temp].variant1[1];
-               _down_pos_pan[(temp-1)*3+2] := _down_pos_pan_def[temp].variant1[2];
-               _down_pos_pan[(temp-1)*3+3] := _down_pos_pan_def[temp].variant1[3];
-               _down_pos_lck[(temp-1)*4+1] := _down_pos_lck_def[temp].variant1[1];
-               _down_pos_lck[(temp-1)*4+2] := _down_pos_lck_def[temp].variant1[2];
-               _down_pos_lck[(temp-1)*4+3] := _down_pos_lck_def[temp].variant1[3];
-               _down_pos_lck[(temp-1)*4+4] := _down_pos_lck_def[temp].variant1[4];
-             end;
-
-      For temp2 := 1 to 17 do
-        If (pos = temp2) then attr[temp2] := dialog_background+dialog_hi_text
-        else attr[temp2] := dialog_background+dialog_text;
+      For temp2 := 1 to 18 do
+        If (pos = temp2) then
+          attr[temp2] := dialog_hi_text+(dialog_hi_text SHL 8)
+        else attr[temp2] := dialog_text+(dialog_title SHL 8);
 
       If (pos = 4) then attr[5] := 0
       else If (pos = 5) then attr[4] := 0
@@ -3868,33 +3958,33 @@ _jmp1:
       else If (pos = 12) then attr[11] := 0
            else attr[11] := 0;
 
-      If (pos in [18..77]) then attr[18] := dialog_background+dialog_hi_text
-      else attr[18] := dialog_background+dialog_text;
+      If (pos in RANGE_PAN) then attr[RANGE_PAN_LO] := dialog_hi_text+(dialog_hi_text SHL 8)
+      else attr[RANGE_PAN_LO] := dialog_text+(dialog_title SHL 8);
 
-      If (pos in [78..83]) then attr[78] := dialog_background+dialog_hi_text
-      else attr[78] := dialog_background+dialog_text;
+      If (pos in RANGE_4OP) then attr[RANGE_4OP_LO] := dialog_hi_text+(dialog_hi_text SHL 8)
+      else attr[RANGE_4OP_LO] := dialog_text+(dialog_title SHL 8);
 
-      If (pos in [84,88,92,96,100,104,108,112,116,120,
-                  124,128,132,136,140,144,148,152,156,160]) then
-        attr[84] := dialog_background+dialog_hi_text
-      else attr[84] := dialog_background+dialog_text;
+      If (pos in RANGE_LCK) and (pos MOD 4 = 0) then
+        attr[RANGE_LCK_LO] := dialog_hi_text+(dialog_hi_text SHL 8)
+      else attr[RANGE_LCK_LO] := dialog_text+(dialog_title SHL 8);
 
-      If (pos in [85,89,93,97,101,105,109,113,117,121,
-                  125,129,133,137,141,145,149,153,157,161]) then
-        attr[85] := dialog_background+dialog_hi_text
-      else attr[85] := dialog_background+dialog_text;
+      If (pos in RANGE_LCK) and (pos MOD 4 = 1) then
+        attr[RANGE_LCK_LO+1] := dialog_hi_text+(dialog_hi_text SHL 8)
+      else attr[RANGE_LCK_LO+1] := dialog_text+(dialog_title SHL 8);
 
-      If (pos in [86,90,94,98,102,106,110,114,118,122,
-                  126,130,134,138,142,146,150,154,158,162]) then
-        attr[86] := dialog_background+dialog_hi_text
-      else attr[86] := dialog_background+dialog_text;
+      If (pos in RANGE_LCK) and (pos MOD 4 = 2) then
+        attr[RANGE_LCK_LO+2] := dialog_hi_text+(dialog_hi_text SHL 8)
+      else attr[RANGE_LCK_LO+2] := dialog_text+(dialog_title SHL 8);
 
-      If (pos in [87,91,95,99,103,107,111,115,119,123,
-                  127,131,135,139,143,147,151,155,159,163]) then
-        attr[87] := dialog_background+dialog_hi_text
-      else attr[87] := dialog_background+dialog_text;
+      If (pos in RANGE_LCK) and (pos MOD 4 = 3) then
+        attr[RANGE_LCK_LO+3] := dialog_hi_text+(dialog_hi_text SHL 8)
+      else attr[RANGE_LCK_LO+3] := dialog_text+(dialog_title SHL 8);
 
-      ShowStr(ptr_temp_screen,xstart+34,ystart+12,#4#3' TRACKS  '#4#3'+',attr[78]);     
+      ShowCStr(ptr_temp_screen,xstart+34,ystart+12,
+               #4#3' TRAC~K~S  '#4#3'+',
+               dialog_background+LO(attr[RANGE_4OP_LO]),
+               dialog_background+HI(attr[RANGE_4OP_LO]));
+
       For temp := 1 to 6 do
         If (songdata.flag_4op OR (1 SHL PRED(temp)) = songdata.flag_4op) then
           ShowC3Str(ptr_temp_screen,xstart+34,ystart+13+temp-1,
@@ -3909,21 +3999,45 @@ _jmp1:
                    dialog_background+dialog_item,
                    dialog_background+dialog_item_dis);
 
-      ShowStr(ptr_temp_screen,xstart+51,ystart+4,
-              'PANNiNG',
-              attr[18]);
+      ShowCStr(ptr_temp_screen,xstart+51,ystart+4,
+               'PANNiN~G~',
+                dialog_background+LO(attr[RANGE_PAN_LO]),
+                dialog_background+HI(attr[RANGE_PAN_LO]));
       ShowStr(ptr_temp_screen,xstart+51,ystart+5,
               #170'  c  '#171,
-              attr[18]);
+              dialog_background+LO(attr[18]));
 
-      ShowVStr(ptr_temp_screen,xstart+64,ystart+4,'M'#31,attr[84]);
-      ShowVStr(ptr_temp_screen,xstart+68,ystart+4,'C'#31,attr[85]);
-      ShowVStr(ptr_temp_screen,xstart+72,ystart+4,'V'#31,attr[86]);
-      ShowVStr(ptr_temp_screen,xstart+76,ystart+4,'P'#31,attr[87]);
-      ShowVStr(ptr_temp_screen,xstart+65,ystart+4,#10, attr[84]);
-      ShowVStr(ptr_temp_screen,xstart+69,ystart+4,#10, attr[85]);
-      ShowVStr(ptr_temp_screen,xstart+73,ystart+4,'+', attr[86]);
-      ShowVStr(ptr_temp_screen,xstart+77,ystart+4,'+', attr[87]);
+      ShowVCStr(ptr_temp_screen,xstart+64,ystart+4,
+                '~M~'#31,
+                dialog_background+LO(attr[RANGE_LCK_LO]),
+                dialog_background+HI(attr[RANGE_LCK_LO]));
+      ShowVStr(ptr_temp_screen,xstart+65,ystart+4,
+               #10,
+               dialog_background+LO(attr[RANGE_LCK_LO]));
+
+      ShowVCStr(ptr_temp_screen,xstart+68,ystart+4,
+                '~C~'#31,
+                dialog_background+LO(attr[RANGE_LCK_LO+1]),
+                dialog_background+HI(attr[RANGE_LCK_LO+1]));
+      ShowVStr(ptr_temp_screen,xstart+69,ystart+4,
+               #10,
+               dialog_background+LO(attr[RANGE_LCK_LO+1]));
+
+      ShowVCStr(ptr_temp_screen,xstart+72,ystart+4,
+                '~V~'#31,
+                dialog_background+LO(attr[RANGE_LCK_LO+2]),
+                dialog_background+HI(attr[RANGE_LCK_LO+2]));
+      ShowVStr(ptr_temp_screen,xstart+73,ystart+4,
+               '+',
+               dialog_background+LO(attr[RANGE_LCK_LO+2]));
+
+      ShowVCStr(ptr_temp_screen,xstart+76,ystart+4,
+                '~P~'#31,
+                dialog_background+LO(attr[RANGE_LCK_LO+3]),
+                dialog_background+HI(attr[RANGE_LCK_LO+3]));
+      ShowVStr(ptr_temp_screen,xstart+77,ystart+4,
+               '+',
+               dialog_background+LO(attr[RANGE_LCK_LO+3]));
 
       temps := '';
       For temp := 1 to 6 do
@@ -3935,7 +4049,7 @@ _jmp1:
       ShowVStr(ptr_temp_screen,xstart+46,ystart+13,
                temps,
                dialog_background++dialog_item);
-           
+
       For temp := 1 to 20 do
         If (temp <= songdata.nm_tracks) then
           begin
@@ -3956,7 +4070,7 @@ _jmp1:
                      voice_pan_str[3]+'  '+ExpStrL(Num2str(temp,10),2,' ')+
                      '  '#250' '#246' '#250' '#246' '#250' '#246' '#250,
                      dialog_background+dialog_hid);
-                     
+
       temps := '';
       For temp := 1 to songdata.nm_tracks do
         If percussion_mode and (temp in [16..20]) then temps := temps+_perc_char[temp-15]
@@ -3990,30 +4104,45 @@ _jmp1:
 
       ShowVStr(ptr_temp_screen,xstart+50,ystart+6,
                ExpStrR(temps,20,' '),
-               dialog_background+dialog_context_dis);
+               dialog_background+dialog_misc_indic);
 
-      ShowStr(ptr_temp_screen,xstart+2,ystart+1,
-              'SONGNAME',
-              attr[1]);
-      ShowStr(ptr_temp_screen,xstart+2,ystart+3,
-              'COMPOSER',
-              attr[2]);
-      ShowStr(ptr_temp_screen,xstart+2,ystart+9,
-              'SONG TEMPO',
-              attr[3]);
-      ShowStr(ptr_temp_screen,xstart+2,ystart+10,
-              'SONG SPEED',
-              attr[4]+attr[5]);
+      ShowCStr(ptr_temp_screen,xstart+2,ystart+1,
+               'SONG~N~AME',
+               dialog_background+LO(attr[1]),
+               dialog_background+HI(attr[1]));
 
-      ShowCStr(ptr_temp_screen,xstart+26,ystart+10,
-               '[ ] ~RESET~',
+      ShowCStr(ptr_temp_screen,xstart+2,ystart+3,
+               'COMPOS~E~R',
+               dialog_background+LO(attr[2]),
+               dialog_background+HI(attr[2]));
+
+      ShowCStr(ptr_temp_screen,xstart+2,ystart+9,
+               'SONG ~T~EMPO',
+               dialog_background+LO(attr[3]),
+               dialog_background+HI(attr[3]));
+
+      ShowCStr(ptr_temp_screen,xstart+2,ystart+10,
+               'SONG ~S~PEED',
+               dialog_background+LO(attr[4])+LO(attr[5]),
+               dialog_background+HI(attr[4])+HI(attr[5]));
+
+      ShowC3Str(ptr_temp_screen,xstart+26,ystart+10,
+                '[ ] ~`R`ESET~',
+                dialog_background+dialog_text,
+                dialog_background+LO(attr[4])+LO(attr[5]),
+                dialog_background+HI(attr[4])+HI(attr[5]));
+
+      ShowC3Str(ptr_temp_screen,xstart+2,ystart+11,
+                '~MACRO`D`EF.~ '#7,
+                dialog_background+dialog_text,
+                dialog_background+LO(attr[17]),
+                dialog_background+HI(attr[17]));
+
+      ShowCStr(ptr_temp_screen,
+               xstart+31,ystart+7,
+               'RHYTHM: ~'+ExpStrL(Bpm2str(calc_bpm_speed(songdata.tempo,songdata.speed,mark_line))+' BPM',9,' '),
                dialog_background+dialog_text,
-               attr[4]+attr[5]);
-
-      ShowCStr(ptr_temp_screen,xstart+2,ystart+11,
-               '~MACRODEF.~ '#7,
-               dialog_background+dialog_text,
-               attr[17]);
+               dialog_background+dialog_misc_indic);
 
       If speed_update then
         ShowStr(ptr_temp_screen,xstart+27,ystart+10,
@@ -4023,18 +4152,21 @@ _jmp1:
                    ' ',
                    dialog_background+dialog_item);
 
-      ShowCStr(ptr_temp_screen,xstart+2,ystart+13,
-               '[ ] ~TRACK VOLUME LOCK~',
-               dialog_background+dialog_text,
-               attr[6]);
-      ShowCStr(ptr_temp_screen,xstart+2,ystart+14,
-               '[ ] ~TRACK PANNiNG LOCK~',
-               dialog_background+dialog_text,
-               attr[7]);
-      ShowCStr(ptr_temp_screen,xstart+2,ystart+15,
-               '[ ] ~VOLUME PEAK LOCK~',
-               dialog_background+dialog_text,
-               attr[8]);
+      ShowC3Str(ptr_temp_screen,xstart+2,ystart+13,
+                '[ ] ~TRACK VOLUME L`O`CK~',
+                dialog_background+dialog_text,
+                dialog_background+LO(attr[6]),
+                dialog_background+HI(attr[6]));
+      ShowC3Str(ptr_temp_screen,xstart+2,ystart+14,
+                '[ ] ~TRACK PANN`i`NG LOCK~',
+                dialog_background+dialog_text,
+                dialog_background+LO(attr[7]),
+                dialog_background+HI(attr[7]));
+      ShowC3Str(ptr_temp_screen,xstart+2,ystart+15,
+                '[ ] ~VOLUME PE`A`K LOCK~',
+                dialog_background+dialog_text,
+                dialog_background+LO(attr[8]),
+                dialog_background+HI(attr[8]));
 
       If lockvol then ShowStr(ptr_temp_screen,xstart+3,ystart+13,#251,dialog_background+dialog_item)
       else ShowStr(ptr_temp_screen,xstart+3,ystart+13,' ',dialog_background+dialog_item);
@@ -4045,8 +4177,10 @@ _jmp1:
       If lockVP then ShowStr(ptr_temp_screen,xstart+3,ystart+15,#251,dialog_background+dialog_item)
       else ShowStr(ptr_temp_screen,xstart+3,ystart+15,' ',dialog_background+dialog_item);
 
-      ShowStr(ptr_temp_screen,xstart+2,ystart+17,
-        'TREMOLO DEPTH',attr[9]+attr[10]);
+      ShowCStr(ptr_temp_screen,xstart+2,ystart+17,
+               'TREMO~L~O DEPTH',
+               dialog_background+LO(attr[9])+LO(attr[10]),
+               dialog_background+HI(attr[9])+HI(attr[10]));
 
       ShowStr(ptr_temp_screen,xstart+2,ystart+18,
         '( ) 1 dB',dialog_background+dialog_text);
@@ -4056,8 +4190,10 @@ _jmp1:
       If (tremolo_depth = 0) then ShowVStr(ptr_temp_screen,xstart+3,ystart+18,#11' ',dialog_background+dialog_item)
       else ShowVStr(ptr_temp_screen,xstart+3,ystart+18,' '#11,dialog_background+dialog_item);
 
-      ShowStr(ptr_temp_screen,xstart+18,ystart+17,
-        'ViBRATO DEPTH',attr[11]+attr[12]);
+      ShowCStr(ptr_temp_screen,xstart+18,ystart+17,
+               'Vi~B~RATO DEPTH',
+               dialog_background+LO(attr[11])+LO(attr[12]),
+               dialog_background+HI(attr[11])+HI(attr[12]));
 
       ShowStr(ptr_temp_screen,xstart+18,ystart+18,
         '( ) 7%',dialog_background+dialog_text);
@@ -4067,20 +4203,29 @@ _jmp1:
       If (vibrato_depth = 0) then ShowVStr(ptr_temp_screen,xstart+19,ystart+18,#11' ',dialog_background+dialog_item)
       else ShowVStr(ptr_temp_screen,xstart+19,ystart+18,' '#11,dialog_background+dialog_item);
 
-      ShowStr(ptr_temp_screen,xstart+2,ystart+21,
-        'PATTERN LENGTH',attr[13]);
-      ShowStr(ptr_temp_screen,xstart+2,ystart+22,
-        'NUMBER OF TRACKS',attr[14]);
+      ShowCStr(ptr_temp_screen,xstart+2,ystart+21,
+               'PATTERN LENGT~H~',
+               dialog_background+LO(attr[13]),
+               dialog_background+HI(attr[13]));
+      ShowCStr(ptr_temp_screen,xstart+2,ystart+22,
+               'NUMBER O~F~ TRACKS',
+               dialog_background+LO(attr[14]),
+               dialog_background+HI(attr[14]));
 
-      ShowCStr(ptr_temp_screen,xstart+2,ystart+24,
-               '[ ] ~PERCUSSiON TRACK EXTENSiON ('#160','#161','#162','#163','#164')~',
-               dialog_background+dialog_text,attr[15]);
+      ShowC3Str(ptr_temp_screen,xstart+2,ystart+24,
+                '[ ] ~PERCUSSiON TRACK E`X`TENSiON ('#160','#161','#162','#163','#164')~',
+                dialog_background+dialog_text,
+                dialog_background+LO(attr[15]),
+                dialog_background+HI(attr[15]));
 
       If percussion_mode then ShowStr(ptr_temp_screen,xstart+3,ystart+24,#251,dialog_background+dialog_item)
       else ShowStr(ptr_temp_screen,xstart+3,ystart+24,' ',dialog_background+dialog_item);
 
-      ShowCStr(ptr_temp_screen,xstart+2,ystart+25,
-        '[ ] ~VOLUME SCALiNG~',dialog_background+dialog_text,attr[16]);
+      ShowC3Str(ptr_temp_screen,xstart+2,ystart+25,
+                '[ ] ~VOL`U`ME SCALiNG~',
+                dialog_background+dialog_text,
+                dialog_background+LO(attr[16]),
+                dialog_background+HI(attr[16]));
 
       If volume_scaling then
         ShowStr(ptr_temp_screen,xstart+3,ystart+25,
@@ -4132,6 +4277,7 @@ _jmp1:
                dialog_background+dialog_text);
 
       move2screen_alt;
+      _song_variables_pos := pos;
       Case pos of
         1: begin
              is_setting.character_set := [#32..#255];
@@ -4140,11 +4286,14 @@ _jmp1:
                                dialog_input_bckg+dialog_input,
                                dialog_def_bckg+dialog_def);
              songdata.songname := truncate_string(temps);
+             _check_key_shortcuts;
              If (is_environment.keystroke = kENTER) or
                 (is_environment.keystroke = kTAB) or
                 (is_environment.keystroke = kDOWN) then pos := 2
              else If (is_environment.keystroke = kUP) then pos := 16
-                  else If (is_environment.keystroke = kShTAB) then pos := 87;
+                  else If (is_environment.keystroke = kShTAB) then
+                         If (_old_pos_lck in RANGE_LCK) then pos := RANGE_LCK_LO+3+((_old_pos_lck-RANGE_LCK_LO) DIV 4)*4
+                         else pos := RANGE_LCK_LO+3;
            end;
 
         2: begin
@@ -4154,15 +4303,20 @@ _jmp1:
                                dialog_input_bckg+dialog_input,
                                dialog_def_bckg+dialog_def);
              songdata.composer := truncate_string(temps);
+             _check_key_shortcuts;
              If (is_environment.keystroke = kENTER) or
-                (is_environment.keystroke = kTAB) then pos := 3
-             else If (is_environment.keystroke = kDOWN) then pos := 18
-                  else If (is_environment.keystroke = kUP) or
-                          (is_environment.keystroke = kShTAB) then pos := 1;
+                (is_environment.keystroke = kTAB) or
+                (is_environment.keystroke = kDOWN) then pos := 3
+             else If (is_environment.keystroke = kUP) or
+                     (is_environment.keystroke = kShTAB) then pos := 1;
            end;
 
         3: begin
-             is_setting.character_set := ['0'..'9'];
+             is_setting.character_set := DEC_NUM_CHARSET;
+             is_environment.ext_proc := _show_current_bpm_with_hints;
+             is_environment.min_num := 1;
+             is_environment.max_num := 255;
+
              Repeat
                temps := InputStr(Num2str(songdata.tempo,10),
                                  xstart+13,ystart+9,3,3,
@@ -4171,21 +4325,31 @@ _jmp1:
              until (is_environment.keystroke = kESC) or
                    ((Str2num(temps,10) > 0) and (Str2num(temps,10) < 256));
 
+             is_environment.ext_proc := NIL;
              If ((Str2num(temps,10) > 0) and (Str2num(temps,10) < 256)) then
-               songdata.tempo := Str2num(temps,10);
+               begin
+                 songdata.tempo := Str2num(temps,10);
+                 If (play_status = isStopped) then
+                   tempo := songdata.tempo;
+               end;
 
              If (calc_max_speedup(songdata.tempo) < songdata.macro_speedup) then
                songdata.macro_speedup := calc_max_speedup(songdata.tempo);
 
+             _check_key_shortcuts;
              If (is_environment.keystroke = kENTER) or
                 (is_environment.keystroke = kTAB) or
                 (is_environment.keystroke = kDOWN) then pos := 4
-             else If (is_environment.keystroke = kUP) then pos := 18+3*(max(3,songdata.nm_tracks)-1)
-                  else If (is_environment.keystroke = kShTAB) then pos := 2;
+             else If (is_environment.keystroke = kUP) or
+                     (is_environment.keystroke = kShTAB) then pos := 2;
            end;
 
         4: begin
-             is_setting.character_set := ['0'..'9','a'..'f','A'..'F'];
+             is_setting.character_set := HEX_NUM_CHARSET;
+             is_environment.ext_proc := _show_current_bpm_with_hints;
+             is_environment.min_num := 1;
+             is_environment.max_num := 255;
+
              Repeat
                temps := InputStr(Num2str(songdata.speed,16),
                                  xstart+13,ystart+10,2,2,
@@ -4194,9 +4358,15 @@ _jmp1:
              until (is_environment.keystroke = kESC) or
                    (Str2num(temps,16) in [1..255]);
 
+             is_environment.ext_proc := NIL;
              If (Str2num(temps,16) in [1..255]) then
-               songdata.speed := Str2num(temps,16);
+               begin
+                 songdata.speed := Str2num(temps,16);
+                 If (play_status = isStopped) then
+                   speed := songdata.speed;
+               end;
 
+             _check_key_shortcuts;
              If (is_environment.keystroke = kENTER) or
                 (is_environment.keystroke = kTAB) then pos := 5
              else If (is_environment.keystroke = kDOWN) then pos := 17
@@ -4208,6 +4378,7 @@ _jmp1:
              GotoXY(xstart+27,ystart+10);
              ThinCursor;
              is_environment.keystroke := getkey;
+             _check_key_shortcuts;
              Case is_environment.keystroke of
                kUP: pos := 3;
                kLEFT,kShTAB: pos := 4;
@@ -4218,7 +4389,9 @@ _jmp1:
            end;
 
        17: begin
-             is_setting.character_set := ['0'..'9'];
+             is_setting.character_set := DEC_NUM_CHARSET;
+             is_environment.min_num := 1;
+             is_environment.max_num := calc_max_speedup(songdata.tempo);
              Repeat
                temps := InputStr(Num2str(songdata.macro_speedup,10),
                                  xstart+13,ystart+11,4,4,
@@ -4232,24 +4405,24 @@ _jmp1:
                  (Str2num(temps,10) <= calc_max_speedup(songdata.tempo))) then
                songdata.macro_speedup := Str2num(temps,10);
 
+             _check_key_shortcuts;
              If (is_environment.keystroke = kENTER) or
-                (is_environment.keystroke = kTAB) then pos := 6
+                (is_environment.keystroke = kTAB) or
+                (is_environment.keystroke = kDOWN) then pos := 6
              else If (is_environment.keystroke = kUP) then pos := 4
-                  else If (is_environment.keystroke = kDOWN) then
-                         If (songdata.nm_tracks < 7) then pos := 6
-                         else pos := 36
-                       else If (is_environment.keystroke = kShTAB) then pos := 5;
+                  else If (is_environment.keystroke = kShTAB) then pos := 5;
            end;
 
         6: begin
              GotoXY(xstart+3,ystart+13);
              ThinCursor;
              is_environment.keystroke := getkey;
+             _check_key_shortcuts;
              Case is_environment.keystroke of
-               kUP,kLEFT: If (songdata.nm_tracks < 7) then pos := 17 else pos := 111;
-               kShTAB: pos := 17;
+               kLEFT: If (songdata.nm_tracks < 7) then pos := 17 else pos := 111;
+               kUP,kShTAB: pos := 17;
                kDOWN,kTAB,kENTER: pos := 7;
-               kRIGHT: pos := 78;
+               kRIGHT: pos := _old_pos_4op;
                kSPACE: lockvol := NOT lockvol;
              end;
            end;
@@ -4258,6 +4431,7 @@ _jmp1:
              GotoXY(xstart+3,ystart+14);
              ThinCursor;
              is_environment.keystroke := getkey;
+             _check_key_shortcuts;
              Case is_environment.keystroke of
                kUP,kShTAB: pos := 6;
                kLEFT: If (songdata.nm_tracks < 8) then pos := 78 else pos := 115;
@@ -4272,6 +4446,7 @@ _jmp1:
              GotoXY(xstart+3,ystart+15);
              ThinCursor;
              is_environment.keystroke := getkey;
+             _check_key_shortcuts;
              Case is_environment.keystroke of
                kUP: pos := 7;
                kLEFT: If (songdata.nm_tracks < 9) then pos := 79 else pos := 119;
@@ -4287,6 +4462,7 @@ _jmp1:
              GotoXY(xstart+3,ystart+18);
              ThinCursor;
              is_environment.keystroke := getkey;
+             _check_key_shortcuts;
              Case is_environment.keystroke of
                kUP: pos := 8;
                kLEFT: If (songdata.nm_tracks < 12) then pos := 82 else pos := 131;
@@ -4301,10 +4477,11 @@ _jmp1:
              GotoXY(xstart+3,ystart+19);
              ThinCursor;
              is_environment.keystroke := getkey;
+             _check_key_shortcuts;
              Case is_environment.keystroke of
                kUP: pos := 9;
                kShTAB: pos := 8;
-               kDOWN: If (songdata.nm_tracks < 15) then pos := 13 else pos := 60;
+               kDOWN: pos := 13;
                kTAB,kENTER: If (vibrato_depth = 0) then pos := 11 else pos := 12;
                kLEFT: If (songdata.nm_tracks < 13) then pos := 83 else pos := 135;
                kRIGHT: pos := 12;
@@ -4316,6 +4493,7 @@ _jmp1:
              GotoXY(xstart+19,ystart+18);
              ThinCursor;
              is_environment.keystroke := getkey;
+             _check_key_shortcuts;
              Case is_environment.keystroke of
                kUP: pos := 8;
                kShTAB: If (tremolo_depth = 0) then pos := 9 else pos := 10;
@@ -4331,11 +4509,11 @@ _jmp1:
              GotoXY(xstart+19,ystart+19);
              ThinCursor;
              is_environment.keystroke := getkey;
+             _check_key_shortcuts;
              Case is_environment.keystroke of
                kUP: pos := 11;
                kShTAB: pos := 9;
-               kDOWN: If (songdata.nm_tracks < 15) then pos := 13 else pos := 60;
-               kTAB,kENTER: pos := 13;
+               kDOWN,kTAB,kENTER: pos := 13;
                kLEFT: pos := 10;
                kRIGHT: If (songdata.nm_tracks < 14) then pos := 13 else pos := 57;
                kSPACE: vibrato_depth := 1;
@@ -4343,7 +4521,9 @@ _jmp1:
            end;
 
        13: begin
-             is_setting.character_set := ['0'..'9'];
+             is_setting.character_set := DEC_NUM_CHARSET;
+             is_environment.min_num := 1;
+             is_environment.max_num := 256;
              Repeat
                temps := InputStr(Num2str(songdata.patt_len,10),
                                  xstart+19,ystart+21,3,3,
@@ -4378,18 +4558,19 @@ _jmp1:
                  force_scrollbars := FALSE;
                end;
 
+             _check_key_shortcuts;
              If (is_environment.keystroke = kENTER) or
                 (is_environment.keystroke = kTAB) or
                 (is_environment.keystroke = kDOWN) then pos := 14
-             else If (is_environment.keystroke = kUP) then
-                    If (songdata.nm_tracks < 15) then pos := 10
-                    else pos := 60
+             else If (is_environment.keystroke = kUP) then pos := 12
                   else If (is_environment.keystroke = kShTAB) then
                          If (vibrato_depth = 0) then pos := 11 else pos := 12;
            end;
 
        14: begin
-             is_setting.character_set := ['0'..'9'];
+             is_setting.character_set := DEC_NUM_CHARSET;
+             is_environment.min_num := 1;
+             is_environment.max_num := 20;
              Repeat
                temps := InputStr(Num2str(songdata.nm_tracks,10),
                                  xstart+19,ystart+22,2,2,
@@ -4466,24 +4647,23 @@ _jmp1:
                  force_scrollbars := FALSE;
                end;
 
+             _check_key_shortcuts;
              If (is_environment.keystroke = kENTER) or
-                (is_environment.keystroke = kTAB) then pos := 15
-             else If (is_environment.keystroke = kDOWN) then
-                    If (songdata.nm_tracks < 18) then pos := 15
-                    else pos := 69
-                  else If (is_environment.keystroke = kUP) or
-                          (is_environment.keystroke = kShTAB) then pos := 13;
+                (is_environment.keystroke = kTAB) or
+                (is_environment.keystroke = kDOWN) then pos := 15
+             else If (is_environment.keystroke = kUP) or
+                     (is_environment.keystroke = kShTAB) then pos := 13;
            end;
 
        15: begin
              GotoXY(xstart+3,ystart+24);
              ThinCursor;
              is_environment.keystroke := getkey;
+             _check_key_shortcuts;
              Case is_environment.keystroke of
-               kUP: If (songdata.nm_tracks < 18) then pos := 14 else pos := 69;
                kLEFT: If (songdata.nm_tracks < 18) then pos := 14 else pos := 155;
                kRIGHT: If (songdata.nm_tracks < 19) then pos := 16 else pos := 72;
-               kShTAB: pos := 14;
+               kUP,kShTAB: pos := 14;
                kDOWN,kTAB,kENTER: pos := 16;
              end;
 
@@ -4521,137 +4701,153 @@ _jmp1:
              GotoXY(xstart+3,ystart+25);
              ThinCursor;
              is_environment.keystroke := getkey;
+             _check_key_shortcuts;
              Case is_environment.keystroke of
                kUP: pos := 15;
                kLEFT: If (songdata.nm_tracks < 19) then pos := 15 else pos := 159;
                kRIGHT: If (songdata.nm_tracks < 20) then pos := 1 else pos := 75;
                kShTAB: pos := 15;
                kDOWN: pos := 1;
-               kTAB,kENTER: pos := 78;
+               kTAB,kENTER: begin
+                              pos := _old_pos_4op;
+                              pos_4op := 0;
+                            end;
                kSPACE: volume_scaling := NOT volume_scaling;
              end;
            end;
 
-       18..
-       77: begin
-             GotoXY(xstart+51+(pos-17-1) MOD 3*3,ystart+6+(pos-17-1) DIV 3);
-             ThinCursor;
-             is_environment.keystroke := getkey;
-             Case is_environment.keystroke of
-               kLEFT: pos := _left_pos_pan[pos-17];
-               kRIGHT: pos := _right_pos_pan[pos-17];
-               kUP: pos := _up_pos_pan[pos-17];
-               kDOWN,kENTER:  pos := _down_pos_pan[pos-17];
-               kShTAB: pos := 78;
-               kTAB: pos := 84;
-               kSPACE: begin
-                         songdata.lock_flags[SUCC((pos-17-1) DIV 3)] :=
-                         songdata.lock_flags[SUCC((pos-17-1) DIV 3)] AND NOT 3+
-                         _pan_pos[(pos-17-1) MOD 3];
-                         panlock := TRUE;
-                       end;
-             end;
-           end;
-
-       78..
-       83: begin
-             If (pos_4op <> 0) and NOT (songdata.flag_4op OR (1 SHL PRED(pos-77)) = songdata.flag_4op) then
-               pos_4op := 0;
-             GotoXY(xstart+35+pos_4op*11,ystart+13+pos-78);
-             ThinCursor;
-             is_environment.keystroke := getkey;
-             Case is_environment.keystroke of
-               kLEFT: If (pos_4op <> 0) then pos_4op := 0
-                      else pos := _left_pos_4op[pos-77];
-               kRIGHT: If (pos_4op <> 1) and (songdata.flag_4op OR (1 SHL PRED(pos-77)) = songdata.flag_4op) then pos_4op := 1
-                       else pos := _right_pos_4op[pos-77];
-               kUP: pos := _up_pos_4op[pos-77];
-               kDOWN: pos := _down_pos_4op[pos-77];
-               kShTAB: pos := 16;
-               kTAB,kENTER: pos := 18;
-             end;
-
-             If (is_environment.keystroke = kSPACE) then
-               Case pos_4op of
-                 0: If (songdata.flag_4op OR (1 SHL PRED(pos-77)) <> songdata.flag_4op) then
-                      begin
-                        reset_player;
-                        Case (pos-77) of
-                          1: songdata.nm_tracks := min(songdata.nm_tracks,2);
-                          2: songdata.nm_tracks := min(songdata.nm_tracks,4);
-                          3: songdata.nm_tracks := min(songdata.nm_tracks,6);
-                          4: songdata.nm_tracks := min(songdata.nm_tracks,11);
-                          5: songdata.nm_tracks := min(songdata.nm_tracks,13);
-                          6: songdata.nm_tracks := min(songdata.nm_tracks,15);
-                        end;
-                        songdata.flag_4op := songdata.flag_4op OR (1 SHL PRED(pos-77));
-                        reset_player;
-                        If (play_status = isStopped) then init_buffers;
-                      end
-                    else
-                      begin
-                        reset_player;
-                        songdata.flag_4op := songdata.flag_4op AND NOT (1 SHL PRED(pos-77));
-                        reset_player;
-                        If (play_status = isStopped) then init_buffers;
+        RANGE_PAN_LO..RANGE_PAN_HI:
+          begin
+            GotoXY(xstart+51+(pos-RANGE_PAN_LO) MOD 3*3,ystart+6+(pos-RANGE_PAN_LO) DIV 3);
+            ThinCursor;
+            is_environment.keystroke := getkey;
+            _old_pos_pan := pos;
+            _check_key_shortcuts;
+            Case is_environment.keystroke of
+              kLEFT: pos := _left_pos_pan[pos-RANGE_PAN_LO+1];
+              kRIGHT: pos := _right_pos_pan[pos-RANGE_PAN_LO+1];
+              kUP: If ((pos-RANGE_PAN_LO) DIV 3 > 0) then Dec(pos,3)
+                   else pos := pos+PRED(songdata.nm_tracks)*3;
+              kDOWN:  If ((pos-RANGE_PAN_LO) DIV 3 < PRED(songdata.nm_tracks)) then Inc(pos,3)
+                      else pos := 18+(pos-RANGE_PAN_LO) MOD 3;
+              kShTAB: begin
+                        pos := _old_pos_4op;
+                        pos_4op := 0;
                       end;
+              kTAB,kENTER: pos := RANGE_LCK_LO+(pos-RANGE_PAN_LO) DIV 3*4;
+              kSPACE: begin
+                        songdata.lock_flags[SUCC((pos-RANGE_PAN_LO) DIV 3)] :=
+                        songdata.lock_flags[SUCC((pos-RANGE_PAN_LO) DIV 3)] AND NOT 3+
+                        _pan_pos[(pos-RANGE_PAN_LO) MOD 3];
+                        panlock := TRUE;
+                      end;
+            end;
+          end;
 
-                 1: begin
-                      songdata.lock_flags[_4op_main_chan[pos-77]] := songdata.lock_flags[_4op_main_chan[pos-77]] XOR $40;
-                      songdata.lock_flags[PRED(_4op_main_chan[pos-77])] := songdata.lock_flags[PRED(_4op_main_chan[pos-77])] XOR $40;
-                    end;
-               end;
+        RANGE_4OP_LO..RANGE_4OP_HI:
+          begin
+            If (pos_4op <> 0) and NOT (songdata.flag_4op OR (1 SHL PRED(pos-RANGE_4OP_LO+1)) = songdata.flag_4op) then
+              pos_4op := 0;
+            GotoXY(xstart+35+pos_4op*11,ystart+13+pos-RANGE_4OP_LO);
+            ThinCursor;
+            is_environment.keystroke := getkey;
+            _old_pos_4op := pos;
+            _check_key_shortcuts;
+            Case is_environment.keystroke of
+              kLEFT: If (pos_4op <> 0) then pos_4op := 0
+                     else pos := _left_pos_4op[pos-RANGE_4OP_LO+1];
+              kRIGHT: If (pos_4op <> 1) and (songdata.flag_4op OR (1 SHL PRED(pos-RANGE_4OP_LO+1)) = songdata.flag_4op) then pos_4op := 1
+                      else pos := _right_pos_4op[pos-RANGE_4OP_LO+1];
+              kUP: If (pos > 78) then pos := _up_pos_4op[pos-RANGE_4OP_LO+1]
+                   else pos := 17;
+              kDOWN: pos := _down_pos_4op[pos-RANGE_4OP_LO+1];
+              kShTAB: pos := 16;
+              kTAB,kENTER: If (_old_pos_pan in RANGE_PAN) then pos := _old_pos_pan
+                           else pos := 19;
+            end;
 
-             force_scrollbars := TRUE;
-             PATTERN_ORDER_page_refresh(pattord_page);
-             PATTERN_page_refresh(pattern_page);
-             force_scrollbars := FALSE;
-           end;
-
-       84..
-      163: begin
-             GotoXY(xstart+64+(pos-83-1) MOD 4*4,ystart+6+(pos-83-1) DIV 4);
-             ThinCursor;
-             is_environment.keystroke := getkey;
-             Case is_environment.keystroke of
-               kLEFT: pos := _left_pos_lck[pos-83];
-               kRIGHT: pos := _right_pos_lck[pos-83];
-               kUP: pos := _up_pos_lck[pos-83];
-               kDOWN,kENTER:  pos := _down_pos_lck[pos-83];
-               kShTAB: Case (pos-83-1) MOD 4 of
-                         0: pos := 18;
-                         1: pos := 84;
-                         2: pos := 85;
-                         3: pos := 86;
+            If (is_environment.keystroke = kSPACE) then
+              Case pos_4op of
+                0: If (songdata.flag_4op OR (1 SHL PRED(pos-RANGE_4OP_LO+1)) <> songdata.flag_4op) then
+                     begin
+                       reset_player;
+                       Case (pos-RANGE_4OP_LO+1) of
+                         1: songdata.nm_tracks := min(songdata.nm_tracks,2);
+                         2: songdata.nm_tracks := min(songdata.nm_tracks,4);
+                         3: songdata.nm_tracks := min(songdata.nm_tracks,6);
+                         4: songdata.nm_tracks := min(songdata.nm_tracks,11);
+                         5: songdata.nm_tracks := min(songdata.nm_tracks,13);
+                         6: songdata.nm_tracks := min(songdata.nm_tracks,15);
                        end;
-
-               kTAB: Case (pos-83-1) MOD 4 of
-                       0: pos := 85;
-                       1: pos := 86;
-                       2: pos := 87;
-                       3: pos := 1;
+                       songdata.flag_4op := songdata.flag_4op OR (1 SHL PRED(pos-RANGE_4OP_LO+1));
+                       reset_player;
+                       If (play_status = isStopped) then init_buffers;
+                     end
+                   else
+                     begin
+                       reset_player;
+                       songdata.flag_4op := songdata.flag_4op AND NOT (1 SHL PRED(pos-RANGE_4OP_LO+1));
+                       reset_player;
+                       If (play_status = isStopped) then init_buffers;
                      end;
 
-               kSPACE: Case (pos-83-1) MOD 4 of
-                         0: songdata.lock_flags[SUCC((pos-83-1) DIV 4)] :=
-                            songdata.lock_flags[SUCC((pos-83-1) DIV 4)] XOR 8;
-                         1: songdata.lock_flags[SUCC((pos-83-1) DIV 4)] :=
-                            songdata.lock_flags[SUCC((pos-83-1) DIV 4)] XOR 4;
+                1: begin
+                     songdata.lock_flags[_4op_main_chan[pos-RANGE_4OP_LO+1]] := songdata.lock_flags[_4op_main_chan[pos-RANGE_4OP_LO+1]] XOR $40;
+                     songdata.lock_flags[PRED(_4op_main_chan[pos-RANGE_4OP_LO+1])] := songdata.lock_flags[PRED(_4op_main_chan[pos-RANGE_4OP_LO+1])] XOR $40;
+                   end;
+              end;
 
-                         2: begin
-                              songdata.lock_flags[SUCC((pos-83-1) DIV 4)] :=
-                              songdata.lock_flags[SUCC((pos-83-1) DIV 4)] XOR $10;
-                              lockvol := TRUE;
-                            end;
+            force_scrollbars := TRUE;
+            PATTERN_ORDER_page_refresh(pattord_page);
+            PATTERN_page_refresh(pattern_page);
+            force_scrollbars := FALSE;
+          end;
 
-                         3: begin
-                              songdata.lock_flags[SUCC((pos-83-1) DIV 4)] :=
-                              songdata.lock_flags[SUCC((pos-83-1) DIV 4)] XOR $20;
-                              lockVP := TRUE;
-                            end;
-                       end;
-             end;
-           end;
+        RANGE_LCK_LO..RANGE_LCK_HI:
+          begin
+            GotoXY(xstart+64+(pos-RANGE_LCK_LO) MOD 4*4,ystart+6+(pos-RANGE_LCK_LO) DIV 4);
+            ThinCursor;
+            is_environment.keystroke := getkey;
+            _old_pos_lck := pos;
+            _check_key_shortcuts;
+            Case is_environment.keystroke of
+              kLEFT: pos := _left_pos_lck[pos-RANGE_LCK_LO+1];
+              kRIGHT: pos := _right_pos_lck[pos-RANGE_LCK_LO+1];
+              kUP: If ((pos-RANGE_LCK_LO) DIV 4 > 0) then Dec(pos,4)
+                   else pos := RANGE_LCK_LO+PRED(songdata.nm_tracks)*4+(pos-RANGE_LCK_LO) MOD 4;
+              kDOWN:  If ((pos-RANGE_LCK_LO) DIV 4 < PRED(songdata.nm_tracks)) then Inc(pos,4)
+                      else pos := RANGE_LCK_LO+(pos-RANGE_LCK_LO) MOD 4;
+              kShTAB: Case (pos-RANGE_LCK_LO) MOD 4 of
+                        0: pos := RANGE_PAN_LO+1+(pos-RANGE_LCK_LO) DIV 4*3;
+                        else Dec(pos);
+                      end;
+
+              kTAB,
+              kENTER: Case (pos-RANGE_LCK_LO) MOD 4 of
+                        3: pos := 1;
+                        else Inc(pos);
+                      end;
+
+              kSPACE: Case (pos-RANGE_LCK_LO) MOD 4 of
+                        0: songdata.lock_flags[SUCC((pos-RANGE_LCK_LO) DIV 4)] :=
+                           songdata.lock_flags[SUCC((pos-RANGE_LCK_LO) DIV 4)] XOR 8;
+                        1: songdata.lock_flags[SUCC((pos-RANGE_LCK_LO) DIV 4)] :=
+                           songdata.lock_flags[SUCC((pos-RANGE_LCK_LO) DIV 4)] XOR 4;
+
+                        2: begin
+                             songdata.lock_flags[SUCC((pos-RANGE_LCK_LO) DIV 4)] :=
+                             songdata.lock_flags[SUCC((pos-RANGE_LCK_LO) DIV 4)] XOR $10;
+                             lockvol := TRUE;
+                           end;
+
+                        3: begin
+                             songdata.lock_flags[SUCC((pos-RANGE_LCK_LO) DIV 4)] :=
+                             songdata.lock_flags[SUCC((pos-RANGE_LCK_LO) DIV 4)] XOR $20;
+                             lockVP := TRUE;
+                           end;
+                      end;
+            end;
+          end;
       end;
 _end:
 {$IFDEF GO32V2}
@@ -4661,18 +4857,19 @@ _end:
       draw_screen;
 {$ENDIF}
     until (is_environment.keystroke = kESC) or
-          (is_environment.keystroke = kF1);
+          (is_environment.keystroke = kF1) or
+          (is_environment.keystroke = kCtENTR);
 
   If (nm_track_chan > songdata.nm_tracks) then
     nm_track_chan := songdata.nm_tracks;
 
   songdata.common_flag := BYTE(speed_update)+BYTE(lockvol) SHL 1+
-                                             BYTE(lockVP)  SHL 2+
-                                             tremolo_depth SHL 3+
-                                             vibrato_depth SHL 4+
-                                             BYTE(panlock) SHL 5+
-                                             BYTE(percussion_mode) SHL 6+
-                                             BYTE(volume_scaling) SHL 7;
+                                           BYTE(lockVP)  SHL 2+
+                                           tremolo_depth SHL 3+
+                                           vibrato_depth SHL 4+
+                                           BYTE(panlock) SHL 5+
+                                           BYTE(percussion_mode) SHL 6+
+                                           BYTE(volume_scaling) SHL 7;
 
   If (Update32(songdata,SizeOf(songdata),0) <> songdata_crc) then
     module_archived := FALSE;
@@ -4694,9 +4891,20 @@ _end:
   move_to_screen_area[4] := ystart+26+1;
   move2screen;
 
+  _IRQFREQ_update_event := FALSE;
+  _show_bpm_realtime_proc := old_bpm_proc;
+  is_environment.min_num := 1;
+  is_environment.max_num := SizeOf(DWORD);
+
   If (is_environment.keystroke = kF1) then
     begin
       HELP('song_variables');
+      GOTO _jmp1;
+    end;
+
+  If (is_environment.keystroke = kCtENTR) then
+    begin
+      LINE_MARKING_SETUP;
       GOTO _jmp1;
     end;
 end;
@@ -4796,6 +5004,9 @@ begin
           stop_playing;
           tempo := init_tempo;
           speed := init_speed;
+          mark_line := 4;
+          IRQ_freq_shift := 0;
+          playback_speed_shift := 0;
           init_songdata;
           POSITIONS_reset;
           songdata_title := 'noname.';
@@ -4937,7 +5148,7 @@ _jmp1:
 
       is_setting.insert_mode := is_environment.insert_mode;
       is_environment.locate_pos := hpos;
-	  is_setting.character_set := [#32..#255];
+          is_setting.character_set := [#32..#255];
 
       p_mb^.data[vpos] := InputStr(p_mb^.data[vpos],xstart+2,
                                    ystart+1+vpos-1,MB_HSIZE,MB_HSIZE,
@@ -5273,6 +5484,53 @@ begin
        end;
 end;
 
+procedure show_progress(value,refresh_dif: Longint);
+begin
+{$IFDEF GO32V2}
+  _last_debug_str_ := _debug_str_;
+  _debug_str_ := 'ADT2EXTN.PAS:show_progress';
+{$ENDIF}
+  If (progress_num_steps = 0) or
+     (progress_value = 0) then
+    EXIT;
+  If (value <> DWORD_NULL) then
+    begin
+      If (progress_num_steps = 1) then
+        progress_new_value := Round(40/progress_value*value)
+      else progress_new_value :=
+             Round(40/progress_num_steps*PRED(progress_step)+
+                   40/progress_num_steps/progress_value*value);
+      progress_new_value := max(progress_new_value,40);
+      If (Abs(progress_new_value-progress_old_value) >= refresh_dif) or
+         (progress_new_value = 40) then
+        begin
+          progress_old_value := progress_new_value;
+          ShowStr(screen_ptr,progress_xstart+35,progress_ystart-1,
+                  ExpStrL(Num2Str(Round(100/40*progress_new_value),10)+'%',5,' '),
+                  dialog_background+dialog_hi_text);
+          ShowCStr(screen_ptr,
+                   progress_xstart,progress_ystart,
+                   '~'+ExpStrL('',progress_new_value,#219)+'~'+
+                   ExpStrL('',40-progress_new_value,#219),
+                   dialog_background+dialog_prog_bar1,
+                   dialog_background+dialog_prog_bar2);
+          realtime_gfx_poll_proc;
+          draw_screen;
+        end;
+    end
+  else begin
+         ShowStr(screen_ptr,progress_xstart+35,progress_ystart-1,
+                 ExpStrL('0%',5,' '),
+                 dialog_background+dialog_hi_text);
+         ShowStr(screen_ptr,
+                 progress_xstart,progress_ystart,
+                 ExpStrL('',40,#219),
+                 dialog_background+dialog_prog_bar1);
+         realtime_gfx_poll_proc;
+         draw_screen;
+       end;
+end;
+
 const
   last_dir:  array[1..4] of String[DIR_SIZE] = ('','','','');
   last_file: array[1..4] of String[FILENAME_SIZE] = ('FNAME:EXT','FNAME:EXT',
@@ -5555,6 +5813,9 @@ _jmp1:
            percussion_mode := BOOLEAN(songdata.common_flag SHR 6 AND 1);
            volume_scaling  := BOOLEAN(songdata.common_flag SHR 7 AND 1);
 
+           mark_line := songdata.bpm_data.rows_per_beat;
+           IRQ_freq_shift := songdata.bpm_data.tempo_finetune;
+
            current_tremolo_depth := tremolo_depth;
            current_vibrato_depth := vibrato_depth;
 
@@ -5821,6 +6082,10 @@ begin
                                              BYTE(panlock) SHL 5+
                                              BYTE(percussion_mode) SHL 6+
                                              BYTE(volume_scaling) SHL 7;
+
+  songdata.bpm_data.rows_per_beat := mark_line;
+  songdata.bpm_data.tempo_finetune := IRQ_freq_shift;
+
   header.ffver := FFVER_A2M;
   BlockWriteF(f,header,SizeOf(header),temp);
   If NOT (temp = SizeOf(header)) then
@@ -6062,6 +6327,9 @@ begin
                                      BYTE(percussion_mode) SHL 6+
                                      BYTE(volume_scaling) SHL 7;
 
+  songdata.bpm_data.rows_per_beat := mark_line;
+  songdata.bpm_data.tempo_finetune := IRQ_freq_shift;
+
   header.patln := songdata.patt_len;
   header.nmtrk := songdata.nm_tracks;
   header.mcspd := songdata.macro_speedup;
@@ -6104,8 +6372,11 @@ begin
 
   count_instruments(instruments);
   instruments := min(instruments,1);
-  Move(songdata.ins_4op_flags,buf2,SizeOf(songdata.ins_4op_flags));
-  temp2 := SizeOf(songdata.ins_4op_flags);
+  temp2 := 0;
+  Move(songdata.bpm_data,buf2[temp2],SizeOf(songdata.bpm_data));
+  Inc(temp2,SizeOf(songdata.bpm_data));
+  Move(songdata.ins_4op_flags,buf2[temp2],SizeOf(songdata.ins_4op_flags));
+  Inc(temp2,SizeOf(songdata.ins_4op_flags));
   Move(songdata.reserved_data,buf2[temp2],SizeOf(songdata.reserved_data));
   Inc(temp2,SizeOf(songdata.reserved_data));
   Move(songdata.instr_data,buf2[temp2],instruments*SizeOf(songdata.instr_data[1]));

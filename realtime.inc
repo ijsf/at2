@@ -1,3 +1,18 @@
+//  This file is part of Adlib Tracker II (AT2).
+//
+//  AT2 is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU General Public License as published by
+//  the Free Software Foundation, either version 3 of the License, or
+//  (at your option) any later version.
+//
+//  AT2 is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU General Public License for more details.
+//
+//  You should have received a copy of the GNU General Public License
+//  along with AT2.  If not, see <http://www.gnu.org/licenses/>.
+
 {
         function  _decay_bar_str(value: Byte): String;
         procedure show_bar(chan,level,xpos,from_pos,to_pos,attr: Byte);
@@ -158,6 +173,9 @@ var
 {$IFNDEF GO32V2}
   wav_indicator_attr: array[Boolean] of Byte;
 {$ENDIF}
+  playtime_attr1,playtime_attr2,
+  playtime_attr3: array[Boolean] of Byte;
+  bpm: Real;
 
 begin
 {$IFDEF GO32V2}
@@ -191,7 +209,7 @@ begin
   temps := status_layout[play_status];
   show_str(14,06,ExpStrR(temps,10,' '),
            status_background+status_play_state);
-  If (@mn_environment.ext_proc_rt <> NIL) and is_default_screen_mode then
+  If NOT (area_x1+area_y1 = 0) and (area_x1 <= 20) and (area_y1 <= 06) then
     show_str(02,01,' '+ExpStrR(temps,10,' '),
              main_background+main_border)
   else
@@ -229,17 +247,30 @@ begin
 
   show_str(17,04,byte2hex(current_line),
            status_background+status_dynamic_txt);
-  show_str(17,05,byte2hex(speed),
-           status_background+status_dynamic_txt);
 
-  If (tempo < 100) then
-    If (tempo = 18) and timer_fix then
-      show_str(20,05,byte2dec(tempo)+#5+#174,
+  If _IRQFREQ_update_event and NOT (Addr(_show_bpm_realtime_proc) <> NIL) then
+    begin
+      bpm := calc_realtime_bpm_speed(tempo,speed,mark_line);
+      show_str(03,05,'SPEED iN BPM',
+               status_background+status_static_txt);
+      show_str(17,05,ExpStrR(Bpm2str(bpm),7,' '),
                status_background+status_dynamic_txt)
-    else show_str(20,05,byte2dec(tempo)+#174+' ',
-                  status_background+status_dynamic_txt)
-  else show_str(20,05,byte2dec(tempo)+#174,
-                status_background+status_dynamic_txt);
+    end
+  else If NOT _IRQFREQ_update_event then
+         begin
+           show_str(03,05,'SPEED/TEMPO     /',
+                    status_background+status_static_txt);
+           show_str(17,05,byte2hex(speed),
+                    status_background+status_dynamic_txt);
+           If (tempo < 100) then
+             If (tempo = 18) and timer_fix then
+               show_str(20,05,byte2dec(tempo)+#5+#174,
+                        status_background+status_dynamic_txt)
+             else show_str(20,05,byte2dec(tempo)+#174+' ',
+                           status_background+status_dynamic_txt)
+           else show_str(20,05,byte2dec(tempo)+#174,
+                         status_background+status_dynamic_txt);
+         end;
 
   If (play_status <> isStopped) then
     temps := ' ~'+byte2dec(max(song_timer DIV 60,99))+':'+
@@ -247,17 +278,37 @@ begin
                  CHR(48+max(song_timer_tenths DIV 10,9))+'~ '
   else temps := ' 00~:~00~.~0 ';
 
-  show_cstr(13,07,temps,
-            status_background+status_text_dis,
-            status_background+status_border);
+  playtime_attr1[FALSE] := status_background+status_text_dis;
+  playtime_attr1[TRUE] := (status_border SHL 4) AND $0f0;
+  playtime_attr2[FALSE] := status_background+status_border;
+  playtime_attr2[TRUE] := status_background+status_border;
+  playtime_attr3[FALSE] := main_background+main_border;
+  playtime_attr3[TRUE] := (main_border SHL 4) AND $0f0;
 
-  If (@mn_environment.ext_proc_rt <> NIL) and is_default_screen_mode then
+  If _IRQFREQ_update_event then
+    begin
+      If (IRQ_freq_shift+playback_speed_shift > 0) then
+        temps := '+'+Num2str(IRQ_freq_shift+playback_speed_shift,10)+#174
+      else If (IRQ_freq_shift+playback_speed_shift < 0) then
+             temps := '-'+Num2str(Abs(IRQ_freq_shift+playback_speed_shift),10)+#174
+           else temps := Num2str(IRQ_freq+IRQ_freq_shift+playback_speed_shift,10)+#174;
+      temps := '~ ~ '+CenterStR(temps,5)+' ~ ~';
+    end;
+
+  show_cstr(13,07,temps,
+            playtime_attr1[_IRQFREQ_blink_flag AND _IRQFREQ_update_event],
+            playtime_attr2[_IRQFREQ_blink_flag AND _IRQFREQ_update_event]);
+
+  If NOT (area_x1+area_y1 = 0) and (area_x1 <= 20) and (area_y1 <= 06) then
     show_cstr(16,01,temps,
-              main_background+main_border,
+              playtime_attr3[_IRQFREQ_blink_flag AND _IRQFREQ_update_event],
               main_background+main_border)
   else
     show_str(16,01,ExpStrR('',11,#196),
              main_background+main_border);
+
+  If NOT _IRQFREQ_blink_flag AND _IRQFREQ_update_event then
+    _IRQFREQ_update_event := FALSE;
 
 {$IFDEF GO32V2}
   temp := Pos('.',songdata_title);
@@ -304,12 +355,12 @@ begin
     wav_indicator_attr[TRUE] := (main_behavior SHL 4) AND $0f0
   else wav_indicator_attr[TRUE] := main_background+main_behavior;
 
-  If is_default_screen_mode and (@mn_environment.ext_proc_rt <> NIL) then
+  If NOT (area_x1+area_y1 = 0) and (area_x1 <= 20) and (area_y1 <= 06) then
     If (sdl_opl3_emulator <> 0) then
-      show_str(13,01,'WAV',wav_indicator_attr[_generic_blink_event_flag])
+      show_str(13,01,'WAV',wav_indicator_attr[TRUE])
     else show_str(13,01,#196#196#196,main_background+main_border)
   else If (sdl_opl3_emulator = 1) then
-         show_str(08,07,'[WAV]',wav_indicator_attr[_generic_blink_event_flag])
+         show_str(08,07,'[WAV]',wav_indicator_attr[_WAVREC_blink_flag])
        else If NOT module_archived then
               show_cstr(08,07,'~['+#29+']~'#205#205,
                         status_background+status_border,
@@ -632,7 +683,7 @@ begin
                               ExpStrR(_vol_bar_str(temp),14,#205)+#202,
                               pattern_bckg+pattern_border);
                  end
-               else If (chan in _4op_tracks_hi) then
+               else If chan in _4op_tracks_hi then
                       begin
                         temp := Round(84/63*volum_bar[chan].lvl);
                         temps := _vol_bar_str(temp);

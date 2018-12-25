@@ -1,3 +1,18 @@
+//  This file is part of Adlib Tracker II (AT2).
+//
+//  AT2 is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU General Public License as published by
+//  the Free Software Foundation, either version 3 of the License, or
+//  (at your option) any later version.
+//
+//  AT2 is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU General Public License for more details.
+//
+//  You should have received a copy of the GNU General Public License
+//  along with AT2.  If not, see <http://www.gnu.org/licenses/>.
+
 unit DepackIO;
 {$S-,Q-,R-,V-,B-,X+}
 {$PACKRECORDS 1}
@@ -32,13 +47,14 @@ var
   work_mem: array[0..PRED(WORKMEM_SIZE)] of Byte;
   ibufCount,ibufSize: Word;
   input_size,output_size: Word;
-  input_ptr,output_ptr,work_ptr: Pointer;
+  input_ptr,output_ptr,work_ptr: pByte;
 
 var
-  ibuf_idx,ibuf_end,obuf_idx,obuf_src: Pointer;
+  ibuf_idx,ibuf_end,obuf_idx,obuf_src: pByte;
   ctrl_bits,ctrl_mask,
   command,count,offs: Word;
 
+{$IFNDEF CPU64}
 procedure RDC_decode;
 begin
   asm
@@ -171,6 +187,80 @@ begin
         mov     output_size,ax
   end;
 end;
+{$ELSE}
+procedure RDC_decode;
+begin
+  ctrl_mask := 0;
+  ibuf_idx := input_ptr;
+  obuf_idx := output_ptr;
+  ibuf_end := input_ptr+input_size;
+
+  While (ibuf_idx < ibuf_end) do
+    begin
+      ctrl_mask := ctrl_mask SHR 1;
+      If (ctrl_mask = 0) then
+      begin
+        ctrl_bits := pWord(ibuf_idx)^;
+        Inc(ibuf_idx,2);
+        ctrl_mask := $8000;
+      end;
+
+      If (ctrl_bits AND ctrl_mask = 0) then
+        begin
+          obuf_idx^ := ibuf_idx^;
+          Inc(ibuf_idx);
+          Inc(obuf_idx);
+          CONTINUE;
+        end;
+
+      command := (ibuf_idx^ SHR 4) AND 15;
+      count := ibuf_idx^ AND 15;
+      Inc(ibuf_idx);
+
+      Case command Of
+        // short RLE
+        0: begin
+             Inc(count,3);
+             FillChar(obuf_idx^,count,ibuf_idx^);
+             Inc(ibuf_idx);
+             Inc(obuf_idx,count);
+           end;
+        // long RLE
+        1: begin
+             Inc(count,ibuf_idx^ SHL 4);
+             Inc(ibuf_idx);
+             Inc(count,19);
+             FillChar(obuf_idx^,count,ibuf_idx^);
+             Inc(ibuf_idx);
+             Inc(obuf_idx, count);
+           end;
+        // long pattern
+        2: begin
+             offs := count+3;
+             Inc(offs,ibuf_idx^ SHL 4);
+             Inc(ibuf_idx);
+             count := ibuf_idx^;
+             Inc(ibuf_idx);
+             Inc(count,16);
+             obuf_src := obuf_idx-offs;
+             Move(obuf_src^,obuf_idx^,count);
+             Inc(obuf_idx,count);
+           end;
+        // short pattern
+        else begin
+               offs := count+3;
+               Inc(offs,ibuf_idx^ SHL 4);
+               Inc(ibuf_idx);
+               obuf_src := obuf_idx-offs;
+               Move(obuf_src^,obuf_idx^,command);
+               Inc(obuf_idx,command);
+             end;
+      end;
+    end;
+
+  output_size := obuf_idx-output_ptr;
+end;
+{$ENDIF}
 
 function RDC_decompress(var source,dest; size: Word): Word;
 begin
@@ -182,9 +272,13 @@ begin
 end;
 
 const
-  N = 4096;
-  F = 18;
-  T = 2;
+  N_BITS = 12;
+  F_BITS = 4;
+  THRESHOLD = 2;
+  N = 1 SHL N_BITS;
+  F = (1 SHL F_BITS)+THRESHOLD;
+
+{$IFNDEF CPU64}
 
 procedure GetChar; assembler;
 asm
@@ -261,7 +355,7 @@ begin
         mov     bl,ch
         mov     cl,al
         and     cl,0fh
-        add     cl,T
+        add     cl,THRESHOLD
         inc     cl
 @@4:    and     ebx,N-1
         push    esi
@@ -281,6 +375,96 @@ begin
   end;
 end;
 
+{$ELSE}
+
+procedure LZSS_decode;
+
+label
+  j1,j2,j3,j4,j5;
+
+var
+  al,cl,ch,cf: Byte;
+  dx: Word;
+  ebx,edi: Dword;
+
+procedure GetChar;
+begin
+  If (ibufCount < ibufSize) then
+    begin
+      al := input_ptr[ibufCount];
+      Inc(ibufCount);
+      cf := 0;
+    end
+  else
+    cf := 1;
+end;
+
+procedure PutChar;
+begin
+  output_ptr[output_size] := al;
+  Inc(output_size);
+end;
+
+begin
+    ibufCount := 0;                  //        mov     ibufCount,0
+    ibufSize := input_size;          //        mov     ax,input_size
+                                     //        mov     ibufSize,ax
+    output_size := 0;                //        mov     output_size,0
+    ebx := 0;                        //        xor     ebx,ebx
+    dx := 0;                         //        xor     edx,edx
+    edi := N-F;                      //        mov     edi,N-F
+j1: dx := dx SHR 1;                  //@@1:    shr     dx,1
+    If (dx SHR 8 <> 0) then          //        or      dh,dh
+      GOTO j2;                       //        jnz     @@2
+    GetChar;                         //        call    GetChar
+    If (cf = 1) then GOTO j5;        //        jc      @@5
+    dx := $ff00 OR al;               //        mov     dh,0ffh
+                                     //        mov     dl,al
+j2: If (dx AND 1 = 0) then           //@@2:    test    dx,1
+      GOTO j3;                       //        jz      @@3
+    GetChar;                         //        call    GetChar
+    If (cf = 1) then GOTO j5;        //        jc      @@5
+                                     //        push    esi
+    work_ptr[edi] := al;             //        mov     esi,work_ptr
+                                     //        add     esi,edi
+                                     //        mov     byte ptr [esi],al
+                                     //        pop     esi
+    edi := (edi+1) AND (N-1);        //        inc     edi
+                                     //        and     edi,N-1
+    PutChar;                         //        caj    PutChar
+    GOTO j1;                         //        jmp     @@1
+j3: GetChar;                         //@@3:    caj    GetChar
+    If (cf = 1) then GOTO j5;        //        jc      @@5
+    ch := al;                        //        mov     ch,al
+    GetChar;                         //        call    GetChar
+    If (cf = 1) then GOTO j5;        //        jc      @@5
+                                     //        mov     bh,al
+                                     //        mov     cl,4
+    ebx := (al SHL 4) AND $ff00;     //        shr     bh,cl
+    ebx := ebx OR ch;                //        mov     bl,ch
+                                     //        mov     cl,al
+                                     //        and     cl,0fh
+    cl := (al AND $0f)+THRESHOLD;    //        add     cl,THRESHOLD
+    Inc(cl);                         //        inc     cl
+j4: ebx := ebx AND (N-1);            //@@4:    and     ebx,N-1
+                                     //        push    esi
+    al := work_ptr[ebx];             //        mov     esi,work_ptr
+                                     //        mov     al,byte ptr [esi+ebx]
+                                     //        add     esi,edi
+    work_ptr[edi] := al;             //        mov     byte ptr [esi],al
+                                     //        pop     esi
+    Inc(edi);                        //        inc     edi
+    edi := edi AND (N-1);            //        and     edi,N-1
+    PutChar;                         //        call    PutChar
+    Inc(ebx);                        //        inc     ebx
+    Dec(cl);                         //        dec     cl
+    If (cl <> 0) then GOTO j4;       //        jnz     @@4
+    GOTO j1;                         //        jmp     @@1
+j5:                                  //@@5:
+end;
+
+{$ENDIF}
+
 function LZSS_decompress(var source,dest; size: Word): Word;
 
 begin
@@ -296,7 +480,12 @@ end;
 var
   le76,le77: Byte;
   le6a,le6c,le6e,le70,le72,le74,le78,
-  le7a_0,le7a_2,le7a_4,le7a_6,le7a_8,le82a,le82b: Word;
+  le82a,le82b: Word;
+
+const
+  le7a: array[0..4] of Word = ($1ff,$3ff,$7ff,$0fff,$1fff);
+
+{$IFNDEF CPU64}
 
 procedure NextCode; assembler;
 asm
@@ -325,14 +514,10 @@ asm
 @@2:    mov     bx,le78
         sub     bx,9
         shl     bx,1
-        and     ax,[ebx+le7a_0]
+        and     ax,le7a[ebx]
 end;
 
-function LZW_decode: Word;
-
-var
-  result: Word;
-
+procedure LZW_decode;
 begin
   asm
         xor     eax,eax
@@ -351,11 +536,6 @@ begin
         mov     le77,al
         mov     le82a,ax
         mov     le82b,ax
-        mov     le7a_0,1ffh
-        mov     le7a_2,3ffh
-        mov     le7a_4,7ffh
-        mov     le7a_6,0fffh
-        mov     le7a_8,1fffh
 @@1:    call    NextCode
         cmp     ax,101h
         jnz     @@2
@@ -429,11 +609,152 @@ begin
         inc     le78
         shl     le74,1
 @@8:    jmp     @@1
-@@9:    mov     output_size,ax
-        mov     result,ax
+@@9:    mov     eax,edi
+        sub     eax,output_ptr
+        mov     output_size,ax
   end;
-  LZW_decode := result;
 end;
+
+{$ELSE}
+
+var
+  stack: array[WORD] of Byte;
+  ax,bx,cx,sp: Word;
+  edi,td: Dword;
+
+procedure NextCode;
+
+label j2;
+
+begin
+    bx := le82a;                    //        mov     bx,le82a
+    ax := le82b;                    //        mov     ax,le82b
+    td := (ax SHL 16)+bx;           //        add     bx,le78
+    td := td + le78;                //        adc     ax,0
+    le82a := td AND $ffff;          //        xchg    bx,le82a
+    le82b := td SHR 16;             //        xchg    ax,le82b
+    cx := bx AND 7;                 //        mov     cx,bx
+    td := (ax SHL 16)+bx;           //        and     cx,7
+    td := td SHR 1;                 //        shr     ax,1
+                                    //        rcr     bx,1
+    td := td SHR 1;                 //        shr     ax,1
+                                    //        rcr     bx,1
+    td := td SHR 1;                 //        shr     ax,1
+    bx := td;                       //        rcr     bx,1
+    td := input_ptr[bx]+            //        mov     esi,input_ptr
+          (input_ptr[bx+1] shl 8)+  //        mov     ax,[ebx+esi]
+          (input_ptr[bx+2] shl 16); //        mov     dl,[ebx+esi+2]
+    If (cx = 0) then                //        or      cx,cx
+      GOTO j2;                      //        jz      @@2
+    While (cx <> 0) do
+      begin                         //@@1:    shr     dl,1
+        td := td SHR 1; Dec(cx);    //        rcr     ax,1
+      end;                          //        loop    @@1
+j2: bx := le78;                     //@@2:    mov     bx,le78
+    Dec(bx,9);                      //        sub     bx,9
+                                    //        shl     bx,1
+    ax:=td AND le7a[bx];            //        and     ax,[ebx+le7a_0]
+end;
+
+procedure LZW_decode;
+
+label
+  j1,j2,j3,j4,j5,j7,j8,j9;
+
+begin
+    sp := PRED(SizeOf(stack));
+    le72 := 0;                                 //        mov     le72,0
+    le78 := 9;                                 //        mov     le78,9
+    le70 := $102;                              //        mov     le70,102h
+    le74 := $200;                              //        mov     le74,200h
+    edi := 0;                                  //        mov     edi,output_ptr
+    ax := 0;                                   //        xor     eax,eax
+    le6a := 0;                                 //        mov     le6a,ax
+    le6c := 0;                                 //        mov     le6c,ax
+    le6e := 0;                                 //        mov     le6e,ax
+    le76 := 0;                                 //        mov     le76,al
+    le77 := 0;                                 //        mov     le77,al
+    le82a := 0;                                //        mov     le82a,ax
+    le82b := 0;                                //        mov     le82b,ax
+j1: NextCode;                                  //@@1:    call    NextCode
+    If (ax <> $101) then                       //        cmp     ax,101h
+      GOTO j2;                                 //        jnz     @@2
+    GOTO j9;                                   //        jmp     @@9
+j2: If (ax <> $100) then                       //@@2:    cmp     ax,100h
+      GOTO j3;                                 //        jnz     @@3
+    le78 := 9;                                 //        mov     le78,9
+    le74 := $200;                              //        mov     le74,200h
+    le70 := $102;                              //        mov     le70,102h
+    NextCode;                                  //        caj    NextCode
+    le6a := ax;                                //        mov     le6a,ax
+    le6c := ax;                                //        mov     le6c,ax
+    le77 := ax;                                //        mov     le77,al
+    le76 := ax;                                //        mov     le76,al
+                                               //        mov     al,le77
+    output_ptr[edi] := ax;                     //        mov     byte ptr [edi],al
+    Inc(edi);                                  //        inc     edi
+    GOTO j1;                                   //        jmp     @@1
+j3: le6a := ax;                                //@@3:    mov     le6a,ax
+    le6e := ax;                                //        mov     le6e,ax
+    If (ax < le70) then                        //        cmp     ax,le70
+      GOTO j4;                                 //        jb      @@4
+    ax := le6c;                                //        mov     ax,le6c
+    le6a := ax;                                //        mov     le6a,ax
+    ax := (ax AND $ff00)+le76;                 //        mov     al,le76
+    Dec(sp); stack[sp] := ax;                  //        push    eax
+    Inc(le72);                                 //        inc     le72
+j4: If (le6a <= $ff) then                      //@@4:    cmp     le6a,0ffh
+      GOTO j5;                                 //        jbe     @@5
+                                               //        mov     esi,work_ptr
+                                               //        mov     bx,le6a
+    bx := le6a*3;                              //        shl     bx,1
+    ax := (ax AND $ff00)+work_ptr[bx+2];       //        add     bx,le6a
+    Dec(sp);                                   //        mov     al,[ebx+esi+2]
+    stack[sp] := ax;                           //        push    eax
+    Inc(le72);                                 //        inc     le72
+    ax := work_ptr[bx]+(work_ptr[bx+1] SHL 8); //        mov     ax,[ebx+esi]
+    le6a := ax;                                //        mov     le6a,ax
+    GOTO j4;                                   //        jmp     @@4
+j5: ax := le6a;                                //@@5:    mov     ax,le6a
+    le76 := ax;                                //        mov     le76,al
+    le77 := ax;                                //        mov     le77,al
+    Dec(sp); stack[sp] := ax;                  //        push    eax
+    Inc(le72);                                 //        inc     le72
+                                               //        xor     ecx,ecx
+    cx := le72;                                //        mov     cx,le72
+    If (cx = 0) then GOTO j7;                  //        jecxz   @@7
+    While (cx <> 0) do                         //
+      begin                                    //
+        ax := stack[sp]; Inc(sp);              //@@6:    pop     eax
+        output_ptr[edi] := ax;                 //        mov     byte ptr [edi],al
+        Inc(edi); Dec(cx);                     //        inc     edi
+      end;                                     //        loop    @@6
+j7: le72 := 0;                                 //@@7:    mov     le72,0
+                                               //        push    esi
+                                               //        mov     bx,le70
+                                               //        shl     bx,1
+    bx:=le70*3;                                //        add     bx,le70
+                                               //        mov     esi,work_ptr
+                                               //        mov     al,le77
+    work_ptr[bx+2] := le77;                    //        mov     [ebx+esi+2],al
+    work_ptr[bx+1] := le6c SHR 8;              //        mov     ax,le6c
+    work_ptr[bx+0] := le6c;                    //        mov     [ebx+esi],ax
+    Inc(le70);                                 //        inc     le70
+                                               //        pop     esi
+    ax := le6e;                                //        mov     ax,le6e
+    le6c := ax;                                //        mov     le6c,ax
+    bx := le70;                                //        mov     bx,le70
+    If (bx < le74) then                        //        cmp     bx,le74
+      GOTO j8;                                 //        jl      @@8
+    If (le78 = 14) then                        //        cmp     le78,14
+      GOTO j8;                                 //        jz      @@8
+    Inc(le78);                                 //        inc     le78
+    le74 := le74 SHL 1;                        //        shl     le74,1
+j8: GOTO j1;                                   //@@8:    jmp     @@1
+j9: output_size := edi;                        //@@9:    mov     output_size,ax
+end;
+
+{$ENDIF}
 
 function LZW_decompress(var source,dest): Word;
 begin
@@ -468,7 +789,12 @@ const
 var
   leftC,rghtC: array[0..MAXCHAR] of Word;
   dad,frq: array[0..TWICEMAX] of Word;
-  index,ibitCount,ibitBuffer,obufCount: Word;
+  ibitCount,ibitBuffer,obufCount: Word;
+
+{$IFNDEF CPU64}
+
+var
+  index: Word;
 
 procedure InitTree;
 begin
@@ -886,16 +1212,222 @@ begin
   end;
 end;
 
+{$ELSE}
+
+procedure InitTree;
+
+var
+  index: Word;
+
+begin
+  For index := 2 to TWICEMAX do
+    begin
+      dad[index] := index DIV 2;
+      frq[index] := 1;
+    end;
+
+  For index := 1 to MAXCHAR do
+    begin
+      leftC[index] := 2*index;
+      rghtC[index] := 2*index+1;
+    end;
+end;
+
+procedure UpdateFreq(a,b: Word);
+begin
+  Repeat
+    frq[dad[a]] := frq[a]+frq[b];
+    a := dad[a];
+    If (a <> ROOT) then
+      If (leftC[dad[a]] = a) then b := rghtC[dad[a]]
+      else b := leftC[dad[a]];
+  until (a = ROOT);
+
+  If (frq[ROOT] = MAXFREQ) then
+    For a := 1 to TWICEMAX do frq[a] := frq[a] SHR 1;
+end;
+
+procedure UpdateModel(code: Word);
+
+var
+  a,b,c,
+  code1,code2: Word;
+
+begin
+  a := code+SUCCMAX;
+  Inc(frq[a]);
+
+  If (dad[a] <> ROOT) then
+    begin
+      code1 := dad[a];
+      If (leftC[code1] = a) then UpdateFreq(a,rghtC[code1])
+      else UpdateFreq(a,leftC[code1]);
+
+      Repeat
+        code2 := dad[code1];
+        If (leftC[code2] = code1) then b := rghtC[code2]
+        else b := leftC[code2];
+
+        If (frq[a] > frq[b]) then
+          begin
+            If (leftC[code2] = code1) then rghtC[code2] := a
+            else leftC[code2] := a;
+
+            If (leftC[code1] = a) then
+              begin
+                leftC[code1] := b;
+                c := rghtC[code1];
+              end
+            else begin
+                   rghtC[code1] := b;
+                   c := leftC[code1];
+                 end;
+
+            dad[b] := code1;
+            dad[a] := code2;
+            UpdateFreq(b,c);
+            a := b;
+          end;
+
+        a := dad[a];
+        code1 := dad[a];
+      until (code1 = ROOT);
+    end;
+end;
+
+function InputCode(bits: Word): Word;
+
+var
+  index,code: Word;
+
+begin
+  code := 0;
+  For index := 1 to bits do
+    begin
+      If (ibitCount = 0) then
+        begin
+          If (ibufCount = MAXBUF) then ibufCount := 0;
+          ibitBuffer := pWord(input_ptr)[ibufCount];
+          Inc(ibufCount);
+          ibitCount := 15;
+        end
+      else Dec(ibitCount);
+
+      If (ibitBuffer > $7fff) then code := code OR bitValue[index];
+      ibitBuffer := ibitBuffer SHL 1;
+    end;
+
+  InputCode := code;
+end;
+
+function Uncompress: Word;
+
+var
+  a: Word;
+
+begin
+  a := 1;
+  Repeat
+    If (ibitCount = 0) then
+      begin
+        If (ibufCount = MAXBUF) then ibufCount := 0;
+        ibitBuffer := pWord(input_ptr)[ibufCount];
+        Inc(ibufCount);
+        ibitCount := 15;
+      end
+    else Dec(ibitCount);
+
+    If (ibitBuffer > $7fff) then a := rghtC[a]
+    else a := leftC[a];
+    ibitBuffer := ibitBuffer SHL 1;
+  until (a > MAXCHAR);
+
+  Dec(a,SUCCMAX);
+  UpdateModel(a);
+  Uncompress := a;
+end;
+
+procedure SIXPACK_decode;
+
+var
+  i,j,k,t,c,
+  count,dist,len,index: Word;
+
+begin
+  count := 0;
+  InitTree;
+  c := Uncompress;
+
+  While (c <> TERMINATE) do
+    begin
+      If (c < 256) then
+        begin
+          output_ptr[obufCount] := c;
+          Inc(obufCount);
+          If (obufCount = MAXBUF) then
+            begin
+              output_size := MAXBUF;
+              obufCount := 0;
+            end;
+
+          work_ptr[count] := c;
+          Inc(count);
+          If (count = MAXSIZE) then count := 0;
+        end
+      else begin
+             t := c-FIRSTCODE;
+             index := t DIV CODESPERRANGE;
+             len := t+MINCOPY-index*CODESPERRANGE;
+             dist := InputCode(CopyBits[index])+len+CopyMin[index];
+
+             j := count;
+             k := count-dist;
+             If (count < dist) then Inc(k,MAXSIZE);
+
+             For i := 0 to PRED(len) do
+               begin
+                 output_ptr[obufCount] := work_ptr[k];
+                 Inc(obufCount);
+                 If (obufCount = MAXBUF) then
+                   begin
+                     output_size := MAXBUF;
+                     obufCount := 0;
+                   end;
+
+                 work_ptr[j] := work_ptr[k];
+                 Inc(j);
+                 Inc(k);
+                 If (j = MAXSIZE) then j := 0;
+                 If (k = MAXSIZE) then k := 0;
+               end;
+
+             Inc(count,len);
+             If (count >= MAXSIZE) then Dec(count,MAXSIZE);
+           end;
+
+      c := Uncompress;
+    end;
+
+  output_size := obufCount;
+end;
+
+{$ENDIF}
+
 function SIXPACK_decompress(var source,dest; size: Word): Word;
 begin
   input_ptr := @source;
   output_ptr := @dest;
   work_ptr := @work_mem;
   input_size := size;
+  ibitCount  := 0;
+  ibitBuffer := 0;
+  obufCount  := 0;
+  ibufCount  := 0;
   SIXPACK_decode;
   SIXPACK_decompress := output_size;
 end;
 
+{$IFNDEF CPU64}
 function APACK_decompress(var source,dest): Dword;
 
 var
@@ -1014,5 +1546,135 @@ begin
   end;
   APACK_decompress := result;
 end;
+{$ELSE}
+function APACK_decompress(var source,dest): Dword;
+
+var
+  temp,res,swp,eax,ecx: Dword;
+  tsi,esi,edi: pByte;
+  ncf,cf,dl: Byte;
+
+label
+  j1,j2,j3,j4,j5,j6,j7,j8,j9,j10,j11,j12,j13,
+  j14,j15,j16,j17,j18,j19,j20,j21,j22,j23,j24,j25;
+
+begin
+     esi := @source;                                  //       mov     esi,[source]
+     edi := @dest;                                    //       mov     edi,[dest]
+     temp := 0; res := 0;                             //       cld
+     dl := $80;                                       //       mov     dl,80h
+j1:  edi^ := esi^; Inc(esi); Inc(edi); Inc(res);      //@@1:   movsb
+j2:  cf := dl SHR 7; dl := dl SHL 1;                  //@@2:   add     dl,dl
+     If (dl <> 0) then GOTO j3;                       //       jnz     @@3
+     dl := esi^;                                      //       mov     dl,[esi]
+     Inc(esi);                                        //       inc     esi
+     ncf := dl SHR 7; dl := (dl SHL 1)+cf; cf := ncf; //       adc     dl,dl
+j3:  If (cf = 0) then GOTO j1;                        //@@3:   jnc     @@1
+     ecx := 0;                                        //       xor     ecx,ecx
+     cf := dl SHR 7; dl := dl SHL 1;                  //       add     dl,dl
+     If (dl <> 0) then GOTO j4;                       //       jnz     @@4
+     dl := esi^;                                      //       mov     dl,[esi]
+     Inc(esi);                                        //       inc     esi
+     ncf := dl SHR 7; dl := (dl SHL 1)+cf; cf := ncf; //       adc     dl,dl
+j4:  If (cf =0 ) then GOTO j8;                        //@@4:   jnc     @@8
+     eax := 0;                                        //       xor     eax,eax
+     cf := dl SHR 7; dl := dl SHL 1;                  //       add     dl,dl
+     If (dl <> 0) then GOTO j5;                       //       jnz     @@5
+     dl := esi^;                                      //       mov     dl,[esi]
+     Inc(esi);                                        //       inc     esi
+     ncf := dl SHR 7; dl := (dl SHL 1)+cf; cf := ncf; //       adc     dl,dl
+j5:  If (cf = 0) then GOTO j15;                       //@@5:   jnc     @@15
+     Inc(ecx);                                        //       inc     ecx
+     eax := $10;                                      //       mov     al,10h
+j6:  cf := dl SHR 7; dl := (dl SHL 1);                //@@6:   add     dl,dl
+     If (dl <> 0) then GOTO j7;                       //       jnz     @@7
+     dl := esi^;                                      //       mov     dl,[esi]
+     Inc(esi);                                        //       inc     esi
+     ncf := dl SHR 7; dl:= (dl SHL 1)+cf; cf := ncf;  //       adc     dl,dl
+j7:  ncf := (eax SHR 7) AND 1;
+     eax := (eax AND $ffffff00)+BYTE((eax SHL 1)+cf);
+     cf := ncf;                                       //@@7:   adc     al,al
+     If (cf = 0) then GOTO j6;                        //       jnc     @@6
+     If (eax <> 0) then GOTO j24;                     //       jnz     @@24
+     edi^ := eax; Inc(edi); Inc(res);                 //       stosb
+     GOTO j2;                                         //       jmp     @@2
+j8:  Inc(ecx);                                        //@@8:   inc     ecx
+j9:  cf := dl SHR 7; dl := dl SHL 1;                  //@@9:   add     dl,dl
+     If (dl <> 0) then GOTO j10;                      //       jnz     @@10
+     dl := esi^;                                      //       mov     dl,[esi]
+     Inc(esi);                                        //       inc     esi
+     ncf := dl SHR 7; dl := (dl SHL 1)+cf; cf := ncf; //       adc     dl,dl
+j10: ecx := ecx+ecx+cf;                               //@@10:  adc     ecx,ecx
+     cf := dl SHR 7; dl := dl SHL 1;                  //       add     dl,dl
+     If (dl <> 0) then GOTO j11;                      //       jnz     @@11
+     dl := esi^;                                      //       mov     dl,[esi]
+     Inc(esi);                                        //       inc     esi
+     ncf := dl SHR 7; dl := (dl SHL 1)+cf; cf := ncf; //       adc     dl,dl
+j11: If (cf = 1) then GOTO j9;                        //@@11:  jc      @@9
+     Dec(ecx);                                        //       dec     ecx
+     Dec(ecx); If (ecx <> 0) then GOTO j16;           //       loop    @@16
+     ecx := 0;                                        //       xor     ecx,ecx
+     Inc(ecx);                                        //       inc     ecx
+j12: cf := dl SHR 7; dl := dl SHL 1;                  //@@12:  add     dl,dl
+     If (dl <> 0) then GOTO j13;                      //       jnz     @@13
+     dl := esi^;                                      //       mov     dl,[esi]
+     Inc(esi);                                        //       inc     esi
+     ncf := dl SHR 7; dl := (dl SHL 1)+cf; cf := ncf; //       adc     dl,dl
+j13: ecx := ecx+ecx+cf;                               //@@13:  adc     ecx,ecx
+     cf := dl SHR 7; dl := dl SHL 1;                  //       add     dl,dl
+     If (dl <> 0) then GOTO j14;                      //       jnz     @@14
+     dl := esi^;                                      //       mov     dl,[esi]
+     Inc(esi);                                        //       inc     esi
+     ncf := dl SHR 7; dl := (dl SHL 1)+cf; cf := ncf; //       adc     dl,dl
+j14: If (cf = 1) then GOTO j12;                       //@@14:  jc      @@12
+     GOTO j23;                                        //       jmp     @@23
+j15: eax := esi^; Inc(esi);                           //@@15:  lodsb
+     cf := eax AND 1; eax := eax SHR 1;               //       shr     eax,1
+     If (eax = 0) then GOTO j25;                      //       jz      @@25
+     ecx := ecx+ecx+cf;                               //       adc     ecx,ecx
+     GOTO j20;                                        //       jmp     @@20
+j16: swp := eax; eax := ecx; ecx := swp;              //@@16:  xchg    eax,ecx
+     Dec(eax);                                        //       dec     eax
+     eax := (eax SHL 8)+esi^;                         //       shl     eax,8
+     Inc(esi);                                        //       lodsb
+     ecx := 0;                                        //       xor     ecx,ecx
+     Inc(ecx);                                        //       inc     ecx
+j17: cf := dl SHR 7; dl := dl SHL 1;                  //@@17:  add     dl,dl
+     If (dl <> 0) then GOTO j18;                      //       jnz     @@18
+     dl := esi^;                                      //       mov     dl,[esi]
+     Inc(esi);                                        //       inc     esi
+     ncf := dl SHR 7; dl := (dl SHL 1)+cf; cf := ncf; //       adc     dl,dl
+j18: ecx := ecx+ecx+cf;                               //@@18:  adc     ecx,ecx
+     cf := dl SHR 7; dl := dl SHL 1;                  //       add     dl,dl
+     If (dl <> 0) then GOTO j19;                      //       jnz     @@19
+     dl := esi^;                                      //       mov     dl,[esi]
+     Inc(esi);                                        //       inc     esi
+     ncf := dl SHR 7; dl := (dl SHL 1)+cf; cf := ncf; //       adc     dl,dl
+j19: If (cf = 1) then GOTO j17;                       //@@19:  jc      @@17
+     If (eax >= 32000) then                           //       cmp     eax,32000
+       GOTO j20;                                      //       jae     @@20
+     If (eax >= 1280) then                            //       cmp     ah,5
+       GOTO j21;                                      //       jae     @@21
+     If (eax > 127) then                              //       cmp     eax,7fh
+       GOTO j22;                                      //       ja      @@22
+j20: Inc(ecx);                                        //@@20:  inc     ecx
+j21: Inc(ecx);                                        //@@21:  inc     ecx
+j22: swp := temp; temp := eax; eax := swp;            //@@22:  xchg    eax,temp
+j23: eax := temp;                                     //@@23:  mov     eax,temp
+j24:                                                  //@@24:  push    esi
+     tsi := edi;                                      //       mov     esi,edi
+     Dec(tsi,eax);                                    //       sub     esi,eax
+     While (ecx <> 0) do                              //
+       begin                                          //
+         edi^ := tsi^;                                //       rep     movsb
+         Inc(tsi); Inc(edi); Inc(res);                //
+         Dec(ecx);                                    //
+       end;                                           //       pop     esi
+     GOTO j2;                                         //       jmp     @@2
+j25:                                                  //@@25:  sub     edi,[dest]
+                                                      //       mov     result,edi
+  APACK_decompress := res;
+end;
+{$ENDIF}
 
 end.

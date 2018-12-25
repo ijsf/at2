@@ -1,3 +1,18 @@
+//  This file is part of Adlib Tracker II (AT2).
+//
+//  AT2 is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU General Public License as published by
+//  the Free Software Foundation, either version 3 of the License, or
+//  (at your option) any later version.
+//
+//  AT2 is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU General Public License for more details.
+//
+//  You should have received a copy of the GNU General Public License
+//  along with AT2.  If not, see <http://www.gnu.org/licenses/>.
+
 {
         procedure pattern_list__proc;
         procedure PATTERN_LIST(page: Byte);
@@ -1158,7 +1173,7 @@ begin { PATTERN_ORDER_edit }
         no_trace_pattord := TRUE;
         nope := FALSE;
         is_setting.append_enabled := FALSE;
-        is_setting.character_set  := ['0'..'9','a'..'f','A'..'F'];
+        is_setting.character_set  := HEX_NUM_CHARSET;
         is_environment.locate_pos := 2;
         is_setting.terminate_keys[3] := kUp;
         is_setting.terminate_keys[4] := kDown;
@@ -1176,8 +1191,9 @@ begin { PATTERN_ORDER_edit }
              (is_environment.keystroke <> kESC) then
             begin
               If (Str2num(tstr,16) > $7f) and
-                 (Str2num(tstr,16)-$80 = vpos+4*(hpos+page-1)-1) then GOTO _end; //CONTINUE;
-              nope := TRUE;
+                 (Str2num(tstr,16)-$80 = vpos+4*(hpos+page-1)-1) then
+                is_environment.keystroke := WORD_NULL
+              else nope := TRUE;
               songdata.pattern_order[vpos+4*(hpos+page-1)-1] :=
                                      Str2num(tstr,16);
               If (is_environment.keystroke = kENTER) then

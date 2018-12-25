@@ -1,3 +1,18 @@
+//  This file is part of Adlib Tracker II (AT2).
+//
+//  AT2 is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU General Public License as published by
+//  the Free Software Foundation, either version 3 of the License, or
+//  (at your option) any later version.
+//
+//  AT2 is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU General Public License for more details.
+//
+//  You should have received a copy of the GNU General Public License
+//  along with AT2.  If not, see <http://www.gnu.org/licenses/>.
+
 {
         procedure cancel_note_recorder;
         procedure PATTERN_tabs_refresh;
@@ -131,7 +146,7 @@ begin
       If jump_mark_mode and mark_lines then attr := main_background+main_dis_stat_line
       else attr := main_background+main_hi_stat_line;
       show_cstr(22,MAX_PATTERN_ROWS+12,'NRECM~:'#30+CHR(ORD('0')+rec_correction)+'~',
-                tracking_indicator_attr[_generic_blink_event_flag],
+                tracking_indicator_attr[_NRECM_blink_flag],
                 attr);
     end
   else If debugging and (play_status = isStopped) then
@@ -718,7 +733,7 @@ begin
 
 {$IFNDEF GO32V2}
       If opl3_channel_recording_mode and opl3_record_channel[temp1] then
-        chan_attr := chanrec_indicator_attr[_generic_blink_event_flag]
+        chan_attr := chanrec_indicator_attr[_NRECM_blink_flag]
       else
 {$ENDIF}
         If track_notes and (temp1 >= track_chan_start) and
@@ -1810,7 +1825,7 @@ begin
                                          $80..$8f,$90..$9f,
                                          $a0..$a7,$b0..$b2,
                                          $c0..$cf,$d0..$df,
-                                         $e0..$e6,$f0..$ff]) then result := TRUE
+                                         $e0..$e7,$f0..$ff]) then result := TRUE
                           else If (command_typing <> 0) then
                                  begin
                                    fxdata := fxdata AND $f0;
@@ -1946,7 +1961,9 @@ begin
         chunk.note := clipboard.pattern[1][0].note;
         put_chunk(pattern,page,chan,chunk);
         If linefeed then
-          If page < PRED(songdata.patt_len) then Inc(page)
+          If page < PRED(songdata.patt_len) then
+            If linefeed then Inc(page)
+            else
           else If cycle_pattern then page := 0;
       end;
 
@@ -1956,7 +1973,9 @@ begin
         chunk.instr_def := clipboard.pattern[1][0].instr_def;
         put_chunk(pattern,page,chan,chunk);
         If linefeed then
-          If page < PRED(songdata.patt_len) then Inc(page)
+          If page < PRED(songdata.patt_len) then
+            If linefeed then Inc(page)
+            else
           else If cycle_pattern then page := 0;
       end;
 
@@ -1967,7 +1986,9 @@ begin
         chunk.effect := clipboard.pattern[1][0].effect;
         put_chunk(pattern,page,chan,chunk);
         If linefeed then
-          If page < PRED(songdata.patt_len) then Inc(page)
+          If page < PRED(songdata.patt_len) then
+            If linefeed then Inc(page)
+            else
           else If cycle_pattern then page := 0;
       end;
 
@@ -1978,7 +1999,9 @@ begin
         chunk.effect2 := clipboard.pattern[1][0].effect2;
         put_chunk(pattern,page,chan,chunk);
         If linefeed then
-          If page < PRED(songdata.patt_len) then Inc(page)
+          If page < PRED(songdata.patt_len) then
+            If linefeed then Inc(page)
+            else
           else If cycle_pattern then page := 0;
       end;
 
@@ -1988,7 +2011,9 @@ begin
           put_chunk(pattern,page,temp1,
                     clipboard.pattern[temp1][0]);
         If linefeed then
-          If page < PRED(songdata.patt_len) then Inc(page)
+          If page < PRED(songdata.patt_len) then
+            If linefeed then Inc(page)
+            else
           else If cycle_pattern then page := 0;
       end;
 
@@ -2835,7 +2860,9 @@ begin
                          else If NOT shift_pressed and NOT ctrl_pressed and
                                  NOT alt_pressed then
                                If NOT midiboard then
-                                 If page < PRED(songdata.patt_len) then Inc(page)
+                                 If page < PRED(songdata.patt_len) then
+                                   If linefeed or NOT lf_in_mboard_mode then Inc(page)
+                                   else
                                  else If cycle_pattern then page := 0;
 
       kINSERT: If NOT shift_pressed then
@@ -3011,7 +3038,9 @@ begin
                          put_chunk(pattern,pattern_page,track_chan_start+idx-1,chunk);
                          keyboard_reset_buffer;
                        end;
-                   If page < PRED(songdata.patt_len) then Inc(page)
+                   If page < PRED(songdata.patt_len) then
+                     If linefeed then Inc(page)
+                     else
                    else If cycle_pattern then page := 0;
                  end
                else begin
@@ -3019,7 +3048,9 @@ begin
                       chunk.note := BYTE_NULL;
                       chunk.instr_def := 0;
                       put_chunk(pattern,pattern_page,chan,chunk);
-                      If page < PRED(songdata.patt_len) then Inc(page)
+                      If page < PRED(songdata.patt_len) then
+                        If linefeed then Inc(page)
+                        else
                       else If cycle_pattern then page := 0;
                     end;
 
@@ -3179,7 +3210,9 @@ begin
                        end;
 
                    Case backspace_dir of
-                     1: If page < PRED(songdata.patt_len) then Inc(page)
+                     1: If page < PRED(songdata.patt_len) then
+                          If linefeed then Inc(page)
+                          else
                         else If cycle_pattern then page := 0;
                      2: If page > 0 then Dec(page)
                         else If cycle_pattern then page := PRED(songdata.patt_len);
@@ -3334,7 +3367,9 @@ begin
 
                       put_chunk(pattern,pattern_page,chan,chunk);
                       Case backspace_dir of
-                        1: If page < PRED(songdata.patt_len) then Inc(page)
+                        1: If page < PRED(songdata.patt_len) then
+                             If linefeed then Inc(page)
+                             else
                            else If cycle_pattern then page := 0;
                         2: If page > 0 then Dec(page)
                            else If cycle_pattern then page := PRED(songdata.patt_len);
@@ -4427,7 +4462,9 @@ begin
                                    debugging := FALSE;
                                  end;
 
-                               If (page < PRED(songdata.patt_len)) then Inc(page)
+                               If (page < PRED(songdata.patt_len)) then
+                                 If linefeed or NOT lf_in_mboard_mode then Inc(page)
+                                 else
                                else If cycle_pattern then page := 0;
 
                                If (left_shift_pressed or jump_mark_mode) and
@@ -4443,7 +4480,9 @@ begin
                                                end;
                                  end;
                              end
-                           else If (page < PRED(songdata.patt_len)) then Inc(page)
+                           else If (page < PRED(songdata.patt_len)) then
+                                  If linefeed or NOT lf_in_mboard_mode then Inc(page)
+                                  else
                                 else If cycle_pattern then page := 0;
                     end;
           end
@@ -4491,7 +4530,7 @@ begin
     If track_notes and (chan <> count_channel(old_hpos)) then
       cancel_note_recorder;
 
-    If (page <> old_patt_page) then
+    If (page <> old_patt_page) or (NOT linefeed and lf_in_mboard_mode) then
       For idx := 1 to 20 do ignore_note_once[idx] := FALSE;
 
     chan := count_channel(hpos);
@@ -4590,7 +4629,7 @@ begin
       begin
         nope := FALSE;
         is_setting.append_enabled := FALSE;
-        is_setting.character_set  := ['0'..'9','a'..'f','A'..'F'];
+        is_setting.character_set  := HEX_NUM_CHARSET;
         is_environment.locate_pos := 2;
         tstr := CHAR(LO(fkey));
         is_setting.terminate_keys[3] := kTAB;
@@ -5033,7 +5072,9 @@ begin
             else If nope and linefeed then
                    begin
                      If (command_typing = 2) and (count_pos(hpos) in [3,6,9]) then Dec(hpos);
-                     If page < PRED(songdata.patt_len) then Inc(page)
+                     If page < PRED(songdata.patt_len) then
+                       If linefeed then Inc(page)
+                       else
                      else If cycle_pattern then page := 0;
                    end;
           end;

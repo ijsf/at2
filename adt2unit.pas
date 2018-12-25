@@ -1,3 +1,18 @@
+//  This file is part of Adlib Tracker II (AT2).
+//
+//  AT2 is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU General Public License as published by
+//  the Free Software Foundation, either version 3 of the License, or
+//  (at your option) any later version.
+//
+//  AT2 is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU General Public License for more details.
+//
+//  You should have received a copy of the GNU General Public License
+//  along with AT2.  If not, see <http://www.gnu.org/licenses/>.
+
 unit AdT2unit;
 {$S-,Q-,R-,V-,B-,X+}
 {$PACKRECORDS 1}
@@ -9,13 +24,15 @@ const
 {$ENDIF}
 
 const
+  MIN_IRQ_FREQ = 50;
   MAX_IRQ_FREQ = 1000;
 
 {$i typcons1.inc}
 {$i typcons2.inc}
 
 const
-  IRQ_freq:          Longint   = 50;
+  IRQ_freq:          Word      = 50;
+  IRQ_freq_shift:    Integer   = 0;
   tempo:             Byte      = 50;
   speed:             Byte      = 6;
   macro_speedup:     Word      = 1;
@@ -161,6 +178,7 @@ const
   overall_volume: Byte = 63;
   global_volume: Byte = 63;
   fade_out_volume: Byte = 63;
+  playback_speed_shift: Longint = 0;
   play_status: tPLAY_STATUS = isStopped;
   chan_pos: Byte = 1;
   chpos: Byte = 1;
@@ -294,7 +312,7 @@ function  scale_volume(volume,scale_factor: Byte): Byte;
 function  _macro_speedup: Word;
 procedure calibrate_player(order,line: Byte; status_filter: Boolean;
                            line_dependent: Boolean);
-procedure update_timer(Hz: Longint);
+procedure update_timer(Hz: Word);
 procedure key_on(chan: Byte);
 procedure key_off(chan: Byte);
 procedure release_sustaining_sound(chan: Byte);
@@ -338,6 +356,8 @@ function  get_chanpos2(var data; channels,scancode: Byte): Byte;
 function  count_channel(hpos: Byte): Byte;
 function  count_pos(hpos: Byte): Byte;
 function  calc_max_speedup(tempo: Byte): Word;
+function  calc_bpm_speed(tempo,speed,rows_per_beat: Byte): Real;
+function  calc_realtime_bpm_speed(tempo,speed,rows_per_beat: Byte): Real;
 function  calc_order_jump: Integer;
 function  calc_following_order(order: Byte): Integer;
 function  is_4op_chan(chan: Byte): Boolean;
@@ -355,6 +375,7 @@ procedure output_note(note,ins,chan: Byte;
 function  min(value: Longint; minimum: Longint): Longint;
 function  max(value: Longint; maximum: Longint): Longint;
 function  asciiz_string(str: String): String;
+procedure TimerSetup(Hz: Longint);
 
 const
   block_xstart: Byte = 1;
@@ -762,9 +783,7 @@ begin
   macro_table[chan].vib_paused := FALSE;
 end;
 
-procedure TimerSetup(Hz: Longint); forward;
-
-procedure update_timer(Hz: Longint);
+procedure update_timer(Hz: Word);
 begin
 {$IFDEF GO32V2}
   _last_debug_str_ := _debug_str_;
@@ -776,7 +795,30 @@ begin
   else IRQ_freq := 250;
   While (IRQ_freq MOD (tempo*_macro_speedup) <> 0) do Inc(IRQ_freq);
   If (IRQ_freq > MAX_IRQ_FREQ) then IRQ_freq := MAX_IRQ_FREQ;
-  TimerSetup(IRQ_freq);
+  While (IRQ_freq+IRQ_freq_shift+playback_speed_shift > MAX_IRQ_FREQ) and
+        (playback_speed_shift > 0) do
+    Dec(playback_speed_shift);
+  While (IRQ_freq+IRQ_freq_shift+playback_speed_shift > MAX_IRQ_FREQ) and
+        (IRQ_freq_shift > 0) do
+    Dec(IRQ_freq_shift);
+  TimerSetup(max(IRQ_freq+IRQ_freq_shift+playback_speed_shift,MAX_IRQ_FREQ));
+end;
+
+procedure update_playback_speed(speed_shift: Longint);
+begin
+{$IFDEF GO32V2}
+  _last_debug_str_ := _debug_str_;
+  _debug_str_ := 'ADT2UNIT.PAS:update_playback_speed';
+{$ENDIF}
+  If (speed_shift = 0) then EXIT
+  else If (speed_shift > 0) and (IRQ_freq+playback_speed_shift+speed_shift > MAX_IRQ_FREQ) then
+         While (IRQ_freq+IRQ_freq_shift+playback_speed_shift+speed_shift > MAX_IRQ_FREQ) do
+           Dec(speed_shift)
+       else If (speed_shift < 0) and (IRQ_freq+IRQ_freq_shift+playback_speed_shift+speed_shift < MIN_IRQ_FREQ) then
+              While (IRQ_freq+IRQ_freq_shift+playback_speed_shift+speed_shift < MIN_IRQ_FREQ) do
+                Inc(speed_shift);
+  playback_speed_shift := playback_speed_shift+speed_shift;
+  update_timer(tempo);
 end;
 
 procedure key_on(chan: Byte);
@@ -946,7 +988,7 @@ var
 
 begin
 {$IFNDEF GO32V2}
-  // ** OPL3 emulation workaround **
+  // OPL3 EMULATION WORKAROUND
   // force muted instrument volume with missing channel ADSR data
   // when there is additionally no FM-reg macro defined for this instrument
   If is_chan_adsr_data_empty(chan) and
@@ -1499,6 +1541,86 @@ begin
                change_frequency(chan,nFreq(arpgg_table2[chan].note-1)+
                  SHORTINT(ins_parameter(event_table[chan].instr_def,12)));
              end;
+
+      If (event[chan].effect_def = ef_GlobalFSlideUp) or
+         (event[chan].effect_def = ef_GlobalFSlideDown) then
+        begin
+          If (event[chan].effect_def2 = ef_Extended) and
+             (event[chan].effect2 = ef_ex_ExtendedCmd*16+ef_ex_cmd_ForceBpmSld) then
+            begin
+              If (event[chan].effect_def = ef_GlobalFSlideUp) then
+                update_playback_speed(event[chan].effect)
+              else update_playback_speed(-event[chan].effect);
+            end
+          else
+            begin
+              Case event[chan].effect_def of
+                ef_GlobalFSlideUp:
+                  If (event[chan].effect_def2 = ef_Extended) and
+                     (event[chan].effect2 = ef_ex_ExtendedCmd2*16+ef_ex_cmd2_FTrm_XFGFS) then
+                    effect_table[chan] := concw(ef_extended2+ef_fix2+ef_ex2_FreqSlideUpXF,
+                                                event[chan].effect)
+                  else If (event[chan].effect_def2 = ef_Extended) and
+                          (event[chan].effect2 = ef_ex_ExtendedCmd2*16+ef_ex_cmd2_FVib_FGFS) then
+                         effect_table[chan] := concw(ef_FSlideUpFine,event[chan].effect)
+                       else effect_table[chan] := concw(ef_FSlideUp,event[chan].effect);
+                ef_GlobalFSlideDown:
+                  If (event[chan].effect_def2 = ef_Extended) and
+                     (event[chan].effect2 = ef_ex_ExtendedCmd2*16+ef_ex_cmd2_FTrm_XFGFS) then
+                    effect_table[chan] := concw(ef_extended2+ef_fix2+ef_ex2_FreqSlideDnXF,
+                                                event[chan].effect)
+                  else If (event[chan].effect_def2 = ef_Extended) and
+                          (event[chan].effect2 = ef_ex_ExtendedCmd2*16+ef_ex_cmd2_FVib_FGFS) then
+                         effect_table[chan] := concw(ef_FSlideDownFine,event[chan].effect)
+                       else effect_table[chan] := concw(ef_FSlideDown,event[chan].effect);
+              end;
+              For idx := chan to songdata.nm_tracks do
+                begin
+                  fslide_table[idx] := event[chan].effect;
+                  glfsld_table[idx] := effect_table[chan];
+                end;
+            end;
+        end;
+
+      If (event[chan].effect_def2 = ef_GlobalFSlideUp) or
+         (event[chan].effect_def2 = ef_GlobalFSlideDown) then
+        begin
+          If (event[chan].effect_def = ef_Extended) and
+             (event[chan].effect = ef_ex_ExtendedCmd*16+ef_ex_cmd_ForceBpmSld) then
+            begin
+              If (event[chan].effect_def2 = ef_GlobalFSlideUp) then
+                update_playback_speed(event[chan].effect2)
+              else update_playback_speed(-event[chan].effect2);
+            end
+          else
+            begin
+              Case event[chan].effect_def2 of
+                ef_GlobalFSlideUp:
+                  If (event[chan].effect_def = ef_Extended) and
+                     (event[chan].effect = ef_ex_ExtendedCmd2*16+ef_ex_cmd2_FTrm_XFGFS) then
+                    effect_table2[chan] := concw(ef_extended2+ef_fix2+ef_ex2_FreqSlideUpXF,
+                                                 event[chan].effect2)
+                  else If (event[chan].effect_def = ef_Extended) and
+                          (event[chan].effect = ef_ex_ExtendedCmd2*16+ef_ex_cmd2_FVib_FGFS) then
+                         effect_table2[chan] := concw(ef_FSlideUpFine,event[chan].effect2)
+                       else effect_table2[chan] := concw(ef_FSlideUp,event[chan].effect2);
+                ef_GlobalFSlideDown:
+                  If (event[chan].effect_def = ef_Extended) and
+                     (event[chan].effect = ef_ex_ExtendedCmd2*16+ef_ex_cmd2_FTrm_XFGFS) then
+                    effect_table2[chan] := concw(ef_extended2+ef_fix2+ef_ex2_FreqSlideDnXF,
+                                                 event[chan].effect2)
+                  else If (event[chan].effect_def = ef_Extended) and
+                          (event[chan].effect = ef_ex_ExtendedCmd2*16+ef_ex_cmd2_FVib_FGFS) then
+                         effect_table2[chan] := concw(ef_FSlideDownFine,event[chan].effect2)
+                       else effect_table2[chan] := concw(ef_FSlideDown,event[chan].effect2);
+              end;
+              For idx := chan to songdata.nm_tracks do
+                begin
+                  fslide_table2[idx] := event[chan].effect2;
+                  glfsld_table2[idx] := effect_table2[chan];
+                end;
+            end;
+        end;
     end;
 
   For chan := 1 to songdata.nm_tracks do
@@ -1590,38 +1712,6 @@ begin
         begin
           effect_table[chan] := concw(event[chan].effect_def,event[chan].effect);
           fslide_table[chan] := event[chan].effect;
-        end;
-
-      ef_GlobalFSlideUp,
-      ef_GlobalFSlideDown:
-        begin
-          If (event[chan].effect_def = ef_GlobalFSlideUp) then
-            begin
-              If (event[chan].effect_def2 = ef_Extended) and
-                 (event[chan].effect2 = ef_ex_ExtendedCmd2*16+ef_ex_cmd2_FTrm_XFGFS) then
-                effect_table[chan] := concw(ef_extended2+ef_fix2+ef_ex2_FreqSlideUpXF,
-                                            event[chan].effect)
-              else If (event[chan].effect_def2 = ef_Extended) and
-                      (event[chan].effect2 = ef_ex_ExtendedCmd2*16+ef_ex_cmd2_FVib_FGFS) then
-                     effect_table[chan] := concw(ef_FSlideUpFine,event[chan].effect)
-                   else effect_table[chan] := concw(ef_FSlideUp,event[chan].effect);
-            end
-          else
-            begin
-              If (event[chan].effect_def2 = ef_Extended) and
-                 (event[chan].effect2 = ef_ex_ExtendedCmd2*16+ef_ex_cmd2_FTrm_XFGFS) then
-                effect_table[chan] := concw(ef_extended2+ef_fix2+ef_ex2_FreqSlideDnXF,
-                                            event[chan].effect)
-              else If (event[chan].effect_def2 = ef_Extended) and
-                      (event[chan].effect2 = ef_ex_ExtendedCmd2*16+ef_ex_cmd2_FVib_FGFS) then
-                     effect_table[chan] := concw(ef_FSlideDownFine,event[chan].effect)
-                   else effect_table[chan] := concw(ef_FSlideDown,event[chan].effect);
-            end;
-          For idx := chan to songdata.nm_tracks do
-            begin
-              fslide_table[idx] := event[chan].effect;
-              glfsld_table[idx] := effect_table[chan];
-            end;
         end;
 
       ef_FSlideUpVSlide,
@@ -2201,38 +2291,6 @@ begin
           fslide_table2[chan] := event[chan].effect2;
         end;
 
-      ef_GlobalFSlideUp,
-      ef_GlobalFSlideDown:
-        begin
-          If (event[chan].effect_def2 = ef_GlobalFSlideUp) then
-            begin
-              If (event[chan].effect_def = ef_Extended) and
-                 (event[chan].effect = ef_ex_ExtendedCmd2*16+ef_ex_cmd2_FTrm_XFGFS) then
-                effect_table2[chan] := concw(ef_extended2+ef_fix2+ef_ex2_FreqSlideUpXF,
-                                             event[chan].effect2)
-              else If (event[chan].effect_def = ef_Extended) and
-                      (event[chan].effect = ef_ex_ExtendedCmd2*16+ef_ex_cmd2_FVib_FGFS) then
-                     effect_table2[chan] := concw(ef_FSlideUpFine,event[chan].effect2)
-                   else effect_table2[chan] := concw(ef_FSlideUp,event[chan].effect2);
-            end
-          else
-            begin
-              If (event[chan].effect_def = ef_Extended) and
-                 (event[chan].effect = ef_ex_ExtendedCmd2*16+ef_ex_cmd2_FTrm_XFGFS) then
-                effect_table2[chan] := concw(ef_extended2+ef_fix2+ef_ex2_FreqSlideDnXF,
-                                             event[chan].effect2)
-              else If (event[chan].effect_def = ef_Extended) and
-                      (event[chan].effect = ef_ex_ExtendedCmd2*16+ef_ex_cmd2_FVib_FGFS) then
-                     effect_table2[chan] := concw(ef_FSlideDownFine,event[chan].effect2)
-                   else effect_table2[chan] := concw(ef_FSlideDown,event[chan].effect2);
-            end;
-          For idx := chan to songdata.nm_tracks do
-            begin
-              fslide_table2[idx] := event[chan].effect2;
-              glfsld_table2[idx] := effect_table2[chan];
-            end;
-        end;
-
       ef_FSlideUpVSlide,
       ef_FSlUpVSlF,
       ef_FSlideDownVSlide,
@@ -2756,6 +2814,7 @@ begin
 
       If (event[chan].effect_def+event[chan].effect = 0) then
         If (glfsld_table[chan] = 0) then effect_table[chan] := 0
+        else
       else begin
              event_table[chan].effect_def := event[chan].effect_def;
              event_table[chan].effect := event[chan].effect;
@@ -2763,6 +2822,7 @@ begin
 
       If (event[chan].effect_def2+event[chan].effect2 = 0) then
         If (glfsld_table2[chan] = 0) then effect_table2[chan] := 0
+        else
       else begin
              event_table[chan].effect_def2 := event[chan].effect_def2;
              event_table[chan].effect2 := event[chan].effect2;
@@ -2925,6 +2985,7 @@ var
   freq: Word;
 
 begin
+  If (freq_table[chan] AND $1fff = 0) then EXIT;
   freq := calc_freq_shift_up(freq_table[chan] AND $1fff,slide);
   If (freq <= limit) then change_frequency(chan,freq)
   else change_frequency(chan,limit);
@@ -2936,6 +2997,7 @@ var
   freq: Word;
 
 begin
+  If (freq_table[chan] AND $1fff = 0) then EXIT;
   freq := calc_freq_shift_down(freq_table[chan] AND $1fff,slide);
   If (freq >= limit) then change_frequency(chan,freq)
   else change_frequency(chan,limit);
@@ -4463,13 +4525,15 @@ begin
 
   _debug_str_bak_ := _debug_str_;
   _debug_str_ := 'ADT2UNIT.PAS:timer_poll_proc';
-  If (timer_determinator < IRQ_freq) then Inc(timer_determinator)
+  If (timer_determinator < IRQ_freq+IRQ_freq_shift+playback_speed_shift) then
+    Inc(timer_determinator)
   else begin
          timer_determinator := 1;
          Inc(seconds_counter);
        end;
 
-  If (timer_det2 < IRQ_freq DIV 100) then Inc(timer_det2)
+  If (timer_det2 < (IRQ_freq+IRQ_freq_shift+playback_speed_shift) DIV 100) then
+    Inc(timer_det2)
   else begin
          timer_det2 := 1;
          Inc(hundereds_counter);
@@ -4487,7 +4551,7 @@ begin
          reset_gfx_ticks := FALSE;
        end;
 
-  scroll_ticks := scroll_ticks+1/IRQ_freq*100;
+  scroll_ticks := scroll_ticks+1/(IRQ_freq+IRQ_freq_shift+playback_speed_shift)*100;
   If (scroll_ticks > 0.2) then
     begin
       If ctrl_tab_pressed then
@@ -4554,9 +4618,35 @@ begin
        (@macro_preview_indic_proc <> NIL)) and
       (blink_ticks > 50)) or (blink_ticks > 50) then
     begin
-      _generic_blink_event_flag := NOT _generic_blink_event_flag;
       blink_flag := NOT blink_flag;
       blink_ticks := 0;
+    end;
+
+  Inc(_WAVREC_blink_ticks);
+  If ((fast_forward or rewind or (space_pressed and debugging) or
+       (@macro_preview_indic_proc <> NIL)) and
+      (_WAVREC_blink_ticks > 50)) or (_WAVREC_blink_ticks > 50) then
+    begin
+      _WAVREC_blink_flag := NOT _WAVREC_blink_flag;
+      _WAVREC_blink_ticks := 0;
+    end;
+
+  Inc(_NRECM_blink_ticks);
+  If ((fast_forward or rewind or (space_pressed and debugging) or
+       (@macro_preview_indic_proc <> NIL)) and
+      (_NRECM_blink_ticks > 50)) or (_NRECM_blink_ticks > 50) then
+    begin
+      _NRECM_blink_flag := NOT _NRECM_blink_flag;
+      _NRECM_blink_ticks := 0;
+    end;
+
+  Inc(_IRQFREQ_blink_ticks);
+  If ((fast_forward or rewind or (space_pressed and debugging) or
+       (@macro_preview_indic_proc <> NIL)) and
+      (_IRQFREQ_blink_ticks > 25)) or (_IRQFREQ_blink_ticks > 25) then
+    begin
+      _IRQFREQ_blink_flag := NOT _IRQFREQ_blink_flag;
+      _IRQFREQ_blink_ticks := 0;
     end;
 
   If ctrl_tab_pressed then
@@ -4582,13 +4672,13 @@ begin
      NOT (debugging and (NOT space_pressed or no_step_debugging)) then
     begin
 {$IFDEF GO32V2}
-      song_timer_tenths := Trunc(100/IRQ_freq*timer_temp);
+      song_timer_tenths := Trunc(100/(IRQ_freq+IRQ_freq_shift+playback_speed_shift)*timer_temp);
 {$ELSE}
       song_timer_tenths := timer_temp;
 {$ENDIF}
       If (song_timer_tenths >= 100) then song_timer_tenths := 0;
 {$IFDEF GO32V2}
-      If (timer_temp < IRQ_freq) then Inc(timer_temp)
+      If (timer_temp < IRQ_freq+IRQ_freq_shift+playback_speed_shift) then Inc(timer_temp)
 {$ELSE}
       If (timer_temp < 100) then Inc(timer_temp)
 {$ENDIF}
@@ -4924,11 +5014,11 @@ begin
         fast_forward := FALSE;
         Inc(ticklooper);
         If (ticklooper >= IRQ_freq DIV tempo) then
-              ticklooper := 0;
+          ticklooper := 0;
 
         Inc(macro_ticklooper);
         If (macro_ticklooper >= IRQ_freq DIV (tempo*macro_speedup)) then
-              macro_ticklooper := 0;
+          macro_ticklooper := 0;
 
         If (previous_order <> current_order) then
           begin
@@ -5199,6 +5289,7 @@ begin
   ticks := 0;
   tick0 := 0;
   fade_out_volume := 63;
+  playback_speed_shift := 0;
   replay_forbidden := FALSE;
   play_status := isPlaying;
   speed := songdata.speed;
@@ -5243,6 +5334,7 @@ begin
   timer_temp := 0;
   song_timer_tenths := 0;
   time_playing := 0;
+  playback_speed_shift := 0;
 
   skip_macro_flag := TRUE;
   For temp := 1 to 20 do reset_chan_data(temp);
@@ -5622,6 +5714,24 @@ begin
   calc_max_speedup := PRED(result);
 end;
 
+function calc_bpm_speed(tempo,speed,rows_per_beat: Byte): Real;
+begin
+{$IFDEF GO32V2}
+  calc_bpm_speed := tempo*60/speed/rows_per_beat*(1+(IRQ_freq_shift/IRQ_freq)-0.02);
+{$ELSE}
+  calc_bpm_speed := tempo*60/speed/rows_per_beat*(1+(IRQ_freq_shift/IRQ_freq)-sdl_timer_slowdown/100);
+{$ENDIF}
+end;
+
+function calc_realtime_bpm_speed(tempo,speed,rows_per_beat: Byte): Real;
+begin
+{$IFDEF GO32V2}
+  calc_realtime_bpm_speed := tempo*60/speed/rows_per_beat*(1+((IRQ_freq_shift+playback_speed_shift)/IRQ_freq)-0.02);
+{$ELSE}
+  calc_realtime_bpm_speed := tempo*60/speed/rows_per_beat*(1+((IRQ_freq_shift+playback_speed_shift)/IRQ_freq)-sdl_timer_slowdown/100);
+{$ENDIF}
+end;
+
 procedure init_old_songdata;
 
 var
@@ -5667,8 +5777,12 @@ begin
   songdata.speed := speed;
   songdata.macro_speedup := init_macro_speedup;
   speed_update := FALSE;
+  IRQ_freq_shift := 0;
+  playback_speed_shift := 0;
   songdata.patt_len := patt_len;
   songdata.nm_tracks := nm_tracks;
+  songdata.bpm_data.rows_per_beat := mark_line;
+  songdata.bpm_data.tempo_finetune := IRQ_freq_shift;
   lockvol := FALSE;
   panlock := FALSE;
   lockVP  := FALSE;
@@ -5956,16 +6070,31 @@ begin
   If _realtime_gfx_no_update then EXIT;
 
 {$IFDEF GO32V2}
+
   If NOT reset_gfx_ticks and
-     (gfx_ticks > (IRQ_freq DIV 100)*SUCC(fps_down_factor)) then
+     (gfx_ticks > ((IRQ_freq+IRQ_freq_shift+playback_speed_shift) DIV 100)*SUCC(fps_down_factor)) then
     begin
       Inc(blink_ticks);
       If (blink_ticks = 40) then
         begin
-          _generic_blink_event_flag := NOT _generic_blink_event_flag;
           blink_flag := NOT blink_flag;
           blink_ticks := 0;
         end;
+
+      Inc(_NRECM_blink_ticks);
+      If (_NRECM_blink_ticks = 40) then
+        begin
+          _NRECM_blink_flag := NOT _NRECM_blink_flag;
+          _NRECM_blink_ticks := 0;
+        end;
+
+      Inc(_IRQFREQ_blink_ticks);
+      If (_IRQFREQ_blink_ticks = 20) then
+        begin
+          _IRQFREQ_blink_flag := NOT _IRQFREQ_blink_flag;
+          _IRQFREQ_blink_ticks := 0;
+        end;
+
 {$ENDIF}
 
       If blink_flag then
@@ -5986,6 +6115,9 @@ begin
           If (@macro_preview_indic_proc <> NIL) then
             macro_preview_indic_proc(2);
         end;
+
+      If (Addr(_show_bpm_realtime_proc) <> NIL) then
+        _show_bpm_realtime_proc;
 
       decay_bars_refresh;
 {$IFNDEF GO32V2}

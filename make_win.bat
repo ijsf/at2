@@ -3,7 +3,7 @@ set homedir=%~d1\AT2_Compilation_Environment
 cd %homedir%\git
 set ERR_RESULT=???
 rem -------------------------------------
-set VERSION=2.4.23
+set VERSION=2.4.24
 rem -------------------------------------
 echo.
 echo ************************************

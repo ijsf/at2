@@ -1,3 +1,18 @@
+//  This file is part of Adlib Tracker II (AT2).
+//
+//  AT2 is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU General Public License as published by
+//  the Free Software Foundation, either version 3 of the License, or
+//  (at your option) any later version.
+//
+//  AT2 is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU General Public License for more details.
+//
+//  You should have received a copy of the GNU General Public License
+//  along with AT2.  If not, see <http://www.gnu.org/licenses/>.
+
 unit AdT2sys;
 {$S-,Q-,R-,V-,B-,X+}
 {$PACKRECORDS 1}
@@ -15,9 +30,20 @@ const
   scroll_ticks: Real = 0;
   mouse_active: Boolean = FALSE;
 {$ENDIF}
-  blink_ticks: Longint = 0;
+{$IFNDEF GO32V2}
+  _WAVREC_blink_flag: Boolean = FALSE;
+  _WAVREC_blink_ticks: Longint = 0;
+{$ENDIF}
+  _NRECM_blink_flag: Boolean = FALSE;
+  _NRECM_blink_ticks: Longint = 0;
+  _IRQ_freq_shift_reset_flag: Boolean = FALSE;
+  _IRQFREQ_update_event: Boolean = FALSE;
+  _IRQFREQ_blink_flag: Boolean = FALSE;
+  _IRQFREQ_blink_ticks: Longint = 0;
   blink_flag: Boolean = FALSE;
+  blink_ticks: Longint = 0;
   cursor_sync: Boolean = FALSE;
+  _show_bpm_realtime_proc: procedure = NIL;
 {$IFDEF GO32V2}
   _draw_screen_without_vsync: Boolean = FALSE;
   _draw_screen_without_delay: Boolean = FALSE;
@@ -30,7 +56,6 @@ const
 {$ENDIF}
   _cursor_blink_factor: Longint = 13;
   _cursor_blink_pending_frames: Longint = 0;
-  _generic_blink_event_flag: Boolean = FALSE;
   _realtime_gfx_no_update: Boolean = FALSE;
 {$IFDEF GO32V2}
   _screen_refresh_pending_frames: Longint = 0;
@@ -143,7 +168,7 @@ const
   V_CHR = 30;
 
 var
-  bit_pos,bit_mask: Byte;
+  byte_pos,bit_mask: Byte;
   cur_pos_lo,cur_pos_hi: Byte;
   cur_shape: Word;
   pos_x,pos_y: Byte;
@@ -176,14 +201,14 @@ begin
         movzx   eax,MAX_ROWS
         mov     loop_idx1,eax
         mov     pos_y,1
-@@2:    mov     bit_pos,0
+@@2:    mov     byte_pos,0
         mov     loop_idx2,16
 @@3:    mov     loop_idx3,H_CHR
         mov     pos_x,1
 @@4:    movzx   eax,byte ptr [ebx]
         mov     edx,16
         mul     edx
-        movzx   edx,bit_pos
+        movzx   edx,byte_pos
         add     eax,edx
         mov     dl,[esi+eax]
         mov     bit_mask,dl
@@ -206,9 +231,9 @@ begin
         cmp     al,cur_pos_lo
         jnz     @@7
         mov     ax,cur_shape
-        cmp     bit_pos,ah
+        cmp     byte_pos,ah
         jb      @@7
-        cmp     bit_pos,al
+        cmp     byte_pos,al
         ja      @@7
         movzx   eax,pos_y
         cmp     al,cur_pos_hi
@@ -241,7 +266,7 @@ begin
         sub     skip_ofs,H_RES-H_CHR*8
         jmp     @@11
 @@10:   add     edi,H_RES-H_CHR*8
-@@11:   inc     bit_pos
+@@11:   inc     byte_pos
         dec     loop_idx2
         cmp     loop_idx2,0
         ja      @@3
@@ -263,7 +288,7 @@ const
   V_CHR = 36;
 
 var
-  bit_pos,bit_mask: Byte;
+  byte_pos,bit_mask: Byte;
   cur_pos_lo,cur_pos_hi: Byte;
   cur_shape: Word;
   pos_x,pos_y: Byte;
@@ -293,14 +318,14 @@ begin
         movzx   eax,MAX_ROWS
         mov     loop_idx1,eax
         mov     pos_y,1
-@@2:    mov     bit_pos,0
+@@2:    mov     byte_pos,0
         mov     loop_idx2,16
 @@3:    mov     loop_idx3,H_CHR
         mov     pos_x,1
 @@4:    movzx   eax,byte ptr [ebx]
         mov     edx,16
         mul     edx
-        movzx   edx,bit_pos
+        movzx   edx,byte_pos
         add     eax,edx
         mov     dl,[esi+eax]
         mov     bit_mask,dl
@@ -323,9 +348,9 @@ begin
         cmp     al,cur_pos_lo
         jnz     @@7
         mov     ax,cur_shape
-        cmp     bit_pos,ah
+        cmp     byte_pos,ah
         jb      @@7
-        cmp     bit_pos,al
+        cmp     byte_pos,al
         ja      @@7
         movzx   eax,pos_y
         cmp     al,cur_pos_hi
@@ -358,7 +383,7 @@ begin
         sub     skip_ofs,H_RES-H_CHR*8
         jmp     @@11
 @@10:   add     edi,H_RES-H_CHR*8
-@@11:   inc     bit_pos
+@@11:   inc     byte_pos
         dec     loop_idx2
         cmp     loop_idx2,0
         ja      @@3
@@ -380,7 +405,7 @@ const
   V_CHR = 46;
 
 var
-  bit_pos,bit_mask: Byte;
+  byte_pos,bit_mask: Byte;
   cur_pos_lo,cur_pos_hi: Byte;
   cur_shape: Word;
   pos_x,pos_y: Byte;
@@ -408,14 +433,14 @@ begin
         movzx   eax,MAX_ROWS
         mov     loop_idx1,eax
         mov     pos_y,1
-@@2:    mov     bit_pos,0
+@@2:    mov     byte_pos,0
         mov     loop_idx2,16
 @@3:    mov     loop_idx3,H_CHR
         mov     pos_x,1
 @@4:    movzx   eax,byte ptr [ebx]
         mov     edx,16
         mul     edx
-        movzx   edx,bit_pos
+        movzx   edx,byte_pos
         add     eax,edx
         mov     dl,[esi+eax]
         mov     bit_mask,dl
@@ -434,9 +459,9 @@ begin
         cmp     al,cur_pos_lo
         jnz     @@6
         mov     ax,cur_shape
-        cmp     bit_pos,ah
+        cmp     byte_pos,ah
         jb      @@6
-        cmp     bit_pos,al
+        cmp     byte_pos,al
         ja      @@6
         movzx   eax,pos_y
         cmp     al,cur_pos_hi
@@ -465,7 +490,7 @@ begin
         ja      @@4
         sub     ebx,H_CHR*2
         add     edi,H_RES-H_CHR*8
-        inc     bit_pos
+        inc     byte_pos
         dec     loop_idx2
         cmp     loop_idx2,0
         ja      @@3
@@ -572,10 +597,12 @@ end;
 
 {$ELSE}
 
+{$IFNDEF CPU64}
+
 procedure draw_SDL_screen_720x480;
 
 var
-   bit_pos,bit_mask: Byte;
+   byte_pos,bit_mask: Byte;
    pos_x,pos_y: Byte;
    skip: Dword;
    framebuffer_end: Dword;
@@ -598,14 +625,14 @@ begin
         mov     skip,eax
         mov     loop_idx1,40
         mov     pos_y,1
-@@2:    mov     bit_pos,0
+@@2:    mov     byte_pos,0
         mov     loop_idx2,16
 @@3:    mov     loop_idx3,90
         mov     pos_x,1
 @@4:    movzx   eax,byte ptr [ebx]
         mov     edx,16
         mul     edx
-        movzx   edx,bit_pos
+        movzx   edx,byte_pos
         add     eax,edx
         mov     dl,[esi+eax]
         mov     bit_mask,dl
@@ -624,9 +651,9 @@ begin
         cmp     al,byte ptr [virtual_cur_pos]
         jnz     @@7
         mov     ax,word ptr [virtual_cur_shape]
-        cmp     bit_pos,ah
+        cmp     byte_pos,ah
         jb      @@7
-        cmp     bit_pos,al
+        cmp     byte_pos,al
         ja      @@7
         movzx   eax,pos_y
         cmp     al,byte ptr [virtual_cur_pos+1]
@@ -660,7 +687,7 @@ begin
         cmp     loop_idx3,0
         ja      @@4
         sub     ebx,90*2
-        inc     bit_pos
+        inc     byte_pos
         dec     loop_idx2
         cmp     loop_idx2,0
         ja      @@3
@@ -675,7 +702,7 @@ end;
 procedure draw_SDL_screen_960x800;
 
 var
-   bit_pos,bit_mask: Byte;
+   byte_pos,bit_mask: Byte;
    pos_x,pos_y: Byte;
    loop_idx1,loop_idx2,loop_idx3,
    loop_idx4: Dword;
@@ -692,14 +719,14 @@ begin
         mov     ebx,dword ptr [screen_ptr]
         mov     loop_idx1,50
         mov     pos_y,1
-@@2:    mov     bit_pos,0
+@@2:    mov     byte_pos,0
         mov     loop_idx2,16
 @@3:    mov     loop_idx3,120
         mov     pos_x,1
 @@4:    movzx   eax,byte ptr [ebx]
         mov     edx,16
         mul     edx
-        movzx   edx,bit_pos
+        movzx   edx,byte_pos
         add     eax,edx
         mov     dl,[esi+eax]
         mov     bit_mask,dl
@@ -714,9 +741,9 @@ begin
         cmp     al,byte ptr [virtual_cur_pos]
         jnz     @@7
         mov     ax,word ptr [virtual_cur_shape]
-        cmp     bit_pos,ah
+        cmp     byte_pos,ah
         jb      @@7
-        cmp     bit_pos,al
+        cmp     byte_pos,al
         ja      @@7
         movzx   eax,pos_y
         cmp     al,byte ptr [virtual_cur_pos+1]
@@ -744,7 +771,7 @@ begin
         cmp     loop_idx3,0
         ja      @@4
         sub     ebx,120*2
-        inc     bit_pos
+        inc     byte_pos
         dec     loop_idx2
         cmp     loop_idx2,0
         ja      @@3
@@ -759,7 +786,7 @@ end;
 procedure draw_SDL_screen_1440x960;
 
 var
-   bit_pos,bit_mask: Byte;
+   byte_pos,bit_mask: Byte;
    pos_x,pos_y: Byte;
    loop_idx1,loop_idx2,loop_idx3,
    loop_idx4: Dword;
@@ -776,14 +803,14 @@ begin
         mov     ebx,dword ptr [screen_ptr]
         mov     loop_idx1,60
         mov     pos_y,1
-@@2:    mov     bit_pos,0
+@@2:    mov     byte_pos,0
         mov     loop_idx2,16
 @@3:    mov     loop_idx3,180
         mov     pos_x,1
 @@4:    movzx   eax,byte ptr [ebx]
         mov     edx,16
         mul     edx
-        movzx   edx,bit_pos
+        movzx   edx,byte_pos
         add     eax,edx
         mov     dl,[esi+eax]
         mov     bit_mask,dl
@@ -798,9 +825,9 @@ begin
         cmp     al,byte ptr [virtual_cur_pos]
         jnz     @@7
         mov     ax,word ptr [virtual_cur_shape]
-        cmp     bit_pos,ah
+        cmp     byte_pos,ah
         jb      @@7
-        cmp     bit_pos,al
+        cmp     byte_pos,al
         ja      @@7
         movzx   eax,pos_y
         cmp     al,byte ptr [virtual_cur_pos+1]
@@ -828,7 +855,7 @@ begin
         cmp     loop_idx3,0
         ja      @@4
         sub     ebx,180*2
-        inc     bit_pos
+        inc     byte_pos
         dec     loop_idx2
         cmp     loop_idx2,0
         ja      @@3
@@ -840,6 +867,65 @@ begin
   end;
 end;
 
+{$ELSE}
+
+type
+  pBYTE_ARRAY = ^tBYTE_ARRAY;
+  tBYTE_ARRAY = array[0..PRED(SizeOf(DWORD))] of Byte;
+
+procedure draw_SDL_screen(columns,rows: Byte; scr_res: Dword);
+
+var
+   bit_pos,bit_mask,byte_pos: Byte;
+   pos_x,pos_y,chr,attr: Byte;
+   s_ofs,v_ofs,skip: Dword;
+
+begin
+  If (_cursor_blink_pending_frames >= _cursor_blink_factor) then
+    begin
+      _cursor_blink_pending_frames := 0;
+      cursor_sync := NOT cursor_sync;
+    end;
+
+  s_ofs := 0;
+  v_ofs := 0;
+  skip := virtual_screen__first_row;
+
+  For pos_y := 1 to rows do
+    begin
+      For byte_pos := 0 to 15 do
+        begin
+          For pos_x := 1 to columns do
+            begin
+              chr := pBYTE_ARRAY(screen_ptr)^[s_ofs];
+              attr := pBYTE_ARRAY(screen_ptr)^[s_ofs+1];
+              bit_mask := pBYTE_ARRAY(Addr(font8x16))^[chr*16+byte_pos];
+              For bit_pos := 8 downto 1 do
+                begin
+                  If (skip <> 0) then
+                    Dec(skip)
+                  else If (v_ofs < scr_res) then
+                         begin
+                           If cursor_sync and
+                              (pos_x = LO(virtual_cur_pos)) and (pos_y = HI(virtual_cur_pos)) and
+                              (byte_pos >= HI(virtual_cur_shape)) and (byte_pos <= LO(virtual_cur_shape)) then
+                             pBYTE_ARRAY(_FrameBuffer)^[v_ofs] := attr AND $0f
+                           else If (bit_mask OR (1 SHL bit_pos) SHR 1 = bit_mask) then
+                                  pBYTE_ARRAY(_FrameBuffer)^[v_ofs] := attr AND $0f
+                                else pBYTE_ARRAY(_FrameBuffer)^[v_ofs] := attr SHR 4;
+                           Inc(v_ofs);
+                         end;
+                end;
+              Inc(s_ofs,2);
+            end;
+          Dec(s_ofs,columns*2);
+        end;
+      Inc(s_ofs,columns*2);
+    end;
+end;
+
+{$ENDIF}
+
 procedure draw_screen_proc;
 begin
   _update_sdl_screen := FALSE;
@@ -847,11 +933,20 @@ begin
   else ScreenMemCopy(screen_ptr,ptr_screen_mirror);
   _cursor_blink_factor := ROUND(13/100*sdl_frame_rate);
   _update_sdl_screen := TRUE;
+
+{$IFNDEF CPU64}
   Case program_screen_mode of
     0: draw_SDL_screen_720x480;
     1: draw_SDL_screen_960x800;
     2: draw_SDL_screen_1440x960;
   end;
+{$ELSE}
+  Case program_screen_mode of
+    0: draw_SDL_screen(90,40,720*480);
+    1: draw_SDL_screen(120,50,960*800);
+    2: draw_SDL_screen(180,60,1440*960);
+  end;
+{$ENDIF}
 end;
 
 procedure vid_Init;

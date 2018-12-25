@@ -6,7 +6,7 @@
                                   ÄÂÄ       ÄÄ                              ³
                              /´DLiB³R/´CK3R ³³ G3                           ³
                               ³       ³     ÄÄ                              ³
-                                        2.3.56                              ³
+                                        2.3.57                              ³
                                                                             ³
                                                                             ³
                                                                             ³
@@ -103,7 +103,7 @@
  ş supports 4-op instruments, melodic and percussion instruments
 
  ş supports up to 255 instruments, 128 patterns, 128 order list entries,
-   89 effect commands, and 21 extended commands
+   89 effect commands, and 22 extended commands
 
  ş features 2 effect columns, instrument macro-definitions,
    MPU-401 MIDI slave mode (SYNTH!)
@@ -118,7 +118,7 @@
  N2/ FMK (FM-Kingtracker)
      HSC (HSC AdLib Composer / HSC-Tracker)
      MTK (MPU-401 tr’kkîr)
-     RAD (Reality AdLib Tracker)
+     RAD (Reality AdLib Tracker)       {ver.1}
  N3/ S3M (Scream Tracker 3.x)
  N4/ SAT (Surprise! AdLib Tracker)     {ver.1,5,6}
  N4/ SA2 (Surprise! AdLib Tracker 2.0) {ver.8,9}
@@ -318,6 +318,8 @@
  ^Enter                   Play next pattern according to order
  ^Left  (Up)              Rewind current pattern (with Trace)
  ^Right (Down)            Fast-Forward (with Trace)
+ [Ctrl]{Shift} ,        Change playback speed up/down {fine stepping}
+ [Ctrl]{Shift} []       Reset playback speed {default speed}
  [Ctrl][Alt] <hold down>  Temporarily show Debug Info window
  ^B                       Toggle Message Board window
  ^D                       Toggle Debug Info window
@@ -505,7 +507,7 @@
 
  Up,Down,Left,Right,
  Home,End                 Cursor navigation
- [Alt] <section hotkey>~  Jump to section
+ [Alt] <section hotkey>   Jump to section
  Tab                      Jump to next setting
  [Shift] Tab              Jump to previous setting
  +,- (PgUp,PgDn)          Adjust value
@@ -720,9 +722,11 @@
  ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
 
  Up,Down,Left,Right       Cursor navigation
+ [Alt] <section hotkey>   Jump to section
  Tab (Enter)              Jump to next variable field
  [Shift] Tab              Jump to previous variable field
  Space                    Select item
+ ^Enter                   Setup rows per beat for BPM calculation
  Esc                      Return to Pattern Editor or Pattern Order
 
 
@@ -769,6 +773,7 @@
  ^K                       Delete characters to end
  ^Y                       Delete string
  Insert                   Toggle input and overwrite mode
+ +,-                      Increment/decrement decimal or hexadecimal value
 
 
  III/19. MiDiBOARD KEY REFERENCE
@@ -1127,9 +1132,9 @@
               ÈÍÍÍÍ¼
 
 
- (*) REMARK ABOUT 4OP CONNECTiONS
- Please note, that since order of 4OP tracks in the tracker is 2) and 1),
- these non-symmetrical instrument connections are reversed.',
+ (*) REMARK ABOUT 4OP CONNECTiONS FM/AM AND AM/FM
+ Please note, that since order of 4OP channels (hardware-wise) is 2) and 1),
+ these two instrument connections are swapped.',
  The preview diagrams in the Instrument Editor window show actual order,
  but here this information is kept in conformity with the official
  Yamaha YMF262 data specification to prevent further confusion.
@@ -1781,6 +1786,16 @@
  4OP tracks, setting of 'Volume Scaling' is ignored (it is mandatory ON).
 
 
+ [ZE7] PERFORM BPM SLiDE USiNG >xx AND <xx COMMANDS
+ ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+
+ As description invokes, this command is intended to be used together
+ with >xx and <xx effect commands.
+ It will cause the playback speed shift up/down by certain of Hz,
+ depending on the speed of slide.
+ Parameter 'xx' gives speed of slide.
+
+
  [ZF0] RELEASE SUSTAiNiNG SOUND
  ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
 
@@ -2236,7 +2251,7 @@
  ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
 
  This command slides the frequency up (pitch bend) in all tracks
- from current to last, if it’s not overridden by using another
+ from current to last, if it's not overridden by using another
  '<xx' or '>xx' in second effect column or one of succeeding tracks.
  Parameter 'xx' gives speed of slide.
 
@@ -2803,4 +2818,4 @@
 ù                                                                           ³
 À-ÄÄÄÄÄÄÄÄÄÄÄÄÄ--ùú           úù-ÄÄÄÄÄÄÄ--ùú                 úù-ÄÄÄÄÄÄÄÄÄÄÄ-Ù
 
- This document was last updated on July 24, 2016.
+ This document was last updated on December 24, 2018.

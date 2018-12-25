@@ -1,3 +1,18 @@
+//  This file is part of Adlib Tracker II (AT2).
+//
+//  AT2 is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU General Public License as published by
+//  the Free Software Foundation, either version 3 of the License, or
+//  (at your option) any later version.
+//
+//  AT2 is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU General Public License for more details.
+//
+//  You should have received a copy of the GNU General Public License
+//  along with AT2.  If not, see <http://www.gnu.org/licenses/>.
+
 unit DialogIO;
 {$S-,Q-,R-,V-,B-,X+}
 {$PACKRECORDS 1}
@@ -11,6 +26,7 @@ uses
 {$IFDEF WINDOWS}
   WINDOWS,
 {$ENDIF}
+  StrUtils,
   AdT2unit,AdT2sys,AdT2keyb,AdT2text,
   TxtScrIO,StringIO,ParserIO;
 
@@ -68,9 +84,13 @@ type
                   end;
 type
   tDIALOG_ENVIRONMENT = Record
-                          keystroke: Word;
-                          context:   String;
-                          input_str: String;
+                          keystroke:   Word;
+                          context:     String;
+                          input_str:   String;
+                          xpos,ypos:   Byte;
+                          xsize,ysize: Byte;
+                          cur_item:    Byte;
+                          ext_proc:    procedure;
                         end;
 type
   tMENU_ENVIRONMENT = Record
@@ -226,26 +246,6 @@ var
   dbuf:   tDBUFFR;
   mbuf:   tMBUFFR;
   contxt: String;
-
-function OutStr(var queue; len: Byte; order: Word): String;
-begin
-  asm
-        mov     esi,[queue]
-        mov     edi,@RESULT
-        xor     ecx,ecx
-        mov     cx,order
-        dec     ecx
-        xor     eax,eax
-        mov     al,len
-        inc     eax
-        jecxz   @@2
-@@1:    add     esi,eax
-        loop    @@1
-@@2:    xor     ecx,ecx
-        mov     cl,al
-        rep     movsb
-  end;
-end;
 
 function OutKey(str: String): Char;
 
@@ -430,6 +430,11 @@ begin
         dl_setting.frame_type);
   fr_setting.shadow_enabled := old_fr_shadow_enabled;
 
+  dl_environment.xpos  := xstart;
+  dl_environment.ypos  := ystart;
+  dl_environment.xsize := max+3;
+  dl_environment.ysize := num+2;
+
   pos := 1;
   contxt := DietStr(dl_environment.context,max+
     (Length(dl_environment.context)-CStrLen(dl_environment.context)));
@@ -489,6 +494,8 @@ begin
       If (keys = '$') then EXIT;
 
       Repeat
+        dl_environment.cur_item := idx2;
+        If (Addr(dl_environment.ext_proc) <> NIL) then dl_environment.ext_proc;
         key := getkey;
         If LookUpKey(key,dl_setting.terminate_keys,50) then qflg := TRUE;
 
@@ -581,7 +588,7 @@ begin
   _debug_str_ := 'DIALOGIO.PAS:pstr';
 {$ENDIF}
   If (item <= mnu_count) then
-    Move(POINTER(Ptr(0,Ofs(mnu_data^)+(item-1)*(mnu_len+1)))^,temp,mnu_len+1)
+    Move(pBYTE(mnu_data)[(item-1)*(mnu_len+1)],temp,mnu_len+1)
   else temp := '';
   If NOT solid then pstr := ExpStrR(temp,mnu_len-2,' ')
   else pstr := ExpStrR(temp,mnu_len,' ');
@@ -595,7 +602,7 @@ var
 
 begin
   If (item <= mnu_count) then
-    Move(POINTER(Ptr(0,Ofs(mnu_data^)+(item-1)*(mnu_len+1)))^,temp,mnu_len+1)
+    Move(pBYTE(mnu_data)[(item-1)*(mnu_len+1)],temp,mnu_len+1)
   else temp := '';
   If NOT solid then temp := ExpStrR(temp,mnu_len-2,' ')
   else temp := ExpStrR(temp,mnu_len,' ');
@@ -621,8 +628,7 @@ begin
   _debug_str_ := 'DIALOGIO.PAS:pdes';
 {$ENDIF}
   If (mn_environment.descr <> NIL) and (item <= mnu_count) then
-    Move(POINTER(Ptr(0,Ofs(mn_environment.descr^)+
-      (item-1)*(mn_environment.descr_len+1)))^,temp,mn_environment.descr_len+1)
+    Move(pBYTE(mn_environment.descr)[(item-1)*(mn_environment.descr_len+1)],temp,mn_environment.descr_len+1)
   else temp := '';
   pdes := ExpStrR(temp,mn_environment.descr_len,' ');
 end;
@@ -849,7 +855,7 @@ begin
         temp := Copy(item_str,1,mn_environment.edit_pos)+temp
       else
         temp := CutStr(temp);
-      Move(temp,POINTER(Ptr(0,Ofs(data)+(item-1)*(len+1)))^,len+1);
+      Move(temp,pBYTE(data)[(item-1)*(len+1)],len+1);
     end;
 
   mn_environment.do_refresh := TRUE;
@@ -973,8 +979,7 @@ begin { Menu }
 
       mn_setting.topic_len := mnu_topic_len;
       mnu_topic_len := 0;
-      mnu_data := POINTER(Ofs(data)+SUCC(len)*mn_setting.topic_len);
-
+      mnu_data := mnu_data+SUCC(len)*mn_setting.topic_len;
       Inc(mnu_y,mn_setting.topic_len);
       Dec(len2,mn_setting.topic_len);
       Dec(mnu_len2,mn_setting.topic_len);
@@ -1170,7 +1175,7 @@ begin
   okay := FALSE;
   For temp := 1 to count do
 {$IFDEF GO32V2}
-    If SameName(Upper(masks[temp]),Upper(filename)) then
+    If IsWild(Upper(filename),Upper(masks[temp]),FALSE) then
 {$ELSE}
     If (Upper(Copy(masks[temp],3,Length(masks[temp]))) = Upper(ExtOnly(filename))) then
 {$ENDIF}
@@ -1977,6 +1982,12 @@ begin
   mn_environment.ysize       := 0;
   mn_environment.desc_pos    := 0;
   mn_environment.hlight_chrs := 0;
+  dl_environment.xpos        := 0;
+  dl_environment.ypos        := 0;
+  dl_environment.xsize       := 0;
+  dl_environment.ysize       := 0;
+  dl_environment.cur_item    := 1;
+  dl_environment.ext_proc    := NIL;
 
   For index := 1 to 26 do
     path[index] := CHR(ORD('a')+PRED(index))+':'+PATHSEP;

@@ -1,3 +1,18 @@
+//  This file is part of Adlib Tracker II (AT2).
+//
+//  AT2 is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU General Public License as published by
+//  the Free Software Foundation, either version 3 of the License, or
+//  (at your option) any later version.
+//
+//  AT2 is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU General Public License for more details.
+//
+//  You should have received a copy of the GNU General Public License
+//  along with AT2.  If not, see <http://www.gnu.org/licenses/>.
+
 unit AdT2ext4;
 {$S-,Q-,R-,V-,B-,X+}
 {$PACKRECORDS 1}
@@ -695,6 +710,8 @@ begin
   _str1 := temp_str;
 end;
 
+{$IFNDEF CPU64}
+
 function _str2(str: String; len: Byte): String;
 begin
   asm
@@ -726,6 +743,30 @@ begin
         stosb
   end;
 end;
+
+{$ELSE}
+
+function _str2(str: String; len: Byte): String;
+
+var
+  idx,len2: Byte;
+  result: String;
+
+begin
+  result := '';
+  len2 := 0;
+  idx := 0;
+  While (idx < Length(str)) and (len > len2) do
+    begin
+      Inc(idx);
+      If (str[idx] <> '`') then
+        Inc(len2);
+      result := result+str[idx];
+    end;
+  _str2 := result;
+end;
+
+{$ENDIF}
 
 procedure fmreg_page_refresh(xpos,ypos: Byte; page: Word);
 
@@ -1351,10 +1392,11 @@ begin
   If (refresh_flag AND flag_FMREG = flag_FMREG) then
     If NOT arp_vib_mode then
       begin
-        HScrollBar(ptr_temp_screen,xstart+29+_add_prev_size*2,ystart+21+window_area_inc_y,
-                   13,35,fmreg_hpos,WORD_NULL,
-                   macro_scrbar_bckg+macro_scrbar_text,
-                   macro_scrbar_bckg+macro_scrbar_mark);
+        If (window_area_inc_x <> 26) then
+          HScrollBar(ptr_temp_screen,xstart+29+_add_prev_size*2,ystart+21+window_area_inc_y,
+                     13,35,fmreg_hpos,WORD_NULL,
+                     macro_scrbar_bckg+macro_scrbar_text,
+                     macro_scrbar_bckg+macro_scrbar_mark);
         VScrollBar(ptr_temp_screen,xstart+43+_add_prev_size*2,ystart+12,
                    9+window_area_inc_y,255,fmreg_page,WORD_NULL,
                    macro_scrbar_bckg+macro_scrbar_text,
@@ -2495,9 +2537,21 @@ begin { MACRO_EDITOR }
        window_area_inc_y := 0;
     end
   else begin
-         If NOT arp_vib_mode then window_area_inc_x := 10
-         else window_area_inc_x := 0;
-         window_area_inc_y := 10;
+{$IFDEF GO32V2}
+         If arp_vib_mode then window_area_inc_x := 0
+         else If (MaxCol > 81+26+4) then
+                window_area_inc_x := 26
+              else window_area_inc_x := 10;
+         If (MaxLn > 24+20+3) then
+           window_area_inc_y := 20
+         else window_area_inc_y := 10;
+{$ELSE}
+         If arp_vib_mode then window_area_inc_x := 0
+         else window_area_inc_x := 26;
+         If (program_screen_mode = 1) then
+           window_area_inc_y := 10
+         else window_area_inc_y := 20;
+{$ENDIF}
        end;
 
   call_pickup_proc := FALSE;
@@ -2686,7 +2740,7 @@ _jmp2:
     (* FM_op_table table - pos: 1..7 *)
 
         1: begin
-             is_setting.character_set := ['0'..'9','a'..'f','A'..'F'];
+             is_setting.character_set := HEX_NUM_CHARSET;
              Repeat
                temps := InputStr(byte2hex(songdata.instr_macros[instr].length),
                                  xstart+17,ystart+4,
@@ -2736,7 +2790,7 @@ _jmp2:
            end;
 
         2: begin
-             is_setting.character_set := ['0'..'9','a'..'f','A'..'F'];
+             is_setting.character_set := HEX_NUM_CHARSET;
              Repeat
                temps := InputStr(byte2hex(songdata.instr_macros[instr].loop_begin),
                                  xstart+17,ystart+5,
@@ -2790,7 +2844,7 @@ _jmp2:
            end;
 
         3: begin
-             is_setting.character_set := ['0'..'9','a'..'f','A'..'F'];
+             is_setting.character_set := HEX_NUM_CHARSET;
              Repeat
                temps := InputStr(byte2hex(songdata.instr_macros[instr].loop_length),
                                  xstart+17,ystart+6,
@@ -2844,7 +2898,7 @@ _jmp2:
            end;
 
         4: begin
-             is_setting.character_set := ['0'..'9','a'..'f','A'..'F'];
+             is_setting.character_set := HEX_NUM_CHARSET;
              Repeat
                temps := InputStr(byte2hex(songdata.instr_macros[instr].keyoff_pos),
                                  xstart+17,ystart+7,
@@ -2909,7 +2963,7 @@ _jmp2:
            end;
 
         5: begin
-             is_setting.character_set := ['0'..'9','a'..'f','A'..'F'];
+             is_setting.character_set := HEX_NUM_CHARSET;
              Repeat
                temps := InputStr(byte2hex(ptr_arpeggio_table),
                                  xstart+17,ystart+8,
@@ -2948,7 +3002,7 @@ _jmp2:
            end;
 
         6: begin
-             is_setting.character_set := ['0'..'9','a'..'f','A'..'F'];
+             is_setting.character_set := HEX_NUM_CHARSET;
              Repeat
                temps := InputStr(byte2hex(ptr_vibrato_table),
                                  xstart+17,ystart+9,
@@ -3919,7 +3973,7 @@ _jmp2:
     (* Arpeggio table - pos: 8..13 *)
 
         8: begin
-             is_setting.character_set := ['0'..'9','a'..'f','A'..'F'];
+             is_setting.character_set := HEX_NUM_CHARSET;
              Repeat
                temps := InputStr(byte2hex(songdata.macro_table[ptr_arpeggio_table].
                                           arpeggio.length),
@@ -3975,7 +4029,7 @@ _jmp2:
            end;
 
         9: begin
-             is_setting.character_set := ['0'..'9','a'..'f','A'..'F'];
+             is_setting.character_set := HEX_NUM_CHARSET;
              Repeat
                temps := InputStr(byte2hex(songdata.macro_table[ptr_arpeggio_table].
                                           arpeggio.speed),
@@ -4029,7 +4083,7 @@ _jmp2:
            end;
 
        10: begin
-             is_setting.character_set := ['0'..'9','a'..'f','A'..'F'];
+             is_setting.character_set := HEX_NUM_CHARSET;
              Repeat
                temps := InputStr(byte2hex(songdata.macro_table[ptr_arpeggio_table].
                                           arpeggio.loop_begin),
@@ -4097,7 +4151,7 @@ _jmp2:
            end;
 
        11: begin
-             is_setting.character_set := ['0'..'9','a'..'f','A'..'F'];
+             is_setting.character_set := HEX_NUM_CHARSET;
              Repeat
                temps := InputStr(byte2hex(songdata.macro_table[ptr_arpeggio_table].
                                           arpeggio.loop_length),
@@ -4165,7 +4219,7 @@ _jmp2:
            end;
 
        12: begin
-             is_setting.character_set := ['0'..'9','a'..'f','A'..'F'];
+             is_setting.character_set := HEX_NUM_CHARSET;
              Repeat
                temps := InputStr(byte2hex(songdata.macro_table[ptr_arpeggio_table].
                                            arpeggio.keyoff_pos),
@@ -4407,7 +4461,7 @@ _jmp2:
                      begin
                        nope := FALSE;
                        If (tstr[1] = '+') then Delete(tstr,1,1);
-                       If (tstr[1] in ['0'..'9']) and
+                       If (tstr[1] in DEC_NUM_CHARSET) and
                           (Str2num(tstr,10) >= 0) and (Str2num(tstr,10) <= 96) then
                          begin
                            nope := TRUE;
@@ -4515,7 +4569,7 @@ _jmp2:
                        nope := FALSE;
                        If (tstr[1] = '+') then Delete(tstr,1,1);
 
-                       If (tstr[1] in ['0'..'9']) and
+                       If (tstr[1] in DEC_NUM_CHARSET) and
                           (Str2num(tstr,10) >= 0) and (Str2num(tstr,10) <= 96) then
                          begin
                            nope := TRUE;
@@ -4569,7 +4623,7 @@ _jmp2:
     (* Vibrato table - pos: 14..20 *)
 
        14: begin
-             is_setting.character_set := ['0'..'9','a'..'f','A'..'F'];
+             is_setting.character_set := HEX_NUM_CHARSET;
              Repeat
                temps := InputStr(byte2hex(songdata.macro_table[ptr_vibrato_table].
                                           vibrato.length),
@@ -4627,7 +4681,7 @@ _jmp2:
            end;
 
        15: begin
-             is_setting.character_set := ['0'..'9','a'..'f','A'..'F'];
+             is_setting.character_set := HEX_NUM_CHARSET;
              Repeat
                temps := InputStr(byte2hex(songdata.macro_table[ptr_vibrato_table].
                                           vibrato.speed),
@@ -4681,7 +4735,7 @@ _jmp2:
            end;
 
        16: begin
-             is_setting.character_set := ['0'..'9','a'..'f','A'..'F'];
+             is_setting.character_set := HEX_NUM_CHARSET;
              Repeat
                temps := InputStr(byte2hex(songdata.macro_table[ptr_vibrato_table].
                                           vibrato.delay),
@@ -4735,7 +4789,7 @@ _jmp2:
            end;
 
        17: begin
-             is_setting.character_set := ['0'..'9','a'..'f','A'..'F'];
+             is_setting.character_set := HEX_NUM_CHARSET;
              Repeat
                temps := InputStr(byte2hex(songdata.macro_table[ptr_vibrato_table].
                                           vibrato.loop_begin),
@@ -4803,7 +4857,7 @@ _jmp2:
            end;
 
        18: begin
-             is_setting.character_set := ['0'..'9','a'..'f','A'..'F'];
+             is_setting.character_set := HEX_NUM_CHARSET;
              Repeat
                temps := InputStr(byte2hex(songdata.macro_table[ptr_vibrato_table].
                                           vibrato.loop_length),
@@ -4871,7 +4925,7 @@ _jmp2:
            end;
 
        19: begin
-             is_setting.character_set := ['0'..'9','a'..'f','A'..'F'];
+             is_setting.character_set := HEX_NUM_CHARSET;
              Repeat
                temps := InputStr(byte2hex(songdata.macro_table[ptr_vibrato_table].
                                           vibrato.keyoff_pos),

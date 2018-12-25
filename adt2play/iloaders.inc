@@ -1,5 +1,19 @@
+//  This file is part of Adlib Tracker II (AT2).
+//
+//  AT2 is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU General Public License as published by
+//  the Free Software Foundation, either version 3 of the License, or
+//  (at your option) any later version.
+//
+//  AT2 is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU General Public License for more details.
+//
+//  You should have received a copy of the GNU General Public License
+//  along with AT2.  If not, see <http://www.gnu.org/licenses/>.
+
 {
-        function  check_byte(var data; _byte: Byte; size: Longint): Boolean;
         procedure import_old_a2m_event1(patt,line,chan: Byte; old_chunk: tOLD_CHUNK;
                                         processing_whole_song: Boolean);
         procedure replace_old_adsr(patterns: Byte);
@@ -46,27 +60,6 @@
                                     var out1,out2: Byte);
         procedure sa2_file_loader;
 }
-
-function check_byte(var data; _byte: Byte; size: Longint): Boolean;
-
-var
-  result: Boolean;
-
-begin
-  asm
-        mov     edi,[data]
-        mov     ecx,size
-        jecxz   @@1
-        mov     al,_byte
-        repnz   scasb
-        jnz     @@1
-        mov     result,TRUE
-        jmp     @@2
-@@1:    mov     result,FALSE
-@@2:
-  end;
-  check_byte := result;
-end;
 
 var
   adsr_carrier: array[1..9] of Boolean;
@@ -983,7 +976,7 @@ begin
           end;
     end;
 
-  If (header.ffver in [12,FFVER_A2M]) then
+  If (header.ffver in [12,13,FFVER_A2M]) then
     begin
       crc := DWORD_NULL;
       BlockReadF(f,buf1,header.b0len,temp);
@@ -1986,7 +1979,7 @@ begin
           end;
     end;
 
-  If (header.ffver in [12,FFVER_A2T]) then
+  If (header.ffver in [12,13,FFVER_A2T]) then
     begin
       crc := DWORD_NULL;
       BlockReadF(f,buf1,header.b0len,temp);
@@ -2082,15 +2075,17 @@ begin
         end;
 
       temp := LZH_decompress(buf1,buf2,header.b0len);
-      Move(buf2,songdata.ins_4op_flags,SizeOf(songdata.ins_4op_flags));
-      Move(buf2[SizeOf(songdata.ins_4op_flags)],songdata.reserved_data,
-           SizeOf(songdata.reserved_data));
-      Move(buf2[SizeOf(songdata.ins_4op_flags)],songdata.reserved_data,
-           SizeOf(songdata.reserved_data));
-      Move(buf2[SizeOf(songdata.ins_4op_flags)+
-                SizeOf(songdata.reserved_data)],songdata.instr_data,
-                temp-SizeOf(songdata.ins_4op_flags)+
-                     SizeOf(songdata.reserved_data));
+      temp2 := 0;
+      If (header.ffver = FFVER_A2T) then
+        begin
+          Move(buf2[temp2],songdata.bpm_data,SizeOf(songdata.bpm_data));
+          Inc(temp2,SizeOf(songdata.bpm_data));
+        end;
+      Move(buf2[temp2],songdata.ins_4op_flags,SizeOf(songdata.ins_4op_flags));
+      Inc(temp2,SizeOf(songdata.ins_4op_flags));
+      Move(buf2[temp2],songdata.reserved_data,SizeOf(songdata.reserved_data));
+      Inc(temp2,SizeOf(songdata.reserved_data));
+      Move(buf2[temp2],songdata.instr_data,temp-temp2);
       If (header.b1len <> 0) then
         begin
           BlockReadF(f,buf1,header.b1len,temp);
@@ -3055,7 +3050,7 @@ begin
 
       FillChar(buf1,SizeOf(buf1),0);
       Move(hash_buffer,headr2,SizeOf(headr2));
-      Move(POINTER(Ofs(hash_buffer)+SizeOf(headr2))^,buf1,out_size-SizeOf(headr2));
+      Move(pBYTE(@hash_buffer)[SizeOf(headr2)],buf1,out_size-SizeOf(headr2));
     end
   else
     begin
@@ -3913,6 +3908,54 @@ begin
   put_chunk(pattern,line,channel+1,chunk);
 end;
 
+// *******************************
+// ADT2plug RAD description loader
+// *******************************
+
+{$IFDEF PLUGIN}
+procedure load_rad_description(length: Word);
+
+var
+  temp: Word;
+  row,temp2: Byte;
+  xstart,ystart: Byte;
+  desc: String;
+
+procedure insertdesc;
+begin
+  radinstr_used := true;
+  While (SYSTEM.Length(desc) > maxmemolinelen) do
+    begin
+      radinstr_names[row] := Copy(desc,1,maxmemolinelen);
+      desc := Copy(desc,maxmemolinelen+1,system.length(desc)-maxmemolinelen);
+      Inc(row);
+    end;
+  radinstr_names[row] := desc;
+end;
+
+begin
+  temp := 0;
+  row  := 1;
+  desc := '';
+  While (dscbuf[temp] <> #0) and (temp < length) do
+    begin
+      Case dscbuf[temp] of
+        #1: If (row < 255) then
+              begin
+                insertdesc;
+                Inc(row);
+                desc := '';
+              end;
+        #2..#31: For temp2 := 1 to BYTE(dscbuf[temp]) do
+                   desc := desc+' ';
+        #32..#255: desc := desc+dscbuf[temp];
+      end;
+      Inc(temp);
+    end;
+  insertdesc;
+end;
+{$ENDIF}
+
 
 begin
   {$i-}
@@ -3927,6 +3970,12 @@ begin
 
   BlockReadF(f,header,SizeOf(header),temp);
   If NOT ((temp = SizeOf(header)) and (header.ident = id)) then
+    begin
+      CloseF(f);
+      EXIT;
+    end;
+
+  If (header.rmver <> $10) then
     begin
       CloseF(f);
       EXIT;
@@ -3957,6 +4006,9 @@ begin
       Dec(temp,temp2+1);
       Move(buf1,dscbuf,temp2+1);
       Move(buf1[temp2+1],buf1,temp);
+{$IFDEF PLUGIN}
+      load_rad_description(temp2+1);
+{$ENDIF}
     end;
 
 
@@ -6230,34 +6282,14 @@ begin
   load_flag := 14;
 end;
 
-function _sal(op1,op2: Word): Byte;
-
-var
-  result: Byte;
-
+function _sal(op1,op2: Integer): Byte;
 begin
-  asm
-        mov     ax,op1
-        mov     cx,op2
-        sal     ax,cl
-        mov     result,al
-  end;
-  _sal := result;
+  _sal := op1 SHL op2;
 end;
 
-function _sar(op1,op2: Word): Byte;
-
-var
-  result: Byte;
-
+function _sar(op1,op2: Integer): Byte;
 begin
-  asm
-        mov     ax,op1
-        mov     cx,op2
-        sar     ax,cl
-        mov     result,al
-  end;
-  _sar := result;
+  _sar := op1 SHR op2;
 end;
 
 procedure import_sa2_effect(effect,def1,def2: Byte;

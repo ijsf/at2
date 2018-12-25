@@ -6,6 +6,34 @@ For complete AT2 revision history refer to:
 http://www.adlibtracker.net/files/revision.htm
 
 
+* version 2.3.57
+  released: 12/24/2018
+
+  . fixed version check for Reality ADlib Tracker modules
+  . fixed instrument preview bug in Arpeggio/Vibrato Macro Browser window
+  . fixed C-9 note replacement bug on invalid flat-sharp conversion
+  . fixed linefeed option not being evaluated for some actions and added possibility
+    to disable it for MidiBoard (refer to option 'lf_in_mboard_mode' in config file)
+  . fixed broken Global Freq. Slide Up/Down effect command
+  . implemented native BPM handling:
+    - implemented BPM calculation (predicted according to rows per beat
+      taken from Line Marking Setup window)
+    - added possibility to manually control playback speed (hotkey: [Ctrl]{Shift} Up,Down)
+      and controlling it during using effect commands (refer to extended command 'ZE7');
+    - added overview of current BPM and playback speed shift in Hz
+  . changes in Song Variables window:
+    - changed cursor movement to be more predictable/convenient
+    - added key shortcut for each option
+    - added preview and prediction of BPM speed
+    - added access to quick setup of rows per beat (hotkey: ^Enter)
+  . improved behavior of temporary song status in the upper left corner
+  . added possibility to change playback speed (hotkey: [Ctrl]{Shift} Up,Down)
+  . optimized window arrangement in case of enlarged screen size
+  . improved string input (quick change of decimal and hexadecimal values with +/-)
+  . improved speed of loading/saving progress bar
+  . AT2 player updated to version 0.46
+
+
 * version 2.3.56
   released: 07/27/2016 (* 07/01/2017)
 
@@ -38,7 +66,7 @@ http://www.adlibtracker.net/files/revision.htm
     and improved user interface
   . fixed slow reading of instrument bank files
   . fixed preview of empty instrument with FM-register macro
-  . slightly fixed channel ON/OFF for percussion tracks SD/TT/TC/HH  
+  . slightly fixed channel ON/OFF for percussion tracks SD/TT/TC/HH
   . fixed occasional program crash when OPL3 is not detected
   . pretty much improved extended screen views (using SVGA text modes)
     and added back mouse support for more convenient text scrolling
