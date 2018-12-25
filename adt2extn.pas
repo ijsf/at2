@@ -1736,21 +1736,26 @@ begin
   move2screen;
 end;
 
-function _find_note(layout: String; var flag: Boolean): Byte;
+function _find_note(layout: String; old_note: Byte): BYTE;
 
 var
   temp: Byte;
+  found_flag: Boolean;
 
 begin
-  flag := FALSE;
-  If (layout = note_keyoff_str[pattern_layout]) then temp := BYTE_NULL
-  else For temp := 0 to 12*8+1 do
-         If IsWild(layout,note_layout[temp],FALSE) then
-           begin
-             flag := TRUE;
-             BREAK;
-           end;
-  _find_note := temp;
+  If (layout = note_keyoff_str[pattern_layout]) then _find_note := BYTE_NULL
+  else
+    begin
+      found_flag := FALSE;
+      For temp := 0 to 12*8+1 do
+        If SameName(note_layout[temp],layout) then
+          begin
+            found_flag := TRUE;
+            BREAK;
+          end;
+      If found_flag then _find_note := temp
+      else _find_note := old_note;
+    end;
 end;
 
 {$IFNDEF CPU64}
@@ -2260,28 +2265,35 @@ _jmp1:
                 get_chunk(temp3,temp1,temp2,chunk);
                 old_chunk := chunk;
 
-                If IsWild(byte2hex(old_chunk.instr_def),event_to_find.inst,FALSE) and
-                   IsWild(fx_digits[old_chunk.effect_def]+byte2hex(old_chunk.effect),event_to_find.fx_1,FALSE) and
-                   IsWild(fx_digits[old_chunk.effect_def2]+byte2hex(old_chunk.effect2),event_to_find.fx_2,FALSE) then
+                If SameName(event_to_find.inst,byte2hex(old_chunk.instr_def)) and
+                   SameName(event_to_find.fx_1,fx_digits[old_chunk.effect_def]+byte2hex(old_chunk.effect)) and
+                   SameName(event_to_find.fx_2,fx_digits[old_chunk.effect_def2]+byte2hex(old_chunk.effect2)) then
                   begin
                     _valid_note := FALSE;
                     Case old_chunk.note of
                       0,
-                      1..12*8+1: If IsWild(note_layout[old_chunk.note],event_to_find.note,FALSE) then
-                                   temp_note := _find_note(_wildcard_str(new_event.note,note_layout[old_chunk.note]),_valid_note);
+                      1..12*8+1: If SameName(event_to_find.note,note_layout[old_chunk.note]) then
+                                   begin
+                                     temp_note := _find_note(_wildcard_str(new_event.note,note_layout[old_chunk.note]),old_chunk.note);
+                                     _valid_note := TRUE;
+                                   end;
 
                       fixed_note_flag+
                       1..
                       fixed_note_flag+
-                      12*8+1: If IsWild(note_layout[old_chunk.note-fixed_note_flag],event_to_find.note,FALSE) then
+                      12*8+1: If SameName(event_to_find.note,note_layout[old_chunk.note-fixed_note_flag]) then
                                 begin
                                   If NOT (FilterStr(replace_data.new_event.note,'?',#250) = note_keyoff_str[pattern_layout]) then
-                                    temp_note := fixed_note_flag+_find_note(_wildcard_str(new_event.note,note_layout[old_chunk.note-fixed_note_flag]),_valid_note)
-                                  else temp_note := _find_note(new_event.note,_valid_note);
+                                    temp_note := fixed_note_flag+_find_note(_wildcard_str(new_event.note,note_layout[old_chunk.note-fixed_note_flag]),old_chunk.note)
+                                  else temp_note := _find_note(new_event.note,old_chunk.note);
+                                  _valid_note := TRUE;
                                 end;
 
                       BYTE_NULL: If (replace_data.event_to_find.note = note_keyoff_str[pattern_layout]) then
-                                   temp_note := _find_note(new_event.note,_valid_note);
+                                   begin
+                                     temp_note := _find_note(new_event.note,old_chunk.note);
+                                     _valid_note := TRUE;
+                                   end;
                     end;
 
                     If _valid_note and (new_event.note <> '???') then

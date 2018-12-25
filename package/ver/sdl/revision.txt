@@ -10,7 +10,7 @@ http://www.adlibtracker.net/files/revision.htm
 
 
 * version 2.4.24
-  released: 12/24/2018
+  released: 12/24/2018 (* 12/25/2018)
 
   . fixed version check for Reality ADlib Tracker modules
   . fixed instrument preview bug in Arpeggio/Vibrato Macro Browser window
@@ -22,7 +22,7 @@ http://www.adlibtracker.net/files/revision.htm
     - implemented BPM calculation (predicted according to rows per beat
       taken from Line Marking Setup window)
     - added possibility to manually control playback speed (hotkey: [Ctrl]{Shift} Up,Down)
-      and controlling it during using effect commands (refer to extended command 'ZE7');
+      and controlling it using effect commands (refer to extended command 'ZE7')
     - added overview of current BPM and playback speed shift in Hz
   . changes in Song Variables window:
     - changed cursor movement to be more predictable/convenient
@@ -32,6 +32,8 @@ http://www.adlibtracker.net/files/revision.htm
   . improved behavior of temporary song status in the upper left corner
   . optimized window arrangement in case of enlarged screen size
   . improved string input (quick change of decimal and hexadecimal values with +/-)
+  * bugfix of recent ASM->PAS string evaluation routine incompatibility (hard to describe
+    in few words, as it may had impact on different areas :)
 
 
 * version 2.4.23

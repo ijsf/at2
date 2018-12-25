@@ -21,8 +21,8 @@ interface
 
 const
 {__AT2VER__}at2ver  = '2.4.24';
-{__AT2DAT__}at2date = '12-24-2018';
-{__AT2LNK__}at2link = '9:23am';
+{__AT2DAT__}at2date = '12-25-2018';
+{__AT2LNK__}at2link = '7:38pm';
 
 const
 {$IFNDEF BETA}
@@ -1375,7 +1375,7 @@ begin
                      atr1,atr2,atr3);
            ShowStr(dest,x+mpos-1,y,mchr,atr3);
          end
-       else If (temp_pos_atr1 <> 0) and IsWild(Copy(str,temp_pos_atr1,17),'@@attr:??,??,??@@',FALSE) then
+       else If (temp_pos_atr1 <> 0) and SameName('@@attr:??,??,??@@',Copy(str,temp_pos_atr1,17)) then
               begin
                 new_atr1 := Str2num(Copy(str,temp_pos_atr1+7,2),16);
                 If (new_atr1 = 0) then new_atr1 := atr1;
@@ -1388,7 +1388,7 @@ begin
                           ExpStrR(str,74+Length(str)-C3StrLen(str),' '),
                           new_atr1,new_atr2,new_atr3);
               end
-            else If (temp_pos_atr2 <> 0) and IsWild(Copy(str,temp_pos_atr2,16),'@@spec_attr:??@@',FALSE) then
+            else If (temp_pos_atr2 <> 0) and SameName('@@spec_attr:??@@',Copy(str,temp_pos_atr2,16)) then
               begin
                 temp2 := Str2num(Copy(str,temp_pos_atr2+12,2),16);
                 If (temp2 = 0) or (spec_attr_table[temp2] = 0) then new_atr3 := atr3

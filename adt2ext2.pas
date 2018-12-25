@@ -612,8 +612,7 @@ begin
       temp2 := temp2 DIV 10;
     end;
 
-  If IsWild(data,str+'=*',FALSE) and
-     (Length(data) >= Length(str)+2) and (Length(data) < Length(str)+temp+2) then
+  If SameName(str+'='+ExpStrL('',temp,'?'),data) and (Length(data) < Length(str)+temp+2) then
     begin
       result := Str2num(Copy(data,Length(str)+2,temp),base);
       If (result >= limit1) and (result <= limit2) then
@@ -648,8 +647,7 @@ begin
       temp2 := temp2 DIV 10;
     end;
 
-  If IsWild(data,str+'=*',FALSE) and
-     (Length(data) >= Length(str)+2) and (Length(data) < Length(str)+temp+2) then
+  If SameName(str+'='+ExpStrL('',temp,'?'),data) and (Length(data) < Length(str)+temp+2) then
     begin
       num := Str2num(Copy(data,Length(str)+2,temp),base);
       If (num >= limit1) and (num <= limit2) then
@@ -664,20 +662,6 @@ end;
 type
   tRANGE = Set of 1..255;
 
-function check_range(str: String; base: Byte; range: tRANGE; default: Byte): Byte;
-
-var
-  result: Word;
-
-begin
-  result := default;
-  If IsWild(data,str+'='+ExpStrL('',3,'?'),FALSE) and
-     (Length(data) < Length(str)+5) then
-    If (Str2num(Copy(data,Length(str)+2,3),base) in range) then
-      result := Str2num(Copy(data,Length(str)+2,3),base);
-  check_range := result;
-end;
-
 function check_boolean(str: String; default: Boolean): Boolean;
 
 var
@@ -689,7 +673,7 @@ begin
   _debug_str_ := 'ADT2EXT2.PAS:process_config_file:check_boolean';
 {$ENDIF}
   result := default;
-  If IsWild(data,str+'=???',FALSE) and
+  If SameName(str+'=???',data) and
      (Length(data) < Length(str)+5) then
     begin
       If (Copy(data,Length(str)+2,3) = 'on')  then result := TRUE;
@@ -708,7 +692,7 @@ begin
   _last_debug_str_ := _debug_str_;
   _debug_str_ := 'ADT2EXT2.PAS:process_config_file:check_rgb';
 {$ENDIF}
-  If IsWild(data,str+'=??,??,??',FALSE) and
+  If SameName(str+'=??,??,??',data) and
      (Length(data) < Length(str)+10) then
     begin
       result.r := Str2num(Copy(data,Length(str)+2,2),10);

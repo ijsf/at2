@@ -96,6 +96,7 @@ var
   is_environment: tINPUT_STR_ENVIRONMENT;
 
 function InputStr(s: String; x,y,ln,ln1: Byte; atr1,atr2: Byte): String;
+function SameName(str1,str2: String): Boolean;
 function PathOnly(path: String): String;
 function NameOnly(path: String): String;
 function BaseNameOnly(path: String): String;
@@ -1037,6 +1038,135 @@ _end:
   is_environment.keystroke := key;
   is_environment.insert_mode := ins;
   InputStr := s;
+end;
+
+function SameName(str1,str2: String): Boolean;
+
+var
+  LastW: Word;
+  result: Boolean;
+
+begin
+  asm
+        mov     [LastW],0
+        xor     eax,eax
+        xor     ecx,ecx
+        xor     ebx,ebx
+        lea     esi,[str1]
+        lea     edi,[str2]
+        xor     ah,ah
+        mov     al,[esi]
+        inc     esi
+        mov     cx,ax
+        mov     al,[edi]
+        inc     edi
+        mov     bx,ax
+        or      cx,cx
+        jnz     @@1
+        or      bx,bx
+        jz      @@13
+        jmp     @@14
+        xor     dh,dh
+@@1:    mov     al,[esi]
+        inc     esi
+        cmp     al,'*'
+        jne     @@2
+        dec     cx
+        jz      @@13
+        mov     dh,1
+        mov     LastW,cx
+        jmp     @@1
+@@2:    cmp     al,'?'
+        jnz     @@3
+        inc     edi
+        or      bx,bx
+        je      @@12
+        dec     bx
+        jmp     @@12
+@@3:    or      bx,bx
+        je      @@14
+        cmp     al,'['
+        jne     @@11
+        cmp     word ptr [esi],']?'
+        je      @@9
+        mov     ah,byte ptr [edi]
+        xor     dl,dl
+        cmp     byte ptr [esi],'!'
+        jnz     @@4
+        inc     esi
+        dec     cx
+        jz      @@14
+        inc     dx
+@@4:    mov     al,[esi]
+        inc     esi
+        dec     cx
+        jz      @@14
+        cmp     al,']'
+        je      @@7
+        cmp     ah,al
+        je      @@6
+        cmp     byte ptr [esi],'-'
+        jne     @@4
+        inc     esi
+        dec     cx
+        jz      @@14
+        cmp     ah,al
+        jae     @@5
+        inc     esi
+        dec     cx
+        jz      @@14
+        jmp     @@4
+@@5:    mov     al,[esi]
+        inc     esi
+        dec     cx
+        jz      @@14
+        cmp     ah,al
+        ja      @@4
+@@6:    or      dl,dl
+        jnz     @@14
+        inc     dx
+@@7:    or      dl,dl
+        jz      @@14
+@@8:    cmp     al,']'
+        je      @@10
+@@9:    mov     al,[esi]
+        inc     esi
+        cmp     al,']'
+        loopne  @@9
+        jne     @@14
+@@10:   dec     bx
+        inc     edi
+        jmp     @@12
+@@11:   cmp     [edi],al
+        jne     @@14
+        inc     edi
+        dec     bx
+@@12:   xor     dh,dh
+        dec     cx
+        jnz     @@1
+        or      bx,bx
+        jnz     @@14
+@@13:   mov     result,TRUE
+        jmp     @@16
+@@14:   or      dh,dh
+        jz      @@15
+        jecxz   @@15
+        or      bx,bx
+        jz      @@15
+        inc     edi
+        dec     bx
+        jz      @@15
+        mov     ax,LastW
+        sub     ax,cx
+        add     cx,ax
+        movsx   eax,ax
+        sub     esi,eax
+        dec     esi
+        jmp     @@1
+@@15:   mov     result,FALSE
+@@16:
+  end;
+  SameName := result;
 end;
 
 var

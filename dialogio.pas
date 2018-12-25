@@ -1175,7 +1175,7 @@ begin
   okay := FALSE;
   For temp := 1 to count do
 {$IFDEF GO32V2}
-    If IsWild(Upper(filename),Upper(masks[temp]),FALSE) then
+    If SameName(Upper(masks[temp]),Upper(filename)) then
 {$ELSE}
     If (Upper(Copy(masks[temp],3,Length(masks[temp]))) = Upper(ExtOnly(filename))) then
 {$ENDIF}
